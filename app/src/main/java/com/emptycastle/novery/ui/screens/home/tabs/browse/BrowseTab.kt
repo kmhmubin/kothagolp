@@ -354,6 +354,7 @@ fun BrowseTab(
                         ExpandedSearchResults(
                             providerName = expandedProvider,
                             novels = novels,
+                            libraryNovelUrls = uiState.libraryNovelUrls,
                             isLoading = providerState is ProviderSearchState.Loading,
                             error = (providerState as? ProviderSearchState.Error)?.message,
                             gridColumns = gridColumns,
@@ -374,6 +375,7 @@ fun BrowseTab(
                             providerStates = uiState.filteredProviderStates,
                             providers = uiState.providers,
                             favoriteProviders = uiState.favoriteProviders,
+                            libraryNovelUrls = uiState.libraryNovelUrls,
                             resultsPerProvider = resultsPerProvider,
                             filters = uiState.filters,
                             isSearching = uiState.isSearching,
@@ -748,6 +750,7 @@ private fun SearchResultsContent(
     providerStates: Map<String, ProviderSearchState>,
     providers: List<MainProvider>,
     favoriteProviders: Set<String>,
+    libraryNovelUrls: Set<String>,
     resultsPerProvider: Int,
     filters: SearchFilters,
     isSearching: Boolean,
@@ -822,6 +825,7 @@ private fun SearchResultsContent(
                                 ProviderSearchResultsSection(
                                     providerName = providerName,
                                     novels = state.novels,
+                                    libraryNovelUrls = libraryNovelUrls,
                                     maxResults = resultsPerProvider,
                                     onNovelClick = onNovelClick,
                                     onNovelLongClick = onNovelLongClick,
@@ -1223,6 +1227,7 @@ private fun ProviderErrorResultsSection(
 private fun ProviderSearchResultsSection(
     providerName: String,
     novels: List<Novel>,
+    libraryNovelUrls: Set<String>,
     maxResults: Int,
     onNovelClick: (Novel) -> Unit,
     onNovelLongClick: (Novel) -> Unit,
@@ -1315,6 +1320,7 @@ private fun ProviderSearchResultsSection(
                             onClick = { onNovelClick(novel) },
                             onLongClick = { onNovelLongClick(novel) },
                             density = appSettings.uiDensity,
+                            isInLibrary = novel.url in libraryNovelUrls,
                             modifier = Modifier.width(110.dp)
                         )
                     }
@@ -1338,6 +1344,7 @@ private fun ProviderSearchResultsSection(
                             onClick = { onNovelClick(novel) },
                             onLongClick = { onNovelLongClick(novel) },
                             density = appSettings.uiDensity,
+                            isInLibrary = novel.url in libraryNovelUrls,
                             modifier = Modifier.padding(horizontal = dimensions.gridPadding)
                         )
                     }
@@ -1417,6 +1424,7 @@ private fun ViewMoreCard(
 private fun ExpandedSearchResults(
     providerName: String,
     novels: List<Novel>,
+    libraryNovelUrls: Set<String>,
     isLoading: Boolean,
     error: String?,
     gridColumns: Int,
@@ -1622,7 +1630,8 @@ private fun ExpandedSearchResults(
                             onClick = { onNovelClick(novel) },
                             onLongClick = { onNovelLongClick(novel) },
                             showApiName = false,
-                            density = appSettings.uiDensity
+                            density = appSettings.uiDensity,
+                            isInLibrary = novel.url in libraryNovelUrls
                         )
                     }
                 }

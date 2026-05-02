@@ -13,6 +13,7 @@ import com.emptycastle.novery.domain.model.ReadingStatus
 import com.emptycastle.novery.provider.MainProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -72,6 +73,12 @@ class LibraryRepository(
         return libraryDao.getAllFlow().map { entities ->
             entities.map { entity -> entity.toLibraryItem() }
         }
+    }
+
+    fun observeLibraryUrls(): Flow<Set<String>> {
+        return libraryDao.observeLibraryUrls()
+            .map { urls -> urls.toSet() }
+            .distinctUntilChanged()
     }
 
     fun observeIsFavorite(url: String): Flow<Boolean> {

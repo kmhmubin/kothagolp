@@ -37,6 +37,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material3.Card
@@ -83,6 +84,7 @@ import coil.compose.SubcomposeAsyncImageContent
 import com.emptycastle.novery.domain.model.Novel
 import com.emptycastle.novery.domain.model.ReadingStatus
 import com.emptycastle.novery.domain.model.UiDensity
+import com.emptycastle.novery.ui.screens.details.util.DetailsColors
 import com.emptycastle.novery.ui.theme.StatusCompleted
 import com.emptycastle.novery.ui.theme.StatusDROPPED
 import com.emptycastle.novery.ui.theme.StatusOnHold
@@ -139,12 +141,14 @@ fun NovelCard(
     readingStatus: ReadingStatus? = null,
     lastReadChapter: String? = null,
     showApiName: Boolean = false,
-    isSelected: Boolean = false
+    isSelected: Boolean = false,
+    isInLibrary: Boolean = false
 ) {
     val semanticsLabel = buildString {
         append(novel.name)
         readingStatus?.let { append(", ${it.displayName()}") }
         if (newChapterCount > 0) append(", $newChapterCount new chapters")
+        if (isInLibrary) append(", in library")
         lastReadChapter?.let { append(", last read: $it") }
     }
 
@@ -161,7 +165,8 @@ fun NovelCard(
             readingStatus = readingStatus,
             lastReadChapter = lastReadChapter,
             showApiName = showApiName,
-            isSelected = isSelected
+            isSelected = isSelected,
+            isInLibrary = isInLibrary
         )
         else -> CompactNovelCard(
             novel = novel,
@@ -176,7 +181,8 @@ fun NovelCard(
             lastReadChapter = lastReadChapter,
             showApiName = showApiName,
             isCompact = density == UiDensity.COMPACT,
-            isSelected = isSelected
+            isSelected = isSelected,
+            isInLibrary = isInLibrary
         )
     }
 }
@@ -196,7 +202,8 @@ private fun ComfortableNovelCard(
     readingStatus: ReadingStatus?,
     lastReadChapter: String?,
     showApiName: Boolean,
-    isSelected: Boolean
+    isSelected: Boolean,
+    isInLibrary: Boolean
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -270,6 +277,7 @@ private fun ComfortableNovelCard(
                 BadgeRow(
                     readingStatus = readingStatus,
                     newChapterCount = newChapterCount,
+                    isInLibrary = isInLibrary,
                     compactMode = false,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -328,7 +336,8 @@ private fun CompactNovelCard(
     lastReadChapter: String?,
     showApiName: Boolean,
     isCompact: Boolean,
-    isSelected: Boolean
+    isSelected: Boolean,
+    isInLibrary: Boolean
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -388,6 +397,7 @@ private fun CompactNovelCard(
             BadgeRow(
                 readingStatus = readingStatus,
                 newChapterCount = newChapterCount,
+                isInLibrary = isInLibrary,
                 compactMode = isCompact,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -584,6 +594,7 @@ private fun CinematicOverlay(modifier: Modifier = Modifier) {
 private fun BadgeRow(
     readingStatus: ReadingStatus?,
     newChapterCount: Int,
+    isInLibrary: Boolean,
     compactMode: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -607,17 +618,59 @@ private fun BadgeRow(
 
         Spacer(Modifier.weight(1f))
 
-        AnimatedVisibility(
-            visible = newChapterCount > 0,
-            enter = fadeIn() + scaleIn(
-                initialScale = 0.5f,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-            ),
-            exit = fadeOut() + scaleOut()
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.Top
         ) {
-            NewChaptersBadge(
-                count = newChapterCount,
-                compactMode = compactMode
+            AnimatedVisibility(
+                visible = isInLibrary,
+                enter = fadeIn() + scaleIn(
+                    initialScale = 0.5f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                ),
+                exit = fadeOut() + scaleOut()
+            ) {
+                LibraryBookmarkBadge(compactMode = compactMode)
+            }
+
+            AnimatedVisibility(
+                visible = newChapterCount > 0,
+                enter = fadeIn() + scaleIn(
+                    initialScale = 0.5f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                ),
+                exit = fadeOut() + scaleOut()
+            ) {
+                NewChaptersBadge(
+                    count = newChapterCount,
+                    compactMode = compactMode
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryBookmarkBadge(
+    modifier: Modifier = Modifier,
+    compactMode: Boolean = false
+) {
+    // Reuse the details cover treatment so "in library" reads consistently across screens.
+    Surface(
+        modifier = modifier.size(if (compactMode) 22.dp else 24.dp),
+        shape = CircleShape,
+        color = DetailsColors.Pink.copy(alpha = 0.9f),
+        shadowElevation = NovelCardTokens.Elevation.Badge
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Bookmark,
+                contentDescription = "In library",
+                modifier = Modifier.size(if (compactMode) 12.dp else 14.dp),
+                tint = Color.White
             )
         }
     }

@@ -38,6 +38,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material3.Card
@@ -78,6 +79,7 @@ import coil.compose.SubcomposeAsyncImageContent
 import com.emptycastle.novery.domain.model.Novel
 import com.emptycastle.novery.domain.model.ReadingStatus
 import com.emptycastle.novery.domain.model.UiDensity
+import com.emptycastle.novery.ui.screens.details.util.DetailsColors
 import com.emptycastle.novery.ui.theme.StatusCompleted
 import com.emptycastle.novery.ui.theme.StatusDROPPED
 import com.emptycastle.novery.ui.theme.StatusOnHold
@@ -145,7 +147,8 @@ fun NovelListItem(
     readingStatus: ReadingStatus? = null,
     lastReadChapter: String? = null,
     showApiName: Boolean = false,
-    isSelected: Boolean = false
+    isSelected: Boolean = false,
+    isInLibrary: Boolean = false
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -189,6 +192,7 @@ fun NovelListItem(
         append(novel.name)
         readingStatus?.let { append(", ${it.displayName()}") }
         if (newChapterCount > 0) append(", $newChapterCount new chapters")
+        if (isInLibrary) append(", in library")
         lastReadChapter?.let { append(", last read: $it") }
     }
 
@@ -254,10 +258,10 @@ fun NovelListItem(
                 // Subtle vignette for badge contrast
                 ListItemVignette(modifier = Modifier.fillMaxSize())
 
-                // New chapters badge on image
+                // Library and new chapter badges on image
                 // FIX: Use fully qualified name to avoid RowScope/BoxScope conflict
                 androidx.compose.animation.AnimatedVisibility(
-                    visible = newChapterCount > 0,
+                    visible = isInLibrary || newChapterCount > 0,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(ListItemTokens.Padding.Badge),
@@ -267,10 +271,21 @@ fun NovelListItem(
                     ),
                     exit = fadeOut() + scaleOut()
                 ) {
-                    ListNewChaptersBadge(
-                        count = newChapterCount,
-                        compact = density == UiDensity.COMPACT
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        if (isInLibrary) {
+                            ListLibraryBookmarkBadge(compact = density == UiDensity.COMPACT)
+                        }
+
+                        if (newChapterCount > 0) {
+                            ListNewChaptersBadge(
+                                count = newChapterCount,
+                                compact = density == UiDensity.COMPACT
+                            )
+                        }
+                    }
                 }
 
                 // Status indicator at bottom-left of image
@@ -600,6 +615,32 @@ private fun ListStatusDot(
 // ══════════════════════════════════════════════════════════════════════════════
 // New Chapters Badge
 // ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun ListLibraryBookmarkBadge(
+    modifier: Modifier = Modifier,
+    compact: Boolean = false
+) {
+    // Reuse the details cover treatment so "in library" reads consistently across screens.
+    Surface(
+        modifier = modifier.size(if (compact) 20.dp else 22.dp),
+        shape = CircleShape,
+        color = DetailsColors.Pink.copy(alpha = 0.9f),
+        shadowElevation = ListItemTokens.Elevation.Badge
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Bookmark,
+                contentDescription = "In library",
+                modifier = Modifier.size(if (compact) 11.dp else 13.dp),
+                tint = Color.White
+            )
+        }
+    }
+}
 
 @Composable
 private fun ListNewChaptersBadge(

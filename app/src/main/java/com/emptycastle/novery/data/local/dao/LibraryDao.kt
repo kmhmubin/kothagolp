@@ -16,6 +16,9 @@ interface LibraryDao {
     @Query("SELECT * FROM library ORDER BY lastReadAt DESC, addedAt DESC")
     fun getAllFlow(): Flow<List<LibraryEntity>>
 
+    @Query("SELECT url FROM library")
+    fun observeLibraryUrls(): Flow<List<String>>
+
     @Query("SELECT * FROM library ORDER BY lastReadAt DESC, addedAt DESC")
     suspend fun getAll(): List<LibraryEntity>
 
