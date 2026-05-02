@@ -191,25 +191,20 @@ fun ProviderBrowseScreen(
 
     val gridColumns = calculateGridColumns(appSettings.browseGridColumns)
 
-    // Filter overlay state
     var isFilterOverlayOpen by remember { mutableStateOf(false) }
 
-    // Auto-open filter overlay when empty with active filters
     LaunchedEffect(uiState.isEmpty, uiState.hasActiveFilters) {
         if (uiState.isEmpty && uiState.hasActiveFilters && !uiState.isSearchMode) {
             isFilterOverlayOpen = true
         }
     }
 
-    // Close filter overlay when entering search mode
     LaunchedEffect(uiState.isSearchMode) {
         if (uiState.isSearchMode) isFilterOverlayOpen = false
     }
 
-    // Action Sheet
     if (actionSheetState.isVisible && actionSheetState.data != null) {
         val data = actionSheetState.data!!
-
         NovelActionSheet(
             data = data,
             sheetState = sheetState,
@@ -276,120 +271,151 @@ fun ProviderBrowseScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Outer Box — lets FilterOverlay cover everything
             Box(modifier = Modifier.fillMaxSize()) {
 
-                // ── Main Content ──────────────────────────────────────────
-                when {
-                    uiState.displayError != null && !uiState.isSearchMode -> {
-                        ErrorState(
-                            uiState = uiState,
-                            onRetry = viewModel::loadPage,
-                            onOpenWebView = { onNavigateToWebView(providerName, uiState.providerUrl) }
-                        )
-                    }
+                // Column: chip row on top, content below
+                Column(modifier = Modifier.fillMaxSize()) {
 
-                    uiState.isDisplayLoading -> {
-                        LoadingContent(uiState = uiState, gridColumns = gridColumns)
-                    }
-
-                    uiState.isEmpty -> {
-                        EmptyContent(
+                    // Active filter chips — part of normal layout flow
+                    AnimatedVisibility(
+                        visible = uiState.hasActiveFilters && !uiState.isSearchMode && !isFilterOverlayOpen,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        ActiveFiltersChipRow(
                             uiState = uiState,
-                            onRetry = viewModel::loadPage,
-                            onClearFilters = viewModel::clearFilters,
-                            onOpenWebView = { onNavigateToWebView(providerName, uiState.providerUrl) }
-                        )
-                    }
-
-                    else -> {
-                        MainContent(
-                            uiState = uiState,
-                            gridColumns = gridColumns,
-                            onNovelClick = { novel -> onNavigateToDetails(novel.url, providerName) },
-                            onNovelLongClick = { novel ->
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.showActionSheet(novel)
+                            onSortClear = {
+                                viewModel.setSelectedSort(
+                                    uiState.provider?.orderBys?.firstOrNull()?.value
+                                )
                             },
-                            appSettings = appSettings
+                            onTagClear = {
+                                viewModel.setSelectedTag(
+                                    uiState.provider?.tags?.firstOrNull()?.value
+                                )
+                            },
+                            onClearAll = viewModel::clearFilters
                         )
                     }
-                }
 
-                // ── Active Filters Chips (top, below content header) ──────
-                AnimatedVisibility(
-                    visible = uiState.hasActiveFilters && !uiState.isSearchMode && !isFilterOverlayOpen,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    ActiveFiltersChipRow(
-                        uiState = uiState,
-                        onSortClear = { viewModel.setSelectedSort(uiState.provider?.orderBys?.firstOrNull()?.value) },
-                        onTagClear = { viewModel.setSelectedTag(uiState.provider?.tags?.firstOrNull()?.value) },
-                        onClearAll = viewModel::clearFilters
-                    )
-                }
+                    // Inner Box: main content + floating overlays
+                    Box(modifier = Modifier.fillMaxSize()) {
 
-                // ── Floating Pagination Bar ───────────────────────────────
-                AnimatedVisibility(
-                    visible = uiState.showPagination,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = BrowseDesign.spacingXl),
-                    enter = slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                    ) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-                ) {
-                    PaginationBar(
-                        currentPage = uiState.currentPage,
-                        onPrevious = viewModel::previousPage,
-                        onNext = viewModel::nextPage,
-                        hasPrevious = uiState.hasPreviousPage,
-                        isLoading = uiState.isLoading
-                    )
-                }
+                        // Main content
+                        when {
+                            uiState.displayError != null && !uiState.isSearchMode -> {
+                                ErrorState(
+                                    uiState = uiState,
+                                    onRetry = viewModel::loadPage,
+                                    onOpenWebView = {
+                                        onNavigateToWebView(providerName, uiState.providerUrl)
+                                    }
+                                )
+                            }
 
-                // ── Floating Search Results Indicator ─────────────────────
-                AnimatedVisibility(
-                    visible = uiState.showSearchIndicator,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = BrowseDesign.spacingXl),
-                    enter = slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                    ) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-                ) {
-                    SearchResultsIndicator(
-                        resultCount = uiState.searchResults.size,
-                        query = uiState.searchQuery,
-                        onClear = viewModel::clearSearch
-                    )
-                }
+                            uiState.isDisplayLoading -> {
+                                LoadingContent(uiState = uiState, gridColumns = gridColumns)
+                            }
 
-                // ── Filter FAB ────────────────────────────────────────────
-                AnimatedVisibility(
-                    visible = uiState.provider != null && !uiState.isSearchMode,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(
-                            end = BrowseDesign.spacingXl,
-                            bottom = if (uiState.showPagination) 84.dp else BrowseDesign.spacingXl
-                        ),
-                    enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
-                    exit = scaleOut() + fadeOut()
-                ) {
-                    FilterFab(
-                        isOpen = isFilterOverlayOpen,
-                        hasActiveFilters = uiState.hasActiveFilters,
-                        activeFilterCount = uiState.activeFilterCount,
-                        onClick = { isFilterOverlayOpen = !isFilterOverlayOpen }
-                    )
+                            uiState.isEmpty -> {
+                                EmptyContent(
+                                    uiState = uiState,
+                                    onRetry = viewModel::loadPage,
+                                    onClearFilters = viewModel::clearFilters,
+                                    onOpenWebView = {
+                                        onNavigateToWebView(providerName, uiState.providerUrl)
+                                    }
+                                )
+                            }
+
+                            else -> {
+                                MainContent(
+                                    uiState = uiState,
+                                    gridColumns = gridColumns,
+                                    onNovelClick = { novel ->
+                                        onNavigateToDetails(novel.url, providerName)
+                                    },
+                                    onNovelLongClick = { novel ->
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        viewModel.showActionSheet(novel)
+                                    },
+                                    appSettings = appSettings
+                                )
+                            }
+                        }
+
+                        // Floating pagination bar
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding()
+                                .padding(bottom = BrowseDesign.spacingXl)
+                        ) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = uiState.showPagination,
+                                enter = slideInVertically(
+                                    initialOffsetY = { it },
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                ) + fadeIn(),
+                                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                            ) {
+                                PaginationBar(
+                                    currentPage = uiState.currentPage,
+                                    onPrevious = viewModel::previousPage,
+                                    onNext = viewModel::nextPage,
+                                    hasPrevious = uiState.hasPreviousPage,
+                                    isLoading = uiState.isLoading
+                                )
+                            }
+                        }
+
+                        // Floating search results indicator
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding()
+                                .padding(bottom = BrowseDesign.spacingXl)
+                        ) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = uiState.showSearchIndicator,
+                                enter = slideInVertically(
+                                    initialOffsetY = { it },
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                ) + fadeIn(),
+                                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                            ) {
+                                SearchResultsIndicator(
+                                    resultCount = uiState.searchResults.size,
+                                    query = uiState.searchQuery,
+                                    onClear = viewModel::clearSearch
+                                )
+                            }
+                        }
+
+                        // Filter FAB
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(
+                                    end = BrowseDesign.spacingXl,
+                                    bottom = if (uiState.showPagination) 84.dp else BrowseDesign.spacingXl
+                                )
+                        ) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = uiState.provider != null && !uiState.isSearchMode,
+                                enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
+                                exit = scaleOut() + fadeOut()
+                            ) {
+                                FilterFab(
+                                    isOpen = isFilterOverlayOpen,
+                                    hasActiveFilters = uiState.hasActiveFilters,
+                                    activeFilterCount = uiState.activeFilterCount,
+                                    onClick = { isFilterOverlayOpen = !isFilterOverlayOpen }
+                                )
+                            }
+                        }
+                    }
                 }
 
                 // ── Filter Overlay ────────────────────────────────────────
@@ -397,22 +423,19 @@ fun ProviderBrowseScreen(
                     visible = isFilterOverlayOpen,
                     uiState = uiState,
                     onDismiss = { isFilterOverlayOpen = false },
-                    onSortChange = { sort ->
-                        viewModel.setSelectedSort(sort)
-                    },
+                    onSortChange = { sort -> viewModel.setSelectedSort(sort) },
                     onExtraFilterChange = viewModel::setExtraFilter,
-                    onTagChange = { tag ->
-                        viewModel.setSelectedTag(tag)
-                    },
+                    onTagChange = { tag -> viewModel.setSelectedTag(tag) },
                     onClearFilters = {
                         viewModel.clearFilters()
                         isFilterOverlayOpen = false
                     },
                     onApply = { isFilterOverlayOpen = false }
                 )
-            }
-        }
-    }
+
+            } // end outer Box
+        } // end NoveryPullToRefreshBox
+    } // end Scaffold
 }
 
 // ============================================================================

@@ -2,6 +2,8 @@ package com.emptycastle.novery.data.remote
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.webkit.WebView
+import com.emptycastle.novery.data.remote.CloudflareManager.injectCookiesBeforeLoad
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,13 +12,29 @@ import android.webkit.CookieManager as WebViewCookieManager
 
 /**
  * Manages Cloudflare cookies for bypassing protection.
+ *
+ * Key design decisions:
+ * - cf_clearance cookies are valid for 24 hours per Cloudflare's spec.
+ *   We treat them as expired at 23 hours to give a 1-hour safety buffer.
+ * - Cookies must be injected into the WebView CookieManager BEFORE any
+ *   page load, not just saved after. This is the critical path for bypass.
+ * - Domains are normalised (www-stripped, lowercase) before storage so
+ *   lookups are consistent regardless of how the URL was typed.
  */
 object CloudflareManager {
 
     private const val PREFS_NAME = "cloudflare_cookies"
-    private const val COOKIE_MAX_AGE_MINUTES = 25
 
-    // This MUST match exactly what's used in WebView
+    // CF clearance cookies are valid for 24 hours. We refresh at 23 h.
+    private const val COOKIE_MAX_AGE_HOURS = 23L
+    private val COOKIE_MAX_AGE_MS = COOKIE_MAX_AGE_HOURS * 60 * 60 * 1000L
+
+    // Warn the user before the cookie actually expires (1 hour buffer).
+    private const val COOKIE_EXPIRY_WARN_HOURS = 1L
+    private val COOKIE_WARN_THRESHOLD_MS =
+        (COOKIE_MAX_AGE_HOURS - COOKIE_EXPIRY_WARN_HOURS) * 60 * 60 * 1000L
+
+    // This MUST match exactly what is used in the WebView.
     const val WEBVIEW_USER_AGENT =
         "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 " +
                 "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
@@ -34,35 +52,49 @@ object CloudflareManager {
     }
 
     // ========================================================================
-    // Domain Normalization - CRITICAL for matching
+    // Domain Normalisation
     // ========================================================================
 
     /**
-     * Normalize domain for consistent storage and retrieval
-     * Removes www., protocol, paths, etc.
+     * Normalise a URL or hostname to a bare domain for use as a storage key.
+     *
+     * Examples:
+     *   "https://www.novelfire.net/novel/foo" → "novelfire.net"
+     *   "cdn.novelfire.net"                  → "novelfire.net" (via parent lookup)
+     *   "novelfire.net"                      → "novelfire.net"
      */
     fun getDomain(url: String): String {
         return try {
             val cleanUrl = url.trim()
             val uri = URI(
-                if (cleanUrl.startsWith("http")) cleanUrl
-                else "https://$cleanUrl"
+                if (cleanUrl.startsWith("http")) cleanUrl else "https://$cleanUrl"
             )
             uri.host
                 ?.removePrefix("www.")
                 ?.lowercase()
-                ?: cleanUrl.removePrefix("https://")
-                    .removePrefix("http://")
-                    .removePrefix("www.")
-                    .split("/")[0]
-                    .lowercase()
+                ?: fallbackDomainParse(cleanUrl)
         } catch (e: Exception) {
-            url.removePrefix("https://")
-                .removePrefix("http://")
-                .removePrefix("www.")
-                .split("/")[0]
-                .lowercase()
+            fallbackDomainParse(url)
         }
+    }
+
+    private fun fallbackDomainParse(url: String): String =
+        url.removePrefix("https://")
+            .removePrefix("http://")
+            .removePrefix("www.")
+            .substringBefore("/")
+            .substringBefore("?")
+            .substringBefore("#")
+            .lowercase()
+
+    /**
+     * Return the parent domain if this is a subdomain, otherwise return the
+     * domain itself. E.g. "cdn.novelfire.net" → "novelfire.net".
+     * Returns null when the domain is already a top-level registrable domain.
+     */
+    private fun parentDomain(domain: String): String? {
+        val parts = domain.split(".")
+        return if (parts.size > 2) parts.takeLast(2).joinToString(".") else null
     }
 
     // ========================================================================
@@ -70,55 +102,55 @@ object CloudflareManager {
     // ========================================================================
 
     fun getCookiesForDomain(domain: String): String {
-        val normalizedDomain = getDomain(domain)
-        return prefs?.getString("cookies_$normalizedDomain", "") ?: ""
+        val key = getDomain(domain)
+        // Try exact domain first, then parent domain for CDN subdomains.
+        return prefs?.getString("cookies_$key", "")?.takeIf { it.isNotBlank() }
+            ?: parentDomain(key)?.let { prefs?.getString("cookies_$it", "") }
+            ?: ""
     }
 
     fun getUserAgent(domain: String): String? {
-        val normalizedDomain = getDomain(domain)
-        return prefs?.getString("ua_$normalizedDomain", null)
+        val key = getDomain(domain)
+        return prefs?.getString("ua_$key", null)
+            ?: parentDomain(key)?.let { prefs?.getString("ua_$it", null) }
     }
 
     fun saveCookiesForDomain(domain: String, cookies: String, userAgent: String) {
         if (!cookies.contains("cf_clearance")) {
-            android.util.Log.d("CloudflareManager", "No cf_clearance in cookies, not saving")
+            android.util.Log.d("CloudflareManager", "No cf_clearance — skipping save for $domain")
             return
         }
 
-        val normalizedDomain = getDomain(domain)
-        android.util.Log.d("CloudflareManager", "Saving cookies for domain: $normalizedDomain")
-        android.util.Log.d("CloudflareManager", "Cookies contain cf_clearance: ${cookies.contains("cf_clearance")}")
+        val key = getDomain(domain)
+        android.util.Log.d("CloudflareManager", "Saving CF cookies for $key")
 
+        val now = System.currentTimeMillis()
         prefs?.edit()
-            ?.putString("cookies_$normalizedDomain", cookies)
-            ?.putString("ua_$normalizedDomain", userAgent)
-            ?.putLong("time_$normalizedDomain", System.currentTimeMillis())
+            ?.putString("cookies_$key", cookies)
+            ?.putString("ua_$key", userAgent)
+            ?.putLong("time_$key", now)
             ?.apply()
 
-        // Also save for parent domain (for CDN subdomains)
-        // Example: if domain is "cdn.novelfire.net", also save for "novelfire.net"
-        val parts = normalizedDomain.split(".")
-        if (parts.size > 2) {
-            val parentDomain = parts.takeLast(2).joinToString(".")
+        // Mirror to parent domain so CDN subdomains pick up the same cookie.
+        parentDomain(key)?.let { parent ->
             prefs?.edit()
-                ?.putString("cookies_$parentDomain", cookies)
-                ?.putString("ua_$parentDomain", userAgent)
-                ?.putLong("time_$parentDomain", System.currentTimeMillis())
+                ?.putString("cookies_$parent", cookies)
+                ?.putString("ua_$parent", userAgent)
+                ?.putLong("time_$parent", now)
                 ?.apply()
-            android.util.Log.d("CloudflareManager", "Also saved for parent: $parentDomain")
+            android.util.Log.d("CloudflareManager", "Mirrored CF cookies to parent $parent")
         }
 
-        _cookieStateChanged.value = System.currentTimeMillis()
+        _cookieStateChanged.value = now
     }
 
     fun clearCookiesForDomain(domain: String) {
-        val normalizedDomain = getDomain(domain)
+        val key = getDomain(domain)
         prefs?.edit()
-            ?.remove("cookies_$normalizedDomain")
-            ?.remove("ua_$normalizedDomain")
-            ?.remove("time_$normalizedDomain")
+            ?.remove("cookies_$key")
+            ?.remove("ua_$key")
+            ?.remove("time_$key")
             ?.apply()
-
         _cookieStateChanged.value = System.currentTimeMillis()
     }
 
@@ -127,69 +159,75 @@ object CloudflareManager {
         _cookieStateChanged.value = System.currentTimeMillis()
     }
 
-    fun getAllStoredDomains(): List<String> {
-        return prefs?.all?.keys
+    fun getAllStoredDomains(): List<String> =
+        prefs?.all?.keys
             ?.filter { it.startsWith("cookies_") }
             ?.map { it.removePrefix("cookies_") }
             ?: emptyList()
-    }
 
     // ========================================================================
     // Cookie Status
     // ========================================================================
 
+    /**
+     * Returns true when we have a non-expired cf_clearance for this URL.
+     */
     fun hasClearanceCookie(url: String): Boolean {
         val domain = getDomain(url)
         val cookies = getCookiesForDomain(domain)
         val hasCookie = cookies.contains("cf_clearance=")
-        val notExpired = !areCookiesExpired(domain)
-        android.util.Log.d("CloudflareManager", "hasClearanceCookie for $domain: hasCookie=$hasCookie, notExpired=$notExpired")
-        return hasCookie && notExpired
+        val valid = !areCookiesExpired(domain)
+        android.util.Log.d(
+            "CloudflareManager",
+            "hasClearanceCookie($domain): present=$hasCookie valid=$valid"
+        )
+        return hasCookie && valid
     }
 
-    fun areCookiesExpired(domain: String, maxAgeMinutes: Int = COOKIE_MAX_AGE_MINUTES): Boolean {
-        val normalizedDomain = getDomain(domain)
-        val savedTime = prefs?.getLong("time_$normalizedDomain", 0) ?: 0
+    /**
+     * Returns true when the stored cookies are older than COOKIE_MAX_AGE_HOURS.
+     * Fixed bug: the previous implementation used minutes instead of hours,
+     * causing cookies to be discarded after only 25 minutes.
+     */
+    fun areCookiesExpired(domain: String): Boolean {
+        val key = getDomain(domain)
+        val savedTime = prefs?.getLong("time_$key", 0L) ?: 0L
         if (savedTime == 0L) return true
+        return (System.currentTimeMillis() - savedTime) > COOKIE_MAX_AGE_MS
+    }
 
-        val ageMs = System.currentTimeMillis() - savedTime
-        val maxAgeMs = maxAgeMinutes * 60 * 1000L
-        return ageMs > maxAgeMs
+    /**
+     * Returns true when the cookie is close to expiry (within COOKIE_EXPIRY_WARN_HOURS).
+     */
+    fun areCookiesExpiringSoon(domain: String): Boolean {
+        val key = getDomain(domain)
+        val savedTime = prefs?.getLong("time_$key", 0L) ?: 0L
+        if (savedTime == 0L) return true
+        return (System.currentTimeMillis() - savedTime) > COOKIE_WARN_THRESHOLD_MS
     }
 
     fun getCookieAgeMinutes(domain: String): Int? {
-        val normalizedDomain = getDomain(domain)
-        val savedTime = prefs?.getLong("time_$normalizedDomain", 0) ?: 0
+        val key = getDomain(domain)
+        val savedTime = prefs?.getLong("time_$key", 0L) ?: 0L
         if (savedTime == 0L) return null
+        return ((System.currentTimeMillis() - savedTime) / 60_000L).toInt()
+    }
 
-        val ageMs = System.currentTimeMillis() - savedTime
-        return (ageMs / 60000).toInt()
+    fun getRemainingMinutes(domain: String): Int? {
+        val ageMin = getCookieAgeMinutes(domain) ?: return null
+        val maxMin = (COOKIE_MAX_AGE_HOURS * 60).toInt()
+        val remaining = maxMin - ageMin
+        return remaining.coerceAtLeast(0)
     }
 
     fun getCookieSavedTime(domain: String): Long {
-        val normalizedDomain = getDomain(domain)
-        return prefs?.getLong("time_$normalizedDomain", 0) ?: 0
-    }
-
-    fun getRemainingMinutes(domain: String, maxAgeMinutes: Int = COOKIE_MAX_AGE_MINUTES): Int? {
-        val age = getCookieAgeMinutes(domain) ?: return null
-        val remaining = maxAgeMinutes - age
-        return if (remaining > 0) remaining else 0
-    }
-
-    private fun cleanupExpiredCookies() {
-        val domains = getAllStoredDomains()
-        domains.forEach { domain ->
-            if (areCookiesExpired(domain, maxAgeMinutes = 60)) {
-                clearCookiesForDomain(domain)
-            }
-        }
+        val key = getDomain(domain)
+        return prefs?.getLong("time_$key", 0L) ?: 0L
     }
 
     fun getCookieStatus(url: String): CookieStatus {
         val domain = getDomain(url)
         val cookies = getCookiesForDomain(domain)
-
         return when {
             cookies.isBlank() || !cookies.contains("cf_clearance") -> CookieStatus.NONE
             areCookiesExpired(domain) -> CookieStatus.EXPIRED
@@ -197,126 +235,180 @@ object CloudflareManager {
         }
     }
 
-    enum class CookieStatus {
-        NONE,
-        VALID,
-        EXPIRED
+    enum class CookieStatus { NONE, VALID, EXPIRED }
+
+    private fun cleanupExpiredCookies() {
+        // Use a generous 48-hour window for cleanup; the validity check (23h)
+        // is separate so we don't delete cookies that might still be useful
+        // on sites where CF accepts older tokens.
+        val cutoffMs = 48L * 60 * 60 * 1000L
+        getAllStoredDomains().forEach { domain ->
+            val saved = getCookieSavedTime(domain)
+            if (saved == 0L || (System.currentTimeMillis() - saved) > cutoffMs) {
+                clearCookiesForDomain(domain)
+            }
+        }
     }
 
     // ========================================================================
-    // WebView Cookie Extraction
+    // WebView Cookie Bridge
     // ========================================================================
 
     /**
-     * Extract cookies from WebView for a URL
-     * Tries multiple URL variants to ensure we get the cookies
+     * Extract whatever cookies the WebView currently holds for [url].
+     * Tries multiple URL variants to ensure a hit.
      */
     fun extractCookiesFromWebView(url: String): String? {
         return try {
-            val cookieManager = WebViewCookieManager.getInstance()
+            val cm = WebViewCookieManager.getInstance()
+            val domain = getDomain(url)
 
-            // Try the exact URL first
-            var cookies = cookieManager.getCookie(url)
-
-            // If no cookies, try with/without www
-            if (cookies.isNullOrBlank() || !cookies.contains("cf_clearance")) {
-                val domain = getDomain(url)
-                cookies = cookieManager.getCookie("https://$domain")
-                    ?: cookieManager.getCookie("https://www.$domain")
-                            ?: cookieManager.getCookie("http://$domain")
-            }
-
-            android.util.Log.d("CloudflareManager", "Extracted cookies for $url: ${cookies?.take(100)}...")
-            cookies
+            val candidates = listOf(
+                url,
+                "https://$domain",
+                "https://www.$domain",
+                "http://$domain"
+            )
+            candidates
+                .mapNotNull { cm.getCookie(it) }
+                .firstOrNull { it.contains("cf_clearance") }
+                .also { cookies ->
+                    android.util.Log.d(
+                        "CloudflareManager",
+                        "Extracted WebView cookies for $url: ${cookies?.take(80)}…"
+                    )
+                }
         } catch (e: Exception) {
-            android.util.Log.e("CloudflareManager", "Failed to extract cookies", e)
+            android.util.Log.e("CloudflareManager", "Failed to extract WebView cookies", e)
             null
         }
     }
 
-    /**
-     * Flush WebView cookies to persistent storage
-     */
     fun flushWebViewCookies() {
         try {
             WebViewCookieManager.getInstance().flush()
         } catch (e: Exception) {
-            android.util.Log.e("CloudflareManager", "Failed to flush cookies", e)
+            android.util.Log.e("CloudflareManager", "Failed to flush WebView cookies", e)
         }
     }
 
     /**
-     * Check if cookies are about to expire (within 1 hour)
+     * THE critical fix: inject stored CF cookies into the WebView's
+     * CookieManager BEFORE the WebView loads a URL.
+     *
+     * Call this:
+     *  1. In the WebView factory, right before `loadUrl(startUrl)`
+     *  2. Inside `shouldOverrideUrlLoading`, before returning false
+     *
+     * Without this, saved cookies never reach the WebView on cold start
+     * or when navigating to a new domain, so Cloudflare always challenges.
      */
-    fun areCookiesExpiringSoon(domain: String): Boolean {
-        val savedTime = getCookieSavedTime(domain)
-        if (savedTime == 0L) return true
-
-        val hoursSinceCreation = (System.currentTimeMillis() - savedTime) / (1000 * 60 * 60)
-        // Cloudflare cookies typically last 24 hours, refresh if older than 23 hours
-        return hoursSinceCreation >= 23
-    }
-
-    /**
-     * Validate Cloudflare cookie format
-     */
-    fun isValidCloudflareCookie(cookies: String): Boolean {
-        val cfClearancePattern = Regex("cf_clearance=([^;\\s]+)")
-        val match = cfClearancePattern.find(cookies) ?: return false
-        val value = match.groupValues.getOrNull(1) ?: return false
-
-        // cf_clearance should be a long alphanumeric string
-        return value.length > 20 && value.matches(Regex("[a-zA-Z0-9_\\-]+"))
-    }
-
-
-    /**
-     * Inject cookies into WebView CookieManager for a domain and its subdomains
-     */
-    fun injectCookiesIntoWebView(url: String) {
+    fun injectCookiesBeforeLoad(webView: WebView, url: String) {
         try {
             val domain = getDomain(url)
             val cookies = getCookiesForDomain(domain)
 
-            if (cookies.isBlank()) return
-
-            val cookieManager = WebViewCookieManager.getInstance()
-
-            // Set cookies for the exact domain
-            setCookiesForDomain(cookieManager, domain, cookies)
-
-            // Also set for www. variant
-            setCookiesForDomain(cookieManager, "www.$domain", cookies)
-
-            // Also set for parent domain (for CDN subdomains)
-            val parts = domain.split(".")
-            if (parts.size > 2) {
-                val parentDomain = parts.takeLast(2).joinToString(".")
-                setCookiesForDomain(cookieManager, parentDomain, cookies)
-                setCookiesForDomain(cookieManager, "www.$parentDomain", cookies)
+            if (cookies.isBlank()) {
+                android.util.Log.d("CloudflareManager", "No stored cookies to inject for $domain")
+                return
+            }
+            if (areCookiesExpired(domain)) {
+                android.util.Log.d("CloudflareManager", "Stored cookies for $domain are expired, skipping inject")
+                return
             }
 
-            cookieManager.flush()
-            android.util.Log.d("CloudflareManager", "Injected cookies for $domain and variants")
+            val cm = WebViewCookieManager.getInstance()
+            cm.setAcceptCookie(true)
+            cm.setAcceptThirdPartyCookies(webView, true)
+
+            val domainsToSet = buildList {
+                add(domain)
+                add("www.$domain")
+                parentDomain(domain)?.let { parent ->
+                    add(parent)
+                    add("www.$parent")
+                }
+            }
+
+            cookies.split(";")
+                .map { it.trim() }
+                .filter { it.isNotBlank() && it.contains("=") }
+                .forEach { cookie ->
+                    domainsToSet.forEach { d ->
+                        cm.setCookie("https://$d", cookie)
+                        cm.setCookie("http://$d", cookie)
+                    }
+                }
+
+            cm.flush()
+            android.util.Log.d(
+                "CloudflareManager",
+                "Injected CF cookies for ${domainsToSet.size} domain variants of $domain"
+            )
         } catch (e: Exception) {
             android.util.Log.e("CloudflareManager", "Failed to inject cookies", e)
         }
     }
 
     /**
-     * Set individual cookies for a specific domain
+     * Legacy alias kept for call sites that use the old name.
+     * Prefer [injectCookiesBeforeLoad] when a WebView reference is available.
      */
-    private fun setCookiesForDomain(
-        cookieManager: WebViewCookieManager,
-        domain: String,
-        cookies: String
-    ) {
-        cookies.split(";").forEach { cookie ->
-            val trimmed = cookie.trim()
-            if (trimmed.isNotEmpty()) {
-                cookieManager.setCookie("https://$domain", trimmed)
-                cookieManager.setCookie("http://$domain", trimmed) // Also set for http
+    fun injectCookiesIntoWebView(url: String) {
+        android.util.Log.w(
+            "CloudflareManager",
+            "injectCookiesIntoWebView(url) called without WebView — cookies may not be injected correctly. " +
+                    "Use injectCookiesBeforeLoad(webView, url) instead."
+        )
+        try {
+            val domain = getDomain(url)
+            val cookies = getCookiesForDomain(domain)
+            if (cookies.isBlank() || areCookiesExpired(domain)) return
+
+            val cm = WebViewCookieManager.getInstance()
+            val domainsToSet = buildList {
+                add(domain)
+                add("www.$domain")
+                parentDomain(domain)?.let { add(it); add("www.$it") }
             }
+            cookies.split(";").map { it.trim() }.filter { it.isNotBlank() }.forEach { cookie ->
+                domainsToSet.forEach { d ->
+                    cm.setCookie("https://$d", cookie)
+                    cm.setCookie("http://$d", cookie)
+                }
+            }
+            cm.flush()
+        } catch (e: Exception) {
+            android.util.Log.e("CloudflareManager", "Legacy inject failed", e)
         }
+    }
+
+    /**
+     * Returns true when a page body looks like a Cloudflare challenge page.
+     * Useful for detecting mid-session challenges in the WebViewClient.
+     */
+    fun isCloudflareChallengeHtml(html: String): Boolean {
+        val lower = html.lowercase()
+        return listOf(
+            "cf-browser-verification",
+            "cf_chl_opt",
+            "challenge-platform",
+            "checking your browser",
+            "just a moment",
+            "verify you are human",
+            "cf-turnstile",
+            "challenges.cloudflare.com",
+            "cf-spinner"
+        ).any { lower.contains(it) }
+    }
+
+    /**
+     * Validate that a cookie string contains a well-formed cf_clearance value.
+     */
+    fun isValidCloudflareCookie(cookies: String): Boolean {
+        val match = Regex("cf_clearance=([^;\\s]+)").find(cookies) ?: return false
+        val value = match.groupValues.getOrNull(1) ?: return false
+        // cf_clearance is a long alphanumeric + hyphens/underscores token.
+        return value.length > 20 && value.all { it.isLetterOrDigit() || it == '-' || it == '_' }
     }
 }

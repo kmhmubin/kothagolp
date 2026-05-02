@@ -9,11 +9,11 @@ import com.emptycastle.novery.domain.model.NovelDetails
 import com.emptycastle.novery.domain.model.ReviewScore
 import com.emptycastle.novery.domain.model.UserReview
 import com.emptycastle.novery.util.RatingUtils
+import com.emptycastle.novery.util.toRelativeTime
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 /**
@@ -155,6 +155,45 @@ class RoyalRoadProvider : MainProvider() {
             }
         }
         return null
+    }
+
+    /**
+     * Convert date string to relative time format
+     * Handles multiple date formats from RoyalRoad
+     */
+    private fun convertToRelativeTime(dateStr: String?): String? {
+        if (dateStr.isNullOrBlank()) return null
+
+        return try {
+            // Try multiple date formats that RoyalRoad might use
+            val formats = listOf(
+                "MMM dd, yyyy hh:mm a",        // "Dec 15, 2023 03:30 PM"
+                "MMM dd, yyyy",                 // "Dec 15, 2023"
+                "yyyy-MM-dd HH:mm:ss",         // "2023-12-15 15:30:00"
+                "yyyy-MM-dd'T'HH:mm:ss",       // "2023-12-15T15:30:00"
+                "yyyy-MM-dd'T'HH:mm:ss.SSS",   // "2023-12-15T15:30:00.000"
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",    // "2023-12-15T15:30:00Z"
+                "EEE, dd MMM yyyy HH:mm:ss",   // "Fri, 15 Dec 2023 15:30:00"
+            )
+
+            for (formatStr in formats) {
+                try {
+                    val sdf = SimpleDateFormat(formatStr, Locale.ENGLISH)
+                    val parsed = sdf.parse(dateStr)
+                    if (parsed != null) {
+                        return parsed.time.toRelativeTime()
+                    }
+                } catch (e: Exception) {
+                    // Try next format
+                    continue
+                }
+            }
+
+            // If no format worked, return the original string
+            dateStr
+        } catch (e: Exception) {
+            dateStr
+        }
     }
 
     // ================================================================
@@ -348,7 +387,8 @@ class RoyalRoadProvider : MainProvider() {
         val reviewTitle = reviewHeader?.selectFirstOrNull("> div > div > h4")?.textOrNull()?.trim()
         val username = reviewMeta?.selectFirstOrNull("> span > a")?.textOrNull()?.trim()
 
-        val reviewTime = parseReviewTime(reviewMeta)
+        // FIXED: Convert review time to relative format
+        val reviewTime = parseReviewTimeToRelative(reviewMeta)
 
         val reviewContent = textContent?.selectFirstOrNull("> div.review-content")
 
@@ -413,7 +453,10 @@ class RoyalRoadProvider : MainProvider() {
         }
     }
 
-    private fun parseReviewTime(reviewMeta: Element?): String? {
+    /**
+     * Parse review time and convert to relative format (e.g., "2d ago", "1w ago")
+     */
+    private fun parseReviewTimeToRelative(reviewMeta: Element?): String? {
         val unixTime = reviewMeta
             ?.selectFirstOrNull("> span > a > time")
             ?.attrOrNull("unixtime")
@@ -421,10 +464,10 @@ class RoyalRoadProvider : MainProvider() {
             ?: return null
 
         return try {
-            val date = Date(unixTime * 1000)
-            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            sdf.format(date)
-        } catch (_: Throwable) {
+            // Convert Unix timestamp (seconds) to milliseconds and then to relative time
+            (unixTime * 1000).toRelativeTime()
+        } catch (e: Throwable) {
+            e.printStackTrace()
             null
         }
     }
@@ -468,6 +511,7 @@ class RoyalRoadProvider : MainProvider() {
     /**
      * Parse chapters from window.chapters JavaScript object
      * This is more reliable than parsing the table
+     * FIXED: Converts dates to relative time format
      */
     private fun parseChaptersFromScript(responseText: String): List<Chapter>? {
         return try {
@@ -487,6 +531,9 @@ class RoyalRoadProvider : MainProvider() {
                 val chapterUrl = obj.optString("url", null) ?: continue
                 val date = obj.optString("date", null)
 
+                // FIXED: Convert date to relative time format
+                val relativeDate = convertToRelativeTime(date)
+
                 // Extract chapter path from URL: /fiction/12345/title/chapter/67890/chapter-name
                 val urlParts = chapterUrl.split("/")
                 val chapterPath = if (urlParts.size >= 6) {
@@ -499,7 +546,7 @@ class RoyalRoadProvider : MainProvider() {
                     Chapter(
                         name = title,
                         url = fixUrl(chapterPath) ?: continue,
-                        dateOfRelease = date
+                        dateOfRelease = relativeDate
                     )
                 )
             }
@@ -513,6 +560,7 @@ class RoyalRoadProvider : MainProvider() {
 
     /**
      * Fallback: Parse chapters from the table (old method)
+     * FIXED: Converts dates to relative time format
      */
     private fun parseChaptersFromTable(document: Document): List<Chapter> {
         return document.select("div.portlet-body > table > tbody > tr").mapNotNull { row ->
@@ -530,10 +578,13 @@ class RoyalRoadProvider : MainProvider() {
                 ?.textOrNull()
                 ?.trim()
 
+            // FIXED: Convert date to relative time format
+            val relativeDate = convertToRelativeTime(dateOfRelease)
+
             Chapter(
                 name = chapterName,
                 url = fixUrl(chapterUrl) ?: return@mapNotNull null,
-                dateOfRelease = dateOfRelease
+                dateOfRelease = relativeDate
             )
         }
     }
