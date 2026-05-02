@@ -122,6 +122,7 @@ import com.emptycastle.novery.data.remote.CloudflareManager
 import com.emptycastle.novery.domain.model.AppSettings
 import com.emptycastle.novery.domain.model.Novel
 import com.emptycastle.novery.provider.MainProvider
+import com.emptycastle.novery.ui.components.DuplicateLibraryDialog
 import com.emptycastle.novery.ui.components.NovelActionSheet
 import com.emptycastle.novery.ui.components.NovelCard
 import com.emptycastle.novery.ui.components.NoverySearchBar
@@ -246,6 +247,19 @@ fun BrowseTab(
             } else null,
             onStatusChange = { status -> viewModel.updateReadingStatus(status) },
             onRemoveFromHistory = null
+        )
+    }
+
+    actionSheetState.duplicateWarning?.let { warning ->
+        DuplicateLibraryDialog(
+            target = warning.target,
+            duplicates = warning.duplicates,
+            onViewExisting = { duplicate ->
+                viewModel.dismissDuplicateWarning()
+                onNavigateToDetails(duplicate.novel.url, duplicate.novel.apiName)
+            },
+            onAddAnyway = { viewModel.addDuplicateAnyway() },
+            onDismiss = { viewModel.dismissDuplicateWarning() }
         )
     }
 

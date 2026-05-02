@@ -5,6 +5,7 @@ import com.emptycastle.novery.domain.model.Novel
 import com.emptycastle.novery.domain.model.NovelDetails
 import com.emptycastle.novery.domain.model.ReadingStatus
 import com.emptycastle.novery.domain.model.UserReview
+import com.emptycastle.novery.ui.screens.home.shared.DuplicateLibraryWarning
 
 /**
  * Chapter filter options
@@ -40,6 +41,7 @@ data class DetailsUiState(
     val isFavorite: Boolean = false,
     val isInLibrary: Boolean = false,
     val readingStatus: ReadingStatus = ReadingStatus.READING,
+    val duplicateWarning: DuplicateLibraryWarning? = null,
 
     // Reading position
     val hasStartedReading: Boolean = false,

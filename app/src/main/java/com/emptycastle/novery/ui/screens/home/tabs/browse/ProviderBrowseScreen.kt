@@ -127,6 +127,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.emptycastle.novery.domain.model.AppSettings
 import com.emptycastle.novery.domain.model.Novel
 import com.emptycastle.novery.provider.MainProvider
+import com.emptycastle.novery.ui.components.DuplicateLibraryDialog
 import com.emptycastle.novery.ui.components.NovelActionSheet
 import com.emptycastle.novery.ui.components.NovelCard
 import com.emptycastle.novery.ui.components.NovelGridSkeleton
@@ -236,6 +237,19 @@ fun ProviderBrowseScreen(
             onAddToLibrary = { viewModel.addToLibrary(data.novel) }.takeIf { !data.isInLibrary },
             onRemoveFromLibrary = { viewModel.removeFromLibrary(data.novel.url) }.takeIf { data.isInLibrary },
             onRemoveFromHistory = null
+        )
+    }
+
+    actionSheetState.duplicateWarning?.let { warning ->
+        DuplicateLibraryDialog(
+            target = warning.target,
+            duplicates = warning.duplicates,
+            onViewExisting = { duplicate ->
+                viewModel.dismissDuplicateWarning()
+                onNavigateToDetails(duplicate.novel.url, duplicate.novel.apiName)
+            },
+            onAddAnyway = { viewModel.addDuplicateAnyway() },
+            onDismiss = { viewModel.dismissDuplicateWarning() }
         )
     }
 

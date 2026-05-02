@@ -321,6 +321,14 @@ class BrowseViewModel : ViewModel() {
         viewModelScope.launch { actionSheetManager.addToLibrary(novel) }
     }
 
+    fun addDuplicateAnyway() {
+        viewModelScope.launch { actionSheetManager.addDuplicateAnyway() }
+    }
+
+    fun dismissDuplicateWarning() {
+        actionSheetManager.dismissDuplicateWarning()
+    }
+
     fun removeFromLibrary(novelUrl: String) {
         viewModelScope.launch { actionSheetManager.removeFromLibrary(novelUrl) }
     }

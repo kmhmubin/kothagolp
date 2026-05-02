@@ -175,6 +175,20 @@ class LibraryRepository(
         }
     }
 
+    suspend fun findDuplicateCandidates(novel: Novel): List<LibraryItem> = withContext(Dispatchers.IO) {
+        val targetTitle = normalizeDuplicateTitle(novel.name)
+        if (targetTitle.isBlank()) return@withContext emptyList()
+
+        // Compare normalized titles so source labels or bracketed suffixes don't hide likely duplicates.
+        libraryDao.getAll()
+            .asSequence()
+            .filter { it.url != novel.url }
+            .filter { normalizeDuplicateTitle(it.name) == targetTitle }
+            .take(MAX_DUPLICATE_CANDIDATES)
+            .map { it.toLibraryItem() }
+            .toList()
+    }
+
     // ================================================================
     // MODIFY LIBRARY
     // ================================================================
@@ -486,6 +500,22 @@ class LibraryRepository(
             hasNewChapters = hasNewChapters,
             lastCheckedAt = lastCheckedAt
         )
+    }
+
+    private fun normalizeDuplicateTitle(title: String): String {
+        return title
+            .lowercase()
+            .replace(BRACKETED_TEXT_REGEX, " ")
+            .replace(NON_TITLE_CHARACTER_REGEX, " ")
+            .trim()
+            .replace(WHITESPACE_REGEX, " ")
+    }
+
+    companion object {
+        private const val MAX_DUPLICATE_CANDIDATES = 5
+        private val BRACKETED_TEXT_REGEX = Regex("""\([^)]*\)|\[[^]]*]""")
+        private val NON_TITLE_CHARACTER_REGEX = Regex("""[^a-z0-9]+""")
+        private val WHITESPACE_REGEX = Regex("""\s+""")
     }
 
     // ================================================================

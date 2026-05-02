@@ -55,6 +55,7 @@ import com.emptycastle.novery.epub.EpubExportOptions
 import com.emptycastle.novery.recommendation.TagNormalizer
 import com.emptycastle.novery.service.DownloadServiceManager
 import com.emptycastle.novery.service.DownloadState
+import com.emptycastle.novery.ui.components.DuplicateLibraryDialog
 import com.emptycastle.novery.ui.components.FullScreenLoading
 import com.emptycastle.novery.ui.screens.details.components.ActionButtonsRow
 import com.emptycastle.novery.ui.screens.details.components.ChapterItem
@@ -112,6 +113,19 @@ fun DetailsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+
+    uiState.duplicateWarning?.let { warning ->
+        DuplicateLibraryDialog(
+            target = warning.target,
+            duplicates = warning.duplicates,
+            onViewExisting = { duplicate ->
+                viewModel.dismissDuplicateWarning()
+                onNovelClick(duplicate.novel.url, duplicate.novel.apiName)
+            },
+            onAddAnyway = { viewModel.addDuplicateAnyway() },
+            onDismiss = { viewModel.dismissDuplicateWarning() }
+        )
+    }
 
     val isDownloadingThisNovel = downloadState.isActive && downloadState.novelUrl == novelUrl
     val filteredChapters = uiState.filteredChapters
