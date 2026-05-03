@@ -191,7 +191,8 @@ class AllNovelProvider : MainProvider() {
     override suspend fun loadMainPage(
         page: Int,
         orderBy: String?,
-        tag: String?
+        tag: String?,
+        extraFilters: Map<String, String>
     ): MainPageResult {
         val url = if (!tag.isNullOrEmpty() && tag != "All") {
             "$mainUrl/genre/$tag?page=$page"

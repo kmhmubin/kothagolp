@@ -21,6 +21,7 @@ class BrowseViewModel : ViewModel() {
 
     private val novelRepository = RepositoryProvider.getNovelRepository()
     private val preferencesManager = RepositoryProvider.getPreferencesManager()
+    private val libraryRepository = RepositoryProvider.getLibraryRepository()
 
     private val _uiState = MutableStateFlow(BrowseUiState())
     val uiState: StateFlow<BrowseUiState> = _uiState.asStateFlow()
@@ -65,6 +66,15 @@ class BrowseViewModel : ViewModel() {
                 preferencesManager.favoriteProviders.collect { favorites ->
                     _uiState.update { it.copy(favoriteProviders = favorites) }
                     refreshProviders()
+                }
+            }
+            launch {
+                // Keep source-specific library URLs in memory so search cards can mark only the
+                // saved result from the same source without per-card database queries.
+                libraryRepository.observeLibraryUrls().collect { libraryNovelUrls ->
+                    _uiState.update {
+                        it.copy(libraryNovelUrls = libraryNovelUrls)
+                    }
                 }
             }
         }
@@ -319,6 +329,14 @@ class BrowseViewModel : ViewModel() {
 
     fun addToLibrary(novel: Novel, status: ReadingStatus) {
         viewModelScope.launch { actionSheetManager.addToLibrary(novel, status) }
+    }
+
+    fun addDuplicateAnyway() {
+        viewModelScope.launch { actionSheetManager.addDuplicateAnyway() }
+    }
+
+    fun dismissDuplicateWarning() {
+        actionSheetManager.dismissDuplicateWarning()
     }
 
     fun removeFromLibrary(novelUrl: String) {

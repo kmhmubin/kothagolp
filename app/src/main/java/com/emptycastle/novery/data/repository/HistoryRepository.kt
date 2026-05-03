@@ -167,4 +167,11 @@ class HistoryRepository(
     suspend fun clearReadChapters(novelUrl: String) = withContext(Dispatchers.IO) {
         historyDao.clearReadChapters(novelUrl)
     }
+    // ================================================================
+    // CUSTOM COVER
+    // ================================================================
+
+    suspend fun updateCustomCover(novelUrl: String, coverUrl: String?) = withContext(Dispatchers.IO) {
+        historyDao.updateCustomCover(novelUrl, coverUrl)
+    }
 }

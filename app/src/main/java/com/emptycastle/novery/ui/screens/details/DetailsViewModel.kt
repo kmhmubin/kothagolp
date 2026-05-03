@@ -15,6 +15,8 @@ import com.emptycastle.novery.epub.EpubExporter
 import com.emptycastle.novery.provider.MainProvider
 import com.emptycastle.novery.service.DownloadServiceManager
 import com.emptycastle.novery.service.DownloadState
+import com.emptycastle.novery.ui.screens.home.shared.DuplicateLibraryWarning
+import com.emptycastle.novery.util.ImageUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -321,14 +323,33 @@ class DetailsViewModel : ViewModel() {
                 libraryRepository.removeFromLibrary(details.url)
                 _uiState.update { it.copy(isFavorite = false) }
             } else {
-                libraryRepository.addToLibraryWithDetails(
-                    novel = novel,
-                    details = details,
-                    status = _uiState.value.readingStatus
-                )
-                _uiState.update { it.copy(isFavorite = true) }
+                // Direct details adds should follow the same duplicate warning flow as browse results.
+                val duplicates = libraryRepository.findDuplicateCandidates(novel)
+                if (duplicates.isNotEmpty()) {
+                    _uiState.update {
+                        it.copy(duplicateWarning = DuplicateLibraryWarning(novel, duplicates))
+                    }
+                    return@launch
+                }
+
+                addToLibraryWithDetails(novel, details)
             }
         }
+    }
+
+    fun addDuplicateAnyway() {
+        val details = _uiState.value.novelDetails ?: return
+        val provider = currentProvider ?: return
+        val novel = createNovel(details, provider)
+
+        viewModelScope.launch {
+            addToLibraryWithDetails(novel, details)
+            dismissDuplicateWarning()
+        }
+    }
+
+    fun dismissDuplicateWarning() {
+        _uiState.update { it.copy(duplicateWarning = null) }
     }
 
     fun updateReadingStatus(status: ReadingStatus) {
@@ -896,14 +917,21 @@ class DetailsViewModel : ViewModel() {
     ) {
         if (!_uiState.value.isFavorite) {
             viewModelScope.launch {
-                libraryRepository.addToLibraryWithDetails(
-                    novel = novel,
-                    details = details,
-                    status = _uiState.value.readingStatus
-                )
-                _uiState.update { it.copy(isFavorite = true) }
+                addToLibraryWithDetails(novel, details)
             }
         }
+    }
+
+    private suspend fun addToLibraryWithDetails(
+        novel: Novel,
+        details: com.emptycastle.novery.domain.model.NovelDetails
+    ) {
+        libraryRepository.addToLibraryWithDetails(
+            novel = novel,
+            details = details,
+            status = _uiState.value.readingStatus
+        )
+        _uiState.update { it.copy(isFavorite = true, duplicateWarning = null) }
     }
 
     private fun startBackgroundDownload(context: Context, chapters: List<Chapter>) {
@@ -923,5 +951,92 @@ class DetailsViewModel : ViewModel() {
         )
 
         hideDownloadMenu()
+    }
+
+    // ================================================================
+    // CUSTOM COVER
+    // ================================================================
+
+    private val _showCoverOptions = MutableStateFlow(false)
+    val showCoverOptions: StateFlow<Boolean> = _showCoverOptions.asStateFlow()
+
+    fun showCoverOptions() {
+        _showCoverOptions.value = true
+    }
+
+    fun hideCoverOptions() {
+        _showCoverOptions.value = false
+    }
+
+    /**
+     * Update custom cover from image URI
+     */
+    fun updateCustomCover(context: Context, imageUri: Uri) {
+        val novelUrl = currentNovelUrl ?: return
+
+        viewModelScope.launch {
+            try {
+                // Save image to internal storage
+                val filePath = ImageUtils.saveImageToInternalStorage(context, imageUri, novelUrl)
+
+                if (filePath != null) {
+                    // Update all repositories
+                    libraryRepository.updateCustomCover(novelUrl, "file://$filePath")
+                    offlineRepository.updateCustomCover(novelUrl, "file://$filePath")
+                    historyRepository.updateCustomCover(novelUrl, "file://$filePath")
+
+                    // Refresh UI
+                    val details = _uiState.value.novelDetails
+                    if (details != null) {
+                        _uiState.update {
+                            it.copy(
+                                novelDetails = details.copy(posterUrl = "file://$filePath")
+                            )
+                        }
+                    }
+
+                    hideCoverOptions()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _uiState.update {
+                    it.copy(error = "Failed to update cover: ${e.message}")
+                }
+            }
+        }
+    }
+
+    /**
+     * Reset to original cover
+     */
+    fun resetToOriginalCover(context: Context) {
+        val novelUrl = currentNovelUrl ?: return
+
+        viewModelScope.launch {
+            try {
+                // Get current custom cover for deletion
+                val customCover = libraryRepository.getCustomCover(novelUrl)
+
+                // Reset to null in all repositories
+                libraryRepository.updateCustomCover(novelUrl, null)
+                offlineRepository.updateCustomCover(novelUrl, null)
+                historyRepository.updateCustomCover(novelUrl, null)
+
+                // Delete old custom cover file
+                if (customCover != null && customCover.startsWith("file://")) {
+                    ImageUtils.deleteCustomCover(
+                        context = context,
+                        filePath = customCover
+                    )
+                }
+
+                // Refresh from network to get original
+                refresh()
+
+                hideCoverOptions()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }

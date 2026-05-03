@@ -684,7 +684,8 @@ class NovelFireProvider : MainProvider() {
     override suspend fun loadMainPage(
         page: Int,
         orderBy: String?,
-        tag: String?
+        tag: String?,
+        extraFilters: Map<String, String>
     ): MainPageResult {
         val params = mutableListOf<String>()
 

@@ -26,26 +26,25 @@ data class LibraryEntity(
     val lastScrollIndex: Int = 0,
     val lastScrollOffset: Int = 0,
 
-    // ============ NEW: Chapter tracking for badges ============
-
-    /** Total chapter count from last refresh */
+    // Chapter tracking
     val totalChapterCount: Int = 0,
-
-    /** Chapter count when user last viewed/acknowledged */
     val acknowledgedChapterCount: Int = 0,
-
-    /** Last time we checked for new chapters */
     val lastCheckedAt: Long = 0,
-
-    /** Last time chapters were updated on the source */
     val lastUpdatedAt: Long = 0,
-
-    /** Index of the last read chapter (for unread calculation) */
     val lastReadChapterIndex: Int = -1,
+    val unreadChapterCount: Int = 0,
 
-    /** Cached count of unread chapters (chapters after lastReadChapterIndex) */
-    val unreadChapterCount: Int = 0
+    //Custom Cover
+    val customCoverUrl: String? = null
 ) {
+    // Update toNovel() to use custom cover
+    fun toNovel(): Novel = Novel(
+        name = name,
+        url = url,
+        posterUrl = customCoverUrl ?: posterUrl,  // Prioritize custom cover
+        apiName = apiName,
+        latestChapter = latestChapter
+    )
     /**
      * Number of new chapters since last acknowledgment
      */
@@ -58,13 +57,6 @@ data class LibraryEntity(
     val hasNewChapters: Boolean
         get() = newChapterCount > 0
 
-    fun toNovel(): Novel = Novel(
-        name = name,
-        url = url,
-        posterUrl = posterUrl,
-        apiName = apiName,
-        latestChapter = latestChapter
-    )
 
     fun getStatus(): ReadingStatus = try {
         ReadingStatus.valueOf(readingStatus)

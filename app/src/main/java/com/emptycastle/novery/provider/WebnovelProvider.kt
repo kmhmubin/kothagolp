@@ -1,7 +1,14 @@
 package com.emptycastle.novery.provider
 
 import com.emptycastle.novery.R
-import com.emptycastle.novery.domain.model.*
+import com.emptycastle.novery.domain.model.Chapter
+import com.emptycastle.novery.domain.model.FilterGroup
+import com.emptycastle.novery.domain.model.FilterOption
+import com.emptycastle.novery.domain.model.MainPageResult
+import com.emptycastle.novery.domain.model.Novel
+import com.emptycastle.novery.domain.model.NovelDetails
+import com.emptycastle.novery.domain.model.RepliesResult
+import com.emptycastle.novery.domain.model.UserReview
 import com.emptycastle.novery.util.HtmlUtils
 import com.emptycastle.novery.util.RatingUtils
 import org.json.JSONObject
@@ -94,7 +101,7 @@ class WebnovelProvider : MainProvider() {
     )
 
     // ================================================================
-    // ENHANCED FILTER OPTIONS
+    // ENHANCED FILTER OPTIONS WITH FANFICTION
     // ================================================================
 
     override val tags = listOf(
@@ -122,6 +129,18 @@ class WebnovelProvider : MainProvider() {
         FilterOption("Sci-fi (Female)", "female:novel-scifi-female"),
         FilterOption("Teen (Female)", "female:novel-teen-female"),
         FilterOption("Urban (Female)", "female:novel-urban-female"),
+
+        // Fanfiction categories (based on actual HTML structure)
+        FilterOption("All Fanfiction", "fanfic:fanfic"),
+        FilterOption("Anime & Comics (FF)", "fanfic:fanfic-anime-comics"),
+        FilterOption("Video Games (FF)", "fanfic:fanfic-video-games"),
+        FilterOption("TV (FF)", "fanfic:fanfic-tv"),
+        FilterOption("Movies (FF)", "fanfic:fanfic-movies"),
+        FilterOption("Book & Literature (FF)", "fanfic:fanfic-book-literature"),
+        FilterOption("Celebrities (FF)", "fanfic:fanfic-celebrities"),
+        FilterOption("Music & Bands (FF)", "fanfic:fanfic-music-bands"),
+        FilterOption("Theater (FF)", "fanfic:fanfic-theater"),
+        FilterOption("Others (FF)", "fanfic:fanfic-others"),
     )
 
     override val orderBys = listOf(
@@ -132,18 +151,28 @@ class WebnovelProvider : MainProvider() {
         FilterOption("Time Updated", "5"),
     )
 
-    // Additional filters (can be exposed via UI settings)
-    val statusFilters = listOf(
-        FilterOption("All Status", "0"),
-        FilterOption("Ongoing", "1"),
-        FilterOption("Completed", "2"),
-    )
-
-    val typeFilters = listOf(
-        FilterOption("All Types", "0"),
-        FilterOption("Translated", "1"),
-        FilterOption("Original", "2"),
-        FilterOption("MTL", "3"),
+    override val extraFilterGroups = listOf(
+        FilterGroup(
+            key = "status",
+            label = "Status",
+            options = listOf(
+                FilterOption("All Status", "0"),
+                FilterOption("Ongoing", "1"),
+                FilterOption("Completed", "2")
+            ),
+            defaultValue = "0"
+        ),
+        FilterGroup(
+            key = "type",
+            label = "Content Type",
+            options = listOf(
+                FilterOption("All Types", "0"),
+                FilterOption("Translated", "1"),
+                FilterOption("Original", "2"),
+                FilterOption("MTL", "3")
+            ),
+            defaultValue = "0"
+        )
     )
 
     // ================================================================
@@ -153,14 +182,16 @@ class WebnovelProvider : MainProvider() {
     private data class FilterParams(
         val gender: String? = null,
         val genreSlug: String? = null,
-        val orderBy: String = "1",
-        val status: String = "0",
-        val type: String = "0"
+        val isFanfic: Boolean = false
     )
 
     /**
-     * Parses tag filter format: "gender:slug"
-     * Examples: "male:all", "female:novel-fantasy-female"
+     * Parses tag filter format: "gender:slug" or "fanfic:slug"
+     * Examples:
+     * - "male:all" → gender=1, genreSlug=null
+     * - "male:novel-action-male" → gender=1, genreSlug=novel-action-male
+     * - "fanfic:fanfic" → isFanfic=true, genreSlug=fanfic
+     * - "fanfic:fanfic-anime-comics" → isFanfic=true, genreSlug=fanfic-anime-comics
      */
     private fun parseTagFilter(tag: String?): FilterParams {
         if (tag.isNullOrBlank()) return FilterParams()
@@ -168,6 +199,12 @@ class WebnovelProvider : MainProvider() {
         val parts = tag.split(":", limit = 2)
         if (parts.size != 2) return FilterParams()
 
+        // Check for fanfiction
+        if (parts[0] == "fanfic") {
+            return FilterParams(isFanfic = true, genreSlug = parts[1])
+        }
+
+        // Check for male/female
         val gender = when (parts[0]) {
             "male" -> "1"
             "female" -> "2"
@@ -193,39 +230,39 @@ class WebnovelProvider : MainProvider() {
         val sort = orderBy?.takeUnless { it.isEmpty() } ?: "1"
 
         // Determine base path
-        val basePath = if (filter.genreSlug != null) {
+        val basePath = when {
+            // Fanfiction mode - use /stories/fanfic or /stories/fanfic-*
+            filter.isFanfic -> "${Endpoints.STORIES}/${filter.genreSlug}"
+
             // Specific genre URL (e.g., /stories/novel-action-male)
-            "${Endpoints.STORIES}/${filter.genreSlug}"
-        } else {
+            filter.genreSlug != null -> "${Endpoints.STORIES}/${filter.genreSlug}"
+
             // Generic novel listing
-            "${Endpoints.STORIES}/novel"
+            else -> "${Endpoints.STORIES}/novel"
         }
 
         // Build query parameters
         val params = buildList {
-            // Gender parameter (only for generic path without specific genre)
-            if (filter.genreSlug == null && filter.gender != null) {
+            // Gender parameter (only for generic novel path, not for fanfic or specific genres)
+            if (!filter.isFanfic && filter.genreSlug == null && filter.gender != null) {
                 add("gender=${filter.gender}")
             }
 
-            // Sort order
             add("orderBy=$sort")
-
-            // Book status (0=All, 1=Ongoing, 2=Completed)
             add("bookStatus=$status")
 
-            // Content type handling
-            when (type) {
-                "3" -> {
-                    // MTL is special: translateMode=3 + sourceType=1
-                    add("translateMode=3")
-                    add("sourceType=1")
+            // Content type handling (skip for fanfiction)
+            if (!filter.isFanfic) {
+                when (type) {
+                    "3" -> {
+                        add("translateMode=3")
+                        add("sourceType=1")
+                    }
+                    "0" -> {}
+                    else -> add("sourceType=$type")
                 }
-                "0" -> {} // All types - no parameter needed
-                else -> add("sourceType=$type")
             }
 
-            // Pagination
             add("pageIndex=$page")
         }
 
@@ -292,13 +329,11 @@ class WebnovelProvider : MainProvider() {
     }
 
     private fun extractCsrfToken(document: Document): String? {
-        // Try meta tag first
         document.selectFirstOrNull("meta[name=csrf-token]")?.attrOrNull("content")?.let {
             csrfToken.set(it)
             return it
         }
 
-        // Try script tags
         val scripts = document.select("script").map { it.html() }
         for (script in scripts) {
             val tokenMatch = Regex("_csrfToken[\"']?\\s*[:=]\\s*[\"']([a-f0-9-]+)[\"']").find(script)
@@ -308,7 +343,6 @@ class WebnovelProvider : MainProvider() {
             }
         }
 
-        // Generate fallback token
         if (csrfToken.get() == null) {
             csrfToken.set(java.util.UUID.randomUUID().toString())
         }
@@ -323,24 +357,15 @@ class WebnovelProvider : MainProvider() {
 
     private fun cleanChapterHtml(html: String): String {
         var cleaned = html
-
-        // Remove pirate notices
         cleaned = cleaned.replace(Regex("<pirate>.*?</pirate>", RegexOption.DOT_MATCHES_ALL), "")
-
-        // Remove "Find authorized novels" notices
         cleaned = cleaned.replace(
             Regex("Find authorized novels in Webnovel.*?for visiting\\.",
                 setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
             ""
         )
-
-        // Apply general cleaning
         cleaned = HtmlUtils.cleanChapterContent(cleaned, "webnovel")
-
-        // Normalize whitespace
         cleaned = cleaned.replace(Regex("\\s{3,}"), "\n\n")
         cleaned = cleaned.replace(Regex("(<br\\s*/?>\\s*){3,}"), "<br/><br/>")
-
         return cleaned.trim()
     }
 
@@ -349,7 +374,334 @@ class WebnovelProvider : MainProvider() {
     }
 
     // ================================================================
-    // REVIEWS
+    // NOVEL PARSING
+    // ================================================================
+
+    private fun parseCategoryNovels(document: Document): List<Novel> {
+        return document.select(NovelSelectors.CATEGORY_CONTAINER).mapNotNull { element ->
+            val thumb = element.selectFirstOrNull(NovelSelectors.CATEGORY_THUMB) ?: return@mapNotNull null
+            val name = thumb.attrOrNull("title")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val href = thumb.attrOrNull("href") ?: return@mapNotNull null
+            val novelUrl = fixUrl(href) ?: return@mapNotNull null
+
+            val imgElement = element.selectFirstOrNull(NovelSelectors.CATEGORY_COVER)
+            val rawCover = imgElement?.attrOrNull("data-original") ?: imgElement?.attrOrNull("src")
+            val posterUrl = fixCoverUrl(rawCover)
+
+            Novel(name = name, url = novelUrl, posterUrl = posterUrl, apiName = this.name)
+        }
+    }
+
+    private fun parseSearchNovels(document: Document): List<Novel> {
+        return document.select(NovelSelectors.SEARCH_CONTAINER).mapNotNull { element ->
+            val thumb = element.selectFirstOrNull(NovelSelectors.SEARCH_THUMB) ?: return@mapNotNull null
+            val name = thumb.attrOrNull("title")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val href = thumb.attrOrNull("href") ?: return@mapNotNull null
+            val novelUrl = fixUrl(href) ?: return@mapNotNull null
+
+            val imgElement = element.selectFirstOrNull(NovelSelectors.SEARCH_COVER)
+            val rawCover = imgElement?.attrOrNull("src") ?: imgElement?.attrOrNull("data-original")
+            val posterUrl = fixCoverUrl(rawCover)
+
+            Novel(name = name, url = novelUrl, posterUrl = posterUrl, apiName = this.name)
+        }
+    }
+
+    private fun parseRelatedNovels(document: Document): List<Novel> {
+        return document.select(NovelSelectors.RELATED_CONTAINER).mapNotNull { item ->
+            val linkElement = item.selectFirstOrNull(NovelSelectors.RELATED_LINK)
+                ?: item.selectFirstOrNull(NovelSelectors.RELATED_THUMB)
+                ?: return@mapNotNull null
+
+            val href = linkElement.attrOrNull("href") ?: return@mapNotNull null
+            val novelUrl = fixUrl(href) ?: return@mapNotNull null
+
+            val title = linkElement.attrOrNull("title")
+                ?: item.selectFirstOrNull(NovelSelectors.RELATED_TITLE)?.text()?.trim()
+                ?: item.selectFirstOrNull("h3")?.text()?.trim()
+                ?: return@mapNotNull null
+
+            val imgElement = item.selectFirstOrNull(NovelSelectors.RELATED_COVER)
+            val rawCover = imgElement?.attrOrNull("data-original") ?: imgElement?.attrOrNull("src")
+            val posterUrl = fixCoverUrl(rawCover)
+
+            val ratingText = item.selectFirstOrNull(NovelSelectors.RELATED_RATING)?.text()
+            val rating = ratingText?.toFloatOrNull()?.let { RatingUtils.from5Stars(it) }
+
+            Novel(name = title, url = novelUrl, posterUrl = posterUrl, rating = rating, apiName = this.name)
+        }
+    }
+
+    // ================================================================
+    // MAIN PAGE
+    // ================================================================
+
+    override suspend fun loadMainPage(
+        page: Int,
+        orderBy: String?,
+        tag: String?,
+        extraFilters: Map<String, String>
+    ): MainPageResult {
+        val status = extraFilters["status"] ?: "0"
+        val type = extraFilters["type"] ?: "0"
+
+        val url = buildBrowseUrl(
+            page = page,
+            orderBy = orderBy,
+            tag = tag,
+            status = status,
+            type = type
+        )
+
+        val response = get(url, customHeaders)
+        val document = response.document
+
+        if (document.title().contains("Cloudflare", ignoreCase = true) ||
+            document.title().contains("Just a moment", ignoreCase = true)) {
+            throw Exception("Cloudflare protection detected.")
+        }
+
+        extractCsrfToken(document)
+
+        // Fanfiction and regular categories both use .j_category_wrapper
+        val novels = parseCategoryNovels(document)
+
+        return MainPageResult(url = url, novels = novels)
+    }
+
+    // ================================================================
+    // SEARCH
+    // ================================================================
+
+    override suspend fun search(query: String): List<Novel> {
+        val encodedQuery = URLEncoder.encode(query.trim(), "UTF-8").replace("+", "%20")
+
+        val url = "$mainUrl${Endpoints.SEARCH}?keywords=$encodedQuery&pageIndex=1"
+
+        val response = get(url, customHeaders)
+        val document = response.document
+
+        if (document.title().contains("Cloudflare", ignoreCase = true) ||
+            document.title().contains("Just a moment", ignoreCase = true)) {
+            throw Exception("Cloudflare protection detected.")
+        }
+
+        extractCsrfToken(document)
+        return parseSearchNovels(document)
+    }
+
+    // ================================================================
+    // LOAD NOVEL DETAILS
+    // ================================================================
+
+    override suspend fun load(url: String): NovelDetails? {
+        val fullUrl = if (url.startsWith("http")) url else "$mainUrl$url"
+
+        val response = get(fullUrl, customHeaders)
+        val document = response.document
+
+        if (document.title().contains("Cloudflare", ignoreCase = true) ||
+            document.title().contains("Just a moment", ignoreCase = true)) {
+            throw Exception("Cloudflare protection detected.")
+        }
+
+        extractCsrfToken(document)
+
+        val bookId = extractBookId(fullUrl)
+        bookId?.let { bookIdCache[fullUrl] = it }
+
+        val name = document.selectFirstOrNull(NovelSelectors.DETAIL_COVER)?.attrOrNull("alt")
+            ?: document.selectFirst(NovelSelectors.DETAIL_TITLE)?.text()?.trim()
+            ?: "Unknown"
+
+        val catalogUrl = fullUrl.trimEnd('/') + "/catalog"
+        val chapters = loadChaptersFromCatalog(catalogUrl)
+        val metadata = extractMetadata(document)
+        val relatedNovels = parseRelatedNovels(document)
+
+        return NovelDetails(
+            url = fullUrl,
+            name = name,
+            chapters = chapters,
+            author = metadata.author,
+            posterUrl = metadata.posterUrl,
+            synopsis = metadata.synopsis,
+            tags = metadata.tags.ifEmpty { null },
+            rating = metadata.rating,
+            peopleVoted = metadata.peopleVoted,
+            status = metadata.status,
+            relatedNovels = relatedNovels.ifEmpty { null }
+        )
+    }
+
+    private data class NovelMetadata(
+        val author: String? = null,
+        val posterUrl: String? = null,
+        val synopsis: String? = null,
+        val tags: List<String> = emptyList(),
+        val rating: Int? = null,
+        val peopleVoted: Int? = null,
+        val status: String? = null
+    )
+
+    private fun extractMetadata(document: Document): NovelMetadata {
+        val coverElement = document.selectFirstOrNull(NovelSelectors.DETAIL_COVER)
+        val rawCover = coverElement?.attrOrNull("src") ?: coverElement?.attrOrNull("data-original")
+        val posterUrl = fixCoverUrl(rawCover)
+
+        val synopsis = document.selectFirstOrNull(NovelSelectors.DETAIL_SYNOPSIS)?.let { element ->
+            element.select("br").append("\\n")
+            element.text().replace("\\n", "\n").replace(Regex("\n{3,}"), "\n\n").trim()
+        } ?: "No Summary Found"
+
+        val genresText = document.selectFirstOrNull(NovelSelectors.DETAIL_GENRES)?.attrOrNull("title")
+        val genreTags = genresText?.split(",")
+            ?.mapNotNull { it.trim().takeIf { tag -> tag.isNotBlank() } }
+            ?: emptyList()
+
+        val contentTags = document.select(NovelSelectors.DETAIL_TAGS).mapNotNull { el ->
+            el.attrOrNull("title")
+                ?.replace("Stories", "", ignoreCase = true)
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: el.text()
+                    ?.replace("#", "")
+                    ?.trim()
+                    ?.replaceFirstChar { it.uppercase() }
+                    ?.takeIf { it.isNotBlank() }
+        }
+
+        val tags = (genreTags + contentTags).distinct()
+
+        var author: String? = null
+        document.select(NovelSelectors.DETAIL_AUTHOR_LABEL).forEach { element ->
+            if (element.text().trim() == "Author:") {
+                author = element.nextElementSibling()?.text()?.trim()
+                return@forEach
+            }
+        }
+        if (author.isNullOrBlank()) {
+            author = document.selectFirstOrNull(NovelSelectors.DETAIL_AUTHOR_ALT)?.text()?.trim()
+        }
+
+        var statusText: String? = null
+        document.select(NovelSelectors.DETAIL_STATUS).forEach { element ->
+            if (element.attrOrNull("title") == "Status") {
+                statusText = element.nextElementSibling()?.text()?.trim()
+                return@forEach
+            }
+        }
+        val status = parseStatus(statusText)
+
+        val ratingText = document.selectFirstOrNull(NovelSelectors.DETAIL_RATING)?.text()
+            ?: document.selectFirstOrNull("[class*='score']")?.text()
+        val rating = ratingText?.toFloatOrNull()?.let { RatingUtils.from5Stars(it) }
+
+        return NovelMetadata(
+            author = author,
+            posterUrl = posterUrl,
+            synopsis = synopsis,
+            tags = tags,
+            rating = rating,
+            status = status
+        )
+    }
+
+    private suspend fun loadChaptersFromCatalog(catalogUrl: String): List<Chapter> {
+        val chapters = mutableListOf<Chapter>()
+
+        try {
+            val response = get(catalogUrl, customHeaders)
+            val document = response.document
+
+            document.select(NovelSelectors.VOLUME_CONTAINER).forEach { volumeElement ->
+                val volumeText = volumeElement.selectFirstOrNull(NovelSelectors.VOLUME_TITLE)?.text()?.trim()
+                    ?: volumeElement.ownText().trim()
+
+                val volumeMatch = Regex("Volume\\s*(\\d+)", RegexOption.IGNORE_CASE).find(volumeText)
+                val volumeName = volumeMatch?.let { "Vol.${it.groupValues[1]}" } ?: ""
+
+                volumeElement.select(NovelSelectors.CHAPTER_ITEM).forEach { chapterElement ->
+                    val link = chapterElement.selectFirstOrNull(NovelSelectors.CHAPTER_LINK) ?: return@forEach
+                    val chapterTitle = link.attrOrNull("title")?.trim()
+                        ?: link.text()?.trim()
+                        ?: return@forEach
+                    val chapterPath = link.attrOrNull("href") ?: return@forEach
+                    val chapterUrl = fixUrl(chapterPath) ?: return@forEach
+
+                    val isLocked = chapterElement.select(NovelSelectors.CHAPTER_LOCKED).isNotEmpty()
+
+                    val chapterName = buildString {
+                        if (volumeName.isNotBlank()) append("$volumeName: ")
+                        append(chapterTitle)
+                        if (isLocked) append(" 🔒")
+                    }
+
+                    chapters.add(Chapter(name = chapterName, url = chapterUrl))
+                }
+            }
+
+            if (chapters.isEmpty()) {
+                document.select(NovelSelectors.CATALOG_FALLBACK).forEach { link ->
+                    val chapterTitle = link.attrOrNull("title")?.trim()
+                        ?: link.text()?.trim()
+                        ?: return@forEach
+                    val chapterPath = link.attrOrNull("href") ?: return@forEach
+                    val chapterUrl = fixUrl(chapterPath) ?: return@forEach
+
+                    val isLocked = link.parent()?.select(NovelSelectors.CHAPTER_LOCKED)?.isNotEmpty() == true
+                    val chapterName = if (isLocked) "$chapterTitle 🔒" else chapterTitle
+
+                    chapters.add(Chapter(name = chapterName, url = chapterUrl))
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw Exception("Failed to load chapter list: ${e.message}")
+        }
+
+        return chapters
+    }
+
+    // ================================================================
+    // LOAD CHAPTER CONTENT
+    // ================================================================
+
+    override suspend fun loadChapterContent(url: String): String? {
+        val fullUrl = if (url.startsWith("http")) url else "$mainUrl$url"
+
+        val response = get(fullUrl, customHeaders)
+        val document = response.document
+
+        if (document.title().contains("Cloudflare", ignoreCase = true) ||
+            document.title().contains("Just a moment", ignoreCase = true)) {
+            throw Exception("Cloudflare protection detected.")
+        }
+
+        document.select(NovelSelectors.CHAPTER_COMMENTS).remove()
+
+        val titleHtml = document.selectFirstOrNull(NovelSelectors.CHAPTER_TITLE)?.html() ?: ""
+
+        var contentHtml = ""
+        val contentElement = document.selectAny(NovelSelectors.CHAPTER_CONTENT).firstOrNull()
+        if (contentElement != null) {
+            contentHtml = contentElement.html()
+        } else {
+            val paragraphs = document.select(NovelSelectors.CHAPTER_PARAGRAPH)
+            if (paragraphs.isNotEmpty()) {
+                contentHtml = paragraphs.joinToString("\n") { it.outerHtml() }
+            }
+        }
+
+        if (contentHtml.isBlank()) return null
+
+        val fullHtml = if (titleHtml.isNotBlank()) "$titleHtml\n$contentHtml" else contentHtml
+
+        return cleanChapterHtml(fullHtml)
+    }
+
+    // ================================================================
+    // REVIEWS (unchanged from previous version)
     // ================================================================
 
     override suspend fun loadReviews(
@@ -561,7 +913,6 @@ class WebnovelProvider : MainProvider() {
     }
 
     private fun extractReviewId(element: Element): String? {
-        // Try data-ejs attribute
         element.attrOrNull("data-ejs")?.let { ejsData ->
             try {
                 val json = JSONObject(ejsData)
@@ -569,328 +920,8 @@ class WebnovelProvider : MainProvider() {
             } catch (_: Exception) {}
         }
 
-        // Try class name pattern
         val className = element.className()
         val match = Regex("j_review_del_(\\d+)").find(className)
         return match?.groupValues?.getOrNull(1)
-    }
-
-    // ================================================================
-    // NOVEL PARSING
-    // ================================================================
-
-    private fun parseCategoryNovels(document: Document): List<Novel> {
-        return document.select(NovelSelectors.CATEGORY_CONTAINER).mapNotNull { element ->
-            val thumb = element.selectFirstOrNull(NovelSelectors.CATEGORY_THUMB) ?: return@mapNotNull null
-            val name = thumb.attrOrNull("title")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            val href = thumb.attrOrNull("href") ?: return@mapNotNull null
-            val novelUrl = fixUrl(href) ?: return@mapNotNull null
-
-            val imgElement = element.selectFirstOrNull(NovelSelectors.CATEGORY_COVER)
-            val rawCover = imgElement?.attrOrNull("data-original") ?: imgElement?.attrOrNull("src")
-            val posterUrl = fixCoverUrl(rawCover)
-
-            Novel(name = name, url = novelUrl, posterUrl = posterUrl, apiName = this.name)
-        }
-    }
-
-    private fun parseSearchNovels(document: Document): List<Novel> {
-        return document.select(NovelSelectors.SEARCH_CONTAINER).mapNotNull { element ->
-            val thumb = element.selectFirstOrNull(NovelSelectors.SEARCH_THUMB) ?: return@mapNotNull null
-            val name = thumb.attrOrNull("title")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            val href = thumb.attrOrNull("href") ?: return@mapNotNull null
-            val novelUrl = fixUrl(href) ?: return@mapNotNull null
-
-            val imgElement = element.selectFirstOrNull(NovelSelectors.SEARCH_COVER)
-            val rawCover = imgElement?.attrOrNull("src") ?: imgElement?.attrOrNull("data-original")
-            val posterUrl = fixCoverUrl(rawCover)
-
-            Novel(name = name, url = novelUrl, posterUrl = posterUrl, apiName = this.name)
-        }
-    }
-
-    private fun parseRelatedNovels(document: Document): List<Novel> {
-        return document.select(NovelSelectors.RELATED_CONTAINER).mapNotNull { item ->
-            val linkElement = item.selectFirstOrNull(NovelSelectors.RELATED_LINK)
-                ?: item.selectFirstOrNull(NovelSelectors.RELATED_THUMB)
-                ?: return@mapNotNull null
-
-            val href = linkElement.attrOrNull("href") ?: return@mapNotNull null
-            val novelUrl = fixUrl(href) ?: return@mapNotNull null
-
-            val title = linkElement.attrOrNull("title")
-                ?: item.selectFirstOrNull(NovelSelectors.RELATED_TITLE)?.text()?.trim()
-                ?: item.selectFirstOrNull("h3")?.text()?.trim()
-                ?: return@mapNotNull null
-
-            val imgElement = item.selectFirstOrNull(NovelSelectors.RELATED_COVER)
-            val rawCover = imgElement?.attrOrNull("data-original") ?: imgElement?.attrOrNull("src")
-            val posterUrl = fixCoverUrl(rawCover)
-
-            val ratingText = item.selectFirstOrNull(NovelSelectors.RELATED_RATING)?.text()
-            val rating = ratingText?.toFloatOrNull()?.let { RatingUtils.from5Stars(it) }
-
-            Novel(name = title, url = novelUrl, posterUrl = posterUrl, rating = rating, apiName = this.name)
-        }
-    }
-
-    // ================================================================
-    // MAIN PAGE
-    // ================================================================
-
-    override suspend fun loadMainPage(page: Int, orderBy: String?, tag: String?): MainPageResult {
-        val url = buildBrowseUrl(page = page, orderBy = orderBy, tag = tag)
-
-        val response = get(url, customHeaders)
-        val document = response.document
-
-        if (document.title().contains("Cloudflare", ignoreCase = true) ||
-            document.title().contains("Just a moment", ignoreCase = true)) {
-            throw Exception("Cloudflare protection detected.")
-        }
-
-        extractCsrfToken(document)
-        val novels = parseCategoryNovels(document)
-
-        return MainPageResult(url = url, novels = novels)
-    }
-
-    // ================================================================
-    // SEARCH
-    // ================================================================
-
-    override suspend fun search(query: String): List<Novel> {
-        val encodedQuery = URLEncoder.encode(query.trim(), "UTF-8").replace("+", "%20")
-        val url = "$mainUrl${Endpoints.SEARCH}?keywords=$encodedQuery&pageIndex=1"
-
-        val response = get(url, customHeaders)
-        val document = response.document
-
-        if (document.title().contains("Cloudflare", ignoreCase = true) ||
-            document.title().contains("Just a moment", ignoreCase = true)) {
-            throw Exception("Cloudflare protection detected.")
-        }
-
-        extractCsrfToken(document)
-        return parseSearchNovels(document)
-    }
-
-    // ================================================================
-    // LOAD NOVEL DETAILS
-    // ================================================================
-
-    override suspend fun load(url: String): NovelDetails? {
-        val fullUrl = if (url.startsWith("http")) url else "$mainUrl$url"
-
-        val response = get(fullUrl, customHeaders)
-        val document = response.document
-
-        if (document.title().contains("Cloudflare", ignoreCase = true) ||
-            document.title().contains("Just a moment", ignoreCase = true)) {
-            throw Exception("Cloudflare protection detected.")
-        }
-
-        extractCsrfToken(document)
-
-        val bookId = extractBookId(fullUrl)
-        bookId?.let { bookIdCache[fullUrl] = it }
-
-        val name = document.selectFirstOrNull(NovelSelectors.DETAIL_COVER)?.attrOrNull("alt")
-            ?: document.selectFirst(NovelSelectors.DETAIL_TITLE)?.text()?.trim()
-            ?: "Unknown"
-
-        val catalogUrl = fullUrl.trimEnd('/') + "/catalog"
-        val chapters = loadChaptersFromCatalog(catalogUrl)
-        val metadata = extractMetadata(document)
-        val relatedNovels = parseRelatedNovels(document)
-
-        return NovelDetails(
-            url = fullUrl,
-            name = name,
-            chapters = chapters,
-            author = metadata.author,
-            posterUrl = metadata.posterUrl,
-            synopsis = metadata.synopsis,
-            tags = metadata.tags.ifEmpty { null },
-            rating = metadata.rating,
-            peopleVoted = metadata.peopleVoted,
-            status = metadata.status,
-            relatedNovels = relatedNovels.ifEmpty { null }
-        )
-    }
-
-    private data class NovelMetadata(
-        val author: String? = null,
-        val posterUrl: String? = null,
-        val synopsis: String? = null,
-        val tags: List<String> = emptyList(),
-        val rating: Int? = null,
-        val peopleVoted: Int? = null,
-        val status: String? = null
-    )
-
-    private fun extractMetadata(document: Document): NovelMetadata {
-        // Cover
-        val coverElement = document.selectFirstOrNull(NovelSelectors.DETAIL_COVER)
-        val rawCover = coverElement?.attrOrNull("src") ?: coverElement?.attrOrNull("data-original")
-        val posterUrl = fixCoverUrl(rawCover)
-
-        // Synopsis
-        val synopsis = document.selectFirstOrNull(NovelSelectors.DETAIL_SYNOPSIS)?.let { element ->
-            element.select("br").append("\\n")
-            element.text().replace("\\n", "\n").replace(Regex("\n{3,}"), "\n\n").trim()
-        } ?: "No Summary Found"
-
-        // Tags: Merge genres from header + content tags
-        val genresText = document.selectFirstOrNull(NovelSelectors.DETAIL_GENRES)?.attrOrNull("title")
-        val genreTags = genresText?.split(",")
-            ?.mapNotNull { it.trim().takeIf { tag -> tag.isNotBlank() } }
-            ?: emptyList()
-
-        val contentTags = document.select(NovelSelectors.DETAIL_TAGS).mapNotNull { el ->
-            el.attrOrNull("title")
-                ?.replace("Stories", "", ignoreCase = true)
-                ?.trim()
-                ?.takeIf { it.isNotBlank() }
-                ?: el.text()
-                    ?.replace("#", "")
-                    ?.trim()
-                    ?.replaceFirstChar { it.uppercase() }
-                    ?.takeIf { it.isNotBlank() }
-        }
-
-        val tags = (genreTags + contentTags).distinct()
-
-        // Author
-        var author: String? = null
-        document.select(NovelSelectors.DETAIL_AUTHOR_LABEL).forEach { element ->
-            if (element.text().trim() == "Author:") {
-                author = element.nextElementSibling()?.text()?.trim()
-                return@forEach
-            }
-        }
-        if (author.isNullOrBlank()) {
-            author = document.selectFirstOrNull(NovelSelectors.DETAIL_AUTHOR_ALT)?.text()?.trim()
-        }
-
-        // Status
-        var statusText: String? = null
-        document.select(NovelSelectors.DETAIL_STATUS).forEach { element ->
-            if (element.attrOrNull("title") == "Status") {
-                statusText = element.nextElementSibling()?.text()?.trim()
-                return@forEach
-            }
-        }
-        val status = parseStatus(statusText)
-
-        // Rating
-        val ratingText = document.selectFirstOrNull(NovelSelectors.DETAIL_RATING)?.text()
-            ?: document.selectFirstOrNull("[class*='score']")?.text()
-        val rating = ratingText?.toFloatOrNull()?.let { RatingUtils.from5Stars(it) }
-
-        return NovelMetadata(
-            author = author,
-            posterUrl = posterUrl,
-            synopsis = synopsis,
-            tags = tags,
-            rating = rating,
-            status = status
-        )
-    }
-
-    private suspend fun loadChaptersFromCatalog(catalogUrl: String): List<Chapter> {
-        val chapters = mutableListOf<Chapter>()
-
-        try {
-            val response = get(catalogUrl, customHeaders)
-            val document = response.document
-
-            // Try volume-based structure
-            document.select(NovelSelectors.VOLUME_CONTAINER).forEach { volumeElement ->
-                val volumeText = volumeElement.selectFirstOrNull(NovelSelectors.VOLUME_TITLE)?.text()?.trim()
-                    ?: volumeElement.ownText().trim()
-
-                val volumeMatch = Regex("Volume\\s*(\\d+)", RegexOption.IGNORE_CASE).find(volumeText)
-                val volumeName = volumeMatch?.let { "Vol.${it.groupValues[1]}" } ?: ""
-
-                volumeElement.select(NovelSelectors.CHAPTER_ITEM).forEach { chapterElement ->
-                    val link = chapterElement.selectFirstOrNull(NovelSelectors.CHAPTER_LINK) ?: return@forEach
-                    val chapterTitle = link.attrOrNull("title")?.trim()
-                        ?: link.text()?.trim()
-                        ?: return@forEach
-                    val chapterPath = link.attrOrNull("href") ?: return@forEach
-                    val chapterUrl = fixUrl(chapterPath) ?: return@forEach
-
-                    val isLocked = chapterElement.select(NovelSelectors.CHAPTER_LOCKED).isNotEmpty()
-
-                    val chapterName = buildString {
-                        if (volumeName.isNotBlank()) append("$volumeName: ")
-                        append(chapterTitle)
-                        if (isLocked) append(" 🔒")
-                    }
-
-                    chapters.add(Chapter(name = chapterName, url = chapterUrl))
-                }
-            }
-
-            // Fallback for flat chapter list
-            if (chapters.isEmpty()) {
-                document.select(NovelSelectors.CATALOG_FALLBACK).forEach { link ->
-                    val chapterTitle = link.attrOrNull("title")?.trim()
-                        ?: link.text()?.trim()
-                        ?: return@forEach
-                    val chapterPath = link.attrOrNull("href") ?: return@forEach
-                    val chapterUrl = fixUrl(chapterPath) ?: return@forEach
-
-                    val isLocked = link.parent()?.select(NovelSelectors.CHAPTER_LOCKED)?.isNotEmpty() == true
-                    val chapterName = if (isLocked) "$chapterTitle 🔒" else chapterTitle
-
-                    chapters.add(Chapter(name = chapterName, url = chapterUrl))
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw Exception("Failed to load chapter list: ${e.message}")
-        }
-
-        return chapters
-    }
-
-    // ================================================================
-    // LOAD CHAPTER CONTENT
-    // ================================================================
-
-    override suspend fun loadChapterContent(url: String): String? {
-        val fullUrl = if (url.startsWith("http")) url else "$mainUrl$url"
-
-        val response = get(fullUrl, customHeaders)
-        val document = response.document
-
-        if (document.title().contains("Cloudflare", ignoreCase = true) ||
-            document.title().contains("Just a moment", ignoreCase = true)) {
-            throw Exception("Cloudflare protection detected.")
-        }
-
-        // Remove comments
-        document.select(NovelSelectors.CHAPTER_COMMENTS).remove()
-
-        val titleHtml = document.selectFirstOrNull(NovelSelectors.CHAPTER_TITLE)?.html() ?: ""
-
-        var contentHtml = ""
-        val contentElement = document.selectAny(NovelSelectors.CHAPTER_CONTENT).firstOrNull()
-        if (contentElement != null) {
-            contentHtml = contentElement.html()
-        } else {
-            val paragraphs = document.select(NovelSelectors.CHAPTER_PARAGRAPH)
-            if (paragraphs.isNotEmpty()) {
-                contentHtml = paragraphs.joinToString("\n") { it.outerHtml() }
-            }
-        }
-
-        if (contentHtml.isBlank()) return null
-
-        val fullHtml = if (titleHtml.isNotBlank()) "$titleHtml\n$contentHtml" else contentHtml
-
-        return cleanChapterHtml(fullHtml)
     }
 }

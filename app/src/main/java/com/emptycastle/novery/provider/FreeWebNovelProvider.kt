@@ -161,7 +161,8 @@ class FreeWebNovelProvider : MainProvider() {
     override suspend fun loadMainPage(
         page: Int,
         orderBy: String?,
-        tag: String?
+        tag: String?,
+        extraFilters: Map<String, String>
     ): MainPageResult {
         val url = if (!tag.isNullOrEmpty()) {
             "$mainUrl/genres/$tag/$page"

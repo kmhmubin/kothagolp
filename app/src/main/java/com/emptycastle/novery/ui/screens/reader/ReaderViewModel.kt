@@ -39,7 +39,6 @@ import com.emptycastle.novery.ui.screens.reader.model.StableTargetScrollPosition
 import com.emptycastle.novery.ui.screens.reader.model.TTSPosition
 import com.emptycastle.novery.ui.screens.reader.model.TTSScrollEdge
 import com.emptycastle.novery.ui.screens.reader.model.TTSSettingsState
-import com.emptycastle.novery.ui.screens.reader.model.TargetScrollPosition
 import com.emptycastle.novery.util.ReadingTimeTracker
 import com.emptycastle.novery.util.VolumeKeyEvent
 import com.emptycastle.novery.util.VolumeKeyManager
@@ -167,6 +166,14 @@ class ReaderViewModel : ViewModel() {
     private val blockTTSUpdates = AtomicBoolean(true)
     private val blockTTSSync = AtomicBoolean(false)
 
+    /**
+     * FIX #1 — Set to true for the entire duration of stopTTSInternal().
+     * Prevents service-side events (segmentChanged, playbackState) that fire
+     * during or just after stop from being processed and incorrectly jumping
+     * TTS back to sentence 0 / scrolling to the beginning of the chapter.
+     */
+    private val isTTSStopping = AtomicBoolean(false)
+
     // TTS rebuild lock - prevents concurrent rebuilds
     private val ttsRebuildMutex = Mutex()
     private val ttsOperationMutex = Mutex()
@@ -280,7 +287,9 @@ class ReaderViewModel : ViewModel() {
     private fun observeTTSState() {
         viewModelScope.launch {
             TTSServiceManager.playbackState.collect { ttsState ->
-                if (blockTTSUpdates.get() || blockTTSSync.get()) {
+                // FIX #8 — Also block if a stop is in progress to prevent the service's
+                // transitional "stopping" state from re-enabling isTTSActive in the UI.
+                if (blockTTSUpdates.get() || blockTTSSync.get() || isTTSStopping.get()) {
                     Log.d(TAG, "TTS state update blocked")
                     return@collect
                 }
@@ -546,9 +555,26 @@ class ReaderViewModel : ViewModel() {
 
     /**
      * Handle segment change from TTS service.
-     * Converts global index to stable coordinate and updates highlight.
+     *
+     * FIX #2 — Guard against stale service events that fire when TTS is already
+     * stopped or in the process of stopping. Without this, a segmentChanged(0)
+     * event emitted by the service during its internal reset would scroll the
+     * reader back to the beginning even though playback has ended.
      */
     private fun handleTTSSegmentChange(sentenceIndex: Int) {
+        // Guard: ignore events fired while we are in the process of stopping
+        if (isTTSStopping.get()) {
+            Log.d(TAG, "TTS segment change ignored — stop in progress")
+            return
+        }
+
+        // Guard: ignore events when TTS is already inactive in ViewModel state
+        val state = _uiState.value
+        if (!state.isTTSActive || state.ttsStatus == TTSStatus.STOPPED) {
+            Log.d(TAG, "TTS segment change ignored — TTS not active (index=$sentenceIndex)")
+            return
+        }
+
         if (sentenceIndex < 0 || sentenceIndex >= ttsSentenceList.size) {
             Log.w(TAG, "Invalid sentence index from TTS: $sentenceIndex (list size: ${ttsSentenceList.size})")
             return
@@ -666,7 +692,7 @@ class ReaderViewModel : ViewModel() {
     }
 
     /**
-     * Internal rebuild - must be called under ttsRebuildMutex.
+     * Internal rebuild — must be called under ttsRebuildMutex.
      */
     private fun rebuildTTSSentenceListInternal() {
         if (blockTTSUpdates.get() || blockTTSSync.get()) {
@@ -730,8 +756,10 @@ class ReaderViewModel : ViewModel() {
                 // Update highlight
                 updateHighlightFromCoordinate(currentTTSCoordinate)
 
-                // Update TTS service
-                if (TTSServiceManager.isActive()) {
+                // FIX #4 — Check BOTH service and ViewModel state before seeking.
+                // TTSServiceManager.isActive() alone can return true in a race window
+                // after deactivateTTS() has already cleared the ViewModel's isTTSActive.
+                if (TTSServiceManager.isActive() && _uiState.value.isTTSActive && !isTTSStopping.get()) {
                     val ttsContent = buildTTSContent(state, sentences)
                     TTSServiceManager.updateContent(ttsContent, keepSegmentIndex = false)
                     TTSServiceManager.seekToSegment(restoredIndex)
@@ -746,15 +774,16 @@ class ReaderViewModel : ViewModel() {
                     currentTTSSentenceText = sentences[chapterStart].text
                     updateHighlightFromCoordinate(currentTTSCoordinate)
 
-                    if (TTSServiceManager.isActive()) {
+                    // FIX #4 (same guard applied here)
+                    if (TTSServiceManager.isActive() && _uiState.value.isTTSActive && !isTTSStopping.get()) {
                         val ttsContent = buildTTSContent(state, sentences)
                         TTSServiceManager.updateContent(ttsContent, keepSegmentIndex = false)
                         TTSServiceManager.seekToSegment(chapterStart)
                     }
                 }
             }
-        } else if (TTSServiceManager.isActive()) {
-            // TTS active but no saved position - update content without seek
+        } else if (TTSServiceManager.isActive() && _uiState.value.isTTSActive && !isTTSStopping.get()) {
+            // TTS active but no saved position — update content without seek
             val ttsContent = buildTTSContent(state, sentences)
             TTSServiceManager.updateContent(ttsContent, keepSegmentIndex = true)
         }
@@ -941,16 +970,14 @@ class ReaderViewModel : ViewModel() {
 
     /**
      * Estimate which sentence is visible based on pixel offset.
-     * This is an approximation - proper implementation would need measured heights.
+     * This is an approximation — proper implementation would need measured heights.
      */
     private fun estimateSentenceFromOffset(segment: ContentSegment, pixelOffset: Int): Int {
         if (segment.sentenceCount <= 1) return 0
 
         // Estimate average sentence height (rough approximation)
-        // Assume ~60dp per sentence on average (will vary based on font size, line height)
         val estimatedSentenceHeight = 60 * 3 // ~180 pixels for 3 lines
 
-        // Calculate which sentence the offset corresponds to
         val sentenceIndex = (pixelOffset / estimatedSentenceHeight).coerceIn(0, segment.sentenceCount - 1)
 
         return sentenceIndex
@@ -958,8 +985,20 @@ class ReaderViewModel : ViewModel() {
 
     /**
      * Handle TTS playback completion.
+     *
+     * FIX #9 — Removed redundant state cleanup that duplicated deactivateTTS().
+     * stopTTSInternal() → deactivateTTS() → clearTTSHighlight() already resets
+     * all TTS-related state including currentTTSCoordinate, isTTSActive, ttsStatus,
+     * currentSentenceHighlight, and currentTTSChapterIndex. Duplicate updates
+     * after the call were a maintenance hazard.
      */
     private fun handleTTSPlaybackComplete() {
+        // Guard: if we are already stopping, do nothing
+        if (isTTSStopping.get()) {
+            Log.d(TAG, "playbackComplete ignored — stop already in progress")
+            return
+        }
+
         val state = _uiState.value
         val currentChapterIndex = state.currentTTSChapterIndex
 
@@ -970,61 +1009,44 @@ class ReaderViewModel : ViewModel() {
             return
         }
 
-        Log.d(TAG, "TTS playback complete - chapter $currentChapterIndex")
+        Log.d(TAG, "TTS playback complete — chapter $currentChapterIndex")
 
         val isLastChapter = currentChapterIndex >= state.allChapters.size - 1
         val shouldAutoAdvance = state.settings.ttsAutoAdvanceChapter && !isLastChapter
 
-        if (isLastChapter) {
-            Log.d(TAG, "Reached end of novel, fully stopping TTS")
-            stopTTSInternal()
-
-            _uiState.update {
-                it.copy(
-                    isTTSActive = false,
-                    ttsStatus = TTSStatus.STOPPED,
-                    currentSentenceHighlight = null,
-                    currentSegmentIndex = -1,
-                    ttsPosition = TTSPosition(),
-                    currentTTSChapterIndex = -1
-                )
+        when {
+            isLastChapter -> {
+                // FIX #1 (last chapter case) — stopTTSInternal now sets isTTSStopping
+                // before calling TTSServiceManager.stop(), which prevents the service's
+                // internal reset (segmentChanged=0 / playbackState update) from being
+                // processed by the ViewModel and scrolling the reader back to the start.
+                Log.d(TAG, "Reached end of novel, fully stopping TTS")
+                stopTTSInternal()
+                // All state is already cleaned up by stopTTSInternal() → deactivateTTS()
             }
 
-            currentTTSCoordinate = StableTTSCoordinate.INVALID
-            currentTTSSentenceText = ""
-        } else if (shouldAutoAdvance) {
-            // The service's playbackComplete was emitted, meaning its backgroundLoader
-            // couldn't auto-advance (failed to load or not configured properly).
-            // ViewModel takes over the auto-advance responsibility.
-            Log.d(TAG, "TTS service couldn't auto-advance - ViewModel taking over")
+            shouldAutoAdvance -> {
+                // The service's playbackComplete was emitted, meaning its backgroundLoader
+                // couldn't auto-advance (failed to load or not configured properly).
+                // ViewModel takes over the auto-advance responsibility.
+                Log.d(TAG, "TTS service couldn't auto-advance — ViewModel taking over")
 
-            val nextChapterIndex = currentChapterIndex + 1
-            val nextChapter = state.allChapters.getOrNull(nextChapterIndex)
+                val nextChapterIndex = currentChapterIndex + 1
+                val nextChapter = state.allChapters.getOrNull(nextChapterIndex)
 
-            if (nextChapter != null) {
-                autoAdvanceToChapter(nextChapterIndex, nextChapter)
-            } else {
-                Log.e(TAG, "Could not find next chapter at index $nextChapterIndex")
+                if (nextChapter != null) {
+                    autoAdvanceToChapter(nextChapterIndex, nextChapter)
+                } else {
+                    Log.e(TAG, "Could not find next chapter at index $nextChapterIndex")
+                    stopTTSInternal()
+                }
+            }
+
+            else -> {
+                // Auto-advance is disabled and this is not the last chapter — stop cleanly
+                Log.d(TAG, "Chapter ended, TTS auto-advance disabled")
                 stopTTSInternal()
             }
-        } else {
-            Log.d(TAG, "Chapter ended, TTS auto-advance disabled")
-            // Auto-advance is disabled, so stop TTS
-            stopTTSInternal()
-
-            _uiState.update {
-                it.copy(
-                    isTTSActive = false,
-                    ttsStatus = TTSStatus.STOPPED,
-                    currentSentenceHighlight = null,
-                    currentSegmentIndex = -1,
-                    ttsPosition = TTSPosition(),
-                    currentTTSChapterIndex = -1
-                )
-            }
-
-            currentTTSCoordinate = StableTTSCoordinate.INVALID
-            currentTTSSentenceText = ""
         }
     }
 
@@ -1135,6 +1157,10 @@ class ReaderViewModel : ViewModel() {
 
     /**
      * Handle chapter change events from TTS service.
+     *
+     * FIX #6 — Wrap the entire async block in blockTTSSync so that concurrent
+     * segment-change events and scroll-driven chapter updates cannot interleave
+     * with the chapter loading + TTS rebuild sequence.
      */
     private fun handleTTSChapterChange(event: TTSChapterChangeEvent) {
         val chapterIndex = event.chapterIndex
@@ -1151,7 +1177,7 @@ class ReaderViewModel : ViewModel() {
         )
 
         if (!isReaderVisible) {
-            Log.d(TAG, "Reader invisible - deferring TTS chapter change handling")
+            Log.d(TAG, "Reader invisible — deferring TTS chapter change handling")
             return
         }
 
@@ -1160,55 +1186,61 @@ class ReaderViewModel : ViewModel() {
         val state = _uiState.value
 
         viewModelScope.launch {
-            // Load chapter if needed
-            if (!state.loadedChapters.containsKey(chapterIndex)) {
-                Log.d(TAG, "Loading chapter $chapterIndex for TTS continuation")
-                loadChapterContent(chapterIndex, isInitialLoad = false)
+            // FIX #6 — block concurrent updates for the duration of this operation
+            blockTTSSync.set(true)
+            try {
+                // Load chapter if needed
+                if (!state.loadedChapters.containsKey(chapterIndex)) {
+                    Log.d(TAG, "Loading chapter $chapterIndex for TTS continuation")
+                    loadChapterContent(chapterIndex, isInitialLoad = false)
 
-                var attempts = 0
-                while (!_uiState.value.loadedChapters.containsKey(chapterIndex) && attempts < 50) {
-                    delay(100)
-                    attempts++
+                    var attempts = 0
+                    while (!_uiState.value.loadedChapters.containsKey(chapterIndex) && attempts < 50) {
+                        delay(100)
+                        attempts++
+                    }
+
+                    if (!_uiState.value.loadedChapters.containsKey(chapterIndex)) {
+                        Log.e(TAG, "Failed to load chapter $chapterIndex for TTS — stopping")
+                        stopTTSInternal()
+                        return@launch
+                    }
                 }
 
-                if (!_uiState.value.loadedChapters.containsKey(chapterIndex)) {
-                    Log.e(TAG, "Failed to load chapter $chapterIndex for TTS - stopping")
+                // Update state
+                _uiState.update {
+                    it.copy(
+                        currentChapterIndex = chapterIndex,
+                        currentChapterUrl = event.chapterUrl,
+                        currentChapterName = event.chapterName,
+                        previousChapter = it.allChapters.getOrNull(chapterIndex - 1),
+                        nextChapter = it.allChapters.getOrNull(chapterIndex + 1)
+                    )
+                }
+
+                addToHistory(event.chapterUrl, event.chapterName)
+
+                // Rebuild TTS list (this will pick up the new chapter)
+                rebuildTTSSentenceListSafe()
+
+                // Find first sentence of new chapter
+                val firstSentenceIndex = ttsSentenceList.indexOfFirst { it.chapterIndex == chapterIndex }
+                if (firstSentenceIndex >= 0) {
+                    currentTTSCoordinate = ttsSentenceList[firstSentenceIndex].coordinate
+                    currentTTSSentenceText = ttsSentenceList[firstSentenceIndex].text
+
+                    Log.d(TAG, "Starting TTS at sentence $firstSentenceIndex of chapter $chapterIndex")
+                    updateHighlightFromCoordinate(currentTTSCoordinate)
+
+                    val ttsContent = buildTTSContent(_uiState.value, ttsSentenceList)
+                    TTSServiceManager.updateContent(ttsContent, keepSegmentIndex = false)
+                    TTSServiceManager.seekToSegment(firstSentenceIndex)
+                } else {
+                    Log.e(TAG, "No sentences found for chapter $chapterIndex")
                     stopTTSInternal()
-                    return@launch
                 }
-            }
-
-            // Update state
-            _uiState.update {
-                it.copy(
-                    currentChapterIndex = chapterIndex,
-                    currentChapterUrl = event.chapterUrl,
-                    currentChapterName = event.chapterName,
-                    previousChapter = it.allChapters.getOrNull(chapterIndex - 1),
-                    nextChapter = it.allChapters.getOrNull(chapterIndex + 1)
-                )
-            }
-
-            addToHistory(event.chapterUrl, event.chapterName)
-
-            // Rebuild TTS list (this will pick up the new chapter)
-            rebuildTTSSentenceListSafe()
-
-            // Find first sentence of new chapter
-            val firstSentenceIndex = ttsSentenceList.indexOfFirst { it.chapterIndex == chapterIndex }
-            if (firstSentenceIndex >= 0) {
-                currentTTSCoordinate = ttsSentenceList[firstSentenceIndex].coordinate
-                currentTTSSentenceText = ttsSentenceList[firstSentenceIndex].text
-
-                Log.d(TAG, "Starting TTS at sentence $firstSentenceIndex of chapter $chapterIndex")
-                updateHighlightFromCoordinate(currentTTSCoordinate)
-
-                val ttsContent = buildTTSContent(_uiState.value, ttsSentenceList)
-                TTSServiceManager.updateContent(ttsContent, keepSegmentIndex = false)
-                TTSServiceManager.seekToSegment(firstSentenceIndex)
-            } else {
-                Log.e(TAG, "No sentences found for chapter $chapterIndex")
-                stopTTSInternal()
+            } finally {
+                blockTTSSync.set(false)
             }
         }
     }
@@ -1255,9 +1287,26 @@ class ReaderViewModel : ViewModel() {
         }
     }
 
+    /**
+     * FIX #1 — Set isTTSStopping BEFORE calling TTSServiceManager.stop().
+     *
+     * The TTS service may emit segmentChanged(0) and/or a playbackState update
+     * as part of its internal reset when stopped. Those events are processed by
+     * separate coroutines in observeTTSState(). By setting isTTSStopping = true
+     * first, all observers and handlers bail out immediately, preventing the
+     * service's reset events from scrolling the reader back to sentence 0.
+     *
+     * The flag is cleared after deactivateTTS() finishes so that a subsequent
+     * startTTS() call can operate normally.
+     */
     private fun stopTTSInternal() {
-        TTSServiceManager.stop()
-        deactivateTTS()
+        isTTSStopping.set(true)
+        try {
+            TTSServiceManager.stop()
+            deactivateTTS()
+        } finally {
+            isTTSStopping.set(false)
+        }
     }
 
     fun stopTTS() {
@@ -1272,13 +1321,23 @@ class ReaderViewModel : ViewModel() {
         TTSServiceManager.resume()
     }
 
+    /**
+     * FIX #7 — Validate that the current coordinate is actually valid before
+     * computing next/previous. When currentTTSCoordinate is INVALID,
+     * findSentenceIndexByCoordinate returns -1, making nextIndex = 0, which
+     * would silently jump to the very first sentence of the list.
+     */
     fun nextSegment() {
         viewModelScope.launch {
             ttsOperationMutex.withLock {
                 val currentIndex = findSentenceIndexByCoordinate(currentTTSCoordinate)
+                if (currentIndex < 0) {
+                    Log.w(TAG, "nextSegment: current coordinate is invalid, ignoring")
+                    return@withLock
+                }
                 val nextIndex = currentIndex + 1
 
-                if (nextIndex >= 0 && nextIndex < ttsSentenceList.size) {
+                if (nextIndex < ttsSentenceList.size) {
                     currentTTSCoordinate = ttsSentenceList[nextIndex].coordinate
                     currentTTSSentenceText = ttsSentenceList[nextIndex].text
 
@@ -1289,10 +1348,17 @@ class ReaderViewModel : ViewModel() {
         }
     }
 
+    /**
+     * FIX #7 (same as nextSegment) — Guard against invalid current coordinate.
+     */
     fun previousSegment() {
         viewModelScope.launch {
             ttsOperationMutex.withLock {
                 val currentIndex = findSentenceIndexByCoordinate(currentTTSCoordinate)
+                if (currentIndex < 0) {
+                    Log.w(TAG, "previousSegment: current coordinate is invalid, ignoring")
+                    return@withLock
+                }
                 val prevIndex = (currentIndex - 1).coerceAtLeast(0)
 
                 if (prevIndex >= 0 && prevIndex < ttsSentenceList.size) {
@@ -1645,8 +1711,14 @@ class ReaderViewModel : ViewModel() {
                         rebuildDisplayItemsInternal()
                     }
 
-                    // Restore TTS if active
-                    if (ttsWasActive && !blockTTSUpdates.get() && !blockTTSSync.get()) {
+                    // FIX #3 — Re-check isTTSActive and isTTSStopping here. ttsWasActive is
+                    // captured at the start of this function; if the user stopped TTS while the
+                    // chapter was loading, we must NOT attempt to restore and re-seek it.
+                    if (ttsWasActive &&
+                        !blockTTSUpdates.get() &&
+                        !blockTTSSync.get() &&
+                        _uiState.value.isTTSActive &&
+                        !isTTSStopping.get()) {
                         viewModelScope.launch {
                             ttsRebuildMutex.withLock {
                                 currentTTSCoordinate = savedTTSCoordinate
@@ -1689,10 +1761,13 @@ class ReaderViewModel : ViewModel() {
     ) {
         rebuildDisplayItemsInternal()
 
-        // Restore TTS if it was active
-        if (ttsWasActive && !blockTTSUpdates.get() && !blockTTSSync.get()) {
+        // FIX #3 (same guard) — only restore if TTS is genuinely still active
+        if (ttsWasActive &&
+            !blockTTSUpdates.get() &&
+            !blockTTSSync.get() &&
+            _uiState.value.isTTSActive &&
+            !isTTSStopping.get()) {
             viewModelScope.launch {
-                // Rebuild sentence list with preserved position
                 ttsRebuildMutex.withLock {
                     currentTTSCoordinate = savedCoordinate
                     currentTTSSentenceText = savedText
@@ -2046,9 +2121,16 @@ class ReaderViewModel : ViewModel() {
         }
     }
 
-    // Renamed internal version that doesn't do debounce checks
+    /**
+     * FIX #5 — Add blockTTSSync guard.
+     *
+     * During TTS auto-advance (and handleTTSChapterChange), blockTTSSync is set.
+     * Without this guard, scroll-driven chapter detection could fire concurrently
+     * and overwrite currentChapterIndex with the reader's visual position (which
+     * may still be on the old chapter), corrupting TTS state.
+     */
     private fun updateCurrentChapterInternal(chapterIndex: Int, chapterUrl: String, chapterName: String) {
-        if (isTransitioning.get() || blockInfiniteScroll.get()) {
+        if (isTransitioning.get() || blockInfiniteScroll.get() || blockTTSSync.get()) {
             return
         }
 
@@ -2139,7 +2221,6 @@ class ReaderViewModel : ViewModel() {
         }
     }
 
-
     // =========================================================================
     // INFINITE SCROLL
     // =========================================================================
@@ -2198,7 +2279,7 @@ class ReaderViewModel : ViewModel() {
             state.currentTTSChapterIndex,
             currentTTSCoordinate.chapterIndex,
             requestedChapterIndex,
-            desiredScrollPosition?.chapterIndex ?: -1  // Also protect scroll target
+            desiredScrollPosition?.chapterIndex ?: -1
         ).filter { it >= 0 }
 
         val toUnload = stateMutex.withLock {
@@ -2224,7 +2305,7 @@ class ReaderViewModel : ViewModel() {
 
             // Rebuild TTS if active
             val ttsActive = _uiState.value.isTTSActive
-            if (ttsActive && !blockTTSUpdates.get()) {
+            if (ttsActive && !blockTTSUpdates.get() && !isTTSStopping.get()) {
                 viewModelScope.launch {
                     ttsRebuildMutex.withLock {
                         rebuildTTSSentenceListInternal()

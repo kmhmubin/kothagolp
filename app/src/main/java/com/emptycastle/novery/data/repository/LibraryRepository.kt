@@ -13,6 +13,7 @@ import com.emptycastle.novery.domain.model.ReadingStatus
 import com.emptycastle.novery.provider.MainProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -75,6 +76,12 @@ class LibraryRepository(
                 entity.toLibraryItem()
             }
         }
+    }
+
+    fun observeLibraryUrls(): Flow<Set<String>> {
+        return libraryDao.observeLibraryUrls()
+            .map { urls -> urls.toSet() }
+            .distinctUntilChanged()
     }
 
     fun observeIsFavorite(url: String): Flow<Boolean> {
@@ -184,6 +191,20 @@ class LibraryRepository(
                 downloadCount = downloadCounts[entity.url] ?: 0
             )
         }
+    }
+
+    suspend fun findDuplicateCandidates(novel: Novel): List<LibraryItem> = withContext(Dispatchers.IO) {
+        val targetTitle = normalizeDuplicateTitle(novel.name)
+        if (targetTitle.isBlank()) return@withContext emptyList()
+
+        // Compare normalized titles so source labels or bracketed suffixes don't hide likely duplicates.
+        libraryDao.getAll()
+            .asSequence()
+            .filter { it.url != novel.url }
+            .filter { normalizeDuplicateTitle(it.name) == targetTitle }
+            .take(MAX_DUPLICATE_CANDIDATES)
+            .map { it.toLibraryItem() }
+            .toList()
     }
 
     // ================================================================
@@ -542,5 +563,40 @@ class LibraryRepository(
             lastCheckedAt = lastCheckedAt,
             isSpicy = getStatus() == ReadingStatus.SPICY
         )
+    }
+
+    private fun normalizeDuplicateTitle(title: String): String {
+        return title
+            .lowercase()
+            .replace(BRACKETED_TEXT_REGEX, " ")
+            .replace(NON_TITLE_CHARACTER_REGEX, " ")
+            .trim()
+            .replace(WHITESPACE_REGEX, " ")
+    }
+
+    companion object {
+        private const val MAX_DUPLICATE_CANDIDATES = 5
+        private val BRACKETED_TEXT_REGEX = Regex("""\([^)]*\)|\[[^]]*]""")
+        private val NON_TITLE_CHARACTER_REGEX = Regex("""[^a-z0-9]+""")
+        private val WHITESPACE_REGEX = Regex("""\s+""")
+    }
+
+    // ================================================================
+    // CUSTOM COVER
+    // ================================================================
+
+    /**
+     * Update custom cover for a novel across all cached data
+     * @param novelUrl The novel URL
+     * @param coverUrl The new cover URL (null to reset to original)
+     */
+    suspend fun updateCustomCover(novelUrl: String, coverUrl: String?) = withContext(Dispatchers.IO) {
+        libraryDao.updateCustomCover(novelUrl, coverUrl)
+        offlineDao.updateNovelDetailsCustomCover(novelUrl, coverUrl)
+        offlineDao.updateOfflineNovelCustomCover(novelUrl, coverUrl)
+    }
+
+    suspend fun getCustomCover(novelUrl: String): String? = withContext(Dispatchers.IO) {
+        libraryDao.getCustomCover(novelUrl)
     }
 }

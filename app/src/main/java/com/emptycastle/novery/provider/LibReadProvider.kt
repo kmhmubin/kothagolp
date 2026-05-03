@@ -306,7 +306,8 @@ class LibReadProvider : MainProvider() {
     override suspend fun loadMainPage(
         page: Int,
         orderBy: String?,
-        tag: String?
+        tag: String?,
+        extraFilters: Map<String, String>
     ): MainPageResult {
         // Handle paths that don't support pagination (as per JS: noPages)
         val currentPath = orderBy ?: "sort/latest-release"

@@ -3,15 +3,18 @@ package com.emptycastle.novery.ui.screens.home.tabs.browse
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -19,6 +22,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,14 +32,19 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -58,7 +68,6 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.FilterListOff
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Refresh
@@ -119,6 +128,7 @@ import com.emptycastle.novery.domain.model.AppSettings
 import com.emptycastle.novery.domain.model.Novel
 import com.emptycastle.novery.domain.model.ReadingStatus
 import com.emptycastle.novery.provider.MainProvider
+import com.emptycastle.novery.ui.components.DuplicateLibraryDialog
 import com.emptycastle.novery.ui.components.NovelActionSheet
 import com.emptycastle.novery.ui.components.NovelCard
 import com.emptycastle.novery.ui.components.NovelGridSkeleton
@@ -136,6 +146,7 @@ private object BrowseDesign {
     val radiusMd = 12.dp
     val radiusLg = 16.dp
     val radiusXl = 20.dp
+    val radiusXxl = 28.dp
 
     val spacingXs = 4.dp
     val spacingSm = 8.dp
@@ -153,6 +164,7 @@ private object BrowseDesign {
     val chipHeight = 36.dp
     val searchBarHeight = 48.dp
     val paginationButtonSize = 44.dp
+    val fabSize = 56.dp
 }
 
 // ============================================================================
@@ -178,26 +190,22 @@ fun ProviderBrowseScreen(
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
 
-    val dimensions = NoveryTheme.dimensions
-    var showFilters by remember { mutableStateOf(false) }
     val gridColumns = calculateGridColumns(appSettings.browseGridColumns)
 
-    // Auto-expand filters when empty with active filters (help user find the issue)
+    var isFilterOverlayOpen by remember { mutableStateOf(false) }
+
     LaunchedEffect(uiState.isEmpty, uiState.hasActiveFilters) {
         if (uiState.isEmpty && uiState.hasActiveFilters && !uiState.isSearchMode) {
-            showFilters = true
+            isFilterOverlayOpen = true
         }
     }
 
-    // Collapse filters when entering search mode
     LaunchedEffect(uiState.isSearchMode) {
-        if (uiState.isSearchMode) showFilters = false
+        if (uiState.isSearchMode) isFilterOverlayOpen = false
     }
 
-    // Action Sheet
     if (actionSheetState.isVisible && actionSheetState.data != null) {
         val data = actionSheetState.data!!
-
         NovelActionSheet(
             data = data,
             sheetState = sheetState,
@@ -229,6 +237,19 @@ fun ProviderBrowseScreen(
         )
     }
 
+    actionSheetState.duplicateWarning?.let { warning ->
+        DuplicateLibraryDialog(
+            target = warning.target,
+            duplicates = warning.duplicates,
+            onViewExisting = { duplicate ->
+                viewModel.dismissDuplicateWarning()
+                onNavigateToDetails(duplicate.novel.url, duplicate.novel.apiName)
+            },
+            onAddAnyway = { viewModel.addDuplicateAnyway() },
+            onDismiss = { viewModel.dismissDuplicateWarning() }
+        )
+    }
+
     Scaffold(
         topBar = {
             ProviderTopBar(
@@ -240,11 +261,10 @@ fun ProviderBrowseScreen(
                 onSearchQueryChange = viewModel::updateSearchQuery,
                 onSearch = viewModel::performSearch,
                 onClearSearch = viewModel::clearSearch,
-                onOpenWebView = {
-                    onNavigateToWebView(providerName, uiState.providerUrl)
-                }
+                onOpenWebView = { onNavigateToWebView(providerName, uiState.providerUrl) }
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0)
     ) { padding ->
         NoveryPullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
@@ -253,112 +273,827 @@ fun ProviderBrowseScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Outer Box — lets FilterOverlay cover everything
             Box(modifier = Modifier.fillMaxSize()) {
-                when {
-                    // Error state (not in search mode)
-                    uiState.displayError != null && !uiState.isSearchMode -> {
-                        ErrorState(
-                            uiState = uiState,
-                            showFilters = showFilters,
-                            onToggleFilters = { showFilters = !showFilters },
-                            onSortChange = viewModel::setSelectedSort,
-                            onTagChange = viewModel::setSelectedTag,
-                            onClearFilters = viewModel::clearFilters,
-                            onRetry = viewModel::loadPage,
-                            onOpenWebView = {
-                                onNavigateToWebView(providerName, uiState.providerUrl)
-                            }
-                        )
-                    }
 
-                    // Loading state (initial load, not refresh)
-                    uiState.isDisplayLoading -> {
-                        LoadingContent(
-                            uiState = uiState,
-                            showFilters = showFilters,
-                            onToggleFilters = { showFilters = !showFilters },
-                            onSortChange = viewModel::setSelectedSort,
-                            onTagChange = viewModel::setSelectedTag,
-                            onClearFilters = viewModel::clearFilters,
-                            gridColumns = gridColumns
-                        )
-                    }
+                // Column: chip row on top, content below
+                Column(modifier = Modifier.fillMaxSize()) {
 
-                    // Empty state
-                    uiState.isEmpty -> {
-                        EmptyContent(
+                    // Active filter chips — part of normal layout flow
+                    AnimatedVisibility(
+                        visible = uiState.hasActiveFilters && !uiState.isSearchMode && !isFilterOverlayOpen,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        ActiveFiltersChipRow(
                             uiState = uiState,
-                            showFilters = showFilters,
-                            onToggleFilters = { showFilters = !showFilters },
-                            onSortChange = viewModel::setSelectedSort,
-                            onTagChange = viewModel::setSelectedTag,
-                            onClearFilters = viewModel::clearFilters,
-                            onRetry = viewModel::loadPage,
-                            onOpenWebView = {
-                                onNavigateToWebView(providerName, uiState.providerUrl)
-                            }
-                        )
-                    }
-
-                    // Content loaded
-                    else -> {
-                        MainContent(
-                            uiState = uiState,
-                            gridColumns = gridColumns,
-                            showFilters = showFilters,
-                            onToggleFilters = { showFilters = !showFilters },
-                            onSortChange = viewModel::setSelectedSort,
-                            onTagChange = viewModel::setSelectedTag,
-                            onClearFilters = viewModel::clearFilters,
-                            onNovelClick = { novel ->
-                                onNavigateToDetails(novel.url, providerName)
+                            onSortClear = {
+                                viewModel.setSelectedSort(
+                                    uiState.provider?.orderBys?.firstOrNull()?.value
+                                )
                             },
-                            onNovelLongClick = { novel ->
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.showActionSheet(novel)
+                            onTagClear = {
+                                viewModel.setSelectedTag(
+                                    uiState.provider?.tags?.firstOrNull()?.value
+                                )
                             },
-                            appSettings = appSettings
+                            onClearAll = viewModel::clearFilters
                         )
+                    }
+
+                    // Inner Box: main content + floating overlays
+                    Box(modifier = Modifier.fillMaxSize()) {
+
+                        // Main content
+                        when {
+                            uiState.displayError != null && !uiState.isSearchMode -> {
+                                ErrorState(
+                                    uiState = uiState,
+                                    onRetry = viewModel::loadPage,
+                                    onOpenWebView = {
+                                        onNavigateToWebView(providerName, uiState.providerUrl)
+                                    }
+                                )
+                            }
+
+                            uiState.isDisplayLoading -> {
+                                LoadingContent(uiState = uiState, gridColumns = gridColumns)
+                            }
+
+                            uiState.isEmpty -> {
+                                EmptyContent(
+                                    uiState = uiState,
+                                    onRetry = viewModel::loadPage,
+                                    onClearFilters = viewModel::clearFilters,
+                                    onOpenWebView = {
+                                        onNavigateToWebView(providerName, uiState.providerUrl)
+                                    }
+                                )
+                            }
+
+                            else -> {
+                                MainContent(
+                                    uiState = uiState,
+                                    gridColumns = gridColumns,
+                                    onNovelClick = { novel ->
+                                        onNavigateToDetails(novel.url, providerName)
+                                    },
+                                    onNovelLongClick = { novel ->
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        viewModel.showActionSheet(novel)
+                                    },
+                                    appSettings = appSettings
+                                )
+                            }
+                        }
+
+                        // Floating pagination bar
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding()
+                                .padding(bottom = BrowseDesign.spacingXl)
+                        ) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = uiState.showPagination,
+                                enter = slideInVertically(
+                                    initialOffsetY = { it },
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                ) + fadeIn(),
+                                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                            ) {
+                                PaginationBar(
+                                    currentPage = uiState.currentPage,
+                                    onPrevious = viewModel::previousPage,
+                                    onNext = viewModel::nextPage,
+                                    hasPrevious = uiState.hasPreviousPage,
+                                    isLoading = uiState.isLoading
+                                )
+                            }
+                        }
+
+                        // Floating search results indicator
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding()
+                                .padding(bottom = BrowseDesign.spacingXl)
+                        ) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = uiState.showSearchIndicator,
+                                enter = slideInVertically(
+                                    initialOffsetY = { it },
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                ) + fadeIn(),
+                                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                            ) {
+                                SearchResultsIndicator(
+                                    resultCount = uiState.searchResults.size,
+                                    query = uiState.searchQuery,
+                                    onClear = viewModel::clearSearch
+                                )
+                            }
+                        }
+
+                        // Filter FAB
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(
+                                    end = BrowseDesign.spacingXl,
+                                    bottom = if (uiState.showPagination) 84.dp else BrowseDesign.spacingXl
+                                )
+                        ) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = uiState.provider != null && !uiState.isSearchMode,
+                                enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
+                                exit = scaleOut() + fadeOut()
+                            ) {
+                                FilterFab(
+                                    isOpen = isFilterOverlayOpen,
+                                    hasActiveFilters = uiState.hasActiveFilters,
+                                    activeFilterCount = uiState.activeFilterCount,
+                                    onClick = { isFilterOverlayOpen = !isFilterOverlayOpen }
+                                )
+                            }
+                        }
                     }
                 }
 
-                // Floating Pagination Bar
-                AnimatedVisibility(
-                    visible = uiState.showPagination,
+                // ── Filter Overlay ────────────────────────────────────────
+                FilterOverlay(
+                    visible = isFilterOverlayOpen,
+                    uiState = uiState,
+                    onDismiss = { isFilterOverlayOpen = false },
+                    onSortChange = { sort -> viewModel.setSelectedSort(sort) },
+                    onExtraFilterChange = viewModel::setExtraFilter,
+                    onTagChange = { tag -> viewModel.setSelectedTag(tag) },
+                    onClearFilters = {
+                        viewModel.clearFilters()
+                        isFilterOverlayOpen = false
+                    },
+                    onApply = { isFilterOverlayOpen = false }
+                )
+
+            } // end outer Box
+        } // end NoveryPullToRefreshBox
+    } // end Scaffold
+}
+
+// ============================================================================
+// Filter FAB
+// ============================================================================
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterFab(
+    isOpen: Boolean,
+    hasActiveFilters: Boolean,
+    activeFilterCount: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val rotation by animateFloatAsState(
+        targetValue = if (isOpen) 45f else 0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "fab_rotation"
+    )
+
+    val fabColor by animateColorAsState(
+        targetValue = when {
+            isOpen -> MaterialTheme.colorScheme.primary
+            hasActiveFilters -> MaterialTheme.colorScheme.tertiary
+            else -> MaterialTheme.colorScheme.surfaceContainerHigh
+        },
+        animationSpec = tween(200),
+        label = "fab_color"
+    )
+
+    val iconColor by animateColorAsState(
+        targetValue = when {
+            isOpen -> MaterialTheme.colorScheme.onPrimary
+            hasActiveFilters -> MaterialTheme.colorScheme.onTertiary
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        animationSpec = tween(200),
+        label = "fab_icon_color"
+    )
+
+    Box(modifier = modifier) {
+        Surface(
+            onClick = onClick,
+            shape = RoundedCornerShape(BrowseDesign.radiusLg),
+            color = fabColor,
+            shadowElevation = if (isOpen) 12.dp else 6.dp,
+            modifier = Modifier
+                .size(BrowseDesign.fabSize)
+                .semantics {
+                    contentDescription = if (isOpen) "Close filters" else "Open filters"
+                    role = Role.Button
+                }
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = if (isOpen) Icons.Rounded.Close else Icons.Rounded.Tune,
+                    contentDescription = null,
+                    tint = iconColor,
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = BrowseDesign.spacingXl),
-                    enter = slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                    ) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-                ) {
-                    PaginationBar(
-                        currentPage = uiState.currentPage,
-                        onPrevious = viewModel::previousPage,
-                        onNext = viewModel::nextPage,
-                        hasPrevious = uiState.hasPreviousPage,
-                        isLoading = uiState.isLoading
+                        .size(BrowseDesign.iconLg)
+                        .graphicsLayer { rotationZ = rotation }
+                )
+            }
+        }
+
+        // Badge
+        AnimatedVisibility(
+            visible = activeFilterCount > 0 && !isOpen,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 4.dp, y = (-4).dp),
+            enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
+            exit = scaleOut() + fadeOut()
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(20.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        text = activeFilterCount.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onError,
+                        fontSize = 10.sp
                     )
                 }
+            }
+        }
+    }
+}
 
-                // Floating Search Results Indicator
-                AnimatedVisibility(
-                    visible = uiState.showSearchIndicator,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = BrowseDesign.spacingXl),
-                    enter = slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                    ) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+// ============================================================================
+// Filter Overlay (Bottom Sheet Modal)
+// ============================================================================
+
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterOverlay(
+    visible: Boolean,
+    uiState: ProviderBrowseUiState,
+    onDismiss: () -> Unit,
+    onSortChange: (String?) -> Unit,
+    onTagChange: (String?) -> Unit,
+    onClearFilters: () -> Unit,
+    onApply: () -> Unit,
+    onExtraFilterChange: (key: String, value: String?) -> Unit = { _, _ -> }
+) {
+    val provider = uiState.provider ?: return
+
+    // Scrim backdrop
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(250)),
+        exit = fadeOut(tween(200))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss
+                )
+        )
+    }
+
+    // Bottom sheet
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically(
+            initialOffsetY = { it },
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            )
+        ) + fadeIn(tween(150)),
+        exit = slideOutVertically(
+            targetOffsetY = { it },
+            animationSpec = tween(250, easing = FastOutSlowInEasing)
+        ) + fadeOut(tween(200))
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.85f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { /* Consume clicks */ }
+                    ),
+                shape = RoundedCornerShape(
+                    topStart = BrowseDesign.radiusXxl,
+                    topEnd = BrowseDesign.radiusXxl
+                ),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 24.dp,
+                tonalElevation = 3.dp
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+
+                    // ═══════════════════════════════════════════════════
+                    // Drag Handle Area (Clickable to dismiss)
+                    // ═══════════════════════════════════════════════════
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onDismiss
+                            )
+                            .padding(vertical = BrowseDesign.spacingMd),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(48.dp)
+                                .height(4.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                    RoundedCornerShape(2.dp)
+                                )
+                        )
+                    }
+
+                    // ═══════════════════════════════════════════════════
+                    // Header Section
+                    // ═══════════════════════════════════════════════════
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 1.dp
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        horizontal = BrowseDesign.spacingXxl,
+                                        vertical = BrowseDesign.spacingLg
+                                    ),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Filters",
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    AnimatedContent(
+                                        targetState = uiState.activeFilterCount,
+                                        transitionSpec = {
+                                            (slideInVertically { -it } + fadeIn())
+                                                .togetherWith(slideOutVertically { it } + fadeOut())
+                                        },
+                                        label = "filter_count"
+                                    ) { count ->
+                                        Text(
+                                            text = when {
+                                                count == 0 -> "No active filters"
+                                                count == 1 -> "1 filter applied"
+                                                else -> "$count filters applied"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium,
+                                            color = if (count > 0)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // Reset button
+                                AnimatedVisibility(
+                                    visible = uiState.hasActiveFilters,
+                                    enter = scaleIn() + fadeIn(),
+                                    exit = scaleOut() + fadeOut()
+                                ) {
+                                    Surface(
+                                        onClick = onClearFilters,
+                                        shape = RoundedCornerShape(BrowseDesign.radiusMd),
+                                        color = MaterialTheme.colorScheme.errorContainer
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(
+                                                horizontal = BrowseDesign.spacingMd,
+                                                vertical = BrowseDesign.spacingSm
+                                            ),
+                                            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingXs),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Refresh,
+                                                contentDescription = "Reset filters",
+                                                modifier = Modifier.size(BrowseDesign.iconSm),
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                            Text(
+                                                text = "Reset",
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+
+                    // ═══════════════════════════════════════════════════
+                    // Scrollable Filter Content - FIXED
+                    // ═══════════════════════════════════════════════════
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = BrowseDesign.spacingXxl)
+                            .padding(top = BrowseDesign.spacingXl, bottom = BrowseDesign.spacingMd),
+                        verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingXxl)
+                    ) {
+
+                        // ─── Sort Section ───────────────────────────────
+                        if (provider.orderBys.isNotEmpty()) {
+                            OverlayFilterSection(
+                                title = "Sort By",
+                                icon = Icons.Rounded.Sort,
+                                accentColor = MaterialTheme.colorScheme.primary
+                            ) {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
+                                    verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm)
+                                ) {
+                                    provider.orderBys.forEach { option ->
+                                        OverlayFilterChip(
+                                            text = option.label,
+                                            selected = uiState.selectedSort == option.value,
+                                            onClick = { onSortChange(option.value) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // ─── Genre/Tags Section ─────────────────────────
+                        if (provider.tags.isNotEmpty()) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            )
+                            OverlayFilterSection(
+                                title = "Genres & Tags",
+                                icon = Icons.Rounded.Category,
+                                accentColor = MaterialTheme.colorScheme.tertiary
+                            ) {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
+                                    verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm)
+                                ) {
+                                    provider.tags.forEach { tag ->
+                                        OverlayFilterChip(
+                                            text = tag.label,
+                                            selected = uiState.selectedTag == tag.value,
+                                            onClick = { onTagChange(tag.value) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // ─── Extra Filter Groups (Provider-specific) ────
+                        uiState.provider?.extraFilterGroups?.forEach { group ->
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            )
+                            OverlayFilterSection(
+                                title = group.label,
+                                icon = Icons.Rounded.Tune,
+                                accentColor = MaterialTheme.colorScheme.secondary
+                            ) {
+                                val defaultValue = group.defaultValue ?: group.options.firstOrNull()?.value
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
+                                    verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm)
+                                ) {
+                                    group.options.forEach { option ->
+                                        val selectedValue = uiState.selectedExtraFilters[group.key] ?: defaultValue
+                                        OverlayFilterChip(
+                                            text = option.label,
+                                            selected = selectedValue == option.value,
+                                            onClick = { onExtraFilterChange(group.key, option.value) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Bottom spacing for last item
+                        Spacer(modifier = Modifier.height(BrowseDesign.spacingXl))
+                    }
+
+                    // ═══════════════════════════════════════════════════
+                    // Apply Button (Sticky Bottom)
+                    // ═══════════════════════════════════════════════════
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 8.dp,
+                        shadowElevation = 8.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                        ) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+
+                            Button(
+                                onClick = onApply,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(BrowseDesign.spacingXxl)
+                                    .height(BrowseDesign.buttonHeight),
+                                shape = RoundedCornerShape(BrowseDesign.radiusMd),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(
+                                    defaultElevation = 2.dp,
+                                    pressedElevation = 8.dp
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(BrowseDesign.iconMd)
+                                )
+                                Spacer(Modifier.width(BrowseDesign.spacingSm))
+                                Text(
+                                    text = "Apply Filters",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Helper Composables
+// ═══════════════════════════════════════════════════════════════════
+
+
+@Composable
+private fun OverlayFilterSection(
+    title: String,
+    icon: ImageVector,
+    accentColor: Color,
+    content: @Composable () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(BrowseDesign.radiusSm),
+                color = accentColor.copy(alpha = 0.15f),
+                modifier = Modifier.size(28.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(BrowseDesign.iconSm),
+                        tint = accentColor
+                    )
+                }
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        content()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OverlayFilterChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val bgColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.surfaceContainerHighest,
+        animationSpec = tween(150),
+        label = "chip_bg"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.onPrimary
+        else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(150),
+        label = "chip_text"
+    )
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(BrowseDesign.radiusMd),
+        color = bgColor,
+        modifier = Modifier.height(BrowseDesign.chipHeight)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = BrowseDesign.spacingMd),
+            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingXs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AnimatedVisibility(
+                visible = selected,
+                enter = expandHorizontally() + fadeIn() + scaleIn(),
+                exit = shrinkHorizontally() + fadeOut() + scaleOut()
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(BrowseDesign.iconSm),
+                    tint = textColor
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = textColor
+            )
+        }
+    }
+}
+
+// ============================================================================
+// Active Filters Chip Row (shown below top bar when filters active)
+// ============================================================================
+
+@Composable
+private fun ActiveFiltersChipRow(
+    uiState: ProviderBrowseUiState,
+    onSortClear: () -> Unit,
+    onTagClear: () -> Unit,
+    onClearAll: () -> Unit
+) {
+    val provider = uiState.provider ?: return
+    val defaultSort = provider.orderBys.firstOrNull()?.value
+    val defaultTag = provider.tags.firstOrNull()?.value
+
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+        shadowElevation = 2.dp
+    ) {
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = BrowseDesign.spacingLg, vertical = BrowseDesign.spacingSm),
+            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingXs)
                 ) {
-                    SearchResultsIndicator(
-                        resultCount = uiState.searchResults.size,
-                        query = uiState.searchQuery,
-                        onClear = viewModel::clearSearch
+                    Icon(
+                        imageVector = Icons.Rounded.FilterList,
+                        contentDescription = null,
+                        modifier = Modifier.size(BrowseDesign.iconSm),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Active:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            val sortLabel = uiState.selectedSortLabel
+            val tagLabel = uiState.selectedTagLabel
+
+            // Sort chip
+            if (uiState.selectedSort != defaultSort && sortLabel != null) {
+                item {
+                    DismissibleChip(
+                        label = sortLabel,
+                        color = MaterialTheme.colorScheme.primary,
+                        onDismiss = onSortClear
+                    )
+                }
+            }
+
+            // Tag chip
+            if (uiState.selectedTag != defaultTag && tagLabel != null) {
+                item {
+                    DismissibleChip(
+                        label = tagLabel,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        onDismiss = onTagClear
+                    )
+                }
+            }
+
+            // Clear all
+            item {
+                Surface(
+                    onClick = onClearAll,
+                    shape = RoundedCornerShape(BrowseDesign.radiusSm),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
+                ) {
+                    Text(
+                        text = "Clear all",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(
+                            horizontal = BrowseDesign.spacingSm,
+                            vertical = BrowseDesign.spacingXs
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DismissibleChip(
+    label: String,
+    color: Color,
+    onDismiss: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(BrowseDesign.radiusSm),
+        color = color.copy(alpha = 0.15f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                start = BrowseDesign.spacingSm,
+                end = BrowseDesign.spacingXs,
+                top = BrowseDesign.spacingXs,
+                bottom = BrowseDesign.spacingXs
+            ),
+            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingXs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = color
+            )
+            Surface(
+                onClick = onDismiss,
+                shape = CircleShape,
+                color = color.copy(alpha = 0.2f),
+                modifier = Modifier.size(16.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Remove filter",
+                        modifier = Modifier.size(10.dp),
+                        tint = color
                     )
                 }
             }
@@ -391,14 +1126,13 @@ private fun ProviderTopBar(
     }
 
     LaunchedEffect(isSearchExpanded) {
-        if (isSearchExpanded) {
-            focusRequester.requestFocus()
-        }
+        if (isSearchExpanded) focusRequester.requestFocus()
     }
 
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = if (isSearchExpanded) 2.dp else 0.dp
+        tonalElevation = if (isSearchExpanded) 2.dp else 0.dp,
+        shadowElevation = if (isSearchExpanded) 4.dp else 0.dp
     ) {
         Row(
             modifier = Modifier
@@ -430,8 +1164,8 @@ private fun ProviderTopBar(
             AnimatedContent(
                 targetState = isSearchExpanded,
                 transitionSpec = {
-                    (fadeIn(tween(200)) + scaleIn(initialScale = 0.95f))
-                        .togetherWith(fadeOut(tween(150)) + scaleOut(targetScale = 0.95f))
+                    (fadeIn(tween(200)) + scaleIn(initialScale = 0.96f))
+                        .togetherWith(fadeOut(tween(150)) + scaleOut(targetScale = 0.96f))
                 },
                 modifier = Modifier.weight(1f),
                 label = "top_bar_content"
@@ -449,50 +1183,40 @@ private fun ProviderTopBar(
                         modifier = Modifier.focusRequester(focusRequester)
                     )
                 } else {
-                    ProviderTitle(
-                        provider = provider,
-                        isSearchMode = isSearchMode
-                    )
+                    ProviderTitle(provider = provider, isSearchMode = isSearchMode)
                 }
             }
 
             if (!isSearchExpanded) {
-                IconButton(
-                    onClick = { isSearchExpanded = true },
-                    modifier = Modifier.semantics {
-                        contentDescription = "Search novels"
-                    }
-                ) {
-                    Box {
+                // Search button with active indicator
+                Box {
+                    IconButton(
+                        onClick = { isSearchExpanded = true },
+                        modifier = Modifier.semantics { contentDescription = "Search novels" }
+                    ) {
                         Icon(
                             imageVector = Icons.Rounded.Search,
                             contentDescription = null,
-                            tint = if (isSearchMode)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface
+                            tint = if (isSearchMode) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface
                         )
-                        if (isSearchMode) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .size(8.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                            )
-                        }
+                    }
+                    if (isSearchMode) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(8.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        )
                     }
                 }
 
                 IconButton(
                     onClick = onOpenWebView,
-                    modifier = Modifier.semantics {
-                        contentDescription = "Open in browser"
-                    }
+                    modifier = Modifier.semantics { contentDescription = "Open in browser" }
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Language,
-                        contentDescription = null
-                    )
+                    Icon(imageVector = Icons.Rounded.Language, contentDescription = null)
                 }
             }
         }
@@ -500,10 +1224,7 @@ private fun ProviderTopBar(
 }
 
 @Composable
-private fun ProviderTitle(
-    provider: MainProvider?,
-    isSearchMode: Boolean
-) {
+private fun ProviderTitle(provider: MainProvider?, isSearchMode: Boolean) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd),
         verticalAlignment = Alignment.CenterVertically
@@ -619,10 +1340,7 @@ private fun SearchField(
                 enter = fadeIn() + scaleIn(),
                 exit = fadeOut() + scaleOut()
             ) {
-                IconButton(
-                    onClick = onClear,
-                    modifier = Modifier.size(28.dp)
-                ) {
+                IconButton(onClick = onClear, modifier = Modifier.size(28.dp)) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = "Clear search",
@@ -631,419 +1349,6 @@ private fun SearchField(
                     )
                 }
             }
-        }
-    }
-}
-
-// ============================================================================
-// Filter Bar & Panel - Reusable Component
-// ============================================================================
-
-@Composable
-private fun FilterBarWithPanel(
-    uiState: ProviderBrowseUiState,
-    showFilters: Boolean,
-    onToggleFilters: () -> Unit,
-    onSortChange: (String?) -> Unit,
-    onTagChange: (String?) -> Unit,
-    onClearFilters: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val dimensions = NoveryTheme.dimensions
-
-    Column(modifier = modifier) {
-        // Filter Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = dimensions.gridPadding, vertical = BrowseDesign.spacingSm),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Active filters summary
-            AnimatedVisibility(
-                visible = uiState.hasActiveFilters && !showFilters,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                ActiveFiltersSummary(
-                    provider = uiState.provider,
-                    selectedSort = uiState.selectedSort,
-                    selectedTag = uiState.selectedTag
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            FilterToggleButton(
-                isOpen = showFilters,
-                hasActiveFilters = uiState.hasActiveFilters,
-                onClick = onToggleFilters
-            )
-        }
-
-        // Expandable Filters Panel
-        AnimatedVisibility(
-            visible = showFilters && uiState.provider != null,
-            enter = expandVertically(tween(250)) + fadeIn(tween(200)),
-            exit = shrinkVertically(tween(200)) + fadeOut(tween(150))
-        ) {
-            FiltersPanel(
-                provider = uiState.provider!!,
-                selectedSort = uiState.selectedSort,
-                selectedTag = uiState.selectedTag,
-                onSortChange = onSortChange,
-                onTagChange = onTagChange,
-                onClearFilters = onClearFilters
-            )
-        }
-    }
-}
-
-@Composable
-private fun ActiveFiltersSummary(
-    provider: MainProvider?,
-    selectedSort: String?,
-    selectedTag: String?
-) {
-    val sortLabel = provider?.orderBys?.find { it.value == selectedSort }?.label
-    val tagLabel = provider?.tags?.find { it.value == selectedTag }?.label
-
-    val defaultSort = provider?.orderBys?.firstOrNull()?.value
-    val defaultTag = provider?.tags?.firstOrNull()?.value
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.FilterList,
-            contentDescription = null,
-            modifier = Modifier.size(BrowseDesign.iconSm),
-            tint = MaterialTheme.colorScheme.primary
-        )
-
-        if (sortLabel != null && selectedSort != defaultSort) {
-            ActiveFilterTag(text = sortLabel)
-        }
-        if (tagLabel != null && selectedTag != defaultTag) {
-            ActiveFilterTag(text = tagLabel)
-        }
-    }
-}
-
-@Composable
-private fun ActiveFilterTag(text: String) {
-    Surface(
-        shape = RoundedCornerShape(BrowseDesign.radiusSm),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = BrowseDesign.spacingSm, vertical = BrowseDesign.spacingXs)
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FilterToggleButton(
-    isOpen: Boolean,
-    hasActiveFilters: Boolean,
-    onClick: () -> Unit
-) {
-    val rotation by animateFloatAsState(
-        targetValue = if (isOpen) 180f else 0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "filter_rotation"
-    )
-
-    val color = when {
-        isOpen -> MaterialTheme.colorScheme.primary
-        hasActiveFilters -> MaterialTheme.colorScheme.tertiary
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    val bgColor = when {
-        isOpen -> MaterialTheme.colorScheme.primaryContainer
-        hasActiveFilters -> MaterialTheme.colorScheme.tertiaryContainer
-        else -> MaterialTheme.colorScheme.surfaceContainerHigh
-    }
-
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(BrowseDesign.radiusMd),
-        color = bgColor,
-        modifier = Modifier.height(BrowseDesign.buttonHeight)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = BrowseDesign.spacingMd),
-            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Tune,
-                contentDescription = null,
-                modifier = Modifier.size(BrowseDesign.iconMd),
-                tint = color
-            )
-
-            Text(
-                text = "Filters",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = color
-            )
-
-            if (hasActiveFilters && !isOpen) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(MaterialTheme.colorScheme.tertiary, CircleShape)
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Rounded.KeyboardArrowDown,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(BrowseDesign.iconMd)
-                    .graphicsLayer { rotationZ = rotation },
-                tint = color
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun FiltersPanel(
-    provider: MainProvider,
-    selectedSort: String?,
-    selectedTag: String?,
-    onSortChange: (String?) -> Unit,
-    onTagChange: (String?) -> Unit,
-    onClearFilters: () -> Unit
-) {
-    val dimensions = NoveryTheme.dimensions
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = dimensions.gridPadding)
-            .padding(bottom = BrowseDesign.spacingMd),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(BrowseDesign.radiusXl),
-        tonalElevation = 1.dp,
-        shadowElevation = 2.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(BrowseDesign.spacingLg),
-            verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingLg)
-        ) {
-            FilterPanelHeader(onClearFilters = onClearFilters)
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-            // Sort Section
-            FilterSection(
-                title = "Sort By",
-                icon = Icons.Rounded.Sort,
-                iconTint = MaterialTheme.colorScheme.primary
-            ) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
-                    verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm)
-                ) {
-                    provider.orderBys.forEach { option ->
-                        FilterChip(
-                            text = option.label,
-                            selected = selectedSort == option.value,
-                            onClick = { onSortChange(option.value) }
-                        )
-                    }
-                }
-            }
-
-            if (provider.tags.isNotEmpty()) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                FilterSection(
-                    title = "Genre",
-                    icon = Icons.Rounded.Category,
-                    iconTint = MaterialTheme.colorScheme.tertiary
-                ) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
-                        verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm)
-                    ) {
-                        provider.tags.forEach { tag ->
-                            FilterChip(
-                                text = tag.label,
-                                selected = selectedTag == tag.value,
-                                onClick = { onTagChange(tag.value) }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FilterPanelHeader(onClearFilters: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                shape = RoundedCornerShape(BrowseDesign.radiusMd),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = Icons.Rounded.Tune,
-                        contentDescription = null,
-                        modifier = Modifier.size(BrowseDesign.iconMd),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            Column {
-                Text(
-                    text = "Filters",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Customize your browse",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        Surface(
-            onClick = onClearFilters,
-            shape = RoundedCornerShape(BrowseDesign.radiusMd),
-            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = BrowseDesign.spacingMd, vertical = BrowseDesign.spacingSm),
-                horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingXs),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.size(BrowseDesign.iconSm),
-                    tint = MaterialTheme.colorScheme.error
-                )
-                Text(
-                    text = "Reset",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FilterSection(
-    title: String,
-    icon: ImageVector,
-    iconTint: Color,
-    content: @Composable () -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd)) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(BrowseDesign.iconSm),
-                tint = iconTint
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        content()
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FilterChip(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val backgroundColor by animateColorAsState(
-        targetValue = if (selected)
-            MaterialTheme.colorScheme.primary
-        else
-            MaterialTheme.colorScheme.surfaceContainerHighest,
-        animationSpec = tween(150),
-        label = "chip_bg"
-    )
-
-    val contentColor by animateColorAsState(
-        targetValue = if (selected)
-            MaterialTheme.colorScheme.onPrimary
-        else
-            MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = tween(150),
-        label = "chip_content"
-    )
-
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(BrowseDesign.radiusMd),
-        color = backgroundColor,
-        modifier = Modifier.height(BrowseDesign.chipHeight)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = BrowseDesign.spacingMd),
-            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingXs),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AnimatedVisibility(
-                visible = selected,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut()
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(BrowseDesign.iconSm),
-                    tint = contentColor
-                )
-            }
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                color = contentColor
-            )
         }
     }
 }
@@ -1166,7 +1471,10 @@ private fun PageIndicator(currentPage: Int, isLoading: Boolean) {
         modifier = Modifier.padding(horizontal = BrowseDesign.spacingXs)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = BrowseDesign.spacingLg, vertical = BrowseDesign.spacingMd),
+            modifier = Modifier.padding(
+                horizontal = BrowseDesign.spacingLg,
+                vertical = BrowseDesign.spacingMd
+            ),
             horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1191,12 +1499,21 @@ private fun PageIndicator(currentPage: Int, isLoading: Boolean) {
                 }
             }
 
-            Text(
-                text = "Page $currentPage",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            AnimatedContent(
+                targetState = currentPage,
+                transitionSpec = {
+                    (slideInVertically { -it } + fadeIn())
+                        .togetherWith(slideOutVertically { it } + fadeOut())
+                },
+                label = "page_number"
+            ) { page ->
+                Text(
+                    text = "Page $page",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
     }
 }
@@ -1210,7 +1527,7 @@ private fun PaginationButton(
     contentDescription: String
 ) {
     val alpha by animateFloatAsState(
-        targetValue = if (enabled) 1f else 0.4f,
+        targetValue = if (enabled) 1f else 0.35f,
         animationSpec = tween(150),
         label = "button_alpha"
     )
@@ -1240,36 +1557,18 @@ private fun PaginationButton(
 }
 
 // ============================================================================
-// Content States - ALL with Filter Support
+// Content States
 // ============================================================================
 
 @Composable
 private fun LoadingContent(
     uiState: ProviderBrowseUiState,
-    showFilters: Boolean,
-    onToggleFilters: () -> Unit,
-    onSortChange: (String?) -> Unit,
-    onTagChange: (String?) -> Unit,
-    onClearFilters: () -> Unit,
     gridColumns: Int
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Show filters even during loading (not in search mode)
-        if (uiState.provider != null && !uiState.isSearchMode) {
-            FilterBarWithPanel(
-                uiState = uiState,
-                showFilters = showFilters,
-                onToggleFilters = onToggleFilters,
-                onSortChange = onSortChange,
-                onTagChange = onTagChange,
-                onClearFilters = onClearFilters
-            )
-        }
-
         if (uiState.isSearching) {
             SearchingHeader(query = uiState.searchQuery)
         }
-
         NovelGridSkeleton(columns = gridColumns)
     }
 }
@@ -1315,50 +1614,26 @@ private fun SearchingHeader(query: String) {
 @Composable
 private fun EmptyContent(
     uiState: ProviderBrowseUiState,
-    showFilters: Boolean,
-    onToggleFilters: () -> Unit,
-    onSortChange: (String?) -> Unit,
-    onTagChange: (String?) -> Unit,
-    onClearFilters: () -> Unit,
     onRetry: () -> Unit,
+    onClearFilters: () -> Unit,
     onOpenWebView: () -> Unit
 ) {
-    // Make the entire column scrollable so pull-to-refresh works
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(BrowseDesign.spacingXxl),
+        contentAlignment = Alignment.Center
     ) {
-        // ALWAYS show filters when not in search mode - this is the key fix!
-        if (uiState.provider != null && !uiState.isSearchMode) {
-            FilterBarWithPanel(
-                uiState = uiState,
-                showFilters = showFilters,
-                onToggleFilters = onToggleFilters,
-                onSortChange = onSortChange,
-                onTagChange = onTagChange,
-                onClearFilters = onClearFilters
-            )
-        }
-
-        // Empty state card
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(BrowseDesign.spacingXxl),
-            contentAlignment = Alignment.Center
-        ) {
-            EmptyStateCard(
-                isSearchMode = uiState.isSearchMode,
-                hasActiveFilters = uiState.hasActiveFilters,
-                selectedSortLabel = uiState.selectedSortLabel,
-                selectedTagLabel = uiState.selectedTagLabel,
-                onClearFilters = onClearFilters,
-                onRetry = onRetry,
-                onOpenWebView = onOpenWebView
-            )
-        }
+        EmptyStateCard(
+            isSearchMode = uiState.isSearchMode,
+            hasActiveFilters = uiState.hasActiveFilters,
+            selectedSortLabel = uiState.selectedSortLabel,
+            selectedTagLabel = uiState.selectedTagLabel,
+            onClearFilters = onClearFilters,
+            onRetry = onRetry,
+            onOpenWebView = onOpenWebView
+        )
     }
 }
 
@@ -1384,13 +1659,13 @@ private fun EmptyStateCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingLg)
         ) {
-            // Icon
             Surface(
                 shape = CircleShape,
-                color = if (hasActiveFilters && !isSearchMode)
-                    MaterialTheme.colorScheme.tertiaryContainer
-                else
-                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = when {
+                    isSearchMode -> MaterialTheme.colorScheme.surfaceContainerHigh
+                    hasActiveFilters -> MaterialTheme.colorScheme.tertiaryContainer
+                    else -> MaterialTheme.colorScheme.surfaceContainerHigh
+                },
                 modifier = Modifier.size(80.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -1404,13 +1679,11 @@ private fun EmptyStateCard(
                         modifier = Modifier.size(BrowseDesign.iconXl),
                         tint = if (hasActiveFilters && !isSearchMode)
                             MaterialTheme.colorScheme.tertiary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            // Title and description
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm)
@@ -1425,11 +1698,10 @@ private fun EmptyStateCard(
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
-
                 Text(
                     text = when {
                         isSearchMode -> "Try different search terms or browse available content"
-                        hasActiveFilters -> "Your current filters didn't return any results. Try adjusting them or clear all filters."
+                        hasActiveFilters -> "Your current filters returned no results. Try adjusting them."
                         else -> "This source may be temporarily unavailable"
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -1439,22 +1711,50 @@ private fun EmptyStateCard(
                 )
             }
 
-            // Show active filters when empty due to filters
+            // Active filter info
             if (hasActiveFilters && !isSearchMode) {
-                ActiveFiltersInfo(
-                    selectedSortLabel = selectedSortLabel,
-                    selectedTagLabel = selectedTagLabel
-                )
+                Surface(
+                    shape = RoundedCornerShape(BrowseDesign.radiusMd),
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(BrowseDesign.spacingMd),
+                        horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.FilterList,
+                            contentDescription = null,
+                            modifier = Modifier.size(BrowseDesign.iconSm),
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                        Column {
+                            selectedSortLabel?.let {
+                                Text(
+                                    text = "Sort: $it",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                            selectedTagLabel?.let {
+                                Text(
+                                    text = "Genre: $it",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             // Action buttons
             when {
-                isSearchMode -> {
-                    // No additional buttons for search - user can use the floating indicator
-                }
+                isSearchMode -> { /* floating indicator handles this */ }
 
                 hasActiveFilters -> {
-                    // Primary action: Clear filters
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd)
@@ -1462,9 +1762,6 @@ private fun EmptyStateCard(
                         Button(
                             onClick = onClearFilters,
                             shape = RoundedCornerShape(BrowseDesign.radiusMd),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
                             contentPadding = PaddingValues(
                                 horizontal = BrowseDesign.spacingXxl,
                                 vertical = BrowseDesign.spacingMd
@@ -1475,30 +1772,27 @@ private fun EmptyStateCard(
                                 contentDescription = null,
                                 modifier = Modifier.size(BrowseDesign.iconMd)
                             )
-                            Spacer(modifier = Modifier.width(BrowseDesign.spacingSm))
+                            Spacer(Modifier.width(BrowseDesign.spacingSm))
                             Text("Clear All Filters", fontWeight = FontWeight.SemiBold)
                         }
 
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd)
-                        ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd)) {
                             TextButton(onClick = onRetry) {
                                 Icon(
-                                    imageVector = Icons.Rounded.Refresh,
+                                    Icons.Rounded.Refresh,
                                     contentDescription = null,
                                     modifier = Modifier.size(BrowseDesign.iconSm)
                                 )
-                                Spacer(modifier = Modifier.width(BrowseDesign.spacingXs))
+                                Spacer(Modifier.width(BrowseDesign.spacingXs))
                                 Text("Retry")
                             }
-
                             TextButton(onClick = onOpenWebView) {
                                 Icon(
-                                    imageVector = Icons.Rounded.Language,
+                                    Icons.Rounded.Language,
                                     contentDescription = null,
                                     modifier = Modifier.size(BrowseDesign.iconSm)
                                 )
-                                Spacer(modifier = Modifier.width(BrowseDesign.spacingXs))
+                                Spacer(Modifier.width(BrowseDesign.spacingXs))
                                 Text("WebView")
                             }
                         }
@@ -1506,10 +1800,7 @@ private fun EmptyStateCard(
                 }
 
                 else -> {
-                    // No active filters - show retry and webview options
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd)
-                    ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd)) {
                         OutlinedButton(
                             onClick = onRetry,
                             shape = RoundedCornerShape(BrowseDesign.radiusMd),
@@ -1519,14 +1810,13 @@ private fun EmptyStateCard(
                             )
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.Refresh,
+                                Icons.Rounded.Refresh,
                                 contentDescription = null,
                                 modifier = Modifier.size(BrowseDesign.iconSm)
                             )
-                            Spacer(modifier = Modifier.width(BrowseDesign.spacingSm))
+                            Spacer(Modifier.width(BrowseDesign.spacingSm))
                             Text("Retry")
                         }
-
                         Button(
                             onClick = onOpenWebView,
                             shape = RoundedCornerShape(BrowseDesign.radiusMd),
@@ -1536,92 +1826,13 @@ private fun EmptyStateCard(
                             )
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.Language,
+                                Icons.Rounded.Language,
                                 contentDescription = null,
                                 modifier = Modifier.size(BrowseDesign.iconSm)
                             )
-                            Spacer(modifier = Modifier.width(BrowseDesign.spacingSm))
+                            Spacer(Modifier.width(BrowseDesign.spacingSm))
                             Text("WebView")
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ActiveFiltersInfo(
-    selectedSortLabel: String?,
-    selectedTagLabel: String?
-) {
-    Surface(
-        shape = RoundedCornerShape(BrowseDesign.radiusMd),
-        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
-        ),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(BrowseDesign.spacingMd),
-            verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.FilterList,
-                    contentDescription = null,
-                    modifier = Modifier.size(BrowseDesign.iconSm),
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
-                Text(
-                    text = "Active Filters:",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
-                modifier = Modifier.padding(start = BrowseDesign.spacingXl)
-            ) {
-                selectedSortLabel?.let { label ->
-                    Surface(
-                        shape = RoundedCornerShape(BrowseDesign.radiusSm),
-                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
-                    ) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.padding(
-                                horizontal = BrowseDesign.spacingSm,
-                                vertical = BrowseDesign.spacingXs
-                            )
-                        )
-                    }
-                }
-                selectedTagLabel?.let { label ->
-                    Surface(
-                        shape = RoundedCornerShape(BrowseDesign.radiusSm),
-                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
-                    ) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.padding(
-                                horizontal = BrowseDesign.spacingSm,
-                                vertical = BrowseDesign.spacingXs
-                            )
-                        )
                     }
                 }
             }
@@ -1633,11 +1844,6 @@ private fun ActiveFiltersInfo(
 private fun MainContent(
     uiState: ProviderBrowseUiState,
     gridColumns: Int,
-    showFilters: Boolean,
-    onToggleFilters: () -> Unit,
-    onSortChange: (String?) -> Unit,
-    onTagChange: (String?) -> Unit,
-    onClearFilters: () -> Unit,
     onNovelClick: (Novel) -> Unit,
     onNovelLongClick: (Novel) -> Unit,
     appSettings: AppSettings
@@ -1649,27 +1855,16 @@ private fun MainContent(
             LazyVerticalGrid(
                 columns = GridCells.Fixed(gridColumns),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 100.dp),
+                // Extra bottom padding: space for FAB (56dp) + margin (20dp) + pagination (if shown)
+                contentPadding = PaddingValues(
+                    bottom = if (uiState.showPagination) 180.dp else 100.dp
+                ),
                 horizontalArrangement = Arrangement.spacedBy(dimensions.cardSpacing),
                 verticalArrangement = Arrangement.spacedBy(dimensions.cardSpacing)
             ) {
-                if (!uiState.isSearchMode) {
-                    item(span = { GridItemSpan(maxLineSpan) }, key = "filter_bar_panel") {
-                        FilterBarWithPanel(
-                            uiState = uiState,
-                            showFilters = showFilters,
-                            onToggleFilters = onToggleFilters,
-                            onSortChange = onSortChange,
-                            onTagChange = onTagChange,
-                            onClearFilters = onClearFilters
-                        )
-                    }
+                item(span = { GridItemSpan(maxLineSpan) }, key = "spacer_top") {
+                    Spacer(Modifier.height(BrowseDesign.spacingSm))
                 }
-
-                item(span = { GridItemSpan(maxLineSpan) }, key = "spacer") {
-                    Spacer(modifier = Modifier.height(BrowseDesign.spacingSm))
-                }
-
                 items(items = uiState.displayNovels, key = { it.url }) { novel ->
                     NovelCard(
                         novel = novel,
@@ -1681,30 +1876,18 @@ private fun MainContent(
                 }
             }
         }
+
         com.emptycastle.novery.domain.model.DisplayMode.LIST -> {
-            // List mode
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 100.dp),
+                contentPadding = PaddingValues(
+                    bottom = if (uiState.showPagination) 180.dp else 100.dp
+                ),
                 verticalArrangement = Arrangement.spacedBy(dimensions.cardSpacing)
             ) {
-                if (!uiState.isSearchMode) {
-                    item(key = "filter_bar_panel") {
-                        FilterBarWithPanel(
-                            uiState = uiState,
-                            showFilters = showFilters,
-                            onToggleFilters = onToggleFilters,
-                            onSortChange = onSortChange,
-                            onTagChange = onTagChange,
-                            onClearFilters = onClearFilters
-                        )
-                    }
+                item(key = "spacer_top") {
+                    Spacer(Modifier.height(BrowseDesign.spacingSm))
                 }
-
-                item(key = "spacer") {
-                    Spacer(modifier = Modifier.height(BrowseDesign.spacingSm))
-                }
-
                 items(uiState.displayNovels, key = { it.url }) { novel ->
                     com.emptycastle.novery.ui.components.NovelListItem(
                         novel = novel,
@@ -1720,51 +1903,28 @@ private fun MainContent(
 }
 
 // ============================================================================
-// Error State - Also with Filter Support
+// Error State
 // ============================================================================
 
 @Composable
 private fun ErrorState(
     uiState: ProviderBrowseUiState,
-    showFilters: Boolean,
-    onToggleFilters: () -> Unit,
-    onSortChange: (String?) -> Unit,
-    onTagChange: (String?) -> Unit,
-    onClearFilters: () -> Unit,
     onRetry: () -> Unit,
     onOpenWebView: () -> Unit
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(BrowseDesign.spacingXxl),
+        contentAlignment = Alignment.Center
     ) {
-        // Show filters even in error state
-        if (uiState.provider != null && !uiState.isSearchMode) {
-            FilterBarWithPanel(
-                uiState = uiState,
-                showFilters = showFilters,
-                onToggleFilters = onToggleFilters,
-                onSortChange = onSortChange,
-                onTagChange = onTagChange,
-                onClearFilters = onClearFilters
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(BrowseDesign.spacingXxl),
-            contentAlignment = Alignment.Center
-        ) {
-            ErrorStateCard(
-                message = uiState.displayError ?: "Unknown error",
-                isCloudflareError = uiState.isCloudflareError,
-                onRetry = onRetry,
-                onOpenWebView = onOpenWebView
-            )
-        }
+        ErrorStateCard(
+            message = uiState.displayError ?: "Unknown error",
+            isCloudflareError = uiState.isCloudflareError,
+            onRetry = onRetry,
+            onOpenWebView = onOpenWebView
+        )
     }
 }
 
@@ -1791,22 +1951,17 @@ private fun ErrorStateCard(
                 shape = CircleShape,
                 color = if (isCloudflareError)
                     MaterialTheme.colorScheme.tertiaryContainer
-                else
-                    MaterialTheme.colorScheme.errorContainer,
+                else MaterialTheme.colorScheme.errorContainer,
                 modifier = Modifier.size(80.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
-                        imageVector = if (isCloudflareError)
-                            Icons.Rounded.Security
-                        else
-                            Icons.Rounded.CloudOff,
+                        imageVector = if (isCloudflareError) Icons.Rounded.Security
+                        else Icons.Rounded.CloudOff,
                         contentDescription = null,
                         modifier = Modifier.size(BrowseDesign.iconXl),
-                        tint = if (isCloudflareError)
-                            MaterialTheme.colorScheme.tertiary
-                        else
-                            MaterialTheme.colorScheme.error
+                        tint = if (isCloudflareError) MaterialTheme.colorScheme.tertiary
+                        else MaterialTheme.colorScheme.error
                     )
                 }
             }
@@ -1820,7 +1975,6 @@ private fun ErrorStateCard(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
@@ -1844,14 +1998,13 @@ private fun ErrorStateCard(
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.Language,
+                            Icons.Rounded.Language,
                             contentDescription = null,
                             modifier = Modifier.size(BrowseDesign.iconMd)
                         )
-                        Spacer(modifier = Modifier.width(BrowseDesign.spacingSm))
+                        Spacer(Modifier.width(BrowseDesign.spacingSm))
                         Text("Verify in Browser", fontWeight = FontWeight.SemiBold)
                     }
-
                     TextButton(onClick = onRetry) {
                         Text("Try Again", fontWeight = FontWeight.Medium)
                     }
@@ -1867,14 +2020,13 @@ private fun ErrorStateCard(
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.Language,
+                            Icons.Rounded.Language,
                             contentDescription = null,
                             modifier = Modifier.size(BrowseDesign.iconSm)
                         )
-                        Spacer(modifier = Modifier.width(BrowseDesign.spacingSm))
+                        Spacer(Modifier.width(BrowseDesign.spacingSm))
                         Text("WebView")
                     }
-
                     Button(
                         onClick = onRetry,
                         shape = RoundedCornerShape(BrowseDesign.radiusMd),
@@ -1884,11 +2036,11 @@ private fun ErrorStateCard(
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.Refresh,
+                            Icons.Rounded.Refresh,
                             contentDescription = null,
                             modifier = Modifier.size(BrowseDesign.iconSm)
                         )
-                        Spacer(modifier = Modifier.width(BrowseDesign.spacingSm))
+                        Spacer(Modifier.width(BrowseDesign.spacingSm))
                         Text("Retry")
                     }
                 }

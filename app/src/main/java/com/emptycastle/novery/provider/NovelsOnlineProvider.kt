@@ -308,7 +308,12 @@ class NovelsOnlineProvider : MainProvider() {
     // MAIN PAGE
     // ================================================================
 
-    override suspend fun loadMainPage(page: Int, orderBy: String?, tag: String?): MainPageResult {
+    override suspend fun loadMainPage(
+        page: Int,
+        orderBy: String?,
+        tag: String?,
+        extraFilters: Map<String, String>
+    ): MainPageResult {
         val url = if (tag.isNullOrBlank()) {
             "$mainUrl/top-novel/$page"
         } else {

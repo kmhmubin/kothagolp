@@ -2,6 +2,7 @@ package com.emptycastle.novery.provider
 
 import androidx.annotation.DrawableRes
 import com.emptycastle.novery.data.remote.NetworkClient
+import com.emptycastle.novery.domain.model.FilterGroup
 import com.emptycastle.novery.domain.model.FilterOption
 import com.emptycastle.novery.domain.model.MainPageResult
 import com.emptycastle.novery.domain.model.Novel
@@ -23,6 +24,7 @@ abstract class MainProvider {
 
     open val tags: List<FilterOption> = emptyList()
     open val orderBys: List<FilterOption> = emptyList()
+    open val extraFilterGroups: List<FilterGroup> = emptyList()
     open val ratingScale: RatingScale = RatingScale.TEN_POINT
 
     /**
@@ -44,7 +46,8 @@ abstract class MainProvider {
     abstract suspend fun loadMainPage(
         page: Int,
         orderBy: String? = null,
-        tag: String? = null
+        tag: String? = null,
+        extraFilters: Map<String, String> = emptyMap()
     ): MainPageResult
 
     abstract suspend fun search(query: String): List<Novel>

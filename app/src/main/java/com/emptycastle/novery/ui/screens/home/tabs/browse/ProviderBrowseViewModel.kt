@@ -296,7 +296,8 @@ class ProviderBrowseViewModel(
                 provider = provider,
                 page = _uiState.value.currentPage,
                 orderBy = _uiState.value.selectedSort,
-                tag = _uiState.value.selectedTag
+                tag = _uiState.value.selectedTag,
+                extraFilters = _uiState.value.selectedExtraFilters
             )
 
             result.fold(
@@ -396,6 +397,30 @@ class ProviderBrowseViewModel(
         loadPage()
     }
 
+    fun setExtraFilter(key: String, value: String?) {
+        if (_uiState.value.isSearchMode) exitSearchMode()
+
+        val group = _uiState.value.provider?.extraFilterGroups?.find { it.key == key }
+        val defaultValue = group?.defaultValue ?: group?.options?.firstOrNull()?.value
+
+        val newFilters = _uiState.value.selectedExtraFilters.toMutableMap()
+        if (value == null || value == defaultValue) {
+            newFilters.remove(key)
+        } else {
+            newFilters[key] = value
+        }
+
+        _uiState.update {
+            it.copy(
+                selectedExtraFilters = newFilters,
+                currentPage = 1,
+                novels = emptyList(),
+                error = null
+            )
+        }
+        loadPage()
+    }
+
     fun nextPage() {
         if (_uiState.value.isSearchMode || _uiState.value.isLoading || _uiState.value.isRefreshing) return
 
@@ -420,6 +445,7 @@ class ProviderBrowseViewModel(
             it.copy(
                 selectedSort = provider.orderBys.firstOrNull()?.value,
                 selectedTag = provider.tags.firstOrNull()?.value,
+                selectedExtraFilters = emptyMap(),
                 currentPage = 1,
                 novels = emptyList()
             )
@@ -448,6 +474,14 @@ class ProviderBrowseViewModel(
 
     fun addToLibrary(novel: Novel, status: ReadingStatus) {
         viewModelScope.launch { actionSheetManager.addToLibrary(novel, status) }
+    }
+
+    fun addDuplicateAnyway() {
+        viewModelScope.launch { actionSheetManager.addDuplicateAnyway() }
+    }
+
+    fun dismissDuplicateWarning() {
+        actionSheetManager.dismissDuplicateWarning()
     }
 
     fun removeFromLibrary(novelUrl: String) {

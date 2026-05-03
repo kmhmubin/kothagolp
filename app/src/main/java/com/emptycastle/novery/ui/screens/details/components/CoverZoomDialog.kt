@@ -47,12 +47,17 @@ import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.ZoomIn
 import androidx.compose.material.icons.outlined.ZoomOut
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
@@ -60,6 +65,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -102,7 +108,9 @@ private const val TAG = "CoverZoomDialog"
 fun CoverZoomDialog(
     imageUrl: String,
     title: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onChangeCover: () -> Unit = {},
+    onResetCover: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -115,6 +123,7 @@ fun CoverZoomDialog(
     var showControls by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     var isSharing by remember { mutableStateOf(false) }
+    var showCoverMenu by remember { mutableStateOf(false) }
 
     // Image state
     var loadedBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -406,11 +415,12 @@ fun CoverZoomDialog(
                     zoomLevel = animatedScale,
                     showResetButton = scale != 1f,
                     onResetZoom = { resetZoom() },
-                    onDismiss = onDismiss
+                    onDismiss = onDismiss,
+                    onShowCoverMenu = { showCoverMenu = true }  // Add this
                 )
             }
 
-            // Bottom action bar
+            // Bottom action bar (updated)
             AnimatedVisibility(
                 visible = showControls,
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -434,7 +444,8 @@ fun CoverZoomDialog(
                             offsetX = 0f
                             offsetY = 0f
                         }
-                    }
+                    },
+                    onChangeCover = { showCoverMenu = true }  // Add this
                 )
             }
 
@@ -525,6 +536,21 @@ fun CoverZoomDialog(
             }
         }
     }
+
+    // Cover menu dropdown
+    if (showCoverMenu) {
+        CoverMenuDialog(
+            onDismiss = { showCoverMenu = false },
+            onChangeCover = {
+                showCoverMenu = false
+                onChangeCover()
+            },
+            onResetCover = {
+                showCoverMenu = false
+                onResetCover()
+            }
+        )
+    }
 }
 
 @Composable
@@ -532,7 +558,8 @@ private fun TopControlBar(
     zoomLevel: Float,
     showResetButton: Boolean,
     onResetZoom: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onShowCoverMenu: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -557,6 +584,13 @@ private fun TopControlBar(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Add cover options button
+            ControlButton(
+                icon = Icons.Default.MoreVert,
+                contentDescription = "Cover options",
+                onClick = onShowCoverMenu
+            )
+
             AnimatedVisibility(
                 visible = showResetButton,
                 enter = fadeIn(),
@@ -611,7 +645,8 @@ private fun BottomActionBar(
     onShare: () -> Unit,
     onCopyUrl: () -> Unit,
     onZoomIn: () -> Unit,
-    onZoomOut: () -> Unit
+    onZoomOut: () -> Unit,
+    onChangeCover: () -> Unit = {}  // Add this
 ) {
     Column(
         modifier = Modifier
@@ -644,6 +679,12 @@ private fun BottomActionBar(
                     isLoading = isSharing,
                     enabled = isImageLoaded,
                     onClick = onShare
+                )
+
+                ActionButton(
+                    icon = Icons.Default.Image,  // Use appropriate icon
+                    label = "Change",
+                    onClick = onChangeCover
                 )
 
                 ActionButton(
@@ -924,4 +965,106 @@ private fun sanitizeFilename(name: String): String {
         .take(50)
         .trimEnd('_')
         .ifEmpty { "cover" }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CoverMenuDialog(
+    onDismiss: () -> Unit,
+    onChangeCover: () -> Unit,
+    onResetCover: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.DarkGray,
+        shape = RoundedCornerShape(20.dp),
+        title = {
+            Text(
+                text = "Cover Options",
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Change Cover
+                Surface(
+                    onClick = onChangeCover,
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "Change Cover",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Choose from gallery",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+
+                // Reset to Original
+                Surface(
+                    onClick = onResetCover,
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "Reset to Original",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Restore default cover",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color.White)
+            }
+        }
+    )
 }

@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +55,7 @@ import com.emptycastle.novery.epub.EpubExportOptions
 import com.emptycastle.novery.recommendation.TagNormalizer
 import com.emptycastle.novery.service.DownloadServiceManager
 import com.emptycastle.novery.service.DownloadState
+import com.emptycastle.novery.ui.components.DuplicateLibraryDialog
 import com.emptycastle.novery.ui.components.FullScreenLoading
 import com.emptycastle.novery.ui.screens.details.components.ActionButtonsRow
 import com.emptycastle.novery.ui.screens.details.components.ChapterItem
@@ -103,6 +105,7 @@ fun DetailsScreen(
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
     viewModel: DetailsViewModel = viewModel()
 ) {
+    val showCoverOptions by viewModel.showCoverOptions.collectAsState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val downloadState by DownloadServiceManager.downloadState.collectAsStateWithLifecycle()
     val epubExportState by viewModel.epubExportState.collectAsStateWithLifecycle()
@@ -110,6 +113,19 @@ fun DetailsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+
+    uiState.duplicateWarning?.let { warning ->
+        DuplicateLibraryDialog(
+            target = warning.target,
+            duplicates = warning.duplicates,
+            onViewExisting = { duplicate ->
+                viewModel.dismissDuplicateWarning()
+                onNovelClick(duplicate.novel.url, duplicate.novel.apiName)
+            },
+            onAddAnyway = { viewModel.addDuplicateAnyway() },
+            onDismiss = { viewModel.dismissDuplicateWarning() }
+        )
+    }
 
     val isDownloadingThisNovel = downloadState.isActive && downloadState.novelUrl == novelUrl
     val filteredChapters = uiState.filteredChapters
@@ -155,13 +171,14 @@ fun DetailsScreen(
         }
     }
 
-    // Dialogs and Bottom Sheets
+    // Dialogs and Bottom Sheets (includes CoverOptionsBottomSheet)
     DetailsDialogs(
         uiState = uiState,
         downloadState = downloadState,
         viewModel = viewModel,
         context = context,
-        novelUrl = novelUrl
+        novelUrl = novelUrl,
+        showCoverOptions = showCoverOptions
     )
 
     // EPUB Export Dialog
@@ -257,7 +274,7 @@ fun DetailsScreen(
                                         onNovelClick = onNovelClick,
                                         onOpenInWebView = onOpenInWebView,
                                         onNavigateToDownloads = onNavigateToDownloads,
-                                        onNavigateToTagExplorer = onNavigateToTagExplorer, // ADD THIS LINE
+                                        onNavigateToTagExplorer = onNavigateToTagExplorer,
                                         onExportEpub = {
                                             if (viewModel.hasDownloadedChapters()) {
                                                 epubFilePicker.launch(viewModel.generateEpubFileName())
@@ -431,16 +448,34 @@ private fun DetailsDialogs(
     downloadState: DownloadState,
     viewModel: DetailsViewModel,
     context: android.content.Context,
-    novelUrl: String
+    novelUrl: String,
+    showCoverOptions: Boolean
 ) {
+    // Image picker launcher for cover change
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            viewModel.updateCustomCover(context, it)
+        }
+    }
+
+    // Cover zoom dialog with cover change capabilities
     if (uiState.showCoverZoom && uiState.novelDetails?.posterUrl != null) {
         CoverZoomDialog(
             imageUrl = uiState.novelDetails.posterUrl!!,
             title = uiState.novelDetails.name,
-            onDismiss = { viewModel.hideCoverZoom() }
+            onDismiss = { viewModel.hideCoverZoom() },
+            onChangeCover = {
+                imagePickerLauncher.launch("image/*")
+            },
+            onResetCover = {
+                viewModel.resetToOriginalCover(context)
+            }
         )
     }
 
+    // Download menu bottom sheet
     if (uiState.showDownloadMenu) {
         val totalChapters = uiState.novelDetails?.chapters?.size ?: 0
         val downloadedCount = uiState.downloadedChapters.size
@@ -483,6 +518,7 @@ private fun DetailsDialogs(
         )
     }
 
+    // Status menu bottom sheet
     if (uiState.showStatusMenu) {
         StatusBottomSheet(
             currentStatus = uiState.readingStatus,
@@ -558,6 +594,7 @@ private fun DetailsContent(
                 },
                 onExportEpub = onExportEpub
             )
+            // Note: CoverOptionsBottomSheet is now handled in DetailsDialogs
         }
 
         // Action buttons

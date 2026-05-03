@@ -15,6 +15,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -118,7 +119,7 @@ fun NovelHeader(
     onCoverClick: () -> Unit,
     onShare: (() -> Unit)? = null,
     onOpenInWebView: (() -> Unit)? = null,
-    onExportEpub: (() -> Unit)? = null,  // Add this parameter
+    onExportEpub: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -376,6 +377,7 @@ private fun HeaderContentRow(
     readingStatus: ReadingStatus,
     readProgress: Float,
     onCoverClick: () -> Unit,
+    onCoverLongClick: () -> Unit = {},
     onToggleFavorite: () -> Unit,
     onStatusClick: () -> Unit
 ) {
@@ -392,7 +394,8 @@ private fun HeaderContentRow(
             chapterCount = details.chapters.size,
             readProgress = readProgress,
             isFavorite = isFavorite,
-            onClick = onCoverClick
+            onClick = onCoverClick,
+            onLongClick = onCoverLongClick
         )
 
         NovelInfoColumn(
@@ -418,10 +421,12 @@ private fun NovelCoverCard(
     chapterCount: Int,
     readProgress: Float,
     isFavorite: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}  // Add this parameter
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val haptic = LocalHapticFeedback.current
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.97f else 1f,
@@ -440,10 +445,14 @@ private fun NovelCoverCard(
                 ambientColor = Color.Black.copy(alpha = 0.4f),
                 spotColor = Color.Black.copy(alpha = 0.4f)
             )
-            .clickable(
+            .combinedClickable(
                 interactionSource = interactionSource,
                 indication = null,
-                onClick = onClick
+                onClick = onClick,
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                }
             ),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)

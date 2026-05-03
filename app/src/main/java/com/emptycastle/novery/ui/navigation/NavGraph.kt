@@ -325,6 +325,7 @@ fun NoveryNavGraph(
 
             TagExplorerScreen(
                 tagName = tagName,
+                appSettings = appSettings,
                 onBack = { navController.popBackStack() },
                 onNovelClick = { novelUrl, providerName ->
                     navController.navigate(

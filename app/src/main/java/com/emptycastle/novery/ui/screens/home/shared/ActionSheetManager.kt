@@ -25,7 +25,13 @@ data class ActionSheetState(
     val isVisible: Boolean = false,
     val data: NovelActionSheetData? = null,
     val source: ActionSheetSource? = null,
-    val historyItem: HistoryItem? = null
+    val historyItem: HistoryItem? = null,
+    val duplicateWarning: DuplicateLibraryWarning? = null
+)
+
+data class DuplicateLibraryWarning(
+    val target: Novel,
+    val duplicates: List<LibraryItem>
 )
 
 /**
@@ -191,9 +197,19 @@ class ActionSheetManager {
     }
 
     // Library actions
-    suspend fun addToLibrary(novel: Novel): Boolean {
+    suspend fun addToLibrary(novel: Novel, allowDuplicate: Boolean = false): Boolean {
         return try {
+            if (!allowDuplicate) {
+                // The bottom sheet lets the user decide before adding the same title from another source.
+                val duplicates = libraryRepository.findDuplicateCandidates(novel)
+                if (duplicates.isNotEmpty()) {
+                    _state.update { it.copy(duplicateWarning = DuplicateLibraryWarning(novel, duplicates)) }
+                    return false
+                }
+            }
+
             libraryRepository.addToLibrary(novel)
+            dismissDuplicateWarning()
             refreshLibraryStatus()
             true
         } catch (e: Exception) {
@@ -203,7 +219,15 @@ class ActionSheetManager {
 
     suspend fun addToLibrary(novel: Novel, status: ReadingStatus): Boolean {
         return try {
+            // Check for duplicates first
+            val duplicates = libraryRepository.findDuplicateCandidates(novel)
+            if (duplicates.isNotEmpty()) {
+                _state.update { it.copy(duplicateWarning = DuplicateLibraryWarning(novel, duplicates)) }
+                return false
+            }
+
             libraryRepository.addToLibrary(novel, status)
+            dismissDuplicateWarning()
             _state.update { state ->
                 state.copy(
                     data = state.data?.copy(
@@ -217,6 +241,15 @@ class ActionSheetManager {
         } catch (e: Exception) {
             false
         }
+    }
+
+    fun dismissDuplicateWarning() {
+        _state.update { it.copy(duplicateWarning = null) }
+    }
+
+    suspend fun addDuplicateAnyway(): Boolean {
+        val target = _state.value.duplicateWarning?.target ?: return false
+        return addToLibrary(target, allowDuplicate = true)
     }
 
     suspend fun removeFromLibrary(novelUrl: String): Boolean {

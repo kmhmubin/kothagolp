@@ -12,5 +12,6 @@ data class OfflineNovelEntity(
     val url: String,
     val name: String,
     val coverUrl: String? = null,
-    val savedAt: Long = System.currentTimeMillis()
+    val savedAt: Long = System.currentTimeMillis(),
+    val customCoverUrl: String? = null
 )

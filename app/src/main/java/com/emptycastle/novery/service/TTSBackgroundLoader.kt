@@ -28,7 +28,6 @@ class TTSBackgroundLoader(private val context: Context) {
     private val loadMutex = Mutex()
     private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // Cached chapter data
     private var novelUrl: String = ""
     private var novelName: String = ""
     private var providerName: String = ""
@@ -37,14 +36,12 @@ class TTSBackgroundLoader(private val context: Context) {
     private var chapters: List<Chapter> = emptyList()
     private var currentChapterIndex: Int = -1
 
-    // Pre-cached next chapter content
     private var cachedNextContent: TTSContent? = null
     private var cachedNextIndex: Int = -1
 
-    /**
-     * Configure the loader with novel and chapter information.
-     * Call this when starting TTS playback.
-     */
+    // Paragraph break pause - slightly longer than sentence pause but not excessive
+    private val PARAGRAPH_BREAK_PAUSE_MS = 100
+
     suspend fun configure(
         novelUrl: String,
         providerName: String,
@@ -56,15 +53,12 @@ class TTSBackgroundLoader(private val context: Context) {
         this@TTSBackgroundLoader.chapters = chapters
         this@TTSBackgroundLoader.currentChapterIndex = currentIndex
 
-        // Load novel details for name and cover
         val details = offlineRepository.getNovelDetails(novelUrl)
         novelName = details?.name ?: "Novel"
         coverUrl = details?.posterUrl
 
-        // Pre-load cover bitmap
         coverBitmap = loadCoverBitmap(coverUrl)
 
-        // Pre-cache next chapter if available
         if (hasNextChapter()) {
             preloadNextChapter()
         }
@@ -78,21 +72,13 @@ class TTSBackgroundLoader(private val context: Context) {
     }
 
     fun getCurrentChapterIndex(): Int = currentChapterIndex
-
     fun getTotalChapters(): Int = chapters.size
-
     fun hasNextChapter(): Boolean = currentChapterIndex < chapters.size - 1
-
     fun hasPreviousChapter(): Boolean = currentChapterIndex > 0
-
     fun getCurrentChapterName(): String = chapters.getOrNull(currentChapterIndex)?.name ?: ""
-
     fun getCurrentChapterUrl(): String = chapters.getOrNull(currentChapterIndex)?.url ?: ""
-
     fun getNovelName(): String = novelName
-
     fun getNovelUrl(): String = novelUrl
-
     fun getCoverBitmap(): Bitmap? = coverBitmap
 
     /**
@@ -104,14 +90,12 @@ class TTSBackgroundLoader(private val context: Context) {
 
         val nextIndex = currentChapterIndex + 1
 
-        // Use cached content if available and still valid
         if (cachedNextContent != null && cachedNextIndex == nextIndex) {
             currentChapterIndex = nextIndex
             val content = cachedNextContent
             cachedNextContent = null
             cachedNextIndex = -1
 
-            // Start pre-loading the next one
             if (hasNextChapter()) {
                 preloadNextChapterAsync()
             }
@@ -119,14 +103,12 @@ class TTSBackgroundLoader(private val context: Context) {
             return@withLock content
         }
 
-        // Load fresh
         val chapter = chapters.getOrNull(nextIndex) ?: return@withLock null
         val content = loadChapterInternal(nextIndex, chapter)
 
         if (content != null) {
             currentChapterIndex = nextIndex
 
-            // Pre-load the next chapter
             if (hasNextChapter()) {
                 preloadNextChapterAsync()
             }
@@ -148,8 +130,6 @@ class TTSBackgroundLoader(private val context: Context) {
 
         if (content != null) {
             currentChapterIndex = prevIndex
-
-            // Invalidate next chapter cache since position changed
             cachedNextContent = null
             cachedNextIndex = -1
 
@@ -225,10 +205,45 @@ class TTSBackgroundLoader(private val context: Context) {
         // Clean HTML and parse into sentences
         val cleanText = cleanHtml(rawContent)
 
-        // Use the SentenceParser object to parse
-        val parsedParagraph = SentenceParser.parse(cleanText)
+        if (cleanText.isBlank()) return emptyList()
 
-        // Convert ParsedSentence to TTSSegment
+        // Split by paragraph markers and parse each paragraph separately
+        val paragraphs = cleanText.split("\u00B6").filter { it.isNotBlank() }
+
+        if (paragraphs.isEmpty()) {
+            // Fallback: parse as single block
+            return parseSingleBlock(cleanText)
+        }
+
+        val segments = mutableListOf<TTSSegment>()
+        var isFirstParagraph = true
+
+        for (paragraph in paragraphs) {
+            val paragraphSegments = parseSingleBlock(paragraph)
+
+            if (paragraphSegments.isEmpty()) continue
+
+            // Add paragraph break pause before this paragraph (except the first one)
+            if (!isFirstParagraph && segments.isNotEmpty()) {
+                // Update the last segment's pause to include paragraph break
+                val lastSegment = segments.last()
+                segments[segments.lastIndex] = TTSSegment(
+                    lastSegment.text,
+                    PARAGRAPH_BREAK_PAUSE_MS
+                )
+            }
+
+            segments.addAll(paragraphSegments)
+            isFirstParagraph = false
+        }
+
+        return segments
+    }
+
+    private fun parseSingleBlock(text: String): List<TTSSegment> {
+        if (text.isBlank()) return emptyList()
+
+        val parsedParagraph = SentenceParser.parse(text)
         return parsedParagraph.sentences.map { sentence ->
             TTSSegment(sentence.text, sentence.pauseAfterMs)
         }
@@ -237,8 +252,10 @@ class TTSBackgroundLoader(private val context: Context) {
     private fun cleanHtml(html: String): String {
         return html
             .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
-            .replace(Regex("<p[^>]*>", RegexOption.IGNORE_CASE), "\n")
-            .replace(Regex("</p>", RegexOption.IGNORE_CASE), "\n")
+            .replace(Regex("<p[^>]*>", RegexOption.IGNORE_CASE), "\u00B6")  // Use pilcrow as paragraph marker
+            .replace(Regex("</p>", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("<div[^>]*>", RegexOption.IGNORE_CASE), "\u00B6")
+            .replace(Regex("</div>", RegexOption.IGNORE_CASE), "")
             .replace(Regex("<[^>]*>"), "")
             .replace(Regex("&nbsp;"), " ")
             .replace(Regex("&amp;"), "&")
@@ -249,8 +266,15 @@ class TTSBackgroundLoader(private val context: Context) {
                 val code = match.value.drop(2).dropLast(1).toIntOrNull()
                 code?.toChar()?.toString() ?: ""
             }
-            .replace(Regex("\\s+"), " ")
-            .trim()
+            // Convert newlines to paragraph markers (but not multiple in a row)
+            .replace(Regex("\\n+"), "\u00B6")
+            // Clean up multiple paragraph markers
+            .replace(Regex("\u00B6+"), "\u00B6")
+            // Normalize spaces (but preserve paragraph markers)
+            .replace(Regex("[ \\t]+"), " ")
+            // Remove spaces around paragraph markers
+            .replace(Regex(" ?\u00B6 ?"), "\u00B6")
+            .trim('\u00B6', ' ', '\n', '\t')
     }
 
     private suspend fun preloadNextChapter() {

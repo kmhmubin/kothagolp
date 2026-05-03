@@ -318,4 +318,12 @@ class OfflineRepository(
         val chapter = offlineDao.getChapter(chapterUrl) ?: return@withContext
         deleteChapters(chapter.novelUrl, listOf(chapterUrl))
     }
+    // ================================================================
+    // CUSTOM COVER
+    // ================================================================
+
+    suspend fun updateCustomCover(novelUrl: String, coverUrl: String?) = withContext(Dispatchers.IO) {
+        offlineDao.updateNovelDetailsCustomCover(novelUrl, coverUrl)
+        offlineDao.updateOfflineNovelCustomCover(novelUrl, coverUrl)
+    }
 }

@@ -77,5 +77,6 @@ class NoveryApp : Application() {
         MainProvider.register(WebnovelProvider())
         MainProvider.register(FreeWebNovelProvider())
         MainProvider.register(AllNovelProvider())
+        //MainProvider.register(EmpireNovelProvider())
     }
 }

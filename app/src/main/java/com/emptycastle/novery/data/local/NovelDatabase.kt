@@ -96,7 +96,7 @@ class DatabaseConverters {
         BlockedAuthorEntity::class,
         AuthorPreferenceEntity::class,
     ],
-    version = 9,  // Bumped from 8 to 9
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
@@ -134,15 +134,20 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_5_6,
                         MIGRATION_6_7,
                         MIGRATION_7_8,
-                        MIGRATION_8_9
+                        MIGRATION_8_9,
+                        MIGRATION_9_10
                     )
-                    .fallbackToDestructiveMigration() // For development - remove in production
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
             }
         }
 
+        /**
+         * Safely adds a column to a table.
+         * Catches exceptions if the column already exists (e.g., from a failed migration).
+         */
         private fun safeAddColumn(
             database: SupportSQLiteDatabase,
             table: String,
@@ -154,6 +159,27 @@ abstract class NovelDatabase : RoomDatabase() {
             } catch (e: Exception) {
                 // Column might already exist - ignore
             }
+        }
+
+        /**
+         * Checks if a column exists in a table.
+         * Useful for conditional migrations.
+         */
+        private fun columnExists(
+            database: SupportSQLiteDatabase,
+            table: String,
+            column: String
+        ): Boolean {
+            val cursor = database.query("PRAGMA table_info($table)")
+            val columns = mutableSetOf<String>()
+            while (cursor.moveToNext()) {
+                val nameIndex = cursor.getColumnIndex("name")
+                if (nameIndex >= 0) {
+                    columns.add(cursor.getString(nameIndex))
+                }
+            }
+            cursor.close()
+            return column in columns
         }
 
         // Migration from version 1 to 2
@@ -365,8 +391,8 @@ abstract class NovelDatabase : RoomDatabase() {
         }
 
         /**
-         * FIXED Migration 7 -> 8
-         * This handles users coming from version 7 (before downloadedAt was added)
+         * Migration 7 -> 8
+         * Handles users coming from version 7 (before downloadedAt was added)
          * Recreates the table to ensure proper schema without SQL DEFAULT
          */
         private val MIGRATION_7_8 = object : Migration(7, 8) {
@@ -376,13 +402,34 @@ abstract class NovelDatabase : RoomDatabase() {
         }
 
         /**
-         * Repair Migration 8 -> 9
-         * This handles users who got the broken v8 migration
+         * Migration 8 -> 9
+         * Handles users who got the broken v8 migration
          * Same logic as 7_8 to fix the schema
          */
         private val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 migrateOfflineChaptersTable(database)
+            }
+        }
+
+        /**
+         * Migration 9 -> 10
+         * Adds customCoverUrl column to tables that store novel cover information.
+         * This allows users to set custom cover images that override the provider's cover.
+         */
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add customCoverUrl to library table (main reading list)
+                safeAddColumn(database, "library", "customCoverUrl", "TEXT")
+
+                // Add customCoverUrl to novel_details table (cached novel info)
+                safeAddColumn(database, "novel_details", "customCoverUrl", "TEXT")
+
+                // Add customCoverUrl to offline_novels table (downloaded novels)
+                safeAddColumn(database, "offline_novels", "customCoverUrl", "TEXT")
+
+                // Add customCoverUrl to history table (reading history)
+                safeAddColumn(database, "history", "customCoverUrl", "TEXT")
             }
         }
 

@@ -23,19 +23,17 @@ data class NovelDetailsEntity(
     val status: String? = null,
     val views: Int? = null,
     val relatedNovelsJson: String? = null,
-
-    // Persist chapter list so cached novel details include their chapters
     val chapters: List<ChapterEntity>? = null,
+    val apiName: String = "",
+    val chapterCount: Int = 0,
+    val cachedAt: Long = System.currentTimeMillis(),
 
-    // ADD THESE NEW FIELDS:
-    val apiName: String = "",           // Provider name
-    val chapterCount: Int = 0,          // Number of chapters
-    val cachedAt: Long = System.currentTimeMillis()
+    // ============ NEW: Custom Cover ============
+    val customCoverUrl: String? = null
 ) {
     fun toNovelDetails(): NovelDetails {
         val relatedNovels = relatedNovelsJson?.let { json ->
             try {
-                // Parse JSON to List<Novel> - implement based on your JSON library
                 parseRelatedNovels(json)
             } catch (e: Exception) {
                 null
@@ -49,7 +47,7 @@ data class NovelDetailsEntity(
             name = name,
             chapters = chapterList,
             author = author,
-            posterUrl = posterUrl,
+            posterUrl = customCoverUrl ?: posterUrl,  // Prioritize custom cover
             synopsis = synopsis,
             tags = tags,
             rating = rating,

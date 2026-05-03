@@ -79,7 +79,7 @@ fun SplashScreen(visible: Boolean = true) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    painter = painterResource(id = R.drawable.ic_launcher_icon_transparent),
                     contentDescription = "Novery Logo",
                     modifier = Modifier.size(192.dp)
                 )
@@ -96,7 +96,7 @@ fun SplashScreen(visible: Boolean = true) {
             }
 
             Text(
-                text = "v1.0.1",
+                text = "v1.0.2",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier

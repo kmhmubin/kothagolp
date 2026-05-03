@@ -363,7 +363,8 @@ class NovelBinProvider : MainProvider() {
     override suspend fun loadMainPage(
         page: Int,
         orderBy: String?,
-        tag: String?
+        tag: String?,
+        extraFilters: Map<String, String>
     ): MainPageResult {
         val url = when {
             // If genre filter selected (orderBy is empty = "Genre" mode)

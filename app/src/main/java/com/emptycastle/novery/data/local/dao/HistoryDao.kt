@@ -60,4 +60,8 @@ interface HistoryDao {
     @Query("SELECT COUNT(*) FROM read_chapters WHERE novelUrl = :novelUrl")
     suspend fun getReadChapterCount(novelUrl: String): Int
 
+    // ============ CUSTOM COVER ============
+
+    @Query("UPDATE history SET customCoverUrl = :coverUrl WHERE novelUrl = :novelUrl")
+    suspend fun updateCustomCover(novelUrl: String, coverUrl: String?)
 }

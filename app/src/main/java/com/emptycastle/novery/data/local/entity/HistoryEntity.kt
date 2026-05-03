@@ -16,5 +16,6 @@ data class HistoryEntity(
     val chapterName: String,
     val chapterUrl: String,
     val apiName: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val customCoverUrl: String? = null
 )

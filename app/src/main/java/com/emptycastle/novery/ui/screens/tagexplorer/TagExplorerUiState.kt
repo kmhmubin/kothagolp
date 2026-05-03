@@ -60,6 +60,16 @@ data class TagExplorerUiState(
         get() = searchQuery.isNotBlank() ||
                 minRating > 0f ||
                 selectedProviders.isNotEmpty()
+
+    // ADD THIS NEW PROPERTY
+    val activeFilterCount: Int
+        get() {
+            var count = 0
+            if (sortBy != SortOption.NAME) count++
+            if (minRating > 0f) count++
+            if (selectedProviders.isNotEmpty()) count++
+            return count
+        }
 }
 
 enum class SortOption(val displayName: String) {

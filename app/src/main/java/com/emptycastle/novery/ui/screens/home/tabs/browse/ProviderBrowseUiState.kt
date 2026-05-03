@@ -20,6 +20,7 @@ data class ProviderBrowseUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val error: String? = null,
+    val selectedExtraFilters: Map<String, String> = emptyMap(),
     val isCloudflareError: Boolean = false
 ) {
     val displayNovels: List<Novel>
@@ -42,7 +43,12 @@ data class ProviderBrowseUiState(
         get() {
             val defaultSort = provider?.orderBys?.firstOrNull()?.value
             val defaultTag = provider?.tags?.firstOrNull()?.value
-            return selectedSort != defaultSort || selectedTag != defaultTag
+            val extraFiltersActive = provider?.extraFilterGroups?.any { group ->
+                val selected = selectedExtraFilters[group.key]
+                val default = group.defaultValue ?: group.options.firstOrNull()?.value
+                selected != null && selected != default
+            } ?: false
+            return selectedSort != defaultSort || selectedTag != defaultTag || extraFiltersActive
         }
 
     val providerUrl: String?
@@ -61,6 +67,11 @@ data class ProviderBrowseUiState(
             val defaultTag = provider?.tags?.firstOrNull()?.value
             if (selectedSort != defaultSort) count++
             if (selectedTag != defaultTag) count++
+            provider?.extraFilterGroups?.forEach { group ->
+                val selected = selectedExtraFilters[group.key]
+                val default = group.defaultValue ?: group.options.firstOrNull()?.value
+                if (selected != null && selected != default) count++
+            }
             return count
         }
 

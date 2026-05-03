@@ -11,10 +11,11 @@ data class ParsedSentence(
     val pauseAfterMs: Int = DEFAULT_PAUSE_MS
 ) {
     companion object {
-        const val DEFAULT_PAUSE_MS = 200
-        const val SHORT_PAUSE_MS = 100
-        const val LONG_PAUSE_MS = 300
-        const val ELLIPSIS_PAUSE_MS = 350
+        const val DEFAULT_PAUSE_MS = 80    // Reduced from 200
+        const val SHORT_PAUSE_MS = 40      // Reduced from 100
+        const val LONG_PAUSE_MS = 120      // Reduced from 300
+        const val ELLIPSIS_PAUSE_MS = 150  // Reduced from 350
+        const val COLON_PAUSE_MS = 60      // New - for colon splits
     }
 }
 
@@ -37,6 +38,7 @@ data class ParsedParagraph(
  * - Abbreviations
  * - Decimal numbers
  * - Initials
+ * - Colons (as dividers, except in time/ratio patterns)
  * - Quotation marks (stripped for Google TTS compatibility)
  */
 object SentenceParser {
@@ -52,15 +54,15 @@ object SentenceParser {
         "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
     )
 
-    private val SENTENCE_ENDINGS = charArrayOf('.', '!', '?')
+    private val SENTENCE_ENDINGS = charArrayOf('.', '!', '?', ':')  // Added ':'
     private val CLOSING_QUOTES = charArrayOf('"', '\u201D', '\'', '\u2019', '\u300D', '\u300F', ')', ']', '\u00BB')
     private val OPENING_QUOTES = charArrayOf('"', '\u201C', '\'', '\u2018', '\u300C', '\u300E', '(', '[', '\u00AB')
 
-    // Pattern to detect sentences that are just punctuation/ellipsis/quotes (no actual words)
+    // Pattern to detect sentences that are just punctuation/ellipsis/quotes (no actual letters)
     private val PUNCTUATION_ONLY_REGEX = Regex(
         "^[\"'\u201C\u201D\u2018\u2019\u201E\u201A" +
                 "\u300C\u300D\u300E\u300F()\\[\\]\u00AB\u00BB" +
-                ".,!?\u2026:;\\-\u2014\u2013_\\s]+$"
+                ".,!?\u2026:;\\-\u2014\u2013_\\s\\d]+$"  // Added \\d to catch numbers-only
     )
 
     /**
@@ -103,7 +105,7 @@ object SentenceParser {
                         val sentenceText = cleanedText.substring(sentenceStart, endIndex).trim()
                         if (isValidSentence(sentenceText)) {
                             val normalized = normalizeSentence(sentenceText)
-                            if (normalized.isNotBlank()) {
+                            if (normalized.isNotBlank() && hasLetter(normalized)) {
                                 sentences.add(
                                     ParsedSentence(
                                         text = normalized,
@@ -126,11 +128,12 @@ object SentenceParser {
                 }
             }
 
-            // Check for regular sentence endings
+            // Check for regular sentence endings (including colon)
             if (char in SENTENCE_ENDINGS) {
                 if (isSentenceEnd(cleanedText, i)) {
                     var endIndex = i + 1
-                    while (endIndex < cleanedText.length && cleanedText[endIndex] in SENTENCE_ENDINGS) {
+                    // Skip multiple ending punctuation (but not colons after other punctuation)
+                    while (endIndex < cleanedText.length && cleanedText[endIndex] in SENTENCE_ENDINGS && cleanedText[endIndex] != ':') {
                         endIndex++
                     }
                     endIndex = skipClosingQuotes(cleanedText, endIndex)
@@ -138,7 +141,7 @@ object SentenceParser {
                     val sentenceText = cleanedText.substring(sentenceStart, endIndex).trim()
                     if (isValidSentence(sentenceText)) {
                         val normalized = normalizeSentence(sentenceText)
-                        if (normalized.isNotBlank()) {
+                        if (normalized.isNotBlank() && hasLetter(normalized)) {
                             sentences.add(
                                 ParsedSentence(
                                     text = normalized,
@@ -166,7 +169,7 @@ object SentenceParser {
             val remainingText = cleanedText.substring(sentenceStart).trim()
             if (isValidSentence(remainingText)) {
                 val normalized = normalizeSentence(remainingText)
-                if (normalized.isNotBlank()) {
+                if (normalized.isNotBlank() && hasLetter(normalized)) {
                     sentences.add(
                         ParsedSentence(
                             text = normalized,
@@ -179,8 +182,8 @@ object SentenceParser {
             }
         }
 
-        // Fallback: if no sentences found, use whole text
-        if (sentences.isEmpty() && cleanedText.isNotBlank()) {
+        // Fallback: if no sentences found, use whole text (only if it has letters)
+        if (sentences.isEmpty() && cleanedText.isNotBlank() && hasLetter(cleanedText)) {
             val normalized = normalizeSentence(cleanedText)
             if (normalized.isNotBlank()) {
                 sentences.add(
@@ -198,15 +201,21 @@ object SentenceParser {
     }
 
     /**
-     * Check if text is valid sentence (not blank and has actual content)
+     * Check if text contains at least one letter (any script)
      */
-    private fun isValidSentence(text: String): Boolean {
-        return text.isNotBlank() && !isPunctuationOnly(text)
+    private fun hasLetter(text: String): Boolean {
+        return text.any { it.isLetter() }
     }
 
     /**
-     * Check if text is only punctuation, quotes, ellipsis, and whitespace (no actual words)
-     * This prevents TTS from saying things like "quote ellipsis quote"
+     * Check if text is valid sentence (not blank, has actual content with letters)
+     */
+    private fun isValidSentence(text: String): Boolean {
+        return text.isNotBlank() && !isPunctuationOnly(text) && hasLetter(text)
+    }
+
+    /**
+     * Check if text is only punctuation, quotes, ellipsis, numbers, and whitespace (no actual words)
      */
     private fun isPunctuationOnly(text: String): Boolean {
         return PUNCTUATION_ONLY_REGEX.matches(text)
@@ -214,7 +223,6 @@ object SentenceParser {
 
     /**
      * Find the end of an ellipsis starting at index
-     * Returns index (unchanged) if not an ellipsis
      */
     private fun findEllipsisEnd(text: String, index: Int): Int {
         return when {
@@ -276,8 +284,19 @@ object SentenceParser {
     private fun isSentenceEnd(text: String, index: Int): Boolean {
         val char = text[index]
 
+        // Handle colon - split unless it's a time/ratio pattern (e.g., 10:30, 3:2)
+        if (char == ':') {
+            // Don't split on time/ratio patterns: digit followed by colon followed by digit
+            if (index > 0 && index < text.length - 1 &&
+                text[index - 1].isDigit() && text[index + 1].isDigit()) {
+                return false
+            }
+            // All other colons are dividers
+            return true
+        }
+
         if (char == '.') {
-            // Ellipsis check - handled separately
+            // Ellipsis check
             if (index + 2 < text.length && text[index + 1] == '.' && text[index + 2] == '.') {
                 return false
             }
@@ -294,14 +313,14 @@ object SentenceParser {
                 }
             }
 
-            // Decimal number check (3.14)
+            // Decimal number check
             if (index > 0 && index < text.length - 1 &&
                 text[index - 1].isDigit() && text[index + 1].isDigit()
             ) {
                 return false
             }
 
-            // Initial check (J. K. Rowling)
+            // Initial check
             if (isInitial(text, index)) return false
         }
 
@@ -319,7 +338,7 @@ object SentenceParser {
         // Uppercase or opening quote = new sentence
         if (nextChar.isUpperCase() || nextChar in OPENING_QUOTES) return true
 
-        // For ! and ? be lenient
+        // For ! and ? always split
         if (char == '!' || char == '?') return true
 
         // Period with space = likely end
@@ -331,7 +350,7 @@ object SentenceParser {
     }
 
     /**
-     * Check if period at index is part of initials (e.g., J. K.)
+     * Check if period at index is part of initials
      */
     private fun isInitial(text: String, periodIndex: Int): Boolean {
         if (periodIndex < 1) return false
@@ -360,7 +379,7 @@ object SentenceParser {
     private fun preprocessText(text: String): String {
         var result = text
 
-        // Normalize line breaks within paragraph
+        // Normalize line breaks within paragraph to space
         result = result.replace(Regex("[ \\t]*\\n[ \\t]*"), " ")
 
         // Normalize multiple spaces
@@ -376,29 +395,33 @@ object SentenceParser {
     private fun normalizeSentence(text: String): String {
         var result = text.trim()
 
-        // Remove all quotation marks — Google TTS reads them literally as "quote"
+        // Remove all quotation marks
         result = result.replace(Regex("[\"'\u201C\u201D\u2018\u2019\u300C\u300D\u300E\u300F\u00AB\u00BB]"), "")
 
-        // Normalize ellipsis to ASCII dots for consistent handling below
+        // Normalize ellipsis
         result = result.replace("\u2026", "...")
         result = result.replace(Regex("\\.{4,}"), "...")
 
-        // Remove leading ellipsis — Google TTS says "dot dot dot"
-        // The inter-sentence pause already provides the dramatic effect
+        // Remove leading ellipsis
         result = result.replace(Regex("^\\.{3}\\s*"), "")
 
-        // Remove trailing ellipsis — ELLIPSIS_PAUSE_MS already handles the pause
+        // Remove trailing ellipsis
         result = result.replace(Regex("\\s*\\.{3}$"), "")
 
-        // Replace mid-sentence ellipsis with comma for a natural TTS pause
-        // e.g. "he was...uncertain" or "he was... uncertain" → "he was, uncertain"
+        // Replace mid-sentence ellipsis with comma
         result = result.replace(Regex("\\s*\\.{3}\\s*(?=[A-Za-z])"), ", ")
 
-        // Clean up artifacts left by stripping
-        result = result.replace(Regex("^[,;:\\s]+"), "")    // leading comma/space
-        result = result.replace(Regex("[,;:\\s]+$"), "")     // trailing comma/space
-        result = result.replace(Regex(",\\s*,"), ",")        // double commas
-        result = result.replace(Regex(" {2,}"), " ")         // multiple spaces
+        // Remove trailing colon (we split on it, no need to speak it)
+        result = result.replace(Regex(":\\s*$"), "")
+
+        // Remove leading colon (rare but possible)
+        result = result.replace(Regex("^\\s*:"), "")
+
+        // Clean up artifacts
+        result = result.replace(Regex("^[,;:\\s]+"), "")
+        result = result.replace(Regex("[,;:\\s]+$"), "")
+        result = result.replace(Regex(",\\s*,"), ",")
+        result = result.replace(Regex(" {2,}"), " ")
 
         return result.trim()
     }
@@ -413,18 +436,22 @@ object SentenceParser {
         }
 
         val lastChar = trimmed.last()
-        val effectiveLast = if (lastChar in CLOSING_QUOTES && trimmed.length > 1) {
-            trimmed[trimmed.length - 2]
-        } else {
-            lastChar
+
+        // Unwrap closing quotes to find actual ending punctuation
+        var effectiveLast = lastChar
+        var lookIndex = trimmed.length - 2
+        while (effectiveLast in CLOSING_QUOTES && lookIndex >= 0) {
+            effectiveLast = trimmed[lookIndex]
+            lookIndex--
         }
 
         return when (effectiveLast) {
-            '?' -> ParsedSentence.DEFAULT_PAUSE_MS + 50   // 250ms total
-            '!' -> ParsedSentence.DEFAULT_PAUSE_MS + 25   // 225ms total
-            '\u2014', '\u2013' -> ParsedSentence.SHORT_PAUSE_MS  // 100ms
-            '\u2026' -> ParsedSentence.ELLIPSIS_PAUSE_MS         // 350ms
-            else -> ParsedSentence.DEFAULT_PAUSE_MS              // 200ms
+            ':' -> ParsedSentence.COLON_PAUSE_MS         // 60ms
+            '?' -> ParsedSentence.DEFAULT_PAUSE_MS + 20  // 100ms
+            '!' -> ParsedSentence.DEFAULT_PAUSE_MS + 10  // 90ms
+            '\u2014', '\u2013' -> ParsedSentence.SHORT_PAUSE_MS
+            '\u2026' -> ParsedSentence.ELLIPSIS_PAUSE_MS
+            else -> ParsedSentence.DEFAULT_PAUSE_MS      // 80ms
         }
     }
 

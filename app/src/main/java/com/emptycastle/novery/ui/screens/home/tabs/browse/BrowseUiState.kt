@@ -37,6 +37,7 @@ data class BrowseUiState(
     val isLoadingProviders: Boolean = true,
     val providerError: String? = null,
     val favoriteProviders: Set<String> = emptySet(),
+    val libraryNovelUrls: Set<String> = emptySet(),
 
     // Search state
     val searchQuery: String = "",

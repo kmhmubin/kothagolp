@@ -129,7 +129,7 @@ fun AboutScreen(
                 DisclaimerCard()
             }
 
-            // ═══════════════ COMPACT GITHUB LINKS ═══════════════
+            // ═══════════════ COMPACT LINKS ═══════════════
 
             item(key = "compact_links") {
                 Spacer(Modifier.height(8.dp))
@@ -140,6 +140,37 @@ fun AboutScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Website
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(
+                            onClick = { openUrl("https://noveryapp.netlify.app/") },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_launcher_icon_transparent),
+                                        contentDescription = "Website",
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = "Website",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(Modifier.width(24.dp))
+
+                    // GitHub Source
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         IconButton(
                             onClick = { openUrl("https://github.com/1Finn2me/Novery") },
@@ -167,8 +198,9 @@ fun AboutScreen(
                         )
                     }
 
-                    Spacer(Modifier.width(32.dp))
+                    Spacer(Modifier.width(24.dp))
 
+                    // GitHub Releases
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         IconButton(
                             onClick = { openUrl("https://github.com/1Finn2me/Novery/releases") },

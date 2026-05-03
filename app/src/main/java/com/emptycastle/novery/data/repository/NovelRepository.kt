@@ -95,11 +95,17 @@ class NovelRepository(
     suspend fun loadMainPage(
         provider: MainProvider,
         page: Int,
-        orderBy: String? = null,
-        tag: String? = null
-    ): Result<MainPageResult> = withContext(Dispatchers.IO) {
-        try {
-            val result = provider.loadMainPage(page, orderBy, tag)
+        orderBy: String?,
+        tag: String?,
+        extraFilters: Map<String, String> = emptyMap()
+    ): Result<MainPageResult> {
+        return try {
+            val result = provider.loadMainPage(
+                page = page,
+                orderBy = orderBy,
+                tag = tag,
+                extraFilters = extraFilters
+            )
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(e)

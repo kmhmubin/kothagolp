@@ -16,6 +16,9 @@ interface LibraryDao {
     @Query("SELECT * FROM library ORDER BY lastReadAt DESC, addedAt DESC")
     fun getAllFlow(): Flow<List<LibraryEntity>>
 
+    @Query("SELECT url FROM library")
+    fun observeLibraryUrls(): Flow<List<String>>
+
     @Query("SELECT * FROM library ORDER BY lastReadAt DESC, addedAt DESC")
     suspend fun getAll(): List<LibraryEntity>
 
@@ -191,4 +194,12 @@ interface LibraryDao {
         ORDER BY lastReadAt DESC, addedAt DESC
     """)
     suspend fun search(query: String): List<LibraryEntity>
+
+    // ============ CUSTOM COVER ============
+
+    @Query("UPDATE library SET customCoverUrl = :coverUrl WHERE url = :novelUrl")
+    suspend fun updateCustomCover(novelUrl: String, coverUrl: String?)
+
+    @Query("SELECT customCoverUrl FROM library WHERE url = :novelUrl")
+    suspend fun getCustomCover(novelUrl: String): String?
 }

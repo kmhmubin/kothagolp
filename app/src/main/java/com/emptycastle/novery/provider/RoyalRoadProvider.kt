@@ -9,16 +9,16 @@ import com.emptycastle.novery.domain.model.NovelDetails
 import com.emptycastle.novery.domain.model.ReviewScore
 import com.emptycastle.novery.domain.model.UserReview
 import com.emptycastle.novery.util.RatingUtils
+import com.emptycastle.novery.util.toRelativeTime
 import org.json.JSONArray
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 /**
  * Provider for RoyalRoad.com
+ * Based on LNReader implementation v2.3.0
  */
 class RoyalRoadProvider : MainProvider() {
 
@@ -35,51 +35,72 @@ class RoyalRoadProvider : MainProvider() {
 
     override val tags = listOf(
         FilterOption("All", ""),
+        // Genres
         FilterOption("Action", "action"),
         FilterOption("Adventure", "adventure"),
-        FilterOption("Anti-Hero Lead", "anti-hero_lead"),
         FilterOption("Comedy", "comedy"),
         FilterOption("Contemporary", "contemporary"),
-        FilterOption("Cyberpunk", "cyberpunk"),
         FilterOption("Drama", "drama"),
         FilterOption("Fantasy", "fantasy"),
+        FilterOption("Historical", "historical"),
+        FilterOption("Horror", "horror"),
+        FilterOption("Mystery", "mystery"),
+        FilterOption("Psychological", "psychological"),
+        FilterOption("Romance", "romance"),
+        FilterOption("Satire", "satire"),
+        FilterOption("Sci-fi", "sci_fi"),
+        FilterOption("Short Story", "one_shot"),
+        FilterOption("Tragedy", "tragedy"),
+        // Tags
+        FilterOption("Anti-Hero Lead", "anti-hero_lead"),
+        FilterOption("Artificial Intelligence", "artificial_intelligence"),
+        FilterOption("Attractive Lead", "attractive_lead"),
+        FilterOption("Cyberpunk", "cyberpunk"),
+        FilterOption("Dungeon", "dungeon"),
+        FilterOption("Dystopia", "dystopia"),
         FilterOption("Female Lead", "female_lead"),
         FilterOption("First Contact", "first_contact"),
         FilterOption("GameLit", "gamelit"),
         FilterOption("Gender Bender", "gender_bender"),
+        FilterOption("Genetically Engineered", "genetically_engineered"),
         FilterOption("Grimdark", "grimdark"),
         FilterOption("Hard Sci-fi", "hard_sci-fi"),
         FilterOption("Harem", "harem"),
         FilterOption("High Fantasy", "high_fantasy"),
-        FilterOption("Historical", "historical"),
-        FilterOption("Horror", "horror"),
         FilterOption("LitRPG", "litrpg"),
         FilterOption("Low Fantasy", "low_fantasy"),
         FilterOption("Magic", "magic"),
         FilterOption("Male Lead", "male_lead"),
         FilterOption("Martial Arts", "martial_arts"),
-        FilterOption("Mystery", "mystery"),
+        FilterOption("Multiple Lead Characters", "multiple_lead"),
         FilterOption("Mythos", "mythos"),
+        FilterOption("Non-Human Lead", "non-human_lead"),
         FilterOption("Portal Fantasy / Isekai", "summoned_hero"),
+        FilterOption("Post Apocalyptic", "post_apocalyptic"),
         FilterOption("Progression", "progression"),
-        FilterOption("Psychological", "psychological"),
+        FilterOption("Reader Interactive", "reader_interactive"),
         FilterOption("Reincarnation", "reincarnation"),
-        FilterOption("Romance", "romance"),
         FilterOption("Ruling Class", "ruling_class"),
-        FilterOption("Satire", "satire"),
-        FilterOption("Sci-fi", "sci_fi"),
+        FilterOption("School Life", "school_life"),
         FilterOption("Secret Identity", "secret_identity"),
-        FilterOption("Short Story", "one_shot"),
+        FilterOption("Slice of Life", "slice_of_life"),
         FilterOption("Soft Sci-fi", "soft_sci-fi"),
         FilterOption("Space Opera", "space_opera"),
+        FilterOption("Sports", "sports"),
+        FilterOption("Steampunk", "steampunk"),
         FilterOption("Strategy", "strategy"),
         FilterOption("Strong Lead", "strong_lead"),
+        FilterOption("Super Heroes", "super_heroes"),
+        FilterOption("Supernatural", "supernatural"),
+        FilterOption("Technologically Engineered", "technologically_engineered"),
         FilterOption("Time Loop", "loop"),
         FilterOption("Time Travel", "time_travel"),
-        FilterOption("Tragedy", "tragedy"),
+        FilterOption("Urban Fantasy", "urban_fantasy"),
+        FilterOption("Villainous Lead", "villainous_lead"),
         FilterOption("Virtual Reality", "virtual_reality"),
         FilterOption("War and Military", "war_and_military"),
-        FilterOption("Wuxia", "wuxia")
+        FilterOption("Wuxia", "wuxia"),
+        FilterOption("Xianxia", "xianxia")
     )
 
     override val orderBys = listOf(
@@ -136,6 +157,45 @@ class RoyalRoadProvider : MainProvider() {
         return null
     }
 
+    /**
+     * Convert date string to relative time format
+     * Handles multiple date formats from RoyalRoad
+     */
+    private fun convertToRelativeTime(dateStr: String?): String? {
+        if (dateStr.isNullOrBlank()) return null
+
+        return try {
+            // Try multiple date formats that RoyalRoad might use
+            val formats = listOf(
+                "MMM dd, yyyy hh:mm a",        // "Dec 15, 2023 03:30 PM"
+                "MMM dd, yyyy",                 // "Dec 15, 2023"
+                "yyyy-MM-dd HH:mm:ss",         // "2023-12-15 15:30:00"
+                "yyyy-MM-dd'T'HH:mm:ss",       // "2023-12-15T15:30:00"
+                "yyyy-MM-dd'T'HH:mm:ss.SSS",   // "2023-12-15T15:30:00.000"
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",    // "2023-12-15T15:30:00Z"
+                "EEE, dd MMM yyyy HH:mm:ss",   // "Fri, 15 Dec 2023 15:30:00"
+            )
+
+            for (formatStr in formats) {
+                try {
+                    val sdf = SimpleDateFormat(formatStr, Locale.ENGLISH)
+                    val parsed = sdf.parse(dateStr)
+                    if (parsed != null) {
+                        return parsed.time.toRelativeTime()
+                    }
+                } catch (e: Exception) {
+                    // Try next format
+                    continue
+                }
+            }
+
+            // If no format worked, return the original string
+            dateStr
+        } catch (e: Exception) {
+            dateStr
+        }
+    }
+
     // ================================================================
     // MAIN PAGE
     // ================================================================
@@ -143,7 +203,8 @@ class RoyalRoadProvider : MainProvider() {
     override suspend fun loadMainPage(
         page: Int,
         orderBy: String?,
-        tag: String?
+        tag: String?,
+        extraFilters: Map<String, String>
     ): MainPageResult {
         val order = orderBy.takeUnless { it.isNullOrEmpty() } ?: "best-rated"
 
@@ -207,7 +268,7 @@ class RoyalRoadProvider : MainProvider() {
 
     override suspend fun search(query: String): List<Novel> {
         val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
-        val url = "$mainUrl/fictions/search?title=$encodedQuery"
+        val url = "$mainUrl/fictions/search?page=1&title=$encodedQuery&globalFilters=true"
 
         val response = get(url)
         val document = response.document
@@ -305,8 +366,6 @@ class RoyalRoadProvider : MainProvider() {
         }
     }
 
-    // In RoyalRoadProvider.kt, update the parseReview function:
-
     private fun parseReview(reviewElement: Element, showSpoilers: Boolean): UserReview? {
         val textContent = reviewElement.selectFirstOrNull("> div.review-right-content")
         val scoreContent = reviewElement.selectFirstOrNull("> div.review-side")
@@ -328,9 +387,13 @@ class RoyalRoadProvider : MainProvider() {
         val reviewTitle = reviewHeader?.selectFirstOrNull("> div > div > h4")?.textOrNull()?.trim()
         val username = reviewMeta?.selectFirstOrNull("> span > a")?.textOrNull()?.trim()
 
-        val reviewTime = parseReviewTime(reviewMeta)
+        // FIXED: Convert review time to relative format
+        val reviewTime = parseReviewTimeToRelative(reviewMeta)
 
         val reviewContent = textContent?.selectFirstOrNull("> div.review-content")
+
+        // Check if the review contains spoilers before removing them
+        val hasSpoilers = reviewContent?.select(".spoiler")?.isNotEmpty() == true
 
         if (!showSpoilers) {
             reviewContent?.select(".spoiler")?.remove()
@@ -338,11 +401,7 @@ class RoyalRoadProvider : MainProvider() {
 
         val reviewText = reviewContent?.html() ?: return null
 
-        // Check if the review contains spoilers
-        val hasSpoilers = reviewContent?.select(".spoiler")?.isNotEmpty() == true
-
         // Generate a unique ID for the review
-        // RoyalRoad doesn't expose review IDs directly, so we create one from available data
         val reviewId = buildString {
             append(username ?: "anon")
             append("_")
@@ -394,7 +453,10 @@ class RoyalRoadProvider : MainProvider() {
         }
     }
 
-    private fun parseReviewTime(reviewMeta: Element?): String? {
+    /**
+     * Parse review time and convert to relative format (e.g., "2d ago", "1w ago")
+     */
+    private fun parseReviewTimeToRelative(reviewMeta: Element?): String? {
         val unixTime = reviewMeta
             ?.selectFirstOrNull("> span > a > time")
             ?.attrOrNull("unixtime")
@@ -402,10 +464,10 @@ class RoyalRoadProvider : MainProvider() {
             ?: return null
 
         return try {
-            val date = Date(unixTime * 1000)
-            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            sdf.format(date)
-        } catch (_: Throwable) {
+            // Convert Unix timestamp (seconds) to milliseconds and then to relative time
+            (unixTime * 1000).toRelativeTime()
+        } catch (e: Throwable) {
+            e.printStackTrace()
             null
         }
     }
@@ -425,7 +487,7 @@ class RoyalRoadProvider : MainProvider() {
             ?: return null
 
         val fictionId = extractFictionId(responseText)
-        val chapters = parseChapters(document)
+        val chapters = parseChaptersFromScript(responseText) ?: parseChaptersFromTable(document)
         val relatedNovels = loadRelatedNovels(fictionId)
         val metadata = extractMetadata(document)
         val views = extractViews(document)
@@ -446,7 +508,61 @@ class RoyalRoadProvider : MainProvider() {
         )
     }
 
-    private fun parseChapters(document: Document): List<Chapter> {
+    /**
+     * Parse chapters from window.chapters JavaScript object
+     * This is more reliable than parsing the table
+     * FIXED: Converts dates to relative time format
+     */
+    private fun parseChaptersFromScript(responseText: String): List<Chapter>? {
+        return try {
+            // Extract window.chapters = [...];
+            val chaptersMatch = Regex("""window\.chapters\s*=\s*(\[.*?\]);""", RegexOption.DOT_MATCHES_ALL)
+                .find(responseText) ?: return null
+
+            val chaptersJson = chaptersMatch.groupValues[1]
+            val jsonArray = JSONArray(chaptersJson)
+
+            val chapters = mutableListOf<Chapter>()
+
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+
+                val title = obj.optString("title", null) ?: continue
+                val chapterUrl = obj.optString("url", null) ?: continue
+                val date = obj.optString("date", null)
+
+                // FIXED: Convert date to relative time format
+                val relativeDate = convertToRelativeTime(date)
+
+                // Extract chapter path from URL: /fiction/12345/title/chapter/67890/chapter-name
+                val urlParts = chapterUrl.split("/")
+                val chapterPath = if (urlParts.size >= 6) {
+                    "${urlParts[1]}/${urlParts[2]}/${urlParts[4]}/${urlParts[5]}"
+                } else {
+                    chapterUrl.removePrefix("/")
+                }
+
+                chapters.add(
+                    Chapter(
+                        name = title,
+                        url = fixUrl(chapterPath) ?: continue,
+                        dateOfRelease = relativeDate
+                    )
+                )
+            }
+
+            chapters
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Fallback: Parse chapters from the table (old method)
+     * FIXED: Converts dates to relative time format
+     */
+    private fun parseChaptersFromTable(document: Document): List<Chapter> {
         return document.select("div.portlet-body > table > tbody > tr").mapNotNull { row ->
             val chapterUrl = row.attrOrNull("data-url") ?: return@mapNotNull null
             val cells = row.select("> td")
@@ -462,10 +578,13 @@ class RoyalRoadProvider : MainProvider() {
                 ?.textOrNull()
                 ?.trim()
 
+            // FIXED: Convert date to relative time format
+            val relativeDate = convertToRelativeTime(dateOfRelease)
+
             Chapter(
                 name = chapterName,
                 url = fixUrl(chapterUrl) ?: return@mapNotNull null,
-                dateOfRelease = dateOfRelease
+                dateOfRelease = relativeDate
             )
         }
     }
@@ -566,80 +685,84 @@ class RoyalRoadProvider : MainProvider() {
 
         val response = get(fullUrl)
         val document = response.document
+        val responseText = response.text
 
         val chapterContent = document.selectFirstOrNull("div.chapter-content") ?: return null
 
-        addAuthorNotes(chapterContent, document)
-        removeHiddenElements(chapterContent, document)
+        // Remove hidden elements using style parsing (like LNReader)
+        removeHiddenElements(chapterContent, responseText)
 
-        return chapterContent.html()
+        // Get author notes
+        val (notesBefore, notesAfter) = extractAuthorNotes(document, chapterContent)
+
+        // Build final content
+        val contentParts = mutableListOf<String>()
+
+        if (notesBefore.isNotBlank()) {
+            contentParts.add("""<div class="author-note-before">$notesBefore</div>""")
+        }
+
+        contentParts.add(chapterContent.html())
+
+        if (notesAfter.isNotBlank()) {
+            contentParts.add("""<div class="author-note-after">$notesAfter</div>""")
+        }
+
+        return contentParts.joinToString(separator = "\n<hr class=\"notes-separator\">\n")
     }
 
-    private fun removeHiddenElements(chapter: Element, document: Document) {
-        val styles = document.select("style")
-        val hiddenRegex = Regex("^\\s*(\\..*)\\s*\\{", RegexOption.MULTILINE)
+    /**
+     * Remove hidden elements using CSS style parsing (from LNReader)
+     * Looks for .className { display: none; } patterns
+     */
+    private fun removeHiddenElements(chapter: Element, responseText: String) {
+        try {
+            // Find hidden class pattern: .className { ... display: none; ... }
+            val styleRegex = Regex("""<style>\s+\.(.+?)\{[^{]+?display:\s*none;""", RegexOption.MULTILINE)
+            val match = styleRegex.find(responseText)
+            val hiddenClass = match?.groupValues?.getOrNull(1)?.trim()
 
-        styles.forEach { style ->
-            hiddenRegex.findAll(style.toString()).forEach { match ->
-                val className = match.groupValues.getOrNull(1) ?: return@forEach
-                if (className.isNotEmpty()) {
-                    try {
-                        chapter.select(className).remove()
-                    } catch (_: Throwable) {
-                        // Invalid selector, skip
+            if (!hiddenClass.isNullOrBlank()) {
+                // Remove elements with this class
+                chapter.select(".$hiddenClass").remove()
+            }
+        } catch (e: Throwable) {
+            // Ignore parsing errors
+        }
+    }
+
+    /**
+     * Extract author notes before and after chapter (like LNReader)
+     */
+    private fun extractAuthorNotes(document: Document, chapterContent: Element): Pair<String, String> {
+        val notesBefore = StringBuilder()
+        val notesAfter = StringBuilder()
+
+        try {
+            val chapterParent = chapterContent.parent() ?: return Pair("", "")
+
+            document.select("div.author-note").forEach { authorNote ->
+                val noteContainer = authorNote.parent() ?: return@forEach
+                val noteParent = noteContainer.parent() ?: return@forEach
+
+                // Check if note is in same parent as chapter
+                if (noteParent == chapterParent) {
+                    val isNoteBefore = noteContainer.elementSiblingIndex() < chapterContent.elementSiblingIndex()
+                    val noteContent = authorNote.html().trim()
+
+                    if (noteContent.isNotBlank()) {
+                        if (isNoteBefore) {
+                            notesBefore.append(noteContent)
+                        } else {
+                            notesAfter.append(noteContent)
+                        }
                     }
                 }
             }
-        }
-    }
-
-    private fun addAuthorNotes(chapter: Element, document: Document) {
-        val separatorLine = "━━━━━━━━━━━━━━━━━━━━"
-
-        val noteBeforeChapter = StringBuilder()
-        val noteAfterChapter = StringBuilder()
-
-        document.select("div.author-note").forEach { authorNote ->
-            val noteContainer = authorNote.parent() ?: return@forEach
-            val noteParent = noteContainer.parent() ?: return@forEach
-            val chapterParent = chapter.parent() ?: return@forEach
-
-            if (noteParent == chapterParent) {
-                val isNoteBeforeChapter = noteContainer.elementSiblingIndex() < chapter.elementSiblingIndex()
-                val noteContent = authorNote.html().takeIf { it.isNotBlank() } ?: return@forEach
-
-                if (isNoteBeforeChapter) {
-                    noteBeforeChapter.append(noteContent)
-                } else {
-                    noteAfterChapter.append(noteContent)
-                }
-            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
 
-        if (noteBeforeChapter.isNotEmpty()) {
-            val content = """
-                <div class="author-note-container">
-                    <div class="author-note-content">$noteBeforeChapter</div>
-                    <div class="author-note-separator"><p>$separatorLine</p><p>&nbsp;</p></div>
-                </div>
-            """.trimIndent()
-
-            Jsoup.parse(content).selectFirst("div")?.let {
-                chapter.prependChild(it)
-            }
-        }
-
-        if (noteAfterChapter.isNotEmpty()) {
-            val content = """
-                <div class="author-note-container">
-                    <div class="author-note-separator"><p>&nbsp;</p><p>$separatorLine</p></div>
-                    <div class="author-note-content">$noteAfterChapter</div>
-                </div>
-            """.trimIndent()
-
-            Jsoup.parse(content).selectFirst("div")?.let {
-                chapter.appendChild(it)
-            }
-        }
+        return Pair(notesBefore.toString(), notesAfter.toString())
     }
 }

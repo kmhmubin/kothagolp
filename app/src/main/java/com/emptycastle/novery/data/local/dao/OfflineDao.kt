@@ -106,6 +106,14 @@ interface OfflineDao {
         val chapterCount: Int,
         val lastDownloadedAt: Long
     )
+
+    // ============ CUSTOM COVER ============
+
+    @Query("UPDATE novel_details SET customCoverUrl = :coverUrl WHERE url = :novelUrl")
+    suspend fun updateNovelDetailsCustomCover(novelUrl: String, coverUrl: String?)
+
+    @Query("UPDATE offline_novels SET customCoverUrl = :coverUrl WHERE url = :novelUrl")
+    suspend fun updateOfflineNovelCustomCover(novelUrl: String, coverUrl: String?)
 }
 
 /**

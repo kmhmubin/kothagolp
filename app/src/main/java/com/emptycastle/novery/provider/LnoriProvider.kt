@@ -10,15 +10,6 @@ import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
-/**
- * Provider for lnori.com
- *
- * This is a fully static site with no APIs.
- * - All novels are pre-loaded on the /library page (~800+ novels)
- * - Content is organized as Series → Volumes → Chapters
- * - Each volume loads as a single page with all chapters inside
- * - Search is client-side only (we filter locally)
- */
 class LnoriProvider : MainProvider() {
 
     override val name = "Lnori"
@@ -27,12 +18,7 @@ class LnoriProvider : MainProvider() {
     override val hasReviews = false
     override val iconRes: Int = R.drawable.ic_provider_lnori
 
-    // Page size for client-side pagination (library has 800+ novels)
     private val pageSize = 50
-
-    // ================================================================
-    // FILTER OPTIONS
-    // ================================================================
 
     override val tags = listOf(
         FilterOption("All", ""),
@@ -182,7 +168,6 @@ class LnoriProvider : MainProvider() {
         FilterOption("Zero to Hero", "zero-to-hero")
     )
 
-    // No sort options available - site only shows by popularity
     override val orderBys = listOf(
         FilterOption("Popular", "")
     )
@@ -191,12 +176,7 @@ class LnoriProvider : MainProvider() {
     // UTILITY METHODS
     // ================================================================
 
-    /**
-     * Parse a novel card element from library/genre pages.
-     * All metadata is available in data-* attributes on the <article>.
-     */
     private fun parseNovelCard(element: Element): Novel? {
-        // Get data from attributes (most reliable)
         val seriesId = element.attrOrNull("data-id") ?: return null
         val title = element.attrOrNull("data-t")?.trim()
         if (title.isNullOrBlank()) return null
@@ -204,16 +184,13 @@ class LnoriProvider : MainProvider() {
         val author = element.attrOrNull("data-a")?.trim()
         val volumeCount = element.attrOrNull("data-v")?.toIntOrNull()
 
-        // Get URL from link
         val linkElement = element.selectFirstOrNull("a.stretched-link[href^=\"/series/\"]")
             ?: element.selectFirstOrNull("a[href^=\"/series/\"]")
         val href = linkElement?.attrOrNull("href") ?: return null
 
-        // Get cover image
         val imgElement = element.selectFirstOrNull("figure.card-cover img")
         val posterUrl = imgElement?.attrOrNull("src")
 
-        // Build latest chapter info from volume count
         val latestChapter = volumeCount?.let { "$it Volumes" }
 
         return Novel(
@@ -225,18 +202,12 @@ class LnoriProvider : MainProvider() {
         )
     }
 
-    /**
-     * Parse tags from the series detail page.
-     * Tags are stored as JSON in the data-tags attribute.
-     */
     private fun parseTagsFromDocument(document: Document): List<String> {
-        // Try to parse from data-tags JSON attribute first
         val tagsNav = document.selectFirstOrNull("nav.tags-box[data-tags]")
         val dataTagsJson = tagsNav?.attrOrNull("data-tags")
 
         if (!dataTagsJson.isNullOrBlank()) {
             try {
-                // Parse JSON array: [{"name":"action","ttype":"genre"}, ...]
                 val jsonArray = JSONArray(dataTagsJson)
                 val tags = mutableListOf<String>()
                 for (i in 0 until jsonArray.length()) {
@@ -248,28 +219,20 @@ class LnoriProvider : MainProvider() {
                 }
                 if (tags.isNotEmpty()) return tags
             } catch (_: Throwable) {
-                // Fall through to link parsing
             }
         }
 
-        // Fallback: parse from tag links
         return document.select("nav.tags-box a.tag").mapNotNull {
             it.textOrNull()?.trim()
         }.filter { it.isNotBlank() }
     }
 
-    /**
-     * Parse volumes from the series detail page.
-     * Each volume becomes a "chapter" in the app since volumes have their own URLs.
-     */
     private fun parseVolumes(document: Document): List<Chapter> {
         return document.select("section.vol-grid article.card").mapNotNull { volumeCard ->
-            // Get volume link
             val linkElement = volumeCard.selectFirstOrNull("a.stretched-link[href^=\"/book/\"]")
                 ?: volumeCard.selectFirstOrNull("a[href^=\"/book/\"]")
             val href = linkElement?.attrOrNull("href") ?: return@mapNotNull null
 
-            // Get volume title
             val volumeTitle = volumeCard.selectFirstOrNull("h3.card-title span")?.textOrNull()?.trim()
                 ?: linkElement.attrOrNull("aria-label")
                 ?: "Volume"
@@ -281,22 +244,141 @@ class LnoriProvider : MainProvider() {
         }
     }
 
-    /**
-     * Clean up the chapter HTML content
-     */
     private fun cleanChapterHtml(html: String): String {
         var cleaned = html
-
-        // Remove excessive separators
-        cleaned = cleaned.replace(Regex("(<hr\\s*/?>\n*){2,}"), "<hr/>\n")
-
-        // Remove empty paragraphs
+        cleaned = cleaned.replace(Regex("(<hr\\s*/?>\\s*){2,}"), "<hr/>\n")
         cleaned = cleaned.replace(Regex("<p>\\s*</p>"), "")
-
-        // Clean up whitespace
+        cleaned = cleaned.replace(Regex("<div>\\s*</div>"), "")
         cleaned = cleaned.replace(Regex("\n{3,}"), "\n\n")
-
         return cleaned.trim()
+    }
+
+    /**
+     * Parse a srcset attribute value to extract the first URL
+     * Format: "url1 1x, url2 2x" or "url1 400w, url2 800w" or just "url1"
+     */
+    private fun parseSrcset(srcset: String): String? {
+        if (srcset.isBlank()) return null
+
+        // Get first entry before comma
+        val firstEntry = srcset.split(",").firstOrNull()?.trim() ?: return null
+
+        // URL might be followed by descriptor like " 400w" or " 2x"
+        val parts = firstEntry.split(Regex("\\s+"))
+        val url = parts.firstOrNull()?.trim() ?: return null
+
+        // Return if it's a real URL
+        return if (url.isNotBlank() && url.startsWith("http")) url else null
+    }
+
+    /**
+     * Extract image URL from a <picture> element
+     */
+    private fun extractImageUrl(picture: Element): String? {
+        // 1. Try img src directly (if it's a real URL)
+        val img = picture.selectFirstOrNull("img")
+        val directSrc = img?.attrOrNull("src")
+        if (!directSrc.isNullOrBlank() && directSrc.startsWith("http")) {
+            return directSrc
+        }
+
+        // 2. Try img srcset
+        val imgSrcset = img?.attrOrNull("srcset")
+        if (!imgSrcset.isNullOrBlank()) {
+            val url = parseSrcset(imgSrcset)
+            if (!url.isNullOrBlank()) return url
+        }
+
+        // 3. Try <source> elements (usually in order of preference)
+        for (source in picture.select("source")) {
+            // Try srcset first
+            val srcset = source.attrOrNull("srcset")
+            if (!srcset.isNullOrBlank()) {
+                val url = parseSrcset(srcset)
+                if (!url.isNullOrBlank()) return url
+            }
+
+            // Try src
+            val src = source.attrOrNull("src")
+            if (!src.isNullOrBlank() && src.startsWith("http")) {
+                return src
+            }
+        }
+
+        // 4. Fallback: return data: URL if that's all we have (better than nothing)
+        if (!directSrc.isNullOrBlank() && directSrc.startsWith("data:")) {
+            return directSrc
+        }
+
+        return null
+    }
+
+    /**
+     * Process all <picture> and <img> elements to ensure they have valid src attributes
+     */
+    private fun processPictures(container: Element) {
+        // Process <picture> elements - convert to simple <img>
+        container.select("picture").forEach { picture ->
+            val src = extractImageUrl(picture)
+            val alt = picture.selectFirstOrNull("img")?.attrOrNull("alt") ?: "Image"
+
+            if (!src.isNullOrBlank()) {
+                picture.html("<img src=\"$src\" alt=\"$alt\" />")
+            }
+            // IMPORTANT: Don't remove if extraction fails - keep original HTML intact
+            // The reader app might be able to handle it
+        }
+
+        // Fix lazy-loaded standalone <img> tags
+        container.select("img").forEach { img ->
+            val currentSrc = img.attrOrNull("src") ?: ""
+
+            // If src is empty, data:, or a tiny placeholder
+            if (currentSrc.isBlank() || currentSrc.startsWith("data:image/gif") || currentSrc.length < 100) {
+                // Try common lazy-load data attributes
+                val realSrc = img.attrOrNull("data-src")
+                    ?: img.attrOrNull("data-lazy-src")
+                    ?: img.attrOrNull("data-original")
+                    ?: img.attrOrNull("loading-src")
+                    ?: img.attrOrNull("data-lazy")
+                    ?: img.attrOrNull("data-image")
+
+                if (!realSrc.isNullOrBlank() && realSrc.startsWith("http")) {
+                    img.attr("src", realSrc)
+                }
+            }
+        }
+
+        // Also process standalone <source> elements that might be outside <picture>
+        container.select("source").forEach { source ->
+            val srcset = source.attrOrNull("srcset")
+            if (!srcset.isNullOrBlank()) {
+                val url = parseSrcset(srcset)
+                if (!url.isNullOrBlank()) {
+                    // Replace source with img
+                    source.parent()?.let { parent ->
+                        val alt = source.attrOrNull("alt") ?: "Image"
+                        source.after("<img src=\"$url\" alt=\"$alt\" />")
+                        source.remove()
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if an element contains actual text content (at least one letter)
+     */
+    private fun hasTextContent(element: Element): Boolean {
+        val text = element.text()?.trim() ?: return false
+        return text.any { it.isLetter() }
+    }
+
+    /**
+     * Check if an element contains any images
+     */
+    private fun hasImages(element: Element): Boolean {
+        return element.select("img, picture, figure, source").isNotEmpty()
     }
 
     // ================================================================
@@ -306,7 +388,8 @@ class LnoriProvider : MainProvider() {
     override suspend fun loadMainPage(
         page: Int,
         orderBy: String?,
-        tag: String?
+        tag: String?,
+        extraFilters: Map<String, String>
     ): MainPageResult {
         val url = if (tag.isNullOrBlank()) {
             "$mainUrl/library"
@@ -317,12 +400,10 @@ class LnoriProvider : MainProvider() {
         val response = get(url)
         val document = response.document
 
-        // Parse all novel cards from the page
         val allNovels = document.select("article.card").mapNotNull { element ->
             parseNovelCard(element)
         }
 
-        // Handle pagination client-side (all data is on one page)
         val startIndex = (page - 1) * pageSize
         val endIndex = minOf(startIndex + pageSize, allNovels.size)
 
@@ -340,8 +421,6 @@ class LnoriProvider : MainProvider() {
     // ================================================================
 
     override suspend fun search(query: String): List<Novel> {
-        // Since search is client-side only, we load the library page
-        // and filter the results locally
         val response = get("$mainUrl/library")
         val document = response.document
 
@@ -352,7 +431,6 @@ class LnoriProvider : MainProvider() {
             val author = element.attrOrNull("data-a")?.trim() ?: ""
             val tags = element.attrOrNull("data-tags")?.lowercase() ?: ""
 
-            // Search in title, author, and tags
             if (title.lowercase().contains(queryLower) ||
                 author.lowercase().contains(queryLower) ||
                 tags.contains(queryLower)
@@ -374,24 +452,14 @@ class LnoriProvider : MainProvider() {
         val response = get(fullUrl)
         val document = response.document
 
-        // Parse title
         val name = document.selectFirstOrNull("h1.s-title")?.textOrNull()?.trim()
             ?: return null
 
-        // Parse author
         val author = document.selectFirstOrNull("p.author")?.textOrNull()?.trim()
-
-        // Parse cover
         val posterUrl = document.selectFirstOrNull("figure.cover-wrap img")?.attrOrNull("src")
-
-        // Parse description
         val synopsis = document.selectFirstOrNull("p.description.desc-wrapper")?.textOrNull()?.trim()
             ?: "No description available."
-
-        // Parse tags from data-tags JSON
         val tags = parseTagsFromDocument(document)
-
-        // Parse volumes as chapters
         val chapters = parseVolumes(document)
 
         return NovelDetails(
@@ -402,7 +470,6 @@ class LnoriProvider : MainProvider() {
             posterUrl = posterUrl,
             synopsis = synopsis,
             tags = tags.ifEmpty { null }
-            // Note: rating, status, views, relatedNovels not available on this site
         )
     }
 
@@ -416,36 +483,83 @@ class LnoriProvider : MainProvider() {
         val response = get(fullUrl)
         val document = response.document
 
-        // Get all chapter sections on this volume page
-        val chapterSections = document.select("section.chapter[id^=\"page\"]")
+        // Try multiple selectors for chapter sections
+        val chapterSections = document.select("section.chapter[id^=\"page\"]").let { sections ->
+            if (sections.isNotEmpty()) sections
+            else document.select("section.chapter")
+        }.let { sections ->
+            if (sections.isNotEmpty()) sections
+            else document.select("section[id^=\"page\"]")
+        }.let { sections ->
+            if (sections.isNotEmpty()) sections
+            else document.select("article.chapter, article[id^=\"page\"]")
+        }
 
+        // If no chapter sections found, try main content area
         if (chapterSections.isEmpty()) {
+            val mainContent = document.selectFirst("div.main")
+                ?: document.selectFirst("main")
+                ?: document.selectFirst("article")
+                ?: document.selectFirst("div.content")
+                ?: document.selectFirst("div[role=\"main\"]")
+
+            if (mainContent != null) {
+                val clone = mainContent.clone()
+                processPictures(clone)
+                val html = clone.html().trim()
+                return if (html.isNotBlank()) {
+                    cleanChapterHtml(html)
+                } else {
+                    null
+                }
+            }
             return null
         }
 
         val contentBuilder = StringBuilder()
 
-        for (section in chapterSections) {
-            val sectionId = section.attrOrNull("id") ?: ""
+        for ((index, section) in chapterSections.withIndex()) {
+            val sectionId = section.attrOrNull("id")?.lowercase() ?: ""
+            val sectionClasses = section.attrOrNull("class")?.lowercase() ?: ""
 
-            // Check for chapter title (standalone h2 in the section)
-            val standaloneTitle = section.selectFirstOrNull("> h2.chapter-title")
-            if (standaloneTitle != null) {
-                contentBuilder.append("<h2>${standaloneTitle.text()}</h2>\n")
+            // Skip cover-only sections
+            if (sectionId.contains("cover") || sectionClasses.contains("cover")) {
+                continue
             }
 
-            // Get the inner content container
+            // Check for standalone chapter title
+            val standaloneTitle = section.selectFirstOrNull("> h2.chapter-title, > h2:first-child")
+            var titleAdded = false
+            if (standaloneTitle != null) {
+                val titleText = standaloneTitle.textOrNull()?.trim()
+                if (!titleText.isNullOrBlank()) {
+                    contentBuilder.append("<h2>${titleText}</h2>\n")
+                    titleAdded = true
+                }
+            }
+
+            // Try multiple content container selectors
             val innerContent = section.selectFirstOrNull("section.body-rw.Chapter-rw")
+                ?: section.selectFirstOrNull("section.Chapter-rw")
+                ?: section.selectFirstOrNull("section.body-rw")
                 ?: section.selectFirstOrNull("div.galley-rw section")
                 ?: section.selectFirstOrNull("div.galley-rw")
+                ?: section.selectFirstOrNull("div.main")
+                ?: section.selectFirstOrNull("div.content")
+                ?: section.selectFirstOrNull("article")
 
             if (innerContent != null) {
-                // Get chapter headers if present
-                val chapterNumber = innerContent.selectFirstOrNull("h2.chapter-number span")?.textOrNull()?.trim()
-                val chapterTitle = innerContent.selectFirstOrNull("h2.chapter-title span")?.textOrNull()?.trim()
+                val contentClone = innerContent.clone()
 
-                // Add chapter header
-                if (!chapterNumber.isNullOrBlank() || !chapterTitle.isNullOrBlank()) {
+                // Extract headers before removing
+                val chapterNumber = contentClone.selectFirstOrNull("h2.chapter-number span")?.textOrNull()?.trim()
+                val chapterTitle = contentClone.selectFirstOrNull("h2.chapter-title span")?.textOrNull()?.trim()
+
+                // Remove header elements
+                contentClone.select("h2.chapter-number, h2.chapter-title, h2:first-child").remove()
+
+                // Add chapter header if not already added
+                if (!titleAdded && (!chapterNumber.isNullOrBlank() || !chapterTitle.isNullOrBlank())) {
                     val headerText = listOfNotNull(chapterNumber, chapterTitle)
                         .filter { it.isNotBlank() }
                         .joinToString(": ")
@@ -454,42 +568,62 @@ class LnoriProvider : MainProvider() {
                     }
                 }
 
-                // Process content - clone to avoid modifying original
-                val contentClone = innerContent.clone()
+                // Process images BEFORE any other cleanup
+                processPictures(contentClone)
 
-                // Remove the header elements we already processed
-                contentClone.select("h2.chapter-number, h2.chapter-title").remove()
-
-                // Process images - convert <picture> to simple <img>
-                contentClone.select("picture").forEach { picture ->
-                    val img = picture.selectFirstOrNull("img")
-                    val src = img?.attrOrNull("src")
-                    val alt = img?.attrOrNull("alt") ?: "Image"
-                    if (!src.isNullOrBlank()) {
-                        picture.html("<img src=\"$src\" alt=\"$alt\" />")
+                // Remove only truly empty elements (no text AND no images)
+                contentClone.select("p, div, span, section").forEach { el ->
+                    if (!hasTextContent(el) && !hasImages(el)) {
+                        el.remove()
                     }
                 }
 
-                contentBuilder.append(contentClone.html())
-                contentBuilder.append("\n")
+                val html = contentClone.html().trim()
+                if (html.isNotBlank()) {
+                    contentBuilder.append(html)
+                    contentBuilder.append("\n")
+                }
 
             } else {
-                // Section might just be an image (cover, insert)
-                val pictures = section.select("picture")
-                for (picture in pictures) {
-                    val img = picture.selectFirstOrNull("img")
-                    val src = img?.attrOrNull("src")
-                    val alt = img?.attrOrNull("alt") ?: "Image"
-                    if (!src.isNullOrBlank()) {
-                        contentBuilder.append("<p><img src=\"$src\" alt=\"$alt\" /></p>\n")
+                // Fallback: extract from section itself
+                val sectionClone = section.clone()
+
+                if (titleAdded) {
+                    sectionClone.select("> h2.chapter-title, > h2:first-child").remove()
+                }
+
+                // Process images FIRST
+                processPictures(sectionClone)
+
+                // Remove only structural/navigation elements
+                sectionClone.select("nav, header, footer, .nav, .header, .footer").remove()
+
+                // Remove truly empty elements (no text AND no images)
+                sectionClone.select("p, div, span, section").forEach { el ->
+                    if (!hasTextContent(el) && !hasImages(el)) {
+                        el.remove()
                     }
+                }
+
+                val html = sectionClone.html().trim()
+                if (html.isNotBlank()) {
+                    contentBuilder.append(html)
+                    contentBuilder.append("\n")
                 }
             }
 
-            // Add separator between sections
-            contentBuilder.append("<hr/>\n")
+            // Add separator between sections (not after last)
+            if (index < chapterSections.size - 1) {
+                contentBuilder.append("<hr/>\n")
+            }
         }
 
-        return cleanChapterHtml(contentBuilder.toString())
+        val result = contentBuilder.toString().trim()
+
+        return if (result.isBlank()) {
+            null
+        } else {
+            cleanChapterHtml(result)
+        }
     }
 }
