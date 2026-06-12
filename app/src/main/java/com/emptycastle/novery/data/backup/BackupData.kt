@@ -28,9 +28,28 @@ data class BackupData(
     val readerSettings: ReaderSettingsBackup? = null
 ) {
     companion object {
-        const val CURRENT_VERSION = 1
+        const val CURRENT_VERSION = 2
         const val FILE_EXTENSION = "novery"
         const val MIME_TYPE = "application/json"
+    }
+}
+
+/**
+ * Controls which backup sections are included in a payload.
+ */
+data class BackupSelection(
+    val includeLibrary: Boolean = true,
+    val includeBookmarks: Boolean = true,
+    val includeHistory: Boolean = true,
+    val includeStatistics: Boolean = true,
+    val includeSettings: Boolean = true
+) {
+    fun anyEnabled(): Boolean {
+        return includeLibrary ||
+            includeBookmarks ||
+            includeHistory ||
+            includeStatistics ||
+            includeSettings
     }
 }
 
@@ -116,6 +135,7 @@ data class ReadingStreakBackup(
 
 @Serializable
 data class AppSettingsBackup(
+    val updatedAt: Long = 0,
     val themeMode: String = "DARK",
     val amoledBlack: Boolean = false,
     val useDynamicColor: Boolean = false,
@@ -145,6 +165,7 @@ data class AppSettingsBackup(
 
 @Serializable
 data class ReaderSettingsBackup(
+    val updatedAt: Long = 0,
     // Typography
     val fontSize: Int = 18,
     val lineHeight: Float = 1.6f,
