@@ -1,4 +1,4 @@
-# Contributing to Novery
+# Contributing to Kothagolp
 
 Thanks for your interest in contributing!
 
@@ -18,7 +18,7 @@ Thanks for your interest in contributing!
 
 1. Create a class extending `MainProvider`
 2. Implement: `search()`, `loadMainPage()`, `loadNovelDetails()`, `loadChapterContent()`
-3. Register it in `NoveryApp.registerProviders()`
+3. Register it in `KothagolpApp.registerProviders()`
 4. Test with various novels
 
 ## Reporting Bugs

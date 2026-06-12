@@ -1,0 +1,1046 @@
+package com.kmhmubin.kothagolp.ui.screens.details
+
+import com.kmhmubin.kothagolp.domain.model.ChapterDisplayMode
+import com.kmhmubin.kothagolp.domain.model.ChaptersPerPage
+import com.kmhmubin.kothagolp.domain.model.PaginationState
+
+import android.content.Context
+import android.net.Uri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
+import com.kmhmubin.kothagolp.domain.model.Chapter
+import com.kmhmubin.kothagolp.domain.model.Novel
+import com.kmhmubin.kothagolp.domain.model.ReadingStatus
+import com.kmhmubin.kothagolp.epub.EpubExportOptions
+import com.kmhmubin.kothagolp.epub.EpubExportResult
+import com.kmhmubin.kothagolp.epub.EpubExportState
+import com.kmhmubin.kothagolp.epub.EpubExporter
+import com.kmhmubin.kothagolp.provider.MainProvider
+import com.kmhmubin.kothagolp.service.DownloadServiceManager
+import com.kmhmubin.kothagolp.service.DownloadState
+import com.kmhmubin.kothagolp.ui.screens.home.shared.DuplicateLibraryWarning
+import com.kmhmubin.kothagolp.util.ImageUtils
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class DetailsViewModel : ViewModel() {
+
+    // ================================================================
+    // REPOSITORIES
+    // ================================================================
+
+    private val novelRepository = RepositoryProvider.getNovelRepository()
+    private val libraryRepository = RepositoryProvider.getLibraryRepository()
+    private val historyRepository = RepositoryProvider.getHistoryRepository()
+    private val offlineRepository = RepositoryProvider.getOfflineRepository()
+    private val preferencesManager = RepositoryProvider.getPreferencesManager()
+
+    // ================================================================
+    // STATE
+    // ================================================================
+
+    private val _uiState = MutableStateFlow(DetailsUiState())
+    val uiState: StateFlow<DetailsUiState> = _uiState.asStateFlow()
+
+    val downloadState: StateFlow<DownloadState> = DownloadServiceManager.downloadState
+
+    private var currentProvider: MainProvider? = null
+    private var currentNovelUrl: String? = null
+
+    // ================================================================
+    // INITIALIZATION
+    // ================================================================
+
+    init {
+        val savedSortDescending = preferencesManager.getChapterSortDescending()
+        val savedDisplayMode = preferencesManager.getChapterDisplayMode()
+        val savedChaptersPerPage = preferencesManager.getChaptersPerPage()
+
+        _uiState.update {
+            it.copy(
+                isChapterSortDescending = savedSortDescending,
+                chapterDisplayMode = savedDisplayMode,
+                paginationState = it.paginationState.copy(
+                    chaptersPerPage = savedChaptersPerPage
+                )
+            )
+        }
+    }
+
+    // ================================================================
+    // FILTERED CHAPTERS COMPUTATION
+    // ================================================================
+
+    private fun recomputeFilteredChapters() {
+        val state = _uiState.value
+        var chapters = state.novelDetails?.chapters ?: emptyList()
+
+        // Apply filter
+        chapters = when (state.chapterFilter) {
+            ChapterFilter.ALL -> chapters
+            ChapterFilter.UNREAD -> chapters.filter { !state.readChapters.contains(it.url) }
+            ChapterFilter.DOWNLOADED -> chapters.filter { state.downloadedChapters.contains(it.url) }
+            ChapterFilter.NOT_DOWNLOADED -> chapters.filter { !state.downloadedChapters.contains(it.url) }
+        }
+
+        // Apply search
+        if (state.chapterSearchQuery.isNotBlank()) {
+            val query = state.chapterSearchQuery.lowercase()
+            chapters = chapters.filter {
+                it.name.lowercase().contains(query) ||
+                        // Also search by chapter number if query is numeric
+                        (query.toIntOrNull()?.let { num ->
+                            chapters.indexOf(it) + 1 == num
+                        } ?: false)
+            }
+        }
+
+        // Apply sort
+        val sortedChapters = if (state.isChapterSortDescending) {
+            chapters.reversed()
+        } else {
+            chapters
+        }
+
+        _uiState.update {
+            it.copy(
+                filteredChapters = sortedChapters,
+                filterVersion = it.filterVersion + 1,
+                // Reset to page 1 when filters change
+                paginationState = if (it.chapterDisplayMode == ChapterDisplayMode.PAGINATED) {
+                    it.paginationState.copy(currentPage = 1)
+                } else {
+                    it.paginationState
+                }
+            )
+        }
+    }
+
+    // Store a reference to scroll to position
+    private var _scrollToIndex = MutableStateFlow<Int?>(null)
+    val scrollToIndex: StateFlow<Int?> = _scrollToIndex.asStateFlow()
+
+    fun clearScrollRequest() {
+        _scrollToIndex.value = null
+    }
+
+    // ================================================================
+    // NOVEL LOADING
+    // ================================================================
+
+    fun loadNovel(novelUrl: String, providerName: String, forceRefresh: Boolean = false) {
+        currentNovelUrl = novelUrl
+        currentProvider = novelRepository.getProvider(providerName)
+
+        val provider = currentProvider ?: run {
+            _uiState.update { it.copy(error = "Provider not found", isLoading = false) }
+            return
+        }
+
+        viewModelScope.launch {
+            if (forceRefresh) {
+                _uiState.update { it.copy(isRefreshing = true) }
+            } else {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+            }
+
+            val result = novelRepository.loadNovelDetails(provider, novelUrl, forceRefresh)
+
+            result.fold(
+                onSuccess = { details ->
+                    // If cached details contain no chapters, try a forced network refresh once
+                    if (details.chapters.isEmpty() && !forceRefresh) {
+                        loadNovel(novelUrl, providerName, forceRefresh = true)
+                        return@fold
+                    }
+
+                    val hasReviewsSupport = novelRepository.providerHasReviews(providerName)
+
+                    _uiState.update {
+                        it.copy(
+                            novelDetails = details,
+                            isLoading = false,
+                            isRefreshing = false,
+                            relatedNovels = details.relatedNovels ?: emptyList(),
+                            hasReviewsSupport = hasReviewsSupport
+                        )
+                    }
+                    recomputeFilteredChapters()
+                    loadLibraryStatus(novelUrl)
+                    observeChapterStatus(novelUrl)
+
+                    // After successfully loading novel details, cache them:
+                    viewModelScope.launch {
+                        try {
+                            RepositoryProvider.getDiscoveryManager().cacheFromDetails(details, providerName)
+                        } catch (e: Exception) {
+                            // Silent fail
+                        }
+                    }
+
+                    // Load reviews if supported
+                    if (hasReviewsSupport) {
+                        loadReviews(reset = true)
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            error = error.message ?: "Failed to load novel",
+                            isLoading = false,
+                            isRefreshing = false
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun refresh() {
+        val novelUrl = currentNovelUrl ?: return
+        val providerName = currentProvider?.name ?: return
+        loadNovel(novelUrl, providerName, forceRefresh = true)
+    }
+
+    private fun loadLibraryStatus(novelUrl: String) {
+        viewModelScope.launch {
+            val isFavorite = libraryRepository.isFavorite(novelUrl)
+            val entry = libraryRepository.getEntry(novelUrl)
+            val readingPosition = libraryRepository.getReadingPosition(novelUrl)
+            val historyEntry = historyRepository.getLastRead(novelUrl)
+
+            val hasStarted = readingPosition != null || historyEntry != null
+            val lastChapterUrl = readingPosition?.chapterUrl ?: historyEntry?.chapterUrl
+            val lastChapterName = readingPosition?.chapterName ?: historyEntry?.chapterName
+
+            val chapters = _uiState.value.novelDetails?.chapters ?: emptyList()
+            val lastReadIndex = if (lastChapterUrl != null) {
+                chapters.indexOfFirst { it.url == lastChapterUrl }
+            } else -1
+
+            _uiState.update {
+                it.copy(
+                    isFavorite = isFavorite,
+                    readingStatus = entry?.getStatus() ?: ReadingStatus.READING,
+                    hasStartedReading = hasStarted,
+                    lastReadChapterUrl = lastChapterUrl,
+                    lastReadChapterName = lastChapterName,
+                    lastReadChapterIndex = lastReadIndex
+                )
+            }
+        }
+    }
+
+    private fun observeChapterStatus(novelUrl: String) {
+        viewModelScope.launch {
+            offlineRepository.observeDownloadedChapters(novelUrl).collect { downloaded ->
+                _uiState.update { it.copy(downloadedChapters = downloaded) }
+                recomputeFilteredChapters()
+            }
+        }
+
+        viewModelScope.launch {
+            historyRepository.observeReadChapters(novelUrl).collect { read ->
+                _uiState.update { it.copy(readChapters = read) }
+                recomputeFilteredChapters()
+            }
+        }
+    }
+
+    // ================================================================
+    // REVIEWS
+    // ================================================================
+
+    fun loadReviews(reset: Boolean = false) {
+        val state = _uiState.value
+        val provider = currentProvider ?: return
+        val novelUrl = currentNovelUrl ?: return
+
+        if (state.isLoadingReviews) return
+        if (!reset && !state.hasMoreReviews) return
+
+        val page = if (reset) 1 else state.reviewsPage
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoadingReviews = true,
+                    reviews = if (reset) emptyList() else it.reviews
+                )
+            }
+
+            novelRepository.loadReviews(
+                provider = provider,
+                novelUrl = novelUrl,
+                page = page,
+                showSpoilers = state.showSpoilers
+            ).onSuccess { newReviews ->
+                _uiState.update { current ->
+                    current.copy(
+                        isLoadingReviews = false,
+                        reviews = if (reset) newReviews else current.reviews + newReviews,
+                        reviewsPage = page + 1,
+                        hasMoreReviews = newReviews.isNotEmpty()
+                    )
+                }
+            }.onFailure { e ->
+                _uiState.update {
+                    it.copy(
+                        isLoadingReviews = false,
+                        hasMoreReviews = false
+                    )
+                }
+            }
+        }
+    }
+
+    fun toggleSpoilers() {
+        _uiState.update { it.copy(showSpoilers = !it.showSpoilers) }
+        loadReviews(reset = true)
+    }
+
+    fun loadMoreReviews() {
+        loadReviews(reset = false)
+    }
+
+    // ================================================================
+    // LIBRARY ACTIONS
+    // ================================================================
+
+    fun toggleFavorite() {
+        val details = _uiState.value.novelDetails ?: return
+        val provider = currentProvider ?: return
+
+        viewModelScope.launch {
+            val novel = Novel(
+                name = details.name,
+                url = details.url,
+                posterUrl = details.posterUrl,
+                apiName = provider.name
+            )
+
+            if (_uiState.value.isFavorite) {
+                libraryRepository.removeFromLibrary(details.url)
+                _uiState.update { it.copy(isFavorite = false) }
+            } else {
+                // Direct details adds should follow the same duplicate warning flow as browse results.
+                val duplicates = libraryRepository.findDuplicateCandidates(novel)
+                if (duplicates.isNotEmpty()) {
+                    _uiState.update {
+                        it.copy(duplicateWarning = DuplicateLibraryWarning(novel, duplicates))
+                    }
+                    return@launch
+                }
+
+                addToLibraryWithDetails(novel, details)
+            }
+        }
+    }
+
+    fun addDuplicateAnyway() {
+        val details = _uiState.value.novelDetails ?: return
+        val provider = currentProvider ?: return
+        val novel = createNovel(details, provider)
+
+        viewModelScope.launch {
+            addToLibraryWithDetails(novel, details)
+            dismissDuplicateWarning()
+        }
+    }
+
+    fun dismissDuplicateWarning() {
+        _uiState.update { it.copy(duplicateWarning = null) }
+    }
+
+    fun updateReadingStatus(status: ReadingStatus) {
+        val novelUrl = currentNovelUrl ?: return
+
+        viewModelScope.launch {
+            libraryRepository.updateStatus(novelUrl, status)
+            _uiState.update { it.copy(readingStatus = status, showStatusMenu = false) }
+        }
+    }
+
+    // ================================================================
+    // UI STATE TOGGLES
+    // ================================================================
+
+    fun showStatusMenu() = _uiState.update { it.copy(showStatusMenu = true) }
+    fun hideStatusMenu() = _uiState.update { it.copy(showStatusMenu = false) }
+    fun showCoverZoom() = _uiState.update { it.copy(showCoverZoom = true) }
+    fun hideCoverZoom() = _uiState.update { it.copy(showCoverZoom = false) }
+    fun showDownloadMenu() = _uiState.update { it.copy(showDownloadMenu = true) }
+    fun hideDownloadMenu() = _uiState.update { it.copy(showDownloadMenu = false) }
+    fun toggleSynopsis() = _uiState.update { it.copy(isSynopsisExpanded = !it.isSynopsisExpanded) }
+
+    // ================================================================
+    // READING POSITION
+    // ================================================================
+
+    fun getChapterToOpen(): String? {
+        val state = _uiState.value
+        val details = state.novelDetails ?: return null
+
+        return if (state.hasStartedReading && state.lastReadChapterUrl != null) {
+            state.lastReadChapterUrl
+        } else {
+            details.chapters.firstOrNull()?.url
+        }
+    }
+
+    // ================================================================
+    // CHAPTER SORTING & FILTERING
+    // ================================================================
+
+    fun toggleChapterSort() {
+        val newValue = !_uiState.value.isChapterSortDescending
+        _uiState.update { it.copy(isChapterSortDescending = newValue) }
+        preferencesManager.setChapterSortDescending(newValue)
+        recomputeFilteredChapters()
+    }
+
+    fun setChapterFilter(filter: ChapterFilter) {
+        _uiState.update { it.copy(chapterFilter = filter) }
+        recomputeFilteredChapters()
+    }
+
+    fun setChapterDisplayMode(mode: ChapterDisplayMode) {
+        _uiState.update { it.copy(chapterDisplayMode = mode) }
+        preferencesManager.setChapterDisplayMode(mode)
+    }
+
+    fun setChaptersPerPage(chaptersPerPage: ChaptersPerPage) {
+        _uiState.update {
+            it.copy(
+                paginationState = it.paginationState.copy(
+                    chaptersPerPage = chaptersPerPage,
+                    currentPage = 1  // Reset to first page when changing page size
+                )
+            )
+        }
+        preferencesManager.setChaptersPerPage(chaptersPerPage)
+    }
+
+    fun setCurrentPage(page: Int) {
+        _uiState.update { state ->
+            val totalPages = state.paginationState.getTotalPages(state.filteredChapters.size)
+            state.copy(
+                paginationState = state.paginationState.copy(
+                    currentPage = page.coerceIn(1, totalPages.coerceAtLeast(1))
+                )
+            )
+        }
+    }
+
+    fun jumpToFirstUnread(): Int? {
+        val chapters = _uiState.value.filteredChapters
+        val readChapters = _uiState.value.readChapters
+
+        val firstUnreadIndex = chapters.indexOfFirst { !readChapters.contains(it.url) }
+        if (firstUnreadIndex >= 0) {
+            when (_uiState.value.chapterDisplayMode) {
+                ChapterDisplayMode.SCROLL -> {
+                    return firstUnreadIndex
+                }
+                ChapterDisplayMode.PAGINATED -> {
+                    val chaptersPerPage = _uiState.value.paginationState.chaptersPerPage.value
+                    if (chaptersPerPage > 0) {
+                        val targetPage = (firstUnreadIndex / chaptersPerPage) + 1
+                        setCurrentPage(targetPage)
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    fun jumpToLastRead(): Int? {
+        val chapters = _uiState.value.filteredChapters
+        val lastReadUrl = _uiState.value.lastReadChapterUrl ?: return null
+
+        val lastReadIndex = chapters.indexOfFirst { it.url == lastReadUrl }
+        if (lastReadIndex >= 0) {
+            when (_uiState.value.chapterDisplayMode) {
+                ChapterDisplayMode.SCROLL -> {
+                    return lastReadIndex
+                }
+                ChapterDisplayMode.PAGINATED -> {
+                    val chaptersPerPage = _uiState.value.paginationState.chaptersPerPage.value
+                    if (chaptersPerPage > 0) {
+                        val targetPage = (lastReadIndex / chaptersPerPage) + 1
+                        setCurrentPage(targetPage)
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    fun setChapterSearchQuery(query: String) {
+        _uiState.update { it.copy(chapterSearchQuery = query) }
+        recomputeFilteredChapters()
+    }
+
+    fun toggleSearch() {
+        val wasActive = _uiState.value.isSearchActive
+        _uiState.update {
+            it.copy(
+                isSearchActive = !it.isSearchActive,
+                chapterSearchQuery = if (wasActive) "" else it.chapterSearchQuery
+            )
+        }
+        if (wasActive) {
+            recomputeFilteredChapters()
+        }
+    }
+
+    fun getFilteredChapters(): List<Chapter> = _uiState.value.filteredChapters
+
+    // ================================================================
+    // CHAPTER READ STATUS
+    // ================================================================
+
+    /**
+     * Toggle chapter read status (for swipe action)
+     */
+    fun toggleChapterReadStatus(chapterUrl: String, isCurrentlyRead: Boolean) {
+        val novelUrl = currentNovelUrl ?: return
+        viewModelScope.launch {
+            runCatching {
+                if (isCurrentlyRead) {
+                    historyRepository.markChapterUnread(novelUrl, chapterUrl)
+                } else {
+                    historyRepository.markChapterRead(novelUrl, chapterUrl)
+                }
+            }
+        }
+    }
+
+    fun markChapterAsRead(chapterUrl: String) {
+        val novelUrl = currentNovelUrl ?: return
+        viewModelScope.launch {
+            runCatching { historyRepository.markChapterRead(novelUrl, chapterUrl) }
+        }
+    }
+
+    fun markChapterAsUnread(chapterUrl: String) {
+        val novelUrl = currentNovelUrl ?: return
+        viewModelScope.launch {
+            runCatching { historyRepository.markChapterUnread(novelUrl, chapterUrl) }
+        }
+    }
+
+    fun markAllAsRead() {
+        val novelUrl = currentNovelUrl ?: return
+        val chapters = _uiState.value.novelDetails?.chapters ?: return
+
+        viewModelScope.launch {
+            runCatching { historyRepository.markChaptersRead(novelUrl, chapters.map { it.url }) }
+        }
+    }
+
+    fun markPreviousAsRead(chapterUrl: String) {
+        val novelUrl = currentNovelUrl ?: return
+        val chapters = _uiState.value.novelDetails?.chapters ?: return
+
+        val index = chapters.indexOfFirst { it.url == chapterUrl }
+        if (index <= 0) return
+
+        val previousChapters = chapters.take(index).map { it.url }
+
+        viewModelScope.launch {
+            runCatching { historyRepository.markChaptersRead(novelUrl, previousChapters) }
+        }
+    }
+
+    fun selectTab(tab: DetailsTab) {
+        _uiState.update { it.copy(selectedTab = tab) }
+
+        // Load reviews when switching to reviews tab for the first time
+        if (tab == DetailsTab.REVIEWS &&
+            _uiState.value.reviews.isEmpty() &&
+            !_uiState.value.isLoadingReviews &&
+            _uiState.value.hasReviewsSupport
+        ) {
+            loadReviews()
+        }
+    }
+
+    // ================================================================
+    // SELECTION MODE
+    // ================================================================
+
+    fun enableSelectionMode(initialChapterUrl: String? = null) {
+        _uiState.update {
+            it.copy(
+                isSelectionMode = true,
+                selectedChapters = if (initialChapterUrl != null) setOf(initialChapterUrl) else emptySet(),
+                lastSelectedIndex = -1
+            )
+        }
+    }
+
+    fun disableSelectionMode() {
+        _uiState.update {
+            it.copy(
+                isSelectionMode = false,
+                selectedChapters = emptySet(),
+                lastSelectedIndex = -1
+            )
+        }
+    }
+
+    fun toggleChapterSelection(displayIndex: Int, chapterUrl: String) {
+        _uiState.update { state ->
+            val newSelection = if (state.selectedChapters.contains(chapterUrl)) {
+                state.selectedChapters - chapterUrl
+            } else {
+                state.selectedChapters + chapterUrl
+            }
+            state.copy(
+                selectedChapters = newSelection,
+                lastSelectedIndex = displayIndex
+            )
+        }
+    }
+
+    fun selectRange(endDisplayIndex: Int) {
+        val state = _uiState.value
+        val chapters = state.filteredChapters
+
+        if (chapters.isEmpty()) return
+
+        val startIndex = if (state.lastSelectedIndex >= 0 && state.selectedChapters.isNotEmpty()) {
+            state.lastSelectedIndex
+        } else {
+            val chapter = chapters.getOrNull(endDisplayIndex) ?: return
+            _uiState.update {
+                it.copy(
+                    selectedChapters = setOf(chapter.url),
+                    lastSelectedIndex = endDisplayIndex
+                )
+            }
+            return
+        }
+
+        val rangeStart = minOf(startIndex, endDisplayIndex)
+        val rangeEnd = maxOf(startIndex, endDisplayIndex)
+
+        val rangeUrls = chapters
+            .subList(rangeStart, (rangeEnd + 1).coerceAtMost(chapters.size))
+            .map { it.url }
+            .toSet()
+
+        _uiState.update {
+            it.copy(
+                selectedChapters = it.selectedChapters + rangeUrls,
+                lastSelectedIndex = endDisplayIndex
+            )
+        }
+    }
+
+    fun selectAll() {
+        val chapters = _uiState.value.filteredChapters
+        _uiState.update {
+            it.copy(selectedChapters = chapters.map { ch -> ch.url }.toSet())
+        }
+    }
+
+    fun selectAllNotDownloaded() {
+        val state = _uiState.value
+        val notDownloaded = state.filteredChapters.filter { !state.downloadedChapters.contains(it.url) }
+        _uiState.update {
+            it.copy(selectedChapters = notDownloaded.map { ch -> ch.url }.toSet())
+        }
+    }
+
+    fun selectAllUnread() {
+        val state = _uiState.value
+        val unread = state.filteredChapters.filter { !state.readChapters.contains(it.url) }
+        _uiState.update {
+            it.copy(selectedChapters = unread.map { ch -> ch.url }.toSet())
+        }
+    }
+
+    fun setLastReadToSelected() {
+        val novelUrl = currentNovelUrl ?: return
+        val selected = _uiState.value.selectedChapters.firstOrNull() ?: return
+        val chapter = _uiState.value.novelDetails?.chapters?.find { it.url == selected } ?: return
+
+        viewModelScope.launch {
+            libraryRepository.updateReadingPosition(novelUrl, selected, chapter.name, 0)
+            disableSelectionMode()
+        }
+    }
+
+    fun setAsLastReadAndMarkPrevious() {
+        val novelUrl = currentNovelUrl ?: return
+        val selected = _uiState.value.selectedChapters.firstOrNull() ?: return
+        val chapters = _uiState.value.novelDetails?.chapters ?: return
+
+        val selectedIndex = chapters.indexOfFirst { it.url == selected }
+        if (selectedIndex < 0) return
+
+        val selectedChapter = chapters[selectedIndex]
+
+        viewModelScope.launch {
+            // Mark all previous chapters as read
+            if (selectedIndex > 0) {
+                val previousChapters = chapters.take(selectedIndex).map { it.url }
+                historyRepository.markChaptersRead(novelUrl, previousChapters)
+            }
+
+            // Update reading position to selected chapter
+            libraryRepository.updateReadingPosition(
+                novelUrl = novelUrl,
+                chapterUrl = selected,
+                chapterName = selectedChapter.name,
+                scrollIndex = 0,
+                scrollOffset = 0
+            )
+
+            // Update UI state
+            _uiState.update {
+                it.copy(
+                    lastReadChapterUrl = selected,
+                    lastReadChapterName = selectedChapter.name,
+                    lastReadChapterIndex = selectedIndex,
+                    hasStartedReading = true
+                )
+            }
+
+            disableSelectionMode()
+        }
+    }
+
+    fun deselectAll() {
+        _uiState.update {
+            it.copy(selectedChapters = emptySet(), lastSelectedIndex = -1)
+        }
+    }
+
+    fun invertSelection() {
+        val allChapterUrls = _uiState.value.filteredChapters.map { it.url }.toSet()
+        _uiState.update {
+            it.copy(selectedChapters = allChapterUrls - it.selectedChapters)
+        }
+    }
+
+    fun markSelectedAsRead() {
+        val novelUrl = currentNovelUrl ?: return
+        val selected = _uiState.value.selectedChapters.toList()
+
+        if (selected.isEmpty()) return
+
+        viewModelScope.launch {
+            runCatching {
+                historyRepository.markChaptersRead(novelUrl, selected)
+                disableSelectionMode()
+            }
+        }
+    }
+
+    fun markSelectedAsUnread() {
+        val novelUrl = currentNovelUrl ?: return
+        val selected = _uiState.value.selectedChapters.toList()
+
+        if (selected.isEmpty()) return
+
+        viewModelScope.launch {
+            runCatching {
+                historyRepository.markChaptersUnread(novelUrl, selected)
+                disableSelectionMode()
+            }
+        }
+    }
+
+    // ================================================================
+    // DOWNLOAD OPERATIONS
+    // ================================================================
+
+    fun downloadSingleChapter(context: Context, chapter: Chapter) {
+        val provider = currentProvider ?: return
+        val details = _uiState.value.novelDetails ?: return
+
+        val novel = createNovel(details, provider)
+        ensureInLibrary(novel, details)
+
+        DownloadServiceManager.startDownload(
+            context = context,
+            provider = provider,
+            novel = novel,
+            chapters = listOf(chapter)
+        )
+    }
+
+    /**
+     * Delete a single chapter download (for swipe action)
+     */
+    fun deleteChapterDownload(chapterUrl: String) {
+        val novelUrl = currentNovelUrl ?: return
+        viewModelScope.launch {
+            runCatching {
+                offlineRepository.deleteChapters(novelUrl, listOf(chapterUrl))
+            }
+        }
+    }
+
+    fun downloadAll(context: Context) {
+        val chapters = _uiState.value.novelDetails?.chapters ?: return
+        startBackgroundDownload(context, chapters)
+    }
+
+    fun downloadNext100(context: Context) = downloadNextN(context, 100)
+
+    fun downloadNextN(context: Context, count: Int) {
+        val details = _uiState.value.novelDetails ?: return
+        val downloaded = _uiState.value.downloadedChapters
+
+        // Find undownloaded chapters in reading order
+        val undownloadedChapters = details.chapters.filter {
+            !downloaded.contains(it.url)
+        }
+
+        if (undownloadedChapters.isEmpty()) return
+
+        val chaptersToDownload = undownloadedChapters.take(count.coerceAtLeast(1))
+        startBackgroundDownload(context, chaptersToDownload)
+    }
+
+    fun downloadUnread(context: Context) {
+        val details = _uiState.value.novelDetails ?: return
+        val readChapters = _uiState.value.readChapters
+        val downloaded = _uiState.value.downloadedChapters
+
+        val unreadUndownloaded = details.chapters.filter {
+            !readChapters.contains(it.url) && !downloaded.contains(it.url)
+        }
+        startBackgroundDownload(context, unreadUndownloaded)
+    }
+
+    fun downloadSelected(context: Context) {
+        val details = _uiState.value.novelDetails ?: return
+        val selected = _uiState.value.selectedChapters
+        val downloaded = _uiState.value.downloadedChapters
+
+        val chaptersToDownload = details.chapters.filter {
+            selected.contains(it.url) && !downloaded.contains(it.url)
+        }
+
+        if (chaptersToDownload.isNotEmpty()) {
+            startBackgroundDownload(context, chaptersToDownload)
+        }
+        disableSelectionMode()
+    }
+
+    fun deleteSelectedDownloads() {
+        val novelUrl = currentNovelUrl ?: return
+        val selected = _uiState.value.selectedChapters.toList()
+
+        if (selected.isEmpty()) return
+
+        viewModelScope.launch {
+            runCatching {
+                offlineRepository.deleteChapters(novelUrl, selected)
+                disableSelectionMode()
+            }
+        }
+    }
+
+    fun isDownloadingThisNovel(): Boolean {
+        val novelUrl = currentNovelUrl ?: return false
+        return DownloadServiceManager.isDownloadingNovel(novelUrl)
+    }
+
+    // ================================================================
+    // EPUB EXPORT
+    // ================================================================
+
+    private var epubExporter: EpubExporter? = null
+
+    val epubExportState: StateFlow<EpubExportState>
+        get() = epubExporter?.exportState ?: MutableStateFlow(EpubExportState()).asStateFlow()
+
+    fun initializeExporter(context: Context) {
+        if (epubExporter == null) {
+            epubExporter = EpubExporter(context, offlineRepository)
+        }
+    }
+
+    suspend fun exportNovelToEpub(
+        outputUri: Uri,
+        options: EpubExportOptions = EpubExportOptions()
+    ): EpubExportResult {
+        val novelUrl = currentNovelUrl ?: return EpubExportResult(
+            success = false,
+            error = "Novel URL not available"
+        )
+        return epubExporter?.exportToEpub(novelUrl, outputUri, options)
+            ?: EpubExportResult(success = false, error = "Exporter not initialized")
+    }
+
+    fun generateEpubFileName(): String {
+        val novelName = _uiState.value.novelDetails?.name ?: "novel"
+        return epubExporter?.generateFileName(novelName)
+            ?: "${novelName.take(50)}.epub"
+    }
+
+    fun resetExportState() {
+        epubExporter?.resetState()
+    }
+
+    fun getDownloadedChapterCount(): Int {
+        return _uiState.value.downloadedChapters.size
+    }
+
+    fun hasDownloadedChapters(): Boolean {
+        return _uiState.value.downloadedChapters.isNotEmpty()
+    }
+
+    // ================================================================
+    // PRIVATE HELPERS
+    // ================================================================
+
+    private fun createNovel(
+        details: com.kmhmubin.kothagolp.domain.model.NovelDetails,
+        provider: MainProvider
+    ): Novel = Novel(
+        name = details.name,
+        url = details.url,
+        posterUrl = details.posterUrl,
+        apiName = provider.name
+    )
+
+    private fun ensureInLibrary(
+        novel: Novel,
+        details: com.kmhmubin.kothagolp.domain.model.NovelDetails
+    ) {
+        if (!_uiState.value.isFavorite) {
+            viewModelScope.launch {
+                addToLibraryWithDetails(novel, details)
+            }
+        }
+    }
+
+    private suspend fun addToLibraryWithDetails(
+        novel: Novel,
+        details: com.kmhmubin.kothagolp.domain.model.NovelDetails
+    ) {
+        libraryRepository.addToLibraryWithDetails(
+            novel = novel,
+            details = details,
+            status = _uiState.value.readingStatus
+        )
+        _uiState.update { it.copy(isFavorite = true, duplicateWarning = null) }
+    }
+
+    private fun startBackgroundDownload(context: Context, chapters: List<Chapter>) {
+        val provider = currentProvider ?: return
+        val details = _uiState.value.novelDetails ?: return
+
+        if (chapters.isEmpty()) return
+
+        val novel = createNovel(details, provider)
+        ensureInLibrary(novel, details)
+
+        DownloadServiceManager.startDownload(
+            context = context,
+            provider = provider,
+            novel = novel,
+            chapters = chapters
+        )
+
+        hideDownloadMenu()
+    }
+
+    // ================================================================
+    // CUSTOM COVER
+    // ================================================================
+
+    private val _showCoverOptions = MutableStateFlow(false)
+    val showCoverOptions: StateFlow<Boolean> = _showCoverOptions.asStateFlow()
+
+    fun showCoverOptions() {
+        _showCoverOptions.value = true
+    }
+
+    fun hideCoverOptions() {
+        _showCoverOptions.value = false
+    }
+
+    /**
+     * Update custom cover from image URI
+     */
+    fun updateCustomCover(context: Context, imageUri: Uri) {
+        val novelUrl = currentNovelUrl ?: return
+
+        viewModelScope.launch {
+            try {
+                // Save image to internal storage
+                val filePath = ImageUtils.saveImageToInternalStorage(context, imageUri, novelUrl)
+
+                if (filePath != null) {
+                    // Update all repositories
+                    libraryRepository.updateCustomCover(novelUrl, "file://$filePath")
+                    offlineRepository.updateCustomCover(novelUrl, "file://$filePath")
+                    historyRepository.updateCustomCover(novelUrl, "file://$filePath")
+
+                    // Refresh UI
+                    val details = _uiState.value.novelDetails
+                    if (details != null) {
+                        _uiState.update {
+                            it.copy(
+                                novelDetails = details.copy(posterUrl = "file://$filePath")
+                            )
+                        }
+                    }
+
+                    hideCoverOptions()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _uiState.update {
+                    it.copy(error = "Failed to update cover: ${e.message}")
+                }
+            }
+        }
+    }
+
+    /**
+     * Reset to original cover
+     */
+    fun resetToOriginalCover(context: Context) {
+        val novelUrl = currentNovelUrl ?: return
+
+        viewModelScope.launch {
+            try {
+                // Get current custom cover for deletion
+                val customCover = libraryRepository.getCustomCover(novelUrl)
+
+                // Reset to null in all repositories
+                libraryRepository.updateCustomCover(novelUrl, null)
+                offlineRepository.updateCustomCover(novelUrl, null)
+                historyRepository.updateCustomCover(novelUrl, null)
+
+                // Delete old custom cover file
+                if (customCover != null && customCover.startsWith("file://")) {
+                    ImageUtils.deleteCustomCover(
+                        context = context,
+                        filePath = customCover
+                    )
+                }
+
+                // Refresh from network to get original
+                refresh()
+
+                hideCoverOptions()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+}

@@ -8,9 +8,12 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Notification Colors - Orange primary theme -->
-    <color name="notification_accent">#FF9800</color>  <!-- Material Orange 500 (primary) -->
-    <color name="notification_paused">#FB8C00</color>   <!-- Material Orange 600 -->
+    <!-- Brand -->
+    <color name="brand_background">#121C22</color>
+
+    <!-- Notification Colors - Amber brand theme -->
+    <color name="notification_accent">#F59E0B</color>
+    <color name="notification_paused">#D97706</color>
     <color name="notification_success">#43A047</color>  <!-- Material Green 600 -->
     <color name="notification_warning">#FFC107</color>  <!-- Material Amber 500 -->
     <color name="notification_error">#D32F2F</color>    <!-- Material Red 700 -->

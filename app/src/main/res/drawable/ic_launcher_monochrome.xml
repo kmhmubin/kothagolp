@@ -3,28 +3,26 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    
-    <!-- Runes in Flat White (The system will re-tint this) -->
+
+    <!-- Left book page -->
     <path
-        android:pathData="M40,34 V74"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
-        android:strokeLineCap="round"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M8,73 L8,36 Q8,30 15,30 L49,34 L49,77 Q30,75 8,73 Z"/>
+
+    <!-- Right book page -->
     <path
-        android:pathData="M32,50 L48,64"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
-        android:strokeLineCap="round"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M100,73 L100,36 Q100,30 93,30 L59,34 L59,77 Q78,75 100,73 Z"/>
+
+    <!-- Center spine with arch portal cutout (evenOdd) -->
     <path
-        android:pathData="M70,34 L80,50 L70,62 L60,50 Z"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"/>
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M49,77 L49,34 Q54,31 59,34 L59,77 Q54,80 49,77 Z M49,77 L49,52 Q54,43 59,52 L59,77 Z"/>
+
+    <!-- Sun -->
     <path
-        android:pathData="M70,62 L62,74 M70,62 L78,74"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,48 A4,4 0 1,1 53.99,48 Z"/>
+
 </vector>

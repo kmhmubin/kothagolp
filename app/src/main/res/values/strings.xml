@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Novery</string>
+    <string name="app_name">Kothagolp</string>
     <string name="tts_channel_name">Text-to-Speech</string>
     <string name="tts_channel_description">Controls for TTS playback</string>
 

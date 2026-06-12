@@ -1,12 +1,11 @@
-<img width="300" height="300" alt="image-removebg-preview" src="https://github.com/user-attachments/assets/e6670700-ff66-4934-a36d-b43442a16442" />
+<img width="300" height="300" alt="Kothagolp" src="kothagolp.png" />
 
-# Novery
+# Kothagolp
 
 <div align="center">
 
 **A modern Android novel reader with multi-source support, TTS, and offline reading**
 
-[![Website](https://img.shields.io/badge/Website-noveryapp.netlify.app-blue?logo=google-chrome)](https://noveryapp.netlify.app/)
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![Min SDK](https://img.shields.io/badge/Min%20SDK-26-blue.svg)](https://developer.android.com/about/versions/oreo)
 [![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
@@ -19,7 +18,7 @@
 
 ## 📖 About
 
-**Novery** is a free, open-source Android app for reading web novels from multiple sources. Inspired by [Tachiyomi](https://github.com/tachiyomiorg/tachiyomi) and [QuickNovel](https://github.com/LagradOst/QuickNovel), it provides a clean, customizable reading experience with **Text-to-Speech**, **offline reading**, and **personalized recommendations** — all built with **Jetpack Compose** and **Material 3**.
+**Kothagolp** is a free, open-source Android app for reading web novels from multiple sources. Inspired by [Tachiyomi](https://github.com/tachiyomiorg/tachiyomi) and [QuickNovel](https://github.com/LagradOst/QuickNovel), it provides a clean, customizable reading experience with **Text-to-Speech**, **offline reading**, and **personalized recommendations** — all built with **Jetpack Compose** and **Material 3**.
 
 ---
 
@@ -90,11 +89,10 @@
   <img src="https://github.com/user-attachments/assets/349b1de7-ffb8-47b9-8d37-307392715e2c" alt="History" width="250" />
   <img src="https://github.com/user-attachments/assets/75247556-b5aa-4756-87c5-0f01e3a81803" alt="Download" width="250" />
   <img src="https://github.com/user-attachments/assets/5953d4c2-2e31-4a8b-b2f7-981628ce22ac" alt="Reader 2" width="250" />
-    <img src="https://github.com/user-attachments/assets/2473aaa3-9c43-4a67-b089-6fa7a71be0c6" alt="Reader" width="250" />
+  <img src="https://github.com/user-attachments/assets/2473aaa3-9c43-4a67-b089-6fa7a71be0c6" alt="Reader" width="250" />
   <img src="https://github.com/user-attachments/assets/1b517ca6-3e54-45e3-923a-61b5f8c0759a" alt="Reader" width="250" />
 
 </div>
-
 
 ---
 
@@ -110,8 +108,8 @@
 
 ### Build from Source
 ```bash
-git clone https://github.com/1Finn2me/Novery.git
-cd Novery
+git clone https://github.com/kmhmubin/kothagolp.git
+cd kothagolp
 ./gradlew installDebug
 ```
 Requires **Android Studio Koala+**, **JDK 11+**, **Kotlin 2.0.21**.
@@ -126,9 +124,9 @@ Requires **Android Studio Koala+**, **JDK 11+**, **Kotlin 2.0.21**.
 ---
 
 ## ⚠️ Disclaimer
-Novery does not host, store, or distribute any content. The app functions as a search
+Kothagolp does not host, store, or distribute any content. The app functions as a search
 engine and aggregator — it crawls and displays content from third-party websites that
-are publicly accessible through any standard web browser. Novery has no affiliation
+are publicly accessible through any standard web browser. Kothagolp has no affiliation
 with, and no control over, the content provided by these sources.
 
 Any legal concerns regarding content should be directed to the respective website
@@ -137,16 +135,17 @@ responsible parties or file hosts directly.
 
 This application is intended for personal and educational use only. Users are solely
 responsible for ensuring their use of the app complies with all applicable local,
-national, and international laws. Use Novery at your own risk.
+national, and international laws. Use Kothagolp at your own risk.
 
-By using this application, you acknowledge that the developers of Novery bear no
+By using this application, you acknowledge that the developers of Kothagolp bear no
 responsibility for any content accessed through third-party sources, nor for any
 consequences arising from the use of this app.
+
 ---
 
 <div align="center">
 
-⭐ **Star the repo if you find Novery useful!**  
+⭐ **Star the repo if you find Kothagolp useful!**  
 
 [Report Bug](../../issues) · [Request Feature](../../issues)
 

@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("gradle/build-logic")
     repositories {
         google {
             content {
@@ -11,6 +12,9 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -19,5 +23,10 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Novery"
+rootProject.name = "Kothagolp"
 include(":app")
+include(":core:domain")
+include(":core:common")
+include(":source-api")
+include(":core:data")
+include(":core:ui")

@@ -37,3 +37,9 @@ keystore.properties
 
 # Release APKs
 release/
+
+# references
+inspo/
+PLAN.md
+ENGINEERING_REVIEW.md
+

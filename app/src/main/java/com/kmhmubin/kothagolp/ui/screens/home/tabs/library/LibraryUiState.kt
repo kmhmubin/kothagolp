@@ -1,0 +1,45 @@
+package com.kmhmubin.kothagolp.ui.screens.home.tabs.library
+
+import com.kmhmubin.kothagolp.data.repository.LibraryItem
+import com.kmhmubin.kothagolp.domain.model.LibraryFilter
+import com.kmhmubin.kothagolp.domain.model.LibrarySortOrder
+
+data class RefreshProgress(
+    val current: Int,
+    val total: Int,
+    val currentNovelName: String,
+    val novelsWithNewChapters: Int,
+    val newChaptersFound: Int
+)
+
+data class LibraryUiState(
+    val allItems: List<LibraryItem> = emptyList(),
+    val items: List<LibraryItem> = emptyList(),
+    val filteredItems: List<LibraryItem> = emptyList(),
+    val downloadCounts: Map<String, Int> = emptyMap(),
+    val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
+    val refreshProgress: RefreshProgress? = null,
+    val error: String? = null,
+    val searchQuery: String = "",
+    val filter: LibraryFilter = LibraryFilter.ALL,
+    val sortOrder: LibrarySortOrder = LibrarySortOrder.LAST_READ,
+    val totalNewChapters: Int = 0,
+    val showNewChaptersCard: Boolean = true,
+    val spicyPrivacyEnabled: Boolean = true,
+    val enabledShelfFilters: Set<LibraryFilter> = LibraryFilter.defaultEnabledShelves(),
+    val visibleFilters: List<LibraryFilter> = LibraryFilter.visibleFilters(
+        enabledFilters = LibraryFilter.defaultEnabledShelves(),
+        showSpicyFilter = false
+    ),
+    val isAutoDownloading: Boolean = false,
+    val autoDownloadProgress: AutoDownloadProgress? = null
+)
+
+data class AutoDownloadProgress(
+    val currentNovel: String,
+    val currentChapter: Int,
+    val totalChapters: Int,
+    val novelsCompleted: Int,
+    val totalNovels: Int
+)

@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Novery" parent="android:Theme.Material.Light.NoActionBar" />
-    <style name="Theme.Novery.Splash" parent="Theme.SplashScreen">
-        <!-- App logo shown during system splash -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_monochrome</item>
-        <!-- Background color behind the logo while splash is visible -->
-        <item name="windowSplashScreenBackground">@color/white</item>
-        <!-- Also set windowBackground to avoid flicker on some devices -->
-        <item name="android:windowBackground">@color/white</item>
-        <!-- Make the entry animation slightly more visible -->
+    <style name="Theme.Kothagolp" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Kothagolp.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_icon_transparent</item>
+        <item name="windowSplashScreenBackground">@color/brand_background</item>
+        <item name="android:windowBackground">@color/brand_background</item>
         <item name="windowSplashScreenAnimationDuration">700</item>
-        <!-- Theme to switch to after splash exit -->
-        <item name="postSplashScreenTheme">@style/Theme.Novery</item>
+        <item name="postSplashScreenTheme">@style/Theme.Kothagolp</item>
     </style>
 </resources>

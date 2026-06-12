@@ -1,0 +1,10 @@
+package com.kmhmubin.kothagolp.domain.model
+
+/**
+ * Represents a single chapter.
+ */
+data class Chapter(
+    val name: String,
+    val url: String,
+    val dateOfRelease: String? = null
+)
