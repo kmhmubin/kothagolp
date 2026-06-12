@@ -7,6 +7,8 @@ data class ProviderBrowseUiState(
     val provider: MainProvider? = null,
     val novels: List<Novel> = emptyList(),
     val currentPage: Int = 1,
+    val hasNextPage: Boolean = true,
+    val isLoadingMore: Boolean = false,
 
     val selectedSort: String? = null,
     val selectedTag: String? = null,
@@ -75,11 +77,8 @@ data class ProviderBrowseUiState(
             return count
         }
 
-    val hasPreviousPage: Boolean
-        get() = currentPage > 1 && !isSearchMode
-
-    val showPagination: Boolean
-        get() = displayNovels.isNotEmpty() && !isSearchMode && !isLoading && !isRefreshing
+    val canLoadMore: Boolean
+        get() = hasNextPage && !isSearchMode && !isLoading && !isLoadingMore && !isRefreshing && novels.isNotEmpty()
 
     val showSearchIndicator: Boolean
         get() = isSearchMode && searchResults.isNotEmpty() && !isSearching

@@ -156,10 +156,13 @@ abstract class MainProvider {
         private val providersFlow = kotlinx.coroutines.flow.MutableStateFlow<List<MainProvider>>(providers.toList())
 
         fun register(provider: MainProvider) {
-            if (providers.none { it.name == provider.name }) {
+            val existingIndex = providers.indexOfFirst { it.name == provider.name }
+            if (existingIndex >= 0) {
+                providers[existingIndex] = provider  // APK version replaces bundled
+            } else {
                 providers.add(provider)
-                providersFlow.value = providers.toList()
             }
+            providersFlow.value = providers.toList()
         }
 
         fun getProviders(): List<MainProvider> = providers.toList()

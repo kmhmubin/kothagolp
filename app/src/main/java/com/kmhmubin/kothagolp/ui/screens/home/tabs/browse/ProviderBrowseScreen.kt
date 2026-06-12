@@ -49,7 +49,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,8 +61,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Check
@@ -69,7 +69,6 @@ import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.FilterListOff
 import androidx.compose.material.icons.rounded.Language
-import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SearchOff
@@ -100,6 +99,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -163,7 +163,6 @@ private object BrowseDesign {
     val buttonHeight = 44.dp
     val chipHeight = 36.dp
     val searchBarHeight = 48.dp
-    val paginationButtonSize = 44.dp
     val fabSize = 56.dp
 }
 
@@ -342,32 +341,8 @@ fun ProviderBrowseScreen(
                                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                         viewModel.showActionSheet(novel)
                                     },
+                                    onLoadMore = viewModel::loadNextPage,
                                     appSettings = appSettings
-                                )
-                            }
-                        }
-
-                        // Floating pagination bar
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .navigationBarsPadding()
-                                .padding(bottom = BrowseDesign.spacingXl)
-                        ) {
-                            androidx.compose.animation.AnimatedVisibility(
-                                visible = uiState.showPagination,
-                                enter = slideInVertically(
-                                    initialOffsetY = { it },
-                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                                ) + fadeIn(),
-                                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-                            ) {
-                                PaginationBar(
-                                    currentPage = uiState.currentPage,
-                                    onPrevious = viewModel::previousPage,
-                                    onNext = viewModel::nextPage,
-                                    hasPrevious = uiState.hasPreviousPage,
-                                    isLoading = uiState.isLoading
                                 )
                             }
                         }
@@ -401,7 +376,7 @@ fun ProviderBrowseScreen(
                                 .align(Alignment.BottomEnd)
                                 .padding(
                                     end = BrowseDesign.spacingXl,
-                                    bottom = if (uiState.showPagination) 84.dp else BrowseDesign.spacingXl
+                                    bottom = BrowseDesign.spacingXl
                                 )
                         ) {
                             androidx.compose.animation.AnimatedVisibility(
@@ -1419,142 +1394,6 @@ private fun SearchResultsIndicator(
     }
 }
 
-// ============================================================================
-// Pagination Bar
-// ============================================================================
-
-@Composable
-private fun PaginationBar(
-    currentPage: Int,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    hasPrevious: Boolean,
-    isLoading: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(BrowseDesign.radiusXl),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp,
-        tonalElevation = 4.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(BrowseDesign.spacingSm),
-            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingXs),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            PaginationButton(
-                icon = Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
-                onClick = onPrevious,
-                enabled = hasPrevious && !isLoading,
-                contentDescription = "Previous page"
-            )
-
-            PageIndicator(currentPage = currentPage, isLoading = isLoading)
-
-            PaginationButton(
-                icon = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                onClick = onNext,
-                enabled = !isLoading,
-                contentDescription = "Next page"
-            )
-        }
-    }
-}
-
-@Composable
-private fun PageIndicator(currentPage: Int, isLoading: Boolean) {
-    Surface(
-        shape = RoundedCornerShape(BrowseDesign.radiusLg),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.padding(horizontal = BrowseDesign.spacingXs)
-    ) {
-        Row(
-            modifier = Modifier.padding(
-                horizontal = BrowseDesign.spacingLg,
-                vertical = BrowseDesign.spacingMd
-            ),
-            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AnimatedContent(
-                targetState = isLoading,
-                transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
-                label = "page_loading"
-            ) { loading ->
-                if (loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(BrowseDesign.iconSm),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Rounded.MenuBook,
-                        contentDescription = null,
-                        modifier = Modifier.size(BrowseDesign.iconSm),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            AnimatedContent(
-                targetState = currentPage,
-                transitionSpec = {
-                    (slideInVertically { -it } + fadeIn())
-                        .togetherWith(slideOutVertically { it } + fadeOut())
-                },
-                label = "page_number"
-            ) { page ->
-                Text(
-                    text = "Page $page",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PaginationButton(
-    icon: ImageVector,
-    onClick: () -> Unit,
-    enabled: Boolean,
-    contentDescription: String
-) {
-    val alpha by animateFloatAsState(
-        targetValue = if (enabled) 1f else 0.35f,
-        animationSpec = tween(150),
-        label = "button_alpha"
-    )
-
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(BrowseDesign.radiusMd),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier
-            .size(BrowseDesign.paginationButtonSize)
-            .graphicsLayer { this.alpha = alpha }
-            .semantics {
-                this.contentDescription = contentDescription
-                role = Role.Button
-            }
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(BrowseDesign.iconLg),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
 
 // ============================================================================
 // Content States
@@ -1840,25 +1679,39 @@ private fun EmptyStateCard(
     }
 }
 
+private const val LOAD_MORE_THRESHOLD = 6
+
 @Composable
 private fun MainContent(
     uiState: ProviderBrowseUiState,
     gridColumns: Int,
     onNovelClick: (Novel) -> Unit,
     onNovelLongClick: (Novel) -> Unit,
+    onLoadMore: () -> Unit,
     appSettings: AppSettings
 ) {
     val dimensions = KothagolpTheme.dimensions
 
     when (appSettings.browseDisplayMode) {
         com.kmhmubin.kothagolp.domain.model.DisplayMode.GRID -> {
+            val gridState = rememberLazyGridState()
+
+            LaunchedEffect(gridState, uiState.canLoadMore) {
+                snapshotFlow { gridState.layoutInfo }
+                    .collect { layoutInfo ->
+                        val total = layoutInfo.totalItemsCount
+                        val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                        if (total > 0 && lastVisible >= total - LOAD_MORE_THRESHOLD && uiState.canLoadMore) {
+                            onLoadMore()
+                        }
+                    }
+            }
+
             LazyVerticalGrid(
+                state = gridState,
                 columns = GridCells.Fixed(gridColumns),
                 modifier = Modifier.fillMaxSize(),
-                // Extra bottom padding: space for FAB (56dp) + margin (20dp) + pagination (if shown)
-                contentPadding = PaddingValues(
-                    bottom = if (uiState.showPagination) 180.dp else 100.dp
-                ),
+                contentPadding = PaddingValues(bottom = 100.dp),
                 horizontalArrangement = Arrangement.spacedBy(dimensions.cardSpacing),
                 verticalArrangement = Arrangement.spacedBy(dimensions.cardSpacing)
             ) {
@@ -1874,15 +1727,32 @@ private fun MainContent(
                         modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
                     )
                 }
+                if (uiState.isLoadingMore) {
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "load_more_indicator") {
+                        LoadMoreIndicator()
+                    }
+                }
             }
         }
 
         com.kmhmubin.kothagolp.domain.model.DisplayMode.LIST -> {
+            val listState = rememberLazyListState()
+
+            LaunchedEffect(listState, uiState.canLoadMore) {
+                snapshotFlow { listState.layoutInfo }
+                    .collect { layoutInfo ->
+                        val total = layoutInfo.totalItemsCount
+                        val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                        if (total > 0 && lastVisible >= total - LOAD_MORE_THRESHOLD && uiState.canLoadMore) {
+                            onLoadMore()
+                        }
+                    }
+            }
+
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    bottom = if (uiState.showPagination) 180.dp else 100.dp
-                ),
+                contentPadding = PaddingValues(bottom = 100.dp),
                 verticalArrangement = Arrangement.spacedBy(dimensions.cardSpacing)
             ) {
                 item(key = "spacer_top") {
@@ -1897,8 +1767,29 @@ private fun MainContent(
                         modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
                     )
                 }
+                if (uiState.isLoadingMore) {
+                    item(key = "load_more_indicator") {
+                        LoadMoreIndicator()
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun LoadMoreIndicator() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = BrowseDesign.spacingXl),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(28.dp),
+            strokeWidth = 3.dp,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
 

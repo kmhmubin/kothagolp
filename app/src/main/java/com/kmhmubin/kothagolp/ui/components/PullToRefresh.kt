@@ -12,8 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.kmhmubin.kothagolp.ui.theme.Orange500
-import com.kmhmubin.kothagolp.ui.theme.Zinc900
+import androidx.compose.material3.MaterialTheme
 
 /**
  * Pull-to-refresh wrapper component
@@ -49,8 +48,8 @@ fun KothagolpPullToRefreshBox(
                 state = state,
                 isRefreshing = isRefreshing,
                 modifier = Modifier.align(Alignment.TopCenter),
-                containerColor = Zinc900,
-                color = Orange500
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                color = MaterialTheme.colorScheme.primary
             )
         },
         content = content
@@ -72,7 +71,7 @@ fun RefreshIndicator(
         ) {
             CircularProgressIndicator(
                 modifier = Modifier.size(24.dp),
-                color = Orange500,
+                color = MaterialTheme.colorScheme.primary,
                 strokeWidth = 2.dp
             )
         }

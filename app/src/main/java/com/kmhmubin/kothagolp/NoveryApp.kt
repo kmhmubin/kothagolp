@@ -18,6 +18,8 @@ import com.kmhmubin.kothagolp.provider.RoyalRoadProvider
 import com.kmhmubin.kothagolp.provider.WebnovelProvider
 import com.kmhmubin.kothagolp.provider.WtrLabProvider
 import com.kmhmubin.kothagolp.service.NotificationHelper
+import com.kmhmubin.kothagolp.source.SourceLoader
+import com.kmhmubin.kothagolp.source.SourceSyncWorker
 import com.kmhmubin.kothagolp.tts.TTSManager
 import com.kmhmubin.kothagolp.tts.VoiceManager
 
@@ -54,8 +56,15 @@ class KothagolpApp : Application() {
             }
         }
 
-        // Register all novel providers
+        // Register all novel providers (bundled fallbacks)
         registerProviders()
+
+        // Load downloaded sources APK if available (replaces bundled providers with same name)
+        SourceLoader.loadIfAvailable(this)
+
+        // Check for source updates on launch, schedule 24h periodic check
+        SourceSyncWorker.syncOnce(this)
+        SourceSyncWorker.schedulePeriodicSync(this)
 
         // Create notification channels
         NotificationHelper.createNotificationChannels(this)

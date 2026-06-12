@@ -279,13 +279,14 @@ class ProviderBrowseViewModel(
         }
     }
 
-    private suspend fun executeLoadPage(isRefresh: Boolean) {
+    private suspend fun executeLoadPage(isRefresh: Boolean, isLoadMore: Boolean = false) {
         val provider = _uiState.value.provider ?: return
 
         _uiState.update {
             it.copy(
-                isLoading = !isRefresh,
+                isLoading = !isRefresh && !isLoadMore,
                 isRefreshing = isRefresh,
+                isLoadingMore = isLoadMore,
                 error = null,
                 isCloudflareError = false
             )
@@ -303,29 +304,34 @@ class ProviderBrowseViewModel(
             result.fold(
                 onSuccess = { pageResult ->
                     _uiState.update {
+                        val updatedNovels = if (isLoadMore) it.novels + pageResult.novels
+                        else pageResult.novels
                         it.copy(
-                            novels = pageResult.novels,
+                            novels = updatedNovels,
+                            hasNextPage = pageResult.hasNextPage && pageResult.novels.isNotEmpty(),
                             isLoading = false,
                             isRefreshing = false,
+                            isLoadingMore = false,
                             error = null,
                             isCloudflareError = false
                         )
                     }
 
-                    // After loading browse results, cache them:
                     viewModelScope.launch {
                         try {
                             RepositoryProvider.getDiscoveryManager().cacheFromBrowse(pageResult.novels, providerName)
                         } catch (e: Exception) {
-                            // Silent fail
+                            // silent
                         }
                     }
                 },
                 onFailure = { error ->
+                    _uiState.update { it.copy(isLoadingMore = false) }
                     handleLoadError(error)
                 }
             )
         } catch (e: Exception) {
+            _uiState.update { it.copy(isLoadingMore = false) }
             handleLoadError(e)
         }
     }
@@ -371,6 +377,7 @@ class ProviderBrowseViewModel(
                 selectedTag = newTag,
                 currentPage = 1,
                 novels = emptyList(),
+                hasNextPage = true,
                 error = null
             )
         }
@@ -391,6 +398,7 @@ class ProviderBrowseViewModel(
                 selectedSort = newSort,
                 currentPage = 1,
                 novels = emptyList(),
+                hasNextPage = true,
                 error = null
             )
         }
@@ -415,25 +423,20 @@ class ProviderBrowseViewModel(
                 selectedExtraFilters = newFilters,
                 currentPage = 1,
                 novels = emptyList(),
+                hasNextPage = true,
                 error = null
             )
         }
         loadPage()
     }
 
-    fun nextPage() {
-        if (_uiState.value.isSearchMode || _uiState.value.isLoading || _uiState.value.isRefreshing) return
+    fun loadNextPage() {
+        if (!_uiState.value.canLoadMore) return
 
-        _uiState.update { it.copy(currentPage = it.currentPage + 1) }
-        loadPage()
-    }
-
-    fun previousPage() {
-        if (_uiState.value.isSearchMode || _uiState.value.isLoading || _uiState.value.isRefreshing) return
-
-        if (_uiState.value.currentPage > 1) {
-            _uiState.update { it.copy(currentPage = it.currentPage - 1) }
-            loadPage()
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            _uiState.update { it.copy(currentPage = it.currentPage + 1) }
+            executeLoadPage(isRefresh = false, isLoadMore = true)
         }
     }
 
@@ -447,7 +450,8 @@ class ProviderBrowseViewModel(
                 selectedTag = provider.tags.firstOrNull()?.value,
                 selectedExtraFilters = emptyMap(),
                 currentPage = 1,
-                novels = emptyList()
+                novels = emptyList(),
+                hasNextPage = true
             )
         }
         loadPage()

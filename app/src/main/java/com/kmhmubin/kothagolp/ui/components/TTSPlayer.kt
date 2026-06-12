@@ -443,7 +443,8 @@ private fun ProgressBar(progress: Float, isPlaying: Boolean) {
                         )
                     )
                 )
-                .then(
+                .then(run {
+                    val shimmerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f)
                     if (isPlaying) {
                         Modifier.drawWithContent {
                             drawContent()
@@ -451,7 +452,7 @@ private fun ProgressBar(progress: Float, isPlaying: Boolean) {
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
                                         Color.Transparent,
-                                        Color.White.copy(alpha = 0.3f),
+                                        shimmerColor,
                                         Color.Transparent
                                     ),
                                     startX = size.width * (shimmerOffset - 0.2f),
@@ -460,7 +461,7 @@ private fun ProgressBar(progress: Float, isPlaying: Boolean) {
                             )
                         }
                     } else Modifier
-                )
+                })
         )
 
         // Thumb
