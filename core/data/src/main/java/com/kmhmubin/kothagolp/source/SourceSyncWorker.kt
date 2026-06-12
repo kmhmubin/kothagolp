@@ -38,7 +38,7 @@ class SourceSyncWorker(
             val tempApk = downloadApk(manifest.url)
                 ?: return@withContext Result.retry()
 
-            val destApk = applicationContext.filesDir.resolve("sources.apk")
+            val destApk = applicationContext.codeCacheDir.resolve("sources.apk")
             tempApk.copyTo(destApk, overwrite = true)
             tempApk.delete()
 
@@ -78,7 +78,7 @@ class SourceSyncWorker(
             val body = client.newCall(request).execute().body
                 ?: return@withContext null
 
-            val temp = applicationContext.filesDir.resolve("sources_download.apk")
+            val temp = applicationContext.cacheDir.resolve("sources_${System.nanoTime()}.apk")
             temp.outputStream().use { out -> body.byteStream().copyTo(out) }
             temp
         } catch (e: Exception) {

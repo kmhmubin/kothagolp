@@ -22,7 +22,9 @@ object SourceLoader {
      * APK providers replace bundled providers with matching names.
      */
     fun loadIfAvailable(context: Context) {
-        val apk = context.filesDir.resolve("sources.apk")
+        val apk = context.codeCacheDir.resolve("sources.apk")
+            .takeIf { it.exists() }
+            ?: context.filesDir.resolve("sources.apk")  // legacy path fallback
         if (!apk.exists()) return
 
         val manifestJson = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -44,12 +46,15 @@ object SourceLoader {
      * Returns the number of successfully loaded providers.
      */
     fun reload(context: Context, manifest: SourceManifest): Int {
-        val apk = context.filesDir.resolve("sources.apk")
+        val apk = context.codeCacheDir.resolve("sources.apk")
+            .takeIf { it.exists() }
+            ?: context.filesDir.resolve("sources.apk")
         if (!apk.exists()) return 0
 
+        val dexOutDir = context.codeCacheDir.resolve("sources_dex").also { it.mkdirs() }
         val loader = DexClassLoader(
             apk.absolutePath,
-            context.codeCacheDir.absolutePath,
+            dexOutDir.absolutePath,
             null,
             context.classLoader
         )
@@ -67,6 +72,7 @@ object SourceLoader {
         }
 
         _isApkLoaded.value = count > 0
+        Log.i(TAG, "Loaded $count/${manifest.sources.size} providers from sources.apk (v${manifest.version})")
         return count
     }
 
