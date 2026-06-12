@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp") version "2.0.21-1.0.27"
+    id("com.google.devtools.ksp") version "2.2.10-2.0.2"
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
@@ -43,12 +43,6 @@ android {
     buildFeatures {
         compose = true
     }
-
-    // Ensure the Compose compiler plugin version is set to match your Compose libraries
-    composeOptions {
-        // Pick a compiler extension version compatible with your Compose UI / Material versions
-        kotlinCompilerExtensionVersion = "1.5.3"
-    }
 }
 
 dependencies {
@@ -61,7 +55,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Kotlin Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Compose
     implementation(libs.androidx.compose.ui)
@@ -70,13 +64,8 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.4.0")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
 
-    implementation("androidx.compose.foundation:foundation")
-    implementation(libs.androidx.palette.ktx)
-
     implementation(libs.androidx.compose.foundation)
-    implementation("androidx.compose.foundation:foundation:1.7.0")
-    // System UI Controller
-    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
+    implementation(libs.androidx.palette.ktx)
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.4")
@@ -86,14 +75,13 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
     // Room Database
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    implementation(libs.androidx.palette.ktx)
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
     implementation(libs.androidx.room.common.jvm)
     implementation(libs.androidx.adapters)
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.animation)
-    ksp("androidx.room:room-compiler:2.6.1")
+    ksp("androidx.room:room-compiler:2.8.4")
 
     // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -104,8 +92,6 @@ dependencies {
 
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation("androidx.compose.animation:animation:1.6.1")
-    implementation("androidx.compose.animation:animation-core:1.6.1")
 
     // EPUB Generation
     implementation("org.redundent:kotlin-xml-builder:1.9.1")
@@ -122,14 +108,11 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.material:material:1.12.0")
     implementation("sh.calvin.reorderable:reorderable:2.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
     // Icons
     implementation("androidx.compose.material:material-icons-extended:1.7.5")
 
     implementation("androidx.core:core-splashscreen:1.0.1")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Testing
     testImplementation(libs.junit)
