@@ -390,6 +390,11 @@ fun KothagolpNavGraph(
                     navController.navigate(
                         NavRoutes.TagExplorer.createRoute(tagCategory)
                     )
+                },
+                onNavigateToMigration = { nUrl, sourceName ->
+                    navController.navigate(
+                        NavRoutes.MigrationSearch.createRoute(nUrl, sourceName)
+                    )
                 }
             )
         }

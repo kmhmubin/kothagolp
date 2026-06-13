@@ -107,6 +107,7 @@ fun DetailsScreen(
     onOpenInWebView: (String, String) -> Unit = { _, _ -> },
     onNavigateToDownloads: () -> Unit = {},
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
+    onNavigateToMigration: ((novelUrl: String, sourceName: String) -> Unit)? = null,
     viewModel: DetailsViewModel = viewModel()
 ) {
     val showCoverOptions by viewModel.showCoverOptions.collectAsState()
@@ -279,6 +280,7 @@ fun DetailsScreen(
                                         onOpenInWebView = onOpenInWebView,
                                         onNavigateToDownloads = onNavigateToDownloads,
                                         onNavigateToTagExplorer = onNavigateToTagExplorer,
+                                        onNavigateToMigration = onNavigateToMigration,
                                         onExportEpub = {
                                             if (viewModel.hasDownloadedChapters()) {
                                                 epubFilePicker.launch(viewModel.generateEpubFileName())
@@ -557,6 +559,7 @@ private fun DetailsContent(
     onHapticFeedback: (HapticFeedbackType) -> Unit,
     onTabSelected: (DetailsTab) -> Unit,
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
+    onNavigateToMigration: ((novelUrl: String, sourceName: String) -> Unit)? = null,
     viewModel: DetailsViewModel,
     scope: CoroutineScope
 ) {
@@ -596,7 +599,10 @@ private fun DetailsContent(
                 onOpenInWebView = {
                     onOpenInWebView(providerName, details.url)
                 },
-                onExportEpub = onExportEpub
+                onExportEpub = onExportEpub,
+                onMigrate = if (uiState.isFavorite) {
+                    { onNavigateToMigration?.invoke(novelUrl, providerName) }
+                } else null
             )
             // Note: CoverOptionsBottomSheet is now handled in DetailsDialogs
         }

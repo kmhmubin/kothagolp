@@ -40,6 +40,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.CompareArrows
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.outlined.Book
@@ -120,6 +121,7 @@ fun NovelHeader(
     onShare: (() -> Unit)? = null,
     onOpenInWebView: (() -> Unit)? = null,
     onExportEpub: (() -> Unit)? = null,
+    onMigrate: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -139,7 +141,8 @@ fun NovelHeader(
                 onBack = onBack,
                 onShare = onShare,
                 onOpenInWebView = onOpenInWebView,
-                onExportEpub = onExportEpub
+                onExportEpub = onExportEpub,
+                onMigrate = onMigrate
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -230,7 +233,8 @@ private fun HeaderTopBar(
     onBack: () -> Unit,
     onShare: (() -> Unit)?,
     onOpenInWebView: (() -> Unit)?,
-    onExportEpub: (() -> Unit)? = null
+    onExportEpub: (() -> Unit)? = null,
+    onMigrate: (() -> Unit)? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -315,6 +319,23 @@ private fun HeaderTopBar(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Rounded.Language,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    )
+                }
+
+                if (onMigrate != null) {
+                    DropdownMenuItem(
+                        text = { Text("Migrate source") },
+                        onClick = {
+                            showMenu = false
+                            onMigrate()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.CompareArrows,
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )
