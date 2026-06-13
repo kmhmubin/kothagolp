@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.CompareArrows
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Insights
@@ -51,6 +52,7 @@ fun MoreTab(
     onNavigateToSettings: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToStorage: () -> Unit,
+    onNavigateToMigration: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: MoreViewModel = viewModel()
 ) {
@@ -146,6 +148,19 @@ fun MoreTab(
                 onClick = onNavigateToStorage,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
+        }
+
+        if (onNavigateToMigration != null) {
+            item(key = "migration_menu") {
+                MoreMenuItem(
+                    icon = Icons.AutoMirrored.Rounded.CompareArrows,
+                    title = "Migrate Sources",
+                    subtitle = "Move library novels to a different source",
+                    iconTint = Color(0xFF06B6D4),
+                    onClick = onNavigateToMigration,
+                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+                )
+            }
         }
 
         item(key = "settings_menu") {

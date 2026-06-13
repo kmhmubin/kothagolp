@@ -34,6 +34,7 @@ import com.kmhmubin.kothagolp.ui.screens.settings.SettingsReaderPrefsScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsSourcesScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.StorageScreen
+import com.kmhmubin.kothagolp.ui.screens.migration.MigrationBulkScreen
 import com.kmhmubin.kothagolp.ui.screens.migration.MigrationNovelsScreen
 import com.kmhmubin.kothagolp.ui.screens.migration.MigrationSearchScreen
 import com.kmhmubin.kothagolp.ui.screens.migration.MigrationSourcesScreen
@@ -225,6 +226,9 @@ fun KothagolpNavGraph(
                     navController.navigate(
                         NavRoutes.MigrationSearch.createRoute(novelUrl, sourceName)
                     )
+                },
+                onNavigateToBulk = { sourceName ->
+                    navController.navigate(NavRoutes.MigrationBulk.createRoute(sourceName))
                 }
             )
         }
@@ -239,6 +243,18 @@ fun KothagolpNavGraph(
             MigrationSearchScreen(
                 onBack = { navController.popBackStack() },
                 onMigrationComplete = {
+                    navController.popBackStack(NavRoutes.MigrationSources.route, inclusive = true)
+                }
+            )
+        }
+
+        composable(
+            route = NavRoutes.MigrationBulk.route,
+            arguments = listOf(navArgument("sourceName") { type = NavType.StringType })
+        ) {
+            MigrationBulkScreen(
+                onBack = { navController.popBackStack() },
+                onComplete = {
                     navController.popBackStack(NavRoutes.MigrationSources.route, inclusive = true)
                 }
             )

@@ -132,7 +132,8 @@ fun HomeScreen(
                         onNavigateToDownloads = onNavigateToDownloads,
                         onNavigateToAbout = { onNavigateToAbout() },
                         onNavigateToSettings = onNavigateToSettings,
-                        onNavigateToStorage = onNavigateToStorage
+                        onNavigateToStorage = onNavigateToStorage,
+                        onNavigateToMigration = onNavigateToMigration
                     )
                 }
             }

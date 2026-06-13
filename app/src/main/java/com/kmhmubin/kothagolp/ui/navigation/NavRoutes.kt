@@ -43,6 +43,10 @@ sealed class NavRoutes(val route: String) {
             "migration/search/${encodeUrl(novelUrl)}/${encodeUrl(sourceName)}"
     }
 
+    object MigrationBulk : NavRoutes("migration/bulk/{sourceName}") {
+        fun createRoute(sourceName: String) = "migration/bulk/${encodeUrl(sourceName)}"
+    }
+
     object Notifications : NavRoutes("notifications")
 
     // ================================================================

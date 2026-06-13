@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -51,6 +52,7 @@ import com.kmhmubin.kothagolp.data.local.entity.LibraryEntity
 fun MigrationNovelsScreen(
     onBack: () -> Unit,
     onNavigateToSearch: (novelUrl: String, sourceName: String) -> Unit,
+    onNavigateToBulk: (sourceName: String) -> Unit = {},
     viewModel: MigrationNovelsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -62,6 +64,13 @@ fun MigrationNovelsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (uiState is MigrationNovelsUiState.Success) {
+                        TextButton(onClick = { onNavigateToBulk(viewModel.sourceName) }) {
+                            Text("Migrate all")
+                        }
                     }
                 }
             )
