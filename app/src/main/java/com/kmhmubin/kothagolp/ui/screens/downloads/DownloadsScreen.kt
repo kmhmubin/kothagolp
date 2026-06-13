@@ -1272,7 +1272,7 @@ private fun CurrentDownloadCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
+                        .clip(AppShape.extraSmall),
                     strokeCap = StrokeCap.Round,
                     color = if (download.isPaused)
                         MaterialTheme.colorScheme.error

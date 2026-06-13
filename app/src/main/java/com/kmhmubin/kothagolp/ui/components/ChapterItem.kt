@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckBox
@@ -32,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.domain.model.Chapter
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.Orange200
 import com.kmhmubin.kothagolp.ui.theme.Orange300
 import com.kmhmubin.kothagolp.ui.theme.Orange500
@@ -98,9 +98,9 @@ fun ChapterItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(AppShape.small)
             .background(backgroundColor)
-            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .border(1.dp, borderColor, AppShape.small)
             .combinedClickable(
                 onClick = onTap,
                 onLongClick = onLongPress
@@ -222,7 +222,7 @@ fun ChapterItemSkeleton(
         modifier = modifier
             .fillMaxWidth()
             .height(44.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(AppShape.small)
             .shimmerEffect()
     )
 }

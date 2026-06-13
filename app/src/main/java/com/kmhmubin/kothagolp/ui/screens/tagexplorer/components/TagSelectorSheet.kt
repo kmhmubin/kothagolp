@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import kotlinx.coroutines.launch
 
 // ============================================================================
@@ -246,7 +247,7 @@ fun TagSelectorSheet(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = AppShape.large,
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -459,7 +460,7 @@ private fun TagGroupFilters(
                             fontWeight = if (selectedGroup == group) FontWeight.SemiBold else FontWeight.Normal
                         )
                     },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
                     )
@@ -552,7 +553,7 @@ private fun TagChip(
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = containerColor,
         border = BorderStroke(1.5.dp, borderColor),
         modifier = Modifier.height(if (novelCount > 0) 48.dp else 44.dp)
@@ -587,7 +588,7 @@ private fun TagChip(
             // Novel count badge
             if (novelCount > 0) {
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = AppShape.extraSmall,
                     color = if (isSelected) {
                         primaryColor.copy(alpha = 0.2f)
                     } else {

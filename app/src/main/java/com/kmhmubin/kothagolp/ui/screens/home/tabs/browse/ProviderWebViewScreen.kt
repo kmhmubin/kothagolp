@@ -128,6 +128,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import com.kmhmubin.kothagolp.data.remote.CloudflareManager
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.provider.MainProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -1629,7 +1630,7 @@ private fun GenericSiteActionButton(
 
     Surface(
         onClick = if (hasExtractedData) onOpenData else onExtract,
-        shape = RoundedCornerShape(24.dp),
+        shape = AppShape.extraLarge,
         color = buttonColor,
         shadowElevation = 16.dp,
         tonalElevation = 4.dp,
@@ -1764,7 +1765,7 @@ private fun ExtractedDataBottomSheet(
                 // Cover image
                 if (data.coverImage.isNotBlank()) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = AppShape.medium,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier = Modifier.size(width = 100.dp, height = 140.dp)
                     ) {
@@ -1917,7 +1918,7 @@ private fun ExtractedDataBottomSheet(
                 OutlinedButton(
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = AppShape.medium
                 ) {
                     Text("Cancel")
                 }
@@ -1925,7 +1926,7 @@ private fun ExtractedDataBottomSheet(
                 Button(
                     onClick = onUseData,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     enabled = data.confidence >= 30 && data.pageType == "novel"
                 ) {
                     Icon(
@@ -1941,7 +1942,7 @@ private fun ExtractedDataBottomSheet(
             // Confidence warning
             if (data.confidence < 50) {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = WebViewColors.Warning.copy(alpha = 0.1f)
                 ) {
                     Row(
@@ -1967,7 +1968,7 @@ private fun ExtractedDataBottomSheet(
             // Page type warning
             if (data.pageType != "novel") {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                 ) {
                     Row(
@@ -2005,7 +2006,7 @@ private fun ConfidenceBadge(confidence: Int, pageType: String) {
     }
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = color.copy(alpha = 0.15f)
     ) {
         Row(
@@ -2806,7 +2807,7 @@ private fun EnhancedOpenInAppButton(
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
+        shape = AppShape.extraLarge,
         color = MaterialTheme.colorScheme.primary,
         shadowElevation = 16.dp,
         tonalElevation = 4.dp,

@@ -414,7 +414,7 @@ fun SearchSuggestionsDropdown(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         tonalElevation = 2.dp,
         shadowElevation = 4.dp
     ) {

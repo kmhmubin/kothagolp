@@ -51,7 +51,6 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -1234,7 +1233,7 @@ private fun LibraryFilterChip(
             scaleX = scale
             scaleY = scale
         },
-        shape = RoundedCornerShape(25.dp),
+        shape = AppShape.pill,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = contentColor,
         border = BorderStroke(2.dp, borderColor)
@@ -1268,7 +1267,7 @@ private fun LibraryFilterChip(
                 exit = fadeOut(tween(150)) + scaleOut(targetScale = 0.8f, animationSpec = tween(150))
             ) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = filterColor.copy(alpha = 0.2f)
                 ) {
                     Text(

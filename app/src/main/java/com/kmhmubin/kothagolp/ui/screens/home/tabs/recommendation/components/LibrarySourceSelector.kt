@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.kmhmubin.kothagolp.recommendation.model.LibrarySourceNovel
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 /**
  * Header component showing the current source novel with ability to switch
@@ -81,7 +82,7 @@ fun BecauseYouReadHeader(
         // Main header with current source
         Surface(
             onClick = { if (otherSources.isNotEmpty()) onToggleExpanded() },
-            shape = RoundedCornerShape(16.dp),
+            shape = AppShape.large,
             color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
             modifier = Modifier
                 .fillMaxWidth()
@@ -96,7 +97,7 @@ fun BecauseYouReadHeader(
             ) {
                 // Source novel cover
                 Card(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = AppShape.medium,
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     modifier = Modifier.size(56.dp)
                 ) {
@@ -264,7 +265,7 @@ fun LibrarySourceCard(
         modifier = modifier
             .width(90.dp)
             .scale(scale)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -277,8 +278,8 @@ fun LibrarySourceCard(
         Box(
             modifier = Modifier
                 .size(80.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .border(2.dp, borderColor, RoundedCornerShape(10.dp))
+                .clip(AppShape.medium)
+                .border(2.dp, borderColor, AppShape.medium)
         ) {
             SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -338,7 +339,7 @@ fun LibrarySourceCard(
                     .padding(4.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(4.dp),
+                    shape = AppShape.extraSmall,
                     color = Color.Black.copy(alpha = 0.7f)
                 ) {
                     Text(
@@ -378,7 +379,7 @@ fun SourceSwitchHint(
 
     Surface(
         onClick = onExpand,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = modifier.padding(horizontal = 20.dp)
     ) {

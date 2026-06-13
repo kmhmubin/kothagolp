@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.domain.model.Chapter
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.Success
 import com.kmhmubin.kothagolp.ui.theme.Warning
 import kotlin.math.absoluteValue
@@ -230,7 +231,7 @@ fun ChapterItem(
                         onLongPress = { onLongPress() }
                     )
                 },
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             color = backgroundColor,
             shadowElevation = elevation,
             border = when {
@@ -300,7 +301,7 @@ private fun SwipeActionBackground(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Max)
-            .clip(RoundedCornerShape(12.dp)),
+            .clip(AppShape.medium),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         // Left action (mark as read/unread)
@@ -444,7 +445,7 @@ private fun LastReadIndicator(isVisible: Boolean) {
                     .size(3.dp, 24.dp)
                     .background(
                         MaterialTheme.colorScheme.tertiary,
-                        RoundedCornerShape(2.dp)
+                        AppShape.extraSmall
                     )
             )
             Spacer(modifier = Modifier.width(10.dp))

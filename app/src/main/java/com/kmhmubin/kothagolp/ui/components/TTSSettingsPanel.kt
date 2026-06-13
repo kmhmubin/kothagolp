@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
@@ -85,6 +84,7 @@ import com.kmhmubin.kothagolp.service.TTSServiceManager
 import com.kmhmubin.kothagolp.tts.VoiceInfo
 import com.kmhmubin.kothagolp.tts.VoiceManager
 import com.kmhmubin.kothagolp.ui.theme.AccentCyan
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.Info
 import com.kmhmubin.kothagolp.ui.theme.NewChapters
 import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
@@ -149,7 +149,7 @@ fun TTSSettingsPanel(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(max = 560.dp),  // Increased for new setting
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = Color.Transparent,
         tonalElevation = 8.dp,
         shadowElevation = 14.dp
@@ -165,7 +165,7 @@ fun TTSSettingsPanel(
                 .border(
                     width = 1.dp,
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = AppShape.extraLarge
                 )
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -337,7 +337,7 @@ private fun TTSSettingsHeader(
                     )
                     if (sleepTimerRemaining != null && sleepTimerRemaining > 0) {
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
+                            shape = AppShape.extraSmall,
                             color = Warning.copy(alpha = 0.15f)
                         ) {
                             Row(
@@ -396,7 +396,7 @@ private fun TTSTabBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -415,7 +415,7 @@ private fun TTSTabBar(
             Surface(
                 onClick = { onTabSelected(tab) },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(10.dp),
+                shape = AppShape.medium,
                 color = bgColor
             ) {
                 Row(
@@ -508,7 +508,7 @@ private fun VoiceTabContent(
 
                     Surface(
                         onClick = onToggleVoiceSelector,
-                        shape = RoundedCornerShape(10.dp),
+                        shape = AppShape.medium,
                         color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                     ) {
@@ -562,7 +562,7 @@ private fun CurrentVoiceCard(
     onPreview: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
     ) {
@@ -641,7 +641,7 @@ private fun SystemTTSSettingsButton() {
             }
         },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = NewChapters.copy(alpha = 0.15f),
         border = BorderStroke(1.dp, NewChapters.copy(alpha = 0.3f))
     ) {
@@ -783,7 +783,7 @@ private fun PlaybackTabContent(
         }
 
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ) {
             Row(
@@ -864,7 +864,7 @@ private fun OptionsTabContent(
                     exit = shrinkVertically() + fadeOut()
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = AppShape.small,
                         color = Info.copy(alpha = 0.15f)
                     ) {
                         Row(
@@ -910,7 +910,7 @@ private fun OptionsTabContent(
                     exit = shrinkVertically() + fadeOut()
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = AppShape.small,
                         color = AccentCyan.copy(alpha = 0.15f)
                     ) {
                         Row(
@@ -946,7 +946,7 @@ private fun OptionsTabContent(
                     exit = shrinkVertically() + fadeOut()
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
+                        shape = AppShape.medium,
                         color = Warning.copy(alpha = 0.15f),
                         border = BorderStroke(1.dp, Warning.copy(alpha = 0.3f))
                     ) {
@@ -983,7 +983,7 @@ private fun OptionsTabContent(
 
                             Surface(
                                 onClick = onCancelSleepTimer,
-                                shape = RoundedCornerShape(8.dp),
+                                shape = AppShape.small,
                                 color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
                                 Row(
@@ -1051,7 +1051,7 @@ private fun SleepTimerChip(
     Surface(
         onClick = onClick,
         modifier = Modifier.scale(scale),
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = bgColor,
         border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null
     ) {
@@ -1090,7 +1090,7 @@ private fun TTSSectionCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Column(
@@ -1131,7 +1131,7 @@ private fun TTSToggleSetting(
 ) {
     Surface(
         onClick = { onCheckedChange(!checked) },
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = if (checked) accentColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, if (checked) accentColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline)
     ) {
@@ -1148,7 +1148,7 @@ private fun TTSToggleSetting(
                 modifier = Modifier.weight(1f)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (checked) accentColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.size(36.dp)
                 ) {
@@ -1211,7 +1211,7 @@ private fun TTSQuickChip(
     Surface(
         onClick = onClick,
         modifier = modifier.height(38.dp),
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = backgroundColor,
         border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null
     ) {

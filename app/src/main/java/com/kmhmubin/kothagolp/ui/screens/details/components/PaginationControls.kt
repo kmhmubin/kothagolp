@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp.ui.screens.details.components
 import com.kmhmubin.kothagolp.domain.model.ChapterDisplayMode
 import com.kmhmubin.kothagolp.domain.model.ChaptersPerPage
 import com.kmhmubin.kothagolp.domain.model.PaginationState
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -83,7 +84,7 @@ fun PaginationControls(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 2.dp
     ) {
@@ -101,7 +102,7 @@ fun PaginationControls(
             ) {
                 // Current page indicator
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Row(
@@ -366,7 +367,7 @@ private fun PageNumberButton(
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = backgroundColor,
         modifier = Modifier
             .size(36.dp)
@@ -393,7 +394,7 @@ private fun PageNumberButton(
 private fun EllipsisButton(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.size(36.dp)
     ) {
@@ -421,7 +422,7 @@ private fun EnhancedJumpToPageDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppShape.extraLarge,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp
         ) {
@@ -487,7 +488,7 @@ private fun EnhancedJumpToPageDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(72.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = AppShape.large,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
@@ -512,7 +513,7 @@ private fun EnhancedJumpToPageDialog(
                         .forEach { page ->
                             Surface(
                                 onClick = { onConfirm(page) },
-                                shape = RoundedCornerShape(8.dp),
+                                shape = AppShape.small,
                                 color = if (page == currentPage)
                                     MaterialTheme.colorScheme.primaryContainer
                                 else
@@ -536,7 +537,7 @@ private fun EnhancedJumpToPageDialog(
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = AppShape.medium
                     ) {
                         Text("Cancel")
                     }
@@ -549,7 +550,7 @@ private fun EnhancedJumpToPageDialog(
                         },
                         enabled = isValidInput,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = AppShape.medium
                     ) {
                         Text("Go")
                     }
