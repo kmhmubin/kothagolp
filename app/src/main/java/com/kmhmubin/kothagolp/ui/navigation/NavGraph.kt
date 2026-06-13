@@ -26,7 +26,13 @@ import com.kmhmubin.kothagolp.ui.screens.onboarding.OnboardingScreen
 import com.kmhmubin.kothagolp.ui.screens.profile.ProfileScreen
 import com.kmhmubin.kothagolp.ui.screens.reader.ReaderScreen
 import com.kmhmubin.kothagolp.ui.screens.reader.settings.ReaderSettingsScreen
+import com.kmhmubin.kothagolp.ui.screens.settings.SettingsAboutScreen
+import com.kmhmubin.kothagolp.ui.screens.settings.SettingsAppearanceScreen
+import com.kmhmubin.kothagolp.ui.screens.settings.SettingsBrowseScreen
+import com.kmhmubin.kothagolp.ui.screens.settings.SettingsLibraryScreen
+import com.kmhmubin.kothagolp.ui.screens.settings.SettingsReaderPrefsScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsScreen
+import com.kmhmubin.kothagolp.ui.screens.settings.SettingsSourcesScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.StorageScreen
 import com.kmhmubin.kothagolp.ui.screens.tagexplorer.TagExplorerScreen
 
@@ -140,10 +146,35 @@ fun KothagolpNavGraph(
         composable(route = NavRoutes.Settings.route) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                onNavigateToStorage = {
-                    navController.navigate(NavRoutes.Storage.route)
-                }
+                onNavigateTo = { route -> navController.navigate(route) }
             )
+        }
+
+        composable(route = NavRoutes.SettingsAppearance.route) {
+            SettingsAppearanceScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(route = NavRoutes.SettingsLibrary.route) {
+            SettingsLibraryScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(route = NavRoutes.SettingsBrowse.route) {
+            SettingsBrowseScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(route = NavRoutes.SettingsReader.route) {
+            SettingsReaderPrefsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToReaderSettings = { navController.navigate(NavRoutes.ReaderSettings.route) }
+            )
+        }
+
+        composable(route = NavRoutes.SettingsSources.route) {
+            SettingsSourcesScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(route = NavRoutes.SettingsAbout.route) {
+            SettingsAboutScreen(onBack = { navController.popBackStack() })
         }
 
         // ================================================================

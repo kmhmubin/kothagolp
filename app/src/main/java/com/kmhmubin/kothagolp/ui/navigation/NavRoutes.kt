@@ -19,6 +19,13 @@ sealed class NavRoutes(val route: String) {
 
     object Settings : NavRoutes("settings")
 
+    object SettingsAppearance : NavRoutes("settings/appearance")
+    object SettingsLibrary : NavRoutes("settings/library")
+    object SettingsBrowse : NavRoutes("settings/browse")
+    object SettingsReader : NavRoutes("settings/reader_prefs")
+    object SettingsSources : NavRoutes("settings/sources")
+    object SettingsAbout : NavRoutes("settings/about")
+
     object Storage : NavRoutes("settings/storage")
 
     object Notifications : NavRoutes("notifications")

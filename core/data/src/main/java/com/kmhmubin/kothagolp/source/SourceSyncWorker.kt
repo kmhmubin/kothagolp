@@ -28,6 +28,7 @@ class SourceSyncWorker(
             val (manifestJson, manifest) = fetchManifest()
                 ?: return@withContext Result.retry()
 
+            SourceLoader.saveLastCheckedTime(applicationContext)
             val localVersion = SourceLoader.localVersion(applicationContext)
             val apkExists = applicationContext.codeCacheDir.resolve("sources.apk").exists()
             if (manifest.version <= localVersion && apkExists) {
@@ -103,6 +104,17 @@ class SourceSyncWorker(
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "source_sync_once",
                 ExistingWorkPolicy.KEEP,
+                OneTimeWorkRequestBuilder<SourceSyncWorker>()
+                    .setConstraints(networkConstraints)
+                    .build()
+            )
+        }
+
+        /** Force a sync immediately, replacing any queued one-time sync. */
+        fun forceSync(context: Context) {
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "source_sync_once",
+                ExistingWorkPolicy.REPLACE,
                 OneTimeWorkRequestBuilder<SourceSyncWorker>()
                     .setConstraints(networkConstraints)
                     .build()

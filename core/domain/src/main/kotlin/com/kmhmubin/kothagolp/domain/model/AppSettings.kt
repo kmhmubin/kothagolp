@@ -277,7 +277,10 @@ data class AppSettings(
 
     // Providers
     val providerOrder: List<String> = emptyList(),
-    val disabledProviders: Set<String> = emptySet()
+    val disabledProviders: Set<String> = emptySet(),
+
+    // Sources
+    val autoUpdateSources: Boolean = true
 )
 
 /**

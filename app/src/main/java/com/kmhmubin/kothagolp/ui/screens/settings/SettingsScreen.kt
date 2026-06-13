@@ -58,13 +58,16 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.RestartAlt
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SettingsSuggest
 import androidx.compose.material.icons.outlined.SpaceDashboard
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.SwapVert
+import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material.icons.outlined.ViewComfy
 import androidx.compose.material.icons.outlined.ViewCompact
 import androidx.compose.material.icons.outlined.ViewCozy
@@ -72,10 +75,10 @@ import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material.icons.outlined.Wifi
-import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.BookmarkAdd
 import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PauseCircle
@@ -91,8 +94,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -104,6 +110,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,12 +121,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.work.WorkManager
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.domain.model.AppSettings
 import com.kmhmubin.kothagolp.domain.model.CustomThemeColors
@@ -131,32 +140,27 @@ import com.kmhmubin.kothagolp.domain.model.RatingFormat
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.ThemeMode
 import com.kmhmubin.kothagolp.domain.model.UiDensity
+import com.kmhmubin.kothagolp.source.SourceLoader
+import com.kmhmubin.kothagolp.source.SourceSyncWorker
 import com.kmhmubin.kothagolp.ui.components.ColorPickerDialog
+import com.kmhmubin.kothagolp.ui.navigation.NavRoutes
+import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN SETTINGS SCREEN  (navigation hub)
+// ═══════════════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onNavigateToStorage: () -> Unit
+    onNavigateTo: (String) -> Unit
 ) {
-    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
-    val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
-    val haptics = LocalHapticFeedback.current
-    var showResetDialog by remember { mutableStateOf(false) }
-
-    if (showResetDialog) {
-        ResetConfirmationDialog(
-            onConfirm = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                preferencesManager.resetToDefaults()
-                showResetDialog = false
-            },
-            onDismiss = { showResetDialog = false }
-        )
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -177,11 +181,125 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding),
             contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column {
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Palette,
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            title = "Appearance",
+                            subtitle = "Theme, colors and display layout",
+                            onClick = { onNavigateTo(NavRoutes.SettingsAppearance.route) }
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.AutoMirrored.Outlined.LibraryBooks,
+                            iconTint = Color(0xFF3B82F6),
+                            title = "Library",
+                            subtitle = "Shelves, sorting and visibility",
+                            onClick = { onNavigateTo(NavRoutes.SettingsLibrary.route) }
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Search,
+                            iconTint = Color(0xFF06B6D4),
+                            title = "Browse & Downloads",
+                            subtitle = "Search, ratings and auto-downloads",
+                            onClick = { onNavigateTo(NavRoutes.SettingsBrowse.route) }
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.AutoMirrored.Outlined.MenuBook,
+                            iconTint = Color(0xFF8B5CF6),
+                            title = "Reader",
+                            subtitle = "Reading experience and preferences",
+                            onClick = { onNavigateTo(NavRoutes.SettingsReader.route) }
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Extension,
+                            iconTint = Color(0xFFF97316),
+                            title = "Sources",
+                            subtitle = "Manage sources and updates",
+                            onClick = { onNavigateTo(NavRoutes.SettingsSources.route) }
+                        )
+                    }
+                }
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column {
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Storage,
+                            iconTint = Color(0xFF22C55E),
+                            title = "Data",
+                            subtitle = "Storage, cache and backup",
+                            onClick = { onNavigateTo(NavRoutes.Storage.route) }
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Info,
+                            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            title = "About",
+                            subtitle = "App information and reset",
+                            onClick = { onNavigateTo(NavRoutes.SettingsAbout.route) }
+                        )
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(80.dp)) }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// APPEARANCE  (Theme + Layout)
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsAppearanceScreen(onBack: () -> Unit) {
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+    val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Appearance", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ═══════════════════════════════════════════════════════════
-            // THEME (Color & Visual Theming)
-            // ═══════════════════════════════════════════════════════════
             item { SectionHeader("Theme", Icons.Outlined.Palette) }
             item {
                 SettingsCard {
@@ -220,7 +338,6 @@ fun SettingsScreen(
                         highlight = true,
                         onCheckedChange = { preferencesManager.updateUseCustomTheme(it) }
                     )
-
                     AnimatedVisibility(
                         visible = settings.useCustomTheme,
                         enter = expandVertically() + fadeIn(),
@@ -237,9 +354,6 @@ fun SettingsScreen(
                 }
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // LAYOUT (UI Structure & Display)
-            // ═══════════════════════════════════════════════════════════
             item { SectionHeader("Layout", Icons.Outlined.ViewCompact) }
             item {
                 SettingsCard {
@@ -276,9 +390,43 @@ fun SettingsScreen(
                 }
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // LIBRARY (Library Behavior & Display)
-            // ═══════════════════════════════════════════════════════════
+            item { Spacer(Modifier.height(80.dp)) }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LIBRARY
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsLibraryScreen(onBack: () -> Unit) {
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+    val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Library", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             item { SectionHeader("Library", Icons.AutoMirrored.Outlined.LibraryBooks) }
             item {
                 SettingsCard {
@@ -347,9 +495,43 @@ fun SettingsScreen(
                 )
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // BROWSE & SEARCH (Discovery Settings)
-            // ═══════════════════════════════════════════════════════════
+            item { Spacer(Modifier.height(80.dp)) }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BROWSE & DOWNLOADS
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsBrowseScreen(onBack: () -> Unit) {
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+    val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Browse & Downloads", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             item { SectionHeader("Browse & Search", Icons.Outlined.Search) }
             item {
                 SettingsCard {
@@ -383,9 +565,6 @@ fun SettingsScreen(
                 }
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // AUTO-DOWNLOAD (Download Automation)
-            // ═══════════════════════════════════════════════════════════
             item { SectionHeader("Auto-Download", Icons.Rounded.CloudDownload) }
             item {
                 SettingsCard {
@@ -397,7 +576,6 @@ fun SettingsScreen(
                         highlight = true,
                         onCheckedChange = { preferencesManager.updateAutoDownloadEnabled(it) }
                     )
-
                     AnimatedVisibility(
                         visible = settings.autoDownloadEnabled,
                         enter = expandVertically() + fadeIn(),
@@ -425,15 +603,51 @@ fun SettingsScreen(
                                 else settings.autoDownloadLimit.toString(),
                                 onValueChange = { preferencesManager.updateAutoDownloadLimit(it.toInt()) }
                             )
-
                         }
                     }
                 }
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // READER (Reading Experience)
-            // ═══════════════════════════════════════════════════════════
+            item { Spacer(Modifier.height(80.dp)) }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// READER PREFERENCES
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsReaderPrefsScreen(
+    onBack: () -> Unit,
+    onNavigateToReaderSettings: () -> Unit
+) {
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+    val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Reader", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             item { SectionHeader("Reader", Icons.AutoMirrored.Outlined.MenuBook) }
             item {
                 SettingsCard {
@@ -450,19 +664,121 @@ fun SettingsScreen(
                     ToggleItem(
                         icon = Icons.Outlined.AllInclusive,
                         title = "Infinite Scroll (Experimental)",
-                        subtitle = "Load next chapter automatically (Experimental)",
+                        subtitle = "Load next chapter automatically",
                         checked = settings.infiniteScroll,
                         onCheckedChange = {
                             preferencesManager.updateAppSettings(settings.copy(infiniteScroll = it))
                         }
                     )
+                    SettingsDivider()
+                    NavigationItem(
+                        icon = Icons.Outlined.SettingsSuggest,
+                        title = "Reader Settings",
+                        subtitle = "Font, size, line height and more",
+                        onClick = onNavigateToReaderSettings
+                    )
                 }
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // PROVIDERS (Source Management)
-            // ═══════════════════════════════════════════════════════════
-            item { SectionHeader("Providers", Icons.Outlined.Extension) }
+            item { Spacer(Modifier.height(80.dp)) }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SOURCES
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsSourcesScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+    val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
+    val snackbarState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val localVersion = remember { SourceLoader.localVersion(context) }
+    val lastChecked = remember { SourceLoader.lastCheckedTime(context) }
+    val allProviders = remember { com.kmhmubin.kothagolp.provider.MainProvider.getProviders() }
+
+    val lastCheckedText = remember(lastChecked) {
+        if (lastChecked == 0L) "Never"
+        else SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()).format(Date(lastChecked))
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Sources", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarState) }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item { SectionHeader("Source Info", Icons.Outlined.Extension) }
+            item {
+                SettingsCard {
+                    InfoItem(Icons.Outlined.Numbers, "Current Version",
+                        if (localVersion == 0) "Not installed" else "v$localVersion")
+                    SettingsDivider()
+                    InfoItem(Icons.Outlined.Extension, "Loaded Sources", "${allProviders.size} sources")
+                    SettingsDivider()
+                    InfoItem(Icons.Outlined.Schedule, "Last Checked", lastCheckedText)
+                }
+            }
+
+            item { SectionHeader("Updates", Icons.Outlined.SystemUpdate) }
+            item {
+                SettingsCard {
+                    ToggleItem(
+                        icon = Icons.Outlined.Refresh,
+                        title = "Auto-Update Sources",
+                        subtitle = "Check for updates daily in the background",
+                        checked = settings.autoUpdateSources,
+                        onCheckedChange = { enabled ->
+                            preferencesManager.updateAppSettings(
+                                settings.copy(autoUpdateSources = enabled)
+                            )
+                            if (enabled) {
+                                SourceSyncWorker.schedulePeriodicSync(context)
+                            } else {
+                                WorkManager.getInstance(context)
+                                    .cancelUniqueWork("source_sync_periodic")
+                            }
+                        }
+                    )
+                    SettingsDivider()
+                    ClickableItem(
+                        icon = Icons.Outlined.Refresh,
+                        title = "Check for Updates",
+                        subtitle = "Check for new source versions now",
+                        tint = MaterialTheme.colorScheme.primary,
+                        onClick = {
+                            SourceSyncWorker.forceSync(context)
+                            scope.launch {
+                                snackbarState.showSnackbar("Checking for source updates…")
+                            }
+                        }
+                    )
+                }
+            }
+
+            item { SectionHeader("Provider Management", Icons.Outlined.SwapVert) }
             item {
                 ProviderCard(
                     settings = settings,
@@ -473,29 +789,67 @@ fun SettingsScreen(
                 )
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // STORAGE & BACKUP (Data Management)
-            // ═══════════════════════════════════════════════════════════
-            item { SectionHeader("Data", Icons.Outlined.Storage) }
-            item {
-                SettingsCard {
-                    NavigationItem(
-                        icon = Icons.Outlined.Storage,
-                        title = "Storage & Backup",
-                        subtitle = "Downloads, cache and backup files",
-                        onClick = onNavigateToStorage
-                    )
-                }
-            }
+            item { Spacer(Modifier.height(80.dp)) }
+        }
+    }
+}
 
-            // ═══════════════════════════════════════════════════════════
-            // ABOUT (App Information)
-            // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// ABOUT
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsAboutScreen(onBack: () -> Unit) {
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+    var showResetDialog by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+
+    if (showResetDialog) {
+        ResetConfirmationDialog(
+            onConfirm = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                preferencesManager.resetToDefaults()
+                showResetDialog = false
+            },
+            onDismiss = { showResetDialog = false }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("About", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             item { SectionHeader("About", Icons.Outlined.Info) }
             item {
                 SettingsCard {
-                    InfoItem(Icons.Outlined.Apartment, "Version", "1.0.0")
+                    InfoItem(Icons.Outlined.Apartment, "App", "Kothagolp")
                     SettingsDivider()
+                    InfoItem(Icons.Outlined.Numbers, "Version", "1.0.0")
+                }
+            }
+
+            item { SectionHeader("Advanced", Icons.Outlined.SettingsSuggest) }
+            item {
+                SettingsCard {
                     ClickableItem(
                         icon = Icons.Outlined.RestartAlt,
                         title = "Reset to Defaults",
@@ -554,6 +908,14 @@ private fun SettingsDivider() {
 }
 
 @Composable
+private fun RowDivider() {
+    HorizontalDivider(
+        Modifier.padding(start = 72.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    )
+}
+
+@Composable
 private fun SettingsLabel(title: String, icon: ImageVector) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -565,6 +927,50 @@ private fun SettingsLabel(title: String, icon: ImageVector) {
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SettingsNavRow(
+    icon: ImageVector,
+    iconTint: Color,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(iconTint.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, Modifier.size(22.dp), iconTint)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Icon(
+            Icons.Outlined.ChevronRight,
+            null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         )
     }
 }
@@ -1083,7 +1489,6 @@ private fun CustomThemeSection(
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Preset Themes
         Text(
             "Presets",
             style = MaterialTheme.typography.labelLarge,
@@ -1112,7 +1517,6 @@ private fun CustomThemeSection(
 
         Spacer(Modifier.height(8.dp))
 
-        // Individual Color Pickers
         Text(
             "Custom Colors",
             style = MaterialTheme.typography.labelLarge,
@@ -1120,7 +1524,6 @@ private fun CustomThemeSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // Color picker rows
         ColorPickerRow(
             label = "Primary",
             color = Color(colors.primaryColor),
@@ -1149,12 +1552,10 @@ private fun CustomThemeSection(
             onClick = { showColorPicker = ColorPickerTarget.SURFACE }
         )
 
-        // Live Preview
         Spacer(Modifier.height(8.dp))
         ThemePreviewCard(colors = colors)
     }
 
-    // Color Picker Dialog
     showColorPicker?.let { target ->
         val currentColor = when (target) {
             ColorPickerTarget.PRIMARY -> Color(colors.primaryColor)
@@ -1224,7 +1625,6 @@ private fun ThemePresetCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Color preview dots
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -1292,7 +1692,6 @@ private fun ColorPickerRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Color swatch
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -1318,7 +1717,6 @@ private fun ColorPickerRow(
             )
         }
 
-        // Hex value
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(6.dp)
@@ -1359,7 +1757,6 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
                 color = Color.White.copy(alpha = 0.5f)
             )
 
-            // Mock card
             Surface(
                 color = Color(colors.surfaceColor),
                 shape = RoundedCornerShape(12.dp)
@@ -1371,7 +1768,6 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Mock image
                     Box(
                         modifier = Modifier
                             .size(48.dp)
@@ -1400,7 +1796,6 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
                         )
                     }
 
-                    // Mock button
                     Surface(
                         color = Color(colors.primaryColor),
                         shape = RoundedCornerShape(8.dp)
@@ -1416,7 +1811,6 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
                 }
             }
 
-            // Mock chips
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {

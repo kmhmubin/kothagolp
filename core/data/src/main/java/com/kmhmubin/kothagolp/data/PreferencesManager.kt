@@ -449,7 +449,8 @@ class PreferencesManager(context: Context) {
             autoDownloadLimit = prefs.getInt(KEY_AUTO_DOWNLOAD_LIMIT, 10),
             autoDownloadForStatuses = autoDownloadStatuses,
             providerOrder = providerOrder,
-            disabledProviders = disabledSet
+            disabledProviders = disabledSet,
+            autoUpdateSources = prefs.getBoolean(KEY_AUTO_UPDATE_SOURCES, true)
         )
     }
 
@@ -504,6 +505,7 @@ class PreferencesManager(context: Context) {
             putString(KEY_RATING_FORMAT, sanitizedSettings.ratingFormat.name)
             putString(KEY_PROVIDER_ORDER, sanitizedSettings.providerOrder.joinToString(","))
             putString(KEY_DISABLED_PROVIDERS, sanitizedSettings.disabledProviders.joinToString(","))
+            putBoolean(KEY_AUTO_UPDATE_SOURCES, sanitizedSettings.autoUpdateSources)
             putString(KEY_LIBRARY_DISPLAY_MODE, sanitizedSettings.libraryDisplayMode.name)
             putString(KEY_BROWSE_DISPLAY_MODE, sanitizedSettings.browseDisplayMode.name)
             putString(KEY_SEARCH_DISPLAY_MODE, sanitizedSettings.searchDisplayMode.name)
@@ -638,6 +640,11 @@ class PreferencesManager(context: Context) {
         if (enabled) current.remove(providerName) else current.add(providerName)
         prefs.edit().putString(KEY_DISABLED_PROVIDERS, current.joinToString(",")).apply()
         updateAppSettings(_appSettings.value.copy(disabledProviders = current))
+    }
+
+    fun updateAutoUpdateSources(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_AUTO_UPDATE_SOURCES, enabled).apply()
+        updateAppSettings(_appSettings.value.copy(autoUpdateSources = enabled))
     }
 
     // =========================================================================
@@ -1991,6 +1998,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_SEARCH_RESULTS_PER_PROVIDER = "search_results_per_provider"
         private const val KEY_PROVIDER_ORDER = "provider_order"
         private const val KEY_DISABLED_PROVIDERS = "disabled_providers"
+        private const val KEY_AUTO_UPDATE_SOURCES = "auto_update_sources"
         private const val KEY_RATING_FORMAT = "rating_format"
 
         // =====================================================================

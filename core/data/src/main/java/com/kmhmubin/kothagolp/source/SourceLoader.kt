@@ -12,6 +12,7 @@ object SourceLoader {
     private const val TAG = "SourceLoader"
     private const val PREFS_NAME = "source_sync_prefs"
     private const val KEY_MANIFEST = "manifest_json"
+    private const val KEY_LAST_CHECKED = "sources_last_checked"
 
     private val _isApkLoaded = MutableStateFlow(false)
     val isApkLoaded: StateFlow<Boolean> = _isApkLoaded
@@ -89,5 +90,14 @@ object SourceLoader {
     fun saveLocalVersion(context: Context, version: Int) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putInt("sources_version", version).apply()
+    }
+
+    fun lastCheckedTime(context: Context): Long =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getLong(KEY_LAST_CHECKED, 0L)
+
+    fun saveLastCheckedTime(context: Context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putLong(KEY_LAST_CHECKED, System.currentTimeMillis()).apply()
     }
 }

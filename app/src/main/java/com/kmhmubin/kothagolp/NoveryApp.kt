@@ -62,9 +62,13 @@ class KothagolpApp : Application() {
         // Load downloaded sources APK if available (replaces bundled providers with same name)
         SourceLoader.loadIfAvailable(this)
 
-        // Check for source updates on launch, schedule 24h periodic check
+        // Check for source updates on launch
         SourceSyncWorker.syncOnce(this)
-        SourceSyncWorker.schedulePeriodicSync(this)
+        // Schedule periodic 24h check only if auto-update is enabled
+        val autoUpdate = RepositoryProvider.getPreferencesManager().appSettings.value.autoUpdateSources
+        if (autoUpdate) {
+            SourceSyncWorker.schedulePeriodicSync(this)
+        }
 
         // Create notification channels
         NotificationHelper.createNotificationChannels(this)
