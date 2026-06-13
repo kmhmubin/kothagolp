@@ -23,6 +23,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,6 +62,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.automirrored.rounded.CompareArrows
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Refresh
@@ -205,6 +207,7 @@ fun BrowseTab(
     onNavigateToProvider: (providerName: String) -> Unit,
     onNavigateToDetails: (novelUrl: String, providerName: String) -> Unit,
     onNavigateToReader: (chapterUrl: String, novelUrl: String, providerName: String) -> Unit,
+    onNavigateToMigration: (() -> Unit)? = null,
     viewModel: BrowseViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -410,7 +413,8 @@ fun BrowseTab(
                                 favoriteProviders = uiState.favoriteProviders,
                                 onProviderClick = onNavigateToProvider,
                                 onToggleFavorite = { viewModel.toggleFavoriteProvider(it) },
-                                onRefresh = { viewModel.retryLoadProviders() }
+                                onRefresh = { viewModel.retryLoadProviders() },
+                                onNavigateToMigration = onNavigateToMigration
                             )
                         }
                     }
@@ -1652,7 +1656,8 @@ private fun ProviderGrid(
     favoriteProviders: Set<String>,
     onProviderClick: (String) -> Unit,
     onToggleFavorite: (String) -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onNavigateToMigration: (() -> Unit)? = null
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -1692,6 +1697,12 @@ private fun ProviderGrid(
                     providerCount = providers.size,
                     favoriteCount = favoriteProviders.size
                 )
+            }
+
+            if (onNavigateToMigration != null) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    MigrationBannerCard(onClick = onNavigateToMigration)
+                }
             }
 
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -2398,6 +2409,53 @@ private fun ProviderErrorState(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MigrationBannerCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.CompareArrows,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Migrate Sources",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = "Move library novels to a different source",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
+            )
         }
     }
 }

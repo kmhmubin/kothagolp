@@ -34,6 +34,9 @@ import com.kmhmubin.kothagolp.ui.screens.settings.SettingsReaderPrefsScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsSourcesScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.StorageScreen
+import com.kmhmubin.kothagolp.ui.screens.migration.MigrationNovelsScreen
+import com.kmhmubin.kothagolp.ui.screens.migration.MigrationSearchScreen
+import com.kmhmubin.kothagolp.ui.screens.migration.MigrationSourcesScreen
 import com.kmhmubin.kothagolp.ui.screens.tagexplorer.TagExplorerScreen
 
 @Composable
@@ -112,10 +115,13 @@ fun KothagolpNavGraph(
                 onNavigateToOnboarding = {
                     navController.navigate(NavRoutes.Onboarding.route)
                 },
-                onNavigateToTagExplorer = { tagCategory -> // NEW
+                onNavigateToTagExplorer = { tagCategory ->
                     navController.navigate(
                         NavRoutes.TagExplorer.createRoute(tagCategory)
                     )
+                },
+                onNavigateToMigration = {
+                    navController.navigate(NavRoutes.MigrationSources.route)
                 }
             )
         }
@@ -194,6 +200,47 @@ fun KothagolpNavGraph(
                 preferencesManager = prefsManager,
                 syncManager = syncManager,
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ================================================================
+        // SOURCE MIGRATION
+        // ================================================================
+        composable(route = NavRoutes.MigrationSources.route) {
+            MigrationSourcesScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToNovels = { sourceName ->
+                    navController.navigate(NavRoutes.MigrationNovels.createRoute(sourceName))
+                }
+            )
+        }
+
+        composable(
+            route = NavRoutes.MigrationNovels.route,
+            arguments = listOf(navArgument("sourceName") { type = NavType.StringType })
+        ) {
+            MigrationNovelsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToSearch = { novelUrl, sourceName ->
+                    navController.navigate(
+                        NavRoutes.MigrationSearch.createRoute(novelUrl, sourceName)
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = NavRoutes.MigrationSearch.route,
+            arguments = listOf(
+                navArgument("novelUrl") { type = NavType.StringType },
+                navArgument("sourceName") { type = NavType.StringType }
+            )
+        ) {
+            MigrationSearchScreen(
+                onBack = { navController.popBackStack() },
+                onMigrationComplete = {
+                    navController.popBackStack(NavRoutes.MigrationSources.route, inclusive = true)
+                }
             )
         }
 

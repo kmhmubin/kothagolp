@@ -28,6 +28,21 @@ sealed class NavRoutes(val route: String) {
 
     object Storage : NavRoutes("settings/storage")
 
+    // ================================================================
+    // SOURCE MIGRATION
+    // ================================================================
+
+    object MigrationSources : NavRoutes("migration/sources")
+
+    object MigrationNovels : NavRoutes("migration/novels/{sourceName}") {
+        fun createRoute(sourceName: String) = "migration/novels/${encodeUrl(sourceName)}"
+    }
+
+    object MigrationSearch : NavRoutes("migration/search/{novelUrl}/{sourceName}") {
+        fun createRoute(novelUrl: String, sourceName: String) =
+            "migration/search/${encodeUrl(novelUrl)}/${encodeUrl(sourceName)}"
+    }
+
     object Notifications : NavRoutes("notifications")
 
     // ================================================================
