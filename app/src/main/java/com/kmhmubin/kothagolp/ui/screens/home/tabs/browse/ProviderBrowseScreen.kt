@@ -135,6 +135,7 @@ import com.kmhmubin.kothagolp.ui.components.NovelGridSkeleton
 import com.kmhmubin.kothagolp.ui.components.KothagolpPullToRefreshBox
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
+import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 
 // ============================================================================
@@ -1204,20 +1205,33 @@ private fun ProviderTitle(provider: MainProvider?, isSearchMode: Boolean) {
         horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        provider?.iconRes?.let { iconRes ->
+        val providerIconUrl = provider?.iconUrl
+        val providerIconRes = provider?.iconRes
+        if (providerIconUrl != null || providerIconRes != null) {
             Surface(
                 shape = RoundedCornerShape(BrowseDesign.radiusMd),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(36.dp)
             ) {
-                Image(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(6.dp),
-                    contentScale = ContentScale.Fit
-                )
+                if (providerIconUrl != null) {
+                    AsyncImage(
+                        model = providerIconUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(6.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                } else if (providerIconRes != null) {
+                    Image(
+                        painter = painterResource(id = providerIconRes),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(6.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
         }
 

@@ -39,6 +39,9 @@ abstract class MainProvider {
     @get:DrawableRes
     open val iconRes: Int? = null
 
+    /** URL to provider icon image. Used by dynamically loaded APK providers. Takes priority over iconRes. */
+    open val iconUrl: String? = null
+
     // ============================================================
     // ABSTRACT METHODS - Must be implemented by each provider
     // ============================================================

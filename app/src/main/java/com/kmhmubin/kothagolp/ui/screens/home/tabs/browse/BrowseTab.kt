@@ -129,6 +129,7 @@ import com.kmhmubin.kothagolp.ui.components.KothagolpSearchBar
 import com.kmhmubin.kothagolp.ui.components.SearchSuggestionsDropdown
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
+import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -1967,7 +1968,8 @@ private fun ProviderCard(
                     ProviderIcon(
                         name = provider.name,
                         color = primaryColor,
-                        iconRes = provider.iconRes
+                        iconRes = provider.iconRes,
+                        iconUrl = provider.iconUrl
                     )
 
                     Column(
@@ -2096,18 +2098,29 @@ private fun CookieStatusBadge(status: CloudflareManager.CookieStatus) {
 private fun ProviderIcon(
     name: String,
     color: Color,
-    @DrawableRes iconRes: Int? = null
+    @DrawableRes iconRes: Int? = null,
+    iconUrl: String? = null
 ) {
+    val hasIcon = iconUrl != null || iconRes != null
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = if (iconRes != null) MaterialTheme.colorScheme.surfaceContainerHigh else color,
+        color = if (hasIcon) MaterialTheme.colorScheme.surfaceContainerHigh else color,
         modifier = Modifier.size(52.dp),
-        shadowElevation = if (iconRes != null) 1.dp else 3.dp,
-        border = if (iconRes != null) {
+        shadowElevation = if (hasIcon) 1.dp else 3.dp,
+        border = if (hasIcon) {
             BorderStroke(1.dp, color.copy(alpha = 0.2f))
         } else null
     ) {
-        if (iconRes != null) {
+        if (iconUrl != null) {
+            AsyncImage(
+                model = iconUrl,
+                contentDescription = "$name icon",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
+                contentScale = ContentScale.Fit
+            )
+        } else if (iconRes != null) {
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = "$name icon",
