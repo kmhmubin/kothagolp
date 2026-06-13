@@ -41,7 +41,8 @@ fun HomeScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToStorage: () -> Unit,
     onNavigateToOnboarding: () -> Unit = {},
-    onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {}
+    onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
+    onNavigateToMigration: (() -> Unit)? = null
 ) {
     // Initialize shared state
     LaunchedEffect(Unit) {
@@ -101,7 +102,8 @@ fun HomeScreen(
                         appSettings = appSettings,
                         onNavigateToProvider = onNavigateToProviderBrowse,
                         onNavigateToDetails = onNavigateToDetails,
-                        onNavigateToReader = onNavigateToReader
+                        onNavigateToReader = onNavigateToReader,
+                        onNavigateToMigration = onNavigateToMigration
                     )
                 }
 
@@ -130,7 +132,8 @@ fun HomeScreen(
                         onNavigateToDownloads = onNavigateToDownloads,
                         onNavigateToAbout = { onNavigateToAbout() },
                         onNavigateToSettings = onNavigateToSettings,
-                        onNavigateToStorage = onNavigateToStorage
+                        onNavigateToStorage = onNavigateToStorage,
+                        onNavigateToMigration = onNavigateToMigration
                     )
                 }
             }
@@ -167,7 +170,8 @@ fun HomeScreen(
                             appSettings = appSettings,
                             onNavigateToProvider = onNavigateToProviderBrowse,
                             onNavigateToDetails = onNavigateToDetails,
-                            onNavigateToReader = onNavigateToReader
+                            onNavigateToReader = onNavigateToReader,
+                            onNavigateToMigration = onNavigateToMigration
                         )
                     }
 
@@ -196,7 +200,8 @@ fun HomeScreen(
                             onNavigateToDownloads = onNavigateToDownloads,
                             onNavigateToAbout = { onNavigateToAbout() },
                             onNavigateToSettings = onNavigateToSettings,
-                            onNavigateToStorage = onNavigateToStorage
+                            onNavigateToStorage = onNavigateToStorage,
+                            onNavigateToMigration = onNavigateToMigration
                         )
                     }
                 }

@@ -202,4 +202,15 @@ interface LibraryDao {
 
     @Query("SELECT customCoverUrl FROM library WHERE url = :novelUrl")
     suspend fun getCustomCover(novelUrl: String): String?
+
+    // ============ MIGRATION ============
+
+    @Query("SELECT * FROM library WHERE apiName = :sourceName ORDER BY name ASC")
+    suspend fun getBySourceName(sourceName: String): List<LibraryEntity>
+
+    @Query("SELECT DISTINCT apiName FROM library ORDER BY apiName ASC")
+    suspend fun getDistinctSources(): List<String>
+
+    @Query("DELETE FROM library WHERE url = :url")
+    suspend fun deleteByUrl(url: String)
 }
