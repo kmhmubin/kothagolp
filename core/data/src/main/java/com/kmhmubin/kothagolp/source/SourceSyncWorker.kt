@@ -29,8 +29,10 @@ class SourceSyncWorker(
                 ?: return@withContext Result.retry()
 
             val localVersion = SourceLoader.localVersion(applicationContext)
-            if (manifest.version <= localVersion) {
+            val apkExists = applicationContext.codeCacheDir.resolve("sources.apk").exists()
+            if (manifest.version <= localVersion && apkExists) {
                 Log.d(TAG, "Sources up to date (v$localVersion)")
+                SourceLoader.loadIfAvailable(applicationContext)
                 return@withContext Result.success()
             }
 
