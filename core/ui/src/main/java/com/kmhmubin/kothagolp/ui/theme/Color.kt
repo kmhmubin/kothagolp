@@ -79,6 +79,10 @@ val StatusDROPPED = Error
 val NewChapters = Color(0xFF10B981)      // Emerald-500
 val NewChaptersLight = Color(0xFF34D399) // Emerald-400
 
+// Additional semantic accents
+val AccentCyan  = Color(0xFF06B6D4)  // Cyan-500 — TTS auto-advance, feature flags
+val AccentTeal  = Color(0xFF14B8A6)  // Teal-500 — secondary accents
+
 
 // ============================================
 // READER THEMES

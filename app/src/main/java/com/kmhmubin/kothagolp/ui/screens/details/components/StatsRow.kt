@@ -16,7 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Card
@@ -36,7 +36,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
-import com.kmhmubin.kothagolp.ui.screens.details.util.DetailsColors
+import com.kmhmubin.kothagolp.ui.theme.Success
+import com.kmhmubin.kothagolp.ui.theme.Warning
 import com.kmhmubin.kothagolp.util.RatingUtils
 import java.text.DecimalFormat
 
@@ -71,7 +72,7 @@ fun StatsRow(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             StatItem(
-                icon = Icons.Outlined.MenuBook,
+                icon = Icons.AutoMirrored.Outlined.MenuBook,
                 value = chapterCount.toString(),
                 label = "Chapters",
                 color = MaterialTheme.colorScheme.primary
@@ -83,7 +84,7 @@ fun StatsRow(
                 icon = Icons.Outlined.Visibility,
                 value = readCount.toString(),
                 label = "Read",
-                color = if (readCount > 0) DetailsColors.Success else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (readCount > 0) Success else MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             StatDivider()
@@ -117,7 +118,7 @@ fun StatsRow(
                     icon = Icons.Default.Star,
                     value = formattedRating,
                     label = if (peopleVoted != null) formatVoteCount(peopleVoted) else "Rating",
-                    color = DetailsColors.Warning
+                    color = Warning
                 )
             }
         }

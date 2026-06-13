@@ -95,8 +95,12 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.kmhmubin.kothagolp.domain.model.NovelDetails
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
-import com.kmhmubin.kothagolp.ui.screens.details.util.DetailsColors
 import com.kmhmubin.kothagolp.ui.screens.details.util.StatusUtils
+import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
+import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
+import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
+import com.kmhmubin.kothagolp.ui.theme.StatusReading
+import com.kmhmubin.kothagolp.ui.theme.Success
 import kotlinx.coroutines.delay
 
 // ================================================================
@@ -504,7 +508,7 @@ private fun NovelCoverCard(
                     Surface(
                         modifier = Modifier.size(24.dp),
                         shape = CircleShape,
-                        color = DetailsColors.Pink.copy(alpha = 0.9f)
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f)
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -618,8 +622,8 @@ private fun ReadProgressIndicator(
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
-                            DetailsColors.Success,
-                            DetailsColors.Success.copy(green = 0.85f)
+                            Success,
+                            Success.copy(green = 0.85f)
                         )
                     )
                 )
@@ -725,7 +729,7 @@ private fun LibraryStatusButton(
         targetValue = if (isFavorite) {
             StatusUtils.getStatusColor(readingStatus).copy(alpha = 0.12f)
         } else {
-            DetailsColors.Pink.copy(alpha = 0.12f)
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
         },
         animationSpec = tween(350),
         label = "container_color"
@@ -735,7 +739,7 @@ private fun LibraryStatusButton(
         targetValue = if (isFavorite) {
             StatusUtils.getStatusColor(readingStatus).copy(alpha = 0.4f)
         } else {
-            DetailsColors.Pink.copy(alpha = 0.4f)
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
         },
         animationSpec = tween(350),
         label = "border_color"
@@ -827,8 +831,8 @@ private fun InLibraryContent(
             onClick = onHeartClick,
             interactionSource = heartInteraction,
             shape = RoundedCornerShape(8.dp),
-            color = DetailsColors.Pink.copy(alpha = 0.15f),
-            border = BorderStroke(0.5.dp, DetailsColors.Pink.copy(alpha = 0.3f)),
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
+            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)),
             modifier = Modifier
                 .size(38.dp)
                 .scale(heartButtonScale)
@@ -841,7 +845,7 @@ private fun InLibraryContent(
                     imageVector = Icons.Rounded.Favorite,
                     contentDescription = "Remove from library",
                     modifier = Modifier.size(20.dp),
-                    tint = DetailsColors.Pink
+                    tint = MaterialTheme.colorScheme.secondary
                 )
             }
         }
@@ -948,7 +952,7 @@ private fun AddToLibraryContent(
                 modifier = Modifier
                     .size(22.dp)
                     .scale(heartScale),
-                tint = DetailsColors.Pink
+                tint = MaterialTheme.colorScheme.secondary
             )
 
             Spacer(modifier = Modifier.width(10.dp))
@@ -957,7 +961,7 @@ private fun AddToLibraryContent(
                 text = "Add to Library",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = DetailsColors.Pink
+                color = MaterialTheme.colorScheme.secondary
             )
         }
     }
@@ -1089,7 +1093,7 @@ private fun CopiableTitle(
         ) {
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = DetailsColors.Success.copy(alpha = 0.9f),
+                color = Success.copy(alpha = 0.9f),
                 shadowElevation = 4.dp
             ) {
                 Row(
@@ -1201,7 +1205,7 @@ private fun CopiableAuthorChip(author: String) {
         ) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = DetailsColors.Success.copy(alpha = 0.9f),
+                color = Success.copy(alpha = 0.9f),
                 shadowElevation = 4.dp
             ) {
                 Row(
@@ -1260,10 +1264,10 @@ private fun ProviderChip(providerName: String) {
 private fun NovelStatusBadge(status: String) {
     val (statusColor, statusLabel) = remember(status) {
         when (status.lowercase()) {
-            "ongoing" -> DetailsColors.StatusReading to "Ongoing"
-            "completed" -> DetailsColors.StatusCompleted to "Completed"
-            "hiatus" -> DetailsColors.StatusOnHold to "Hiatus"
-            "dropped", "cancelled", "canceled" -> DetailsColors.StatusDropped to "Dropped"
+            "ongoing" -> StatusReading to "Ongoing"
+            "completed" -> StatusCompleted to "Completed"
+            "hiatus" -> StatusOnHold to "Hiatus"
+            "dropped", "cancelled", "canceled" -> StatusDROPPED to "Dropped"
             else -> Color.White.copy(alpha = 0.7f) to status.replaceFirstChar { it.uppercase() }
         }
     }

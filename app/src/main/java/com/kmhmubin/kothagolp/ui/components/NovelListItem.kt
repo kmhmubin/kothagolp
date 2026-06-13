@@ -79,7 +79,6 @@ import coil.compose.SubcomposeAsyncImageContent
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.UiDensity
-import com.kmhmubin.kothagolp.ui.screens.details.util.DetailsColors
 import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
 import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
 import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
@@ -628,7 +627,7 @@ private fun ListLibraryBookmarkBadge(
     Surface(
         modifier = modifier.size(if (compact) 20.dp else 22.dp),
         shape = CircleShape,
-        color = DetailsColors.Pink.copy(alpha = 0.9f),
+        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
         shadowElevation = ListItemTokens.Elevation.Badge
     ) {
         Box(

@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.domain.model.Chapter
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 /**
  * Chapter list bottom sheet for quick navigation
@@ -212,7 +213,7 @@ private fun ChapterListHeader(
             // Sort toggle
             Surface(
                 onClick = onSortToggle,
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Row(
@@ -281,7 +282,7 @@ private fun ChapterSearchBar(
             }
         },
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
@@ -324,7 +325,7 @@ private fun ChapterListItem(
     ) {
         // Chapter number badge
         Surface(
-            shape = RoundedCornerShape(6.dp),
+            shape = AppShape.extraSmall,
             color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             Text(

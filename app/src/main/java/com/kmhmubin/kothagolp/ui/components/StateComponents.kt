@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -25,7 +26,7 @@ fun ErrorMessage(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = Error.copy(alpha = 0.1f)
         ),
@@ -84,7 +85,7 @@ fun EmptyState(
     ) {
         Surface(
             modifier = Modifier.size(80.dp),
-            shape = RoundedCornerShape(20.dp),
+            shape = AppShape.extraLarge,
             color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -132,7 +133,7 @@ fun EmptyLibrary(
     onBrowse: () -> Unit
 ) {
     EmptyState(
-        icon = Icons.Default.LibraryBooks,
+        icon = Icons.AutoMirrored.Filled.LibraryBooks,
         title = "Nothing here",
         message = "Start browsing to add novels to your collection.",
         actionLabel = "Go to Browse",

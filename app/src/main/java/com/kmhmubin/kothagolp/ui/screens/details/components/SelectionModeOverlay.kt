@@ -67,7 +67,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kmhmubin.kothagolp.ui.screens.details.util.DetailsColors
+import com.kmhmubin.kothagolp.ui.theme.Success
+import com.kmhmubin.kothagolp.ui.theme.Warning
 
 // ================================================================
 // DATA CLASSES
@@ -518,7 +519,7 @@ private fun StatusIndicatorsRow(selectionState: SelectionState) {
             icon = Icons.Rounded.DownloadDone,
             count = selectionState.selectedDownloadedCount,
             label = "Downloaded",
-            color = DetailsColors.Success,
+            color = Success,
             isActive = selectionState.selectedDownloadedCount > 0
         )
 
@@ -526,7 +527,7 @@ private fun StatusIndicatorsRow(selectionState: SelectionState) {
             icon = Icons.Rounded.VisibilityOff,
             count = selectionState.selectedUnreadCount,
             label = "Unread",
-            color = DetailsColors.Warning,
+            color = Warning,
             isActive = selectionState.selectedUnreadCount > 0
         )
 
@@ -627,7 +628,7 @@ private fun ActionButtonsRow(
             icon = Icons.Rounded.Bookmark,
             label = "Last Read",
             enabled = selectionState.selectedCount == 1,
-            color = DetailsColors.Warning,
+            color = Warning,
             onClick = callbacks.onMarkAsLastRead
         )
 
@@ -716,7 +717,7 @@ private fun ReadStatusButton(
     val enabled = if (showMarkAsRead) canMarkRead else canMarkUnread
     val icon = if (showMarkAsRead) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff
     val label = if (showMarkAsRead) "Read" else "Unread"
-    val color = if (showMarkAsRead) DetailsColors.Success else MaterialTheme.colorScheme.secondary
+    val color = if (showMarkAsRead) Success else MaterialTheme.colorScheme.secondary
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) 0.92f else 1f,

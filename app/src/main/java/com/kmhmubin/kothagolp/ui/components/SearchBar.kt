@@ -83,6 +83,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.data.local.PreferencesManager
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -103,7 +104,7 @@ fun KothagolpSearchBar(
     hasActiveFilters: Boolean = false,
     onFilterClick: () -> Unit = {}
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = AppShape.large
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
@@ -317,7 +318,7 @@ fun KothagolpSearchBar(
                         focusManager.clearFocus()
                     },
                     enabled = query.isNotBlank() && !isLoading,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
@@ -377,7 +378,7 @@ fun SearchSuggestionsDropdown(
             Surface(
                 modifier = modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
+                shape = AppShape.large,
                 tonalElevation = 2.dp,
                 shadowElevation = 4.dp
             ) {
@@ -451,7 +452,7 @@ fun SearchSuggestionsDropdown(
                             // Show count when filtering
                             if (currentQuery.isNotBlank()) {
                                 Surface(
-                                    shape = RoundedCornerShape(6.dp),
+                                    shape = AppShape.extraSmall,
                                     color = MaterialTheme.colorScheme.primaryContainer
                                 ) {
                                     Text(
@@ -698,7 +699,7 @@ private fun TrendingChip(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.pill,
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
         border = BorderStroke(
             1.dp,

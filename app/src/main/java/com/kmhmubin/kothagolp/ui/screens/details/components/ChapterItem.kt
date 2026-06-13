@@ -68,7 +68,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.domain.model.Chapter
-import com.kmhmubin.kothagolp.ui.screens.details.util.DetailsColors
+import com.kmhmubin.kothagolp.ui.theme.Success
+import com.kmhmubin.kothagolp.ui.theme.Warning
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -308,8 +309,8 @@ private fun SwipeActionBackground(
                 .weight(1f)
                 .fillMaxHeight()
                 .background(
-                    if (isRead) DetailsColors.Warning.copy(alpha = leftProgress * 0.25f)
-                    else DetailsColors.Success.copy(alpha = leftProgress * 0.25f)
+                    if (isRead) Warning.copy(alpha = leftProgress * 0.25f)
+                    else Success.copy(alpha = leftProgress * 0.25f)
                 ),
             contentAlignment = Alignment.CenterStart
         ) {
@@ -328,12 +329,12 @@ private fun SwipeActionBackground(
                     imageVector = if (isRead) Icons.Outlined.VisibilityOff else Icons.Filled.Check,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = if (isRead) DetailsColors.Warning else DetailsColors.Success
+                    tint = if (isRead) Warning else Success
                 )
                 Text(
                     text = if (isRead) "Unread" else "Read",
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (isRead) DetailsColors.Warning else DetailsColors.Success,
+                    color = if (isRead) Warning else Success,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -551,7 +552,7 @@ private fun ChapterStatusIcons(
             if (downloaded) {
                 Surface(
                     shape = CircleShape,
-                    color = DetailsColors.Success.copy(alpha = if (isRead) 0.12f else 0.18f)
+                    color = Success.copy(alpha = if (isRead) 0.12f else 0.18f)
                 ) {
                     Icon(
                         imageVector = Icons.Default.DownloadDone,
@@ -559,7 +560,7 @@ private fun ChapterStatusIcons(
                         modifier = Modifier
                             .padding(4.dp)
                             .size(14.dp),
-                        tint = DetailsColors.Success.copy(alpha = if (isRead) 0.6f else 1f)
+                        tint = Success.copy(alpha = if (isRead) 0.6f else 1f)
                     )
                 }
             } else {

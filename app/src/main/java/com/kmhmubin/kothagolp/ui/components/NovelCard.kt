@@ -38,7 +38,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Bookmark
-import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -84,7 +84,7 @@ import coil.compose.SubcomposeAsyncImageContent
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.UiDensity
-import com.kmhmubin.kothagolp.ui.screens.details.util.DetailsColors
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
 import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
 import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
@@ -97,11 +97,11 @@ import com.kmhmubin.kothagolp.ui.theme.StatusSpicy
 // ══════════════════════════════════════════════════════════════════════════════
 
 private object NovelCardTokens {
-    val CardCornerRadius = 16.dp
-    val CardShape = RoundedCornerShape(CardCornerRadius)
+    val CardCornerRadius = 16.dp   // matches AppShape.large
+    val CardShape = AppShape.large
     val ImageShapeTop = RoundedCornerShape(topStart = CardCornerRadius, topEnd = CardCornerRadius)
-    val BadgeShape = RoundedCornerShape(8.dp)
-    val PillShape = RoundedCornerShape(50)
+    val BadgeShape = AppShape.small
+    val PillShape = AppShape.pill
 
     val AspectRatio = 2f / 3f
     val BadgeIconSize = 14.dp
@@ -528,7 +528,7 @@ private fun CoverFallback(title: String, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Icon(
-                imageVector = Icons.Rounded.MenuBook,
+                imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                 contentDescription = null,
                 modifier = Modifier.size(36.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -660,7 +660,7 @@ private fun LibraryBookmarkBadge(
     Surface(
         modifier = modifier.size(if (compactMode) 22.dp else 24.dp),
         shape = CircleShape,
-        color = DetailsColors.Pink.copy(alpha = 0.9f),
+        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
         shadowElevation = NovelCardTokens.Elevation.Badge
     ) {
         Box(
@@ -864,21 +864,21 @@ private fun ComfortableSkeleton(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
                         .height(14.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(AppShape.extraSmall)
                         .shimmerEffect()
                 )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.6f)
                         .height(14.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(AppShape.extraSmall)
                         .shimmerEffect()
                 )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.4f)
                         .height(10.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(AppShape.extraSmall)
                         .shimmerEffect()
                 )
             }
@@ -914,14 +914,14 @@ private fun CompactSkeleton(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .fillMaxWidth(0.75f)
                         .height(12.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(AppShape.extraSmall)
                         .background(Color.White.copy(alpha = 0.15f))
                 )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.5f)
                         .height(10.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(AppShape.extraSmall)
                         .background(Color.White.copy(alpha = 0.1f))
                 )
             }

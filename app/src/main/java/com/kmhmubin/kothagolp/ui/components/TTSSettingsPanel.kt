@@ -39,7 +39,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.HighlightAlt
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Settings
@@ -84,44 +84,12 @@ import androidx.compose.ui.unit.sp
 import com.kmhmubin.kothagolp.service.TTSServiceManager
 import com.kmhmubin.kothagolp.tts.VoiceInfo
 import com.kmhmubin.kothagolp.tts.VoiceManager
-
-// =============================================================================
-// DESIGN TOKENS (matching ReaderBottomBar)
-// =============================================================================
-
-private object TTSTheme {
-    val background = Color(0xFF0A0A0B)
-    val surface = Color(0xFF141416)
-    val surfaceVariant = Color(0xFF1C1C1F)
-    val surfaceElevated = Color(0xFF232328)
-
-    val primary = Color(0xFFFF6B35)
-    val primaryMuted = Color(0xFFFF6B35).copy(alpha = 0.15f)
-    val primarySubtle = Color(0xFFFF6B35).copy(alpha = 0.08f)
-
-    val textPrimary = Color(0xFFFAFAFA)
-    val textSecondary = Color(0xFFA1A1AA)
-    val textMuted = Color(0xFF71717A)
-    val textDisabled = Color(0xFF52525B)
-
-    val divider = Color(0xFF27272A)
-    val border = Color(0xFF3F3F46)
-
-    // Accent colors for different sections
-    val emerald = Color(0xFF10B981)
-    val emeraldMuted = Color(0xFF10B981).copy(alpha = 0.15f)
-    val violet = Color(0xFF8B5CF6)
-    val violetMuted = Color(0xFF8B5CF6).copy(alpha = 0.15f)
-    val amber = Color(0xFFF59E0B)
-    val amberMuted = Color(0xFFF59E0B).copy(alpha = 0.15f)
-    val blue = Color(0xFF3B82F6)
-    val blueMuted = Color(0xFF3B82F6).copy(alpha = 0.15f)
-    val cyan = Color(0xFF06B6D4)
-    val cyanMuted = Color(0xFF06B6D4).copy(alpha = 0.15f)
-
-    val cornerRadiusMedium = 20.dp
-    val cornerRadiusSmall = 14.dp
-}
+import com.kmhmubin.kothagolp.ui.theme.AccentCyan
+import com.kmhmubin.kothagolp.ui.theme.Info
+import com.kmhmubin.kothagolp.ui.theme.NewChapters
+import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
+import com.kmhmubin.kothagolp.ui.theme.SunsetPrimary
+import com.kmhmubin.kothagolp.ui.theme.Warning
 
 private val SleepTimerOptions = listOf(5, 10, 15, 30, 45, 60)
 
@@ -181,7 +149,7 @@ fun TTSSettingsPanel(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(max = 560.dp),  // Increased for new setting
-        shape = RoundedCornerShape(TTSTheme.cornerRadiusMedium),
+        shape = RoundedCornerShape(20.dp),
         color = Color.Transparent,
         tonalElevation = 8.dp,
         shadowElevation = 14.dp
@@ -191,13 +159,13 @@ fun TTSSettingsPanel(
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(TTSTheme.surfaceElevated, TTSTheme.surface)
+                        colors = listOf(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surface)
                     )
                 )
                 .border(
                     width = 1.dp,
-                    color = TTSTheme.border.copy(alpha = 0.3f),
-                    shape = RoundedCornerShape(TTSTheme.cornerRadiusMedium)
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(20.dp)
                 )
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -340,14 +308,14 @@ private fun TTSSettingsHeader(
         ) {
             Surface(
                 shape = CircleShape,
-                color = TTSTheme.primaryMuted,
+                color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(42.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                         contentDescription = null,
-                        tint = TTSTheme.primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -356,7 +324,7 @@ private fun TTSSettingsHeader(
                 Text(
                     text = "Audio Settings",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = TTSTheme.textPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -365,12 +333,12 @@ private fun TTSSettingsHeader(
                     Text(
                         text = "Customize your listening",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TTSTheme.textMuted
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                     if (sleepTimerRemaining != null && sleepTimerRemaining > 0) {
                         Surface(
                             shape = RoundedCornerShape(4.dp),
-                            color = TTSTheme.amberMuted
+                            color = Warning.copy(alpha = 0.15f)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -380,14 +348,14 @@ private fun TTSSettingsHeader(
                                 Icon(
                                     imageVector = Icons.Default.Timer,
                                     contentDescription = null,
-                                    tint = TTSTheme.amber,
+                                    tint = Warning,
                                     modifier = Modifier.size(10.dp)
                                 )
                                 Text(
                                     text = "${sleepTimerRemaining}m",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontSize = 10.sp,
-                                    color = TTSTheme.amber,
+                                    color = Warning,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
@@ -400,14 +368,14 @@ private fun TTSSettingsHeader(
         Surface(
             onClick = onDismiss,
             shape = CircleShape,
-            color = TTSTheme.surfaceVariant,
+            color = MaterialTheme.colorScheme.surfaceVariant,
             modifier = Modifier.size(36.dp)
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
                     contentDescription = "Close",
-                    tint = TTSTheme.textMuted,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -429,18 +397,18 @@ private fun TTSTabBar(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(TTSTheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         TTSTab.entries.forEach { tab ->
             val isSelected = tab == selectedTab
             val bgColor by animateColorAsState(
-                targetValue = if (isSelected) TTSTheme.primary else Color.Transparent,
+                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                 label = "tabBg"
             )
             val textColor by animateColorAsState(
-                targetValue = if (isSelected) Color.White else TTSTheme.textMuted,
+                targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 label = "tabText"
             )
 
@@ -503,7 +471,7 @@ private fun VoiceTabContent(
                     title = "Use System Voice",
                     subtitle = "Use your device's default TTS voice",
                     checked = useSystemVoice,
-                    accentColor = TTSTheme.emerald,
+                    accentColor = NewChapters,
                     onCheckedChange = onUseSystemVoiceChange
                 )
 
@@ -541,8 +509,8 @@ private fun VoiceTabContent(
                     Surface(
                         onClick = onToggleVoiceSelector,
                         shape = RoundedCornerShape(10.dp),
-                        color = TTSTheme.surface,
-                        border = BorderStroke(1.dp, TTSTheme.border)
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                     ) {
                         Row(
                             modifier = Modifier
@@ -554,13 +522,13 @@ private fun VoiceTabContent(
                             Text(
                                 text = if (showVoiceSelector) "Hide voice list" else "Browse available voices",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TTSTheme.primary,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Medium
                             )
                             Icon(
                                 imageVector = if (showVoiceSelector) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
                                 contentDescription = null,
-                                tint = TTSTheme.primary,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -595,8 +563,8 @@ private fun CurrentVoiceCard(
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = TTSTheme.primarySubtle,
-        border = BorderStroke(1.dp, TTSTheme.primary.copy(alpha = 0.3f))
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
     ) {
         Row(
             modifier = Modifier
@@ -612,7 +580,7 @@ private fun CurrentVoiceCard(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = TTSTheme.primary,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -628,12 +596,12 @@ private fun CurrentVoiceCard(
                     Text(
                         text = voice.shortName,
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = TTSTheme.textPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = voice.name,
                         style = MaterialTheme.typography.bodySmall,
-                        color = TTSTheme.textMuted
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -641,14 +609,14 @@ private fun CurrentVoiceCard(
             Surface(
                 onClick = onPreview,
                 shape = CircleShape,
-                color = if (isPlaying) TTSTheme.primary else TTSTheme.surfaceVariant,
+                color = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.size(36.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
                         contentDescription = if (isPlaying) "Stop" else "Preview",
-                        tint = if (isPlaying) Color.White else TTSTheme.textSecondary,
+                        tint = if (isPlaying) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -674,8 +642,8 @@ private fun SystemTTSSettingsButton() {
         },
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
-        color = TTSTheme.emeraldMuted,
-        border = BorderStroke(1.dp, TTSTheme.emerald.copy(alpha = 0.3f))
+        color = NewChapters.copy(alpha = 0.15f),
+        border = BorderStroke(1.dp, NewChapters.copy(alpha = 0.3f))
     ) {
         Row(
             modifier = Modifier
@@ -689,15 +657,15 @@ private fun SystemTTSSettingsButton() {
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.OpenInNew,
+                    imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                     contentDescription = null,
-                    tint = TTSTheme.emerald,
+                    tint = NewChapters,
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
                     text = "Open System TTS Settings",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TTSTheme.emerald,
+                    color = NewChapters,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -746,7 +714,7 @@ private fun PlaybackTabContent(
                     Icon(
                         imageVector = Icons.Default.Speed,
                         contentDescription = null,
-                        tint = TTSTheme.primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )
                     Slider(
@@ -756,9 +724,9 @@ private fun PlaybackTabContent(
                         steps = 7,
                         modifier = Modifier.weight(1f),
                         colors = SliderDefaults.colors(
-                            thumbColor = TTSTheme.primary,
-                            activeTrackColor = TTSTheme.primary,
-                            inactiveTrackColor = TTSTheme.surface
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.surface
                         )
                     )
                 }
@@ -781,7 +749,7 @@ private fun PlaybackTabContent(
                         TTSQuickChip(
                             text = label,
                             isSelected = isSelected,
-                            accentColor = TTSTheme.violet,
+                            accentColor = StatusPlanToRead,
                             onClick = { onPitchChange(value) },
                             modifier = Modifier.weight(1f)
                         )
@@ -795,7 +763,7 @@ private fun PlaybackTabContent(
                     Icon(
                         imageVector = Icons.Default.GraphicEq,
                         contentDescription = null,
-                        tint = TTSTheme.violet,
+                        tint = StatusPlanToRead,
                         modifier = Modifier.size(18.dp)
                     )
                     Slider(
@@ -805,9 +773,9 @@ private fun PlaybackTabContent(
                         steps = 5,
                         modifier = Modifier.weight(1f),
                         colors = SliderDefaults.colors(
-                            thumbColor = TTSTheme.violet,
-                            activeTrackColor = TTSTheme.violet,
-                            inactiveTrackColor = TTSTheme.surface
+                            thumbColor = StatusPlanToRead,
+                            activeTrackColor = StatusPlanToRead,
+                            inactiveTrackColor = MaterialTheme.colorScheme.surface
                         )
                     )
                 }
@@ -816,7 +784,7 @@ private fun PlaybackTabContent(
 
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = TTSTheme.surfaceVariant.copy(alpha = 0.5f)
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ) {
             Row(
                 modifier = Modifier.padding(14.dp),
@@ -826,13 +794,13 @@ private fun PlaybackTabContent(
                 Icon(
                     imageVector = Icons.Default.Tune,
                     contentDescription = null,
-                    tint = TTSTheme.textMuted,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
                     text = "Adjustments apply immediately. Find your comfortable listening pace for extended reading sessions.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TTSTheme.textMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
         }
@@ -867,7 +835,7 @@ private fun OptionsTabContent(
                     title = "Auto-scroll",
                     subtitle = "Follow along as you listen",
                     checked = autoScroll,
-                    accentColor = TTSTheme.emerald,
+                    accentColor = NewChapters,
                     onCheckedChange = onAutoScrollChange
                 )
 
@@ -876,7 +844,7 @@ private fun OptionsTabContent(
                     title = "Highlight Text",
                     subtitle = "Show current sentence being read",
                     checked = highlightSentence,
-                    accentColor = TTSTheme.primary,
+                    accentColor = MaterialTheme.colorScheme.primary,
                     onCheckedChange = onHighlightChange
                 )
 
@@ -885,7 +853,7 @@ private fun OptionsTabContent(
                     title = "Lock Scroll During Playback",
                     subtitle = "Prevent manual scrolling while TTS is active",
                     checked = lockScrollDuringTTS,
-                    accentColor = TTSTheme.blue,
+                    accentColor = Info,
                     onCheckedChange = onLockScrollChange
                 )
 
@@ -897,7 +865,7 @@ private fun OptionsTabContent(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = TTSTheme.blueMuted
+                        color = Info.copy(alpha = 0.15f)
                     ) {
                         Row(
                             modifier = Modifier
@@ -909,13 +877,13 @@ private fun OptionsTabContent(
                             Icon(
                                 imageVector = Icons.Default.Lock,
                                 contentDescription = null,
-                                tint = TTSTheme.blue,
+                                tint = Info,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = "Screen will stay focused on the current sentence. Disable to scroll freely while listening.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TTSTheme.blue
+                                color = Info
                             )
                         }
                     }
@@ -931,7 +899,7 @@ private fun OptionsTabContent(
                     title = "Auto-Advance Chapter",
                     subtitle = "Automatically start next chapter when finished",
                     checked = autoAdvanceChapter,
-                    accentColor = TTSTheme.cyan,
+                    accentColor = AccentCyan,
                     onCheckedChange = onAutoAdvanceChapterChange
                 )
 
@@ -943,7 +911,7 @@ private fun OptionsTabContent(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = TTSTheme.cyanMuted
+                        color = AccentCyan.copy(alpha = 0.15f)
                     ) {
                         Row(
                             modifier = Modifier
@@ -955,13 +923,13 @@ private fun OptionsTabContent(
                             Icon(
                                 imageVector = Icons.Default.SkipNext,
                                 contentDescription = null,
-                                tint = TTSTheme.cyan,
+                                tint = AccentCyan,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = "When TTS finishes a chapter, the next chapter will automatically load and start playing.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TTSTheme.cyan
+                                color = AccentCyan
                             )
                         }
                     }
@@ -979,8 +947,8 @@ private fun OptionsTabContent(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = TTSTheme.amberMuted,
-                        border = BorderStroke(1.dp, TTSTheme.amber.copy(alpha = 0.3f))
+                        color = Warning.copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, Warning.copy(alpha = 0.3f))
                     ) {
                         Row(
                             modifier = Modifier
@@ -996,19 +964,19 @@ private fun OptionsTabContent(
                                 Icon(
                                     imageVector = Icons.Default.Timer,
                                     contentDescription = null,
-                                    tint = TTSTheme.amber,
+                                    tint = Warning,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Column {
                                     Text(
                                         text = "$sleepTimerRemaining minutes remaining",
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = TTSTheme.amber
+                                        color = Warning
                                     )
                                     Text(
                                         text = "Playback will stop automatically",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = TTSTheme.textMuted
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                     )
                                 }
                             }
@@ -1016,7 +984,7 @@ private fun OptionsTabContent(
                             Surface(
                                 onClick = onCancelSleepTimer,
                                 shape = RoundedCornerShape(8.dp),
-                                color = TTSTheme.surfaceVariant
+                                color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -1026,13 +994,13 @@ private fun OptionsTabContent(
                                     Icon(
                                         imageVector = Icons.Default.TimerOff,
                                         contentDescription = null,
-                                        tint = TTSTheme.textMuted,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Text(
                                         text = "Cancel",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = TTSTheme.textSecondary,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
@@ -1044,7 +1012,7 @@ private fun OptionsTabContent(
                 Text(
                     text = if (sleepTimerRemaining != null && sleepTimerRemaining > 0) "Change timer" else "Stop playback after",
                     style = MaterialTheme.typography.labelSmall,
-                    color = TTSTheme.textMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
 
                 LazyRow(
@@ -1076,7 +1044,7 @@ private fun SleepTimerChip(
         label = "chipScale"
     )
     val bgColor by animateColorAsState(
-        targetValue = if (isSelected) TTSTheme.amber else TTSTheme.surface,
+        targetValue = if (isSelected) Warning else MaterialTheme.colorScheme.surface,
         label = "chipBg"
     )
 
@@ -1085,7 +1053,7 @@ private fun SleepTimerChip(
         modifier = Modifier.scale(scale),
         shape = RoundedCornerShape(10.dp),
         color = bgColor,
-        border = if (!isSelected) BorderStroke(1.dp, TTSTheme.border) else null
+        border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -1104,7 +1072,7 @@ private fun SleepTimerChip(
                 text = "${minutes}m",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) Color.White else TTSTheme.textSecondary
+                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -1122,8 +1090,8 @@ private fun TTSSectionCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(TTSTheme.cornerRadiusSmall),
-        color = TTSTheme.surfaceVariant.copy(alpha = 0.5f)
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -1137,13 +1105,13 @@ private fun TTSSectionCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = TTSTheme.textSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (trailing != null) {
                     Text(
                         text = trailing,
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = TTSTheme.primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -1164,8 +1132,8 @@ private fun TTSToggleSetting(
     Surface(
         onClick = { onCheckedChange(!checked) },
         shape = RoundedCornerShape(10.dp),
-        color = if (checked) accentColor.copy(alpha = 0.1f) else TTSTheme.surface,
-        border = BorderStroke(1.dp, if (checked) accentColor.copy(alpha = 0.3f) else TTSTheme.border)
+        color = if (checked) accentColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, if (checked) accentColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
@@ -1181,14 +1149,14 @@ private fun TTSToggleSetting(
             ) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = if (checked) accentColor.copy(alpha = 0.15f) else TTSTheme.surfaceVariant,
+                    color = if (checked) accentColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.size(36.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = if (checked) accentColor else TTSTheme.textMuted,
+                            tint = if (checked) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -1199,12 +1167,12 @@ private fun TTSToggleSetting(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = if (checked) FontWeight.Medium else FontWeight.Normal
                         ),
-                        color = if (checked) TTSTheme.textPrimary else TTSTheme.textSecondary
+                        color = if (checked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = TTSTheme.textMuted
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             }
@@ -1215,8 +1183,8 @@ private fun TTSToggleSetting(
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
                     checkedTrackColor = accentColor,
-                    uncheckedThumbColor = TTSTheme.textMuted,
-                    uncheckedTrackColor = TTSTheme.surface
+                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surface
                 )
             )
         }
@@ -1228,15 +1196,15 @@ private fun TTSQuickChip(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    accentColor: Color = TTSTheme.primary,
+    accentColor: Color = SunsetPrimary,
     modifier: Modifier = Modifier
 ) {
     val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected) accentColor else TTSTheme.surface,
+        targetValue = if (isSelected) accentColor else MaterialTheme.colorScheme.surface,
         label = "chipBg"
     )
     val textColor by animateColorAsState(
-        targetValue = if (isSelected) Color.White else TTSTheme.textMuted,
+        targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
         label = "chipText"
     )
 
@@ -1245,7 +1213,7 @@ private fun TTSQuickChip(
         modifier = modifier.height(38.dp),
         shape = RoundedCornerShape(10.dp),
         color = backgroundColor,
-        border = if (!isSelected) BorderStroke(1.dp, TTSTheme.border) else null
+        border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Text(
