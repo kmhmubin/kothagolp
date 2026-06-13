@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -164,7 +165,7 @@ private fun getSectionIcon(type: RecommendationType): ImageVector {
         RecommendationType.FOR_YOU -> Icons.Rounded.AutoAwesome
         RecommendationType.SIMILAR_TO -> Icons.Rounded.LocalFireDepartment
         RecommendationType.BECAUSE_YOU_READ -> Icons.Rounded.LocalFireDepartment
-        RecommendationType.TRENDING_IN_YOUR_GENRES -> Icons.Rounded.TrendingUp
+        RecommendationType.TRENDING_IN_YOUR_GENRES -> Icons.AutoMirrored.Rounded.TrendingUp
         RecommendationType.FROM_AUTHORS_YOU_LIKE -> Icons.Rounded.Person
         RecommendationType.TOP_RATED_FOR_YOU -> Icons.Rounded.Star
         RecommendationType.NEW_FOR_YOU -> Icons.Rounded.NewReleases

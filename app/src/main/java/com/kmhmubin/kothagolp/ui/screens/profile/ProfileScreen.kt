@@ -46,6 +46,7 @@ import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -784,7 +785,7 @@ private fun GoalsSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        SectionHeader(title = "Goals", icon = Icons.Rounded.TrendingUp)
+        SectionHeader(title = "Goals", icon = Icons.AutoMirrored.Rounded.TrendingUp)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1558,7 +1559,7 @@ private fun getAchievementIcon(iconName: String): ImageVector {
         "schedule" -> Icons.Rounded.Schedule
         "fire" -> Icons.Rounded.LocalFireDepartment
         "menu_book" -> Icons.AutoMirrored.Rounded.MenuBook
-        "trending" -> Icons.Rounded.TrendingUp
+        "trending" -> Icons.AutoMirrored.Rounded.TrendingUp
         else -> Icons.Rounded.AutoStories
     }
 }

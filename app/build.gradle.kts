@@ -38,6 +38,7 @@ android {
     kotlinOptions {
         jvmTarget = "11"
         freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+        freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi"
     }
 
     buildFeatures {
@@ -77,18 +78,16 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation("androidx.compose.material3:material3:1.4.0")
-    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
-
+    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.palette.ktx)
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.4")
+    implementation("androidx.navigation:navigation-compose:2.9.0")
 
     // ViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.0")
 
     // Room Database
     implementation("androidx.room:room-runtime:2.8.4")
@@ -96,7 +95,6 @@ dependencies {
     implementation(libs.androidx.room.common.jvm)
     implementation(libs.androidx.adapters)
     implementation(libs.androidx.compose.animation)
-    implementation(libs.androidx.animation)
     ksp("androidx.room:room-compiler:2.8.4")
 
     // Networking

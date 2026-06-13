@@ -76,7 +76,7 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.ViewColumn
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.outlined.Brightness4
 import androidx.compose.material.icons.outlined.Gesture
@@ -2041,7 +2041,7 @@ private fun ReadingSettings(
         // Volume Key Navigation
         SettingSection(
             title = "Volume Key Navigation",
-            icon = Icons.Default.VolumeUp,
+            icon = Icons.AutoMirrored.Filled.VolumeUp,
             colors = colors
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

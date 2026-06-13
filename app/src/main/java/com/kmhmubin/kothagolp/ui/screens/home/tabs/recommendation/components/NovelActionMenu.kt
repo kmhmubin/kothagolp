@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PersonOff
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -157,7 +158,7 @@ fun NovelActionMenu(
                 // Action items
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     ActionMenuItem(
-                        icon = Icons.Rounded.OpenInNew,
+                        icon = Icons.AutoMirrored.Rounded.OpenInNew,
                         label = "View Details",
                         sublabel = "See full novel information",
                         onClick = {

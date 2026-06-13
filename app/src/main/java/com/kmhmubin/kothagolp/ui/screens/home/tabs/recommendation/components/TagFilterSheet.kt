@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -302,7 +303,7 @@ fun TagFilterSheet(
                     )
                     LegendItem(
                         color = MaterialTheme.colorScheme.primary,
-                        icon = Icons.Rounded.TrendingUp,
+                        icon = Icons.AutoMirrored.Rounded.TrendingUp,
                         label = "Boost"
                     )
                 }
@@ -506,7 +507,7 @@ private fun TagFilterRow(
                 // Boost button
                 FilterToggleButton(
                     isSelected = currentFilter == TagFilterType.BOOSTED,
-                    icon = Icons.Rounded.TrendingUp,
+                    icon = Icons.AutoMirrored.Rounded.TrendingUp,
                     selectedColor = MaterialTheme.colorScheme.primary,
                     onClick = {
                         onFilterChange(

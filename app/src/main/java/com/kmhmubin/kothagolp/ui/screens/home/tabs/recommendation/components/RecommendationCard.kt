@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.BrokenImage
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -202,7 +203,7 @@ fun RecommendationCard(
                             ) {
                                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                     Icon(
-                                        imageVector = Icons.Rounded.OpenInNew,
+                                        imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
                                         contentDescription = "Different source",
                                         tint = MaterialTheme.colorScheme.tertiary,
                                         modifier = Modifier.size(15.dp)
