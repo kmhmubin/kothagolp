@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
@@ -63,7 +63,7 @@ fun ReadingProgressCard(
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
     ) {
         Column(
@@ -154,7 +154,7 @@ fun ReadingProgressCard(
             if (lastReadChapterName != null) {
                 Surface(
                     onClick = onContinueReading,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = AppShape.large,
                     color = MaterialTheme.colorScheme.primary
                 ) {
                     Row(
@@ -192,7 +192,7 @@ fun ReadingProgressCard(
                 Button(
                     onClick = onStartReading,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = AppShape.large,
                     contentPadding = PaddingValues(16.dp)
                 ) {
                     Icon(

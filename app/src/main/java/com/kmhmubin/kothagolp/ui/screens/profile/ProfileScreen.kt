@@ -32,7 +32,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
@@ -90,7 +89,9 @@ import com.kmhmubin.kothagolp.ui.screens.profile.NovelReadingStats
 import com.kmhmubin.kothagolp.ui.screens.profile.ProfileEvent
 import com.kmhmubin.kothagolp.ui.screens.profile.ProfileUiState
 import com.kmhmubin.kothagolp.ui.screens.profile.ProfileViewModel
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
+import com.kmhmubin.kothagolp.ui.theme.NewChapters
 import kotlinx.coroutines.flow.collectLatest
 
 // ============================================================================
@@ -103,7 +104,7 @@ private object ProfileColors {
     val GoalPrimary = Color(0xFF6366F1)
     val GoalSecondary = Color(0xFF8B5CF6)
     val ChapterBlue = Color(0xFF3B82F6)
-    val TimeGreen = Color(0xFF10B981)
+    val TimeGreen = NewChapters
     val DaysAmber = Color(0xFFF59E0B)
     val AchievementGold = Color(0xFFFFD700)
     val LevelPurple = Color(0xFF9333EA)
@@ -479,7 +480,7 @@ private fun ProfileHeroSection(uiState: ProfileUiState) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
+                                .clip(AppShape.extraSmall)
                                 .background(levelColor.copy(alpha = 0.2f))
                         ) {
                             val animatedProgress by animateFloatAsState(
@@ -491,7 +492,7 @@ private fun ProfileHeroSection(uiState: ProfileUiState) {
                                 modifier = Modifier
                                     .fillMaxWidth(animatedProgress)
                                     .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp))
+                                    .clip(AppShape.extraSmall)
                                     .background(
                                         Brush.horizontalGradient(
                                             colors = listOf(
@@ -558,7 +559,7 @@ private fun QuickStatPill(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = color.copy(alpha = 0.1f)
     ) {
         Row(
@@ -606,7 +607,7 @@ private fun StreakCard(
     )
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = if (isStreakActive) {
                 ProfileColors.StreakOrange.copy(alpha = 0.1f)
@@ -737,7 +738,7 @@ private fun InsightCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -831,7 +832,7 @@ private fun CircularGoalCard(
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -967,7 +968,7 @@ private fun TimeStatCard(
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
     ) {
         Column(
@@ -1012,7 +1013,7 @@ private fun WeeklyActivitySection(
         SectionHeader(title = "This Week", icon = Icons.Rounded.CalendarMonth)
 
         Card(
-            shape = RoundedCornerShape(20.dp),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             )
@@ -1056,7 +1057,7 @@ private fun WeeklyActivitySection(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height((60 * animatedHeight).dp)
-                                    .clip(RoundedCornerShape(6.dp))
+                                    .clip(AppShape.extraSmall)
                                     .background(barColor)
                             )
                         }
@@ -1133,7 +1134,7 @@ private fun StatisticCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -1222,7 +1223,7 @@ private fun MostReadNovelCard(
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -1258,12 +1259,12 @@ private fun MostReadNovelCard(
                     contentDescription = null,
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(AppShape.small),
                     contentScale = ContentScale.Crop
                 )
             } else {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.size(48.dp)
                 ) {
@@ -1361,7 +1362,7 @@ private fun AchievementCard(
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = if (achievement.isUnlocked) {
                 ProfileColors.AchievementGold.copy(alpha = 0.1f)
@@ -1419,7 +1420,7 @@ private fun AchievementCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
+                        .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Box(
@@ -1475,7 +1476,7 @@ private fun ProfileEmptyState(
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             )
@@ -1522,7 +1523,7 @@ private fun ProfileEmptyState(
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 ) {
                     Row(

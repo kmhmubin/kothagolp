@@ -99,6 +99,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.RatingFormat
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
@@ -345,7 +346,7 @@ private fun CompactDragHandle() {
             modifier = Modifier
                 .width(32.dp)
                 .height(4.dp)
-                .clip(RoundedCornerShape(2.dp))
+                .clip(AppShape.extraSmall)
                 .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
         )
     }
@@ -373,9 +374,9 @@ private fun CompactHeader(
                 modifier = Modifier
                     .width(72.dp)
                     .aspectRatio(2f / 3f)
-                    .shadow(6.dp, RoundedCornerShape(8.dp))
+                    .shadow(6.dp, AppShape.small)
                     .clickable { onCoverClick() },
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Box {
@@ -663,7 +664,7 @@ private fun CompactTags(tags: List<String>) {
     ) {
         tags.take(4).forEach { tag ->
             Surface(
-                shape = RoundedCornerShape(10.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Text(
@@ -677,7 +678,7 @@ private fun CompactTags(tags: List<String>) {
         }
         if (tags.size > 4) {
             Surface(
-                shape = RoundedCornerShape(10.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
             ) {
                 Text(
@@ -702,10 +703,10 @@ private fun CompactSynopsis(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(AppShape.medium)
             .clickable(onClick = onExpand),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(10.dp)
+        shape = AppShape.medium
     ) {
         Row(
             modifier = Modifier.padding(10.dp),
@@ -791,7 +792,7 @@ private fun CompactActions(
                 onClick = onRemoveFromHistory,
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
+                shape = AppShape.small
             ) {
                 Row(
                     modifier = Modifier
@@ -839,7 +840,7 @@ private fun CompactPrimaryButton(
             .fillMaxWidth()
             .height(44.dp)
             .scale(scale),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary
         ),
@@ -890,7 +891,7 @@ private fun CompactSecondaryButton(
             .height(40.dp)
             .scale(scale),
         color = containerColor,
-        shape = RoundedCornerShape(10.dp)
+        shape = AppShape.medium
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -937,7 +938,7 @@ private fun StatusSelectorButton(
             .height(40.dp)
             .scale(scale),
         color = statusColor.copy(alpha = 0.12f),
-        shape = RoundedCornerShape(10.dp)
+        shape = AppShape.medium
     ) {
         Row(
             modifier = Modifier
@@ -987,7 +988,7 @@ private fun StatusPickerDialog(
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = AppShape.large,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
@@ -1067,7 +1068,7 @@ private fun StatusOptionItem(
     Surface(
         onClick = onClick,
         color = if (isSelected) statusColor.copy(alpha = 0.1f) else Color.Transparent,
-        shape = RoundedCornerShape(8.dp),
+        shape = AppShape.small,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 2.dp)
@@ -1130,7 +1131,7 @@ private fun RemoveOptionItem(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         color = Color.Transparent,
-        shape = RoundedCornerShape(8.dp),
+        shape = AppShape.small,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 2.dp)
@@ -1274,7 +1275,7 @@ private fun SynopsisOverlay(
                     .widthIn(max = 400.dp)
                     .fillMaxWidth(0.9f)
                     .clickable(enabled = false, onClick = {}),
-                shape = RoundedCornerShape(20.dp),
+                shape = AppShape.extraLarge,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column {
@@ -1339,7 +1340,7 @@ private fun RemoveConfirmationDialog(
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(20.dp),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
@@ -1400,7 +1401,7 @@ private fun RemoveConfirmationDialog(
                         modifier = Modifier
                             .weight(1f)
                             .height(40.dp),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = AppShape.medium
                     ) {
                         Text("Cancel", style = MaterialTheme.typography.labelMedium)
                     }
@@ -1410,7 +1411,7 @@ private fun RemoveConfirmationDialog(
                         modifier = Modifier
                             .weight(1f)
                             .height(40.dp),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = AppShape.medium,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
                         )

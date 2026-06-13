@@ -129,6 +129,7 @@ import com.kmhmubin.kothagolp.ui.components.NovelActionSheet
 import com.kmhmubin.kothagolp.ui.components.NovelCard
 import com.kmhmubin.kothagolp.ui.components.KothagolpSearchBar
 import com.kmhmubin.kothagolp.ui.components.SearchSuggestionsDropdown
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
 import coil.compose.AsyncImage
@@ -601,7 +602,7 @@ private fun EmptySearchState(
                                         style = MaterialTheme.typography.labelMedium
                                     )
                                 },
-                                shape = RoundedCornerShape(20.dp)
+                                shape = AppShape.extraLarge
                             )
                         }
                     }
@@ -675,7 +676,7 @@ private fun SearchFiltersSheet(
                                 onFiltersChanged(filters.copy(sortOrder = order))
                             },
                             label = { Text(order.label) },
-                            shape = RoundedCornerShape(12.dp)
+                            shape = AppShape.medium
                         )
                     }
                 }
@@ -722,7 +723,7 @@ private fun SearchFiltersSheet(
                                     onFiltersChanged(filters.copy(selectedProviders = newSelection))
                                 },
                                 label = { Text(provider) },
-                                shape = RoundedCornerShape(12.dp)
+                                shape = AppShape.medium
                             )
                         }
                     }
@@ -734,7 +735,7 @@ private fun SearchFiltersSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = AppShape.large
             ) {
                 Text(
                     text = "Apply Filters",
@@ -898,7 +899,7 @@ private fun SearchResultsHeader(
 
                 if (hasFilters) {
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
+                        shape = AppShape.extraSmall,
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
@@ -925,7 +926,7 @@ private fun SearchResultsHeader(
 
         Surface(
             onClick = onClear,
-            shape = RoundedCornerShape(10.dp),
+            shape = AppShape.medium,
             color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             Row(
@@ -1008,7 +1009,7 @@ private fun SearchResultCardSkeleton() {
         modifier = Modifier
             .width(110.dp)
             .height(165.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -1023,7 +1024,7 @@ private fun SearchResultCardSkeleton() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(AppShape.small)
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     .shimmerEffect()
             )
@@ -1035,7 +1036,7 @@ private fun SearchResultCardSkeleton() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(12.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         .shimmerEffect()
                 )
@@ -1043,7 +1044,7 @@ private fun SearchResultCardSkeleton() {
                     modifier = Modifier
                         .fillMaxWidth(0.6f)
                         .height(10.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         .shimmerEffect()
                 )
@@ -1088,7 +1089,7 @@ private fun ProviderEmptyResultsSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = dimensions.gridPadding),
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             border = BorderStroke(
                 1.dp,
@@ -1175,7 +1176,7 @@ private fun ProviderErrorResultsSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = dimensions.gridPadding),
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
             border = BorderStroke(
                 1.dp,
@@ -1276,7 +1277,7 @@ private fun ProviderSearchResultsSection(
                     )
 
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = AppShape.small,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
                         Text(
@@ -1380,7 +1381,7 @@ private fun ViewMoreCard(
         modifier = Modifier
             .width(110.dp)
             .height(165.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = color.copy(alpha = 0.1f)
         ),
@@ -1489,7 +1490,7 @@ private fun ExpandedSearchResults(
                 )
             } else {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = providerColor.copy(alpha = 0.1f),
                     border = BorderStroke(1.dp, providerColor.copy(alpha = 0.2f))
                 ) {
@@ -1787,7 +1788,7 @@ private fun BrowseHeader(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = AppShape.large,
                         color = MaterialTheme.colorScheme.primaryContainer,
                         modifier = Modifier.size(44.dp)
                     ) {
@@ -1851,7 +1852,7 @@ private fun StatBadge(
     textColor: Color
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = color,
         tonalElevation = 1.dp
     ) {
@@ -1925,7 +1926,7 @@ private fun ProviderCard(
                     }
                 )
             },
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -2078,7 +2079,7 @@ private fun CookieStatusBadge(status: CloudflareManager.CookieStatus) {
     }
 
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = AppShape.small,
         color = color.copy(alpha = 0.12f),
         border = BorderStroke(1.dp, color.copy(alpha = 0.3f))
     ) {
@@ -2113,7 +2114,7 @@ private fun ProviderIcon(
 ) {
     val hasIcon = iconUrl != null || iconRes != null
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.large,
         color = if (hasIcon) MaterialTheme.colorScheme.surfaceContainerHigh else color,
         modifier = Modifier.size(52.dp),
         shadowElevation = if (hasIcon) 1.dp else 3.dp,
@@ -2238,7 +2239,7 @@ private fun ProviderGridSkeleton() {
                     Box(
                         modifier = Modifier
                             .size(44.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(AppShape.large)
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                             .shimmerEffect()
                     )
@@ -2247,7 +2248,7 @@ private fun ProviderGridSkeleton() {
                             modifier = Modifier
                                 .width(100.dp)
                                 .height(24.dp)
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(AppShape.extraSmall)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .shimmerEffect()
                         )
@@ -2255,7 +2256,7 @@ private fun ProviderGridSkeleton() {
                             modifier = Modifier
                                 .width(180.dp)
                                 .height(14.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .clip(AppShape.extraSmall)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .shimmerEffect()
                         )
@@ -2274,7 +2275,7 @@ private fun ProviderCardSkeleton() {
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(0.92f),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -2288,7 +2289,7 @@ private fun ProviderCardSkeleton() {
             Box(
                 modifier = Modifier
                     .size(52.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(AppShape.large)
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     .shimmerEffect()
             )
@@ -2298,7 +2299,7 @@ private fun ProviderCardSkeleton() {
                     modifier = Modifier
                         .fillMaxWidth(0.7f)
                         .height(18.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         .shimmerEffect()
                 )
@@ -2310,7 +2311,7 @@ private fun ProviderCardSkeleton() {
                         modifier = Modifier
                             .width(55.dp)
                             .height(26.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(AppShape.small)
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                             .shimmerEffect()
                     )
@@ -2339,7 +2340,7 @@ private fun ProviderErrorState(
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
             ),
@@ -2390,7 +2391,7 @@ private fun ProviderErrorState(
 
                 Button(
                     onClick = onRetry,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = AppShape.large,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     ),
@@ -2418,7 +2419,7 @@ private fun MigrationBannerCard(onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         ),
@@ -2468,7 +2469,7 @@ private fun ProviderEmptyState() {
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),

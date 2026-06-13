@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -76,7 +77,7 @@ fun StreakCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         )
@@ -170,7 +171,7 @@ fun StatCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
@@ -284,7 +285,7 @@ private fun TimeStatCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = color.copy(alpha = 0.1f)
         )
@@ -346,7 +347,7 @@ fun WeeklyActivityChart(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = AppShape.large,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer
             )
@@ -428,7 +429,7 @@ private fun ActivityBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(barHeight)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(AppShape.extraSmall)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             )
 
@@ -437,7 +438,7 @@ private fun ActivityBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(barHeight * animatedHeight)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(AppShape.extraSmall)
                     .background(barColor)
             )
         }
@@ -482,7 +483,7 @@ fun CircularProgressCard(
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
@@ -596,7 +597,7 @@ fun NovelReadingStats(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
@@ -613,7 +614,7 @@ fun NovelReadingStats(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(AppShape.small)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             ) {
                 if (!coverUrl.isNullOrBlank()) {
@@ -720,7 +721,7 @@ fun AchievementBadge(
 
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Column(

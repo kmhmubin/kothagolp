@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -54,6 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.kmhmubin.kothagolp.domain.model.Novel
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -220,7 +220,7 @@ private fun MigrationSearchHeader(fromSource: String, novelName: String) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -261,7 +261,7 @@ private fun ProviderResultSection(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -283,7 +283,7 @@ private fun ProviderResultSection(
                 when {
                     isSameSource -> {
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
+                            shape = AppShape.extraSmall,
                             color = MaterialTheme.colorScheme.secondaryContainer
                         ) {
                             Text(
@@ -384,13 +384,13 @@ private fun SearchResultItem(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(width = 36.dp, height = 48.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(AppShape.extraSmall)
             )
         } else {
             Box(
                 modifier = Modifier
                     .size(width = 36.dp, height = 48.dp)
-                    .clip(RoundedCornerShape(4.dp)),
+                    .clip(AppShape.extraSmall),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkAdded
 import androidx.compose.material3.FloatingActionButton
@@ -29,13 +29,13 @@ fun FloatingScrollButton(
         modifier = modifier
             .shadow(
                 elevation = 12.dp,
-                shape = RoundedCornerShape(16.dp),
+                shape = AppShape.large,
                 ambientColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f),
                 spotColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
             ),
         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 8.dp,
             pressedElevation = 12.dp
@@ -73,13 +73,13 @@ fun CompactFloatingScrollButton(
         modifier = modifier
             .shadow(
                 elevation = 8.dp,
-                shape = RoundedCornerShape(14.dp),
+                shape = AppShape.large,
                 ambientColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
                 spotColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
             ),
         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.large,
         elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 6.dp,
             pressedElevation = 10.dp

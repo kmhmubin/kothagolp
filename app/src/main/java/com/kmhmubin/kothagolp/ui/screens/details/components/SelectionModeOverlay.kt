@@ -32,7 +32,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.Deselect
@@ -177,9 +178,9 @@ private fun SelectionTopBar(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
-        shadowElevation = 8.dp,
-        tonalElevation = 2.dp
+        shape = AppShape.extraLarge,
+        shadowElevation = AppElevation.lg,
+        tonalElevation = AppElevation.sm
     ) {
         Column(
             modifier = Modifier
@@ -310,7 +311,7 @@ private fun SelectionCounterPill(
     totalCount: Int
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.primary
     ) {
         Row(
@@ -417,7 +418,7 @@ private fun QuickFilterChip(
     Surface(
         onClick = onClick,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = backgroundColor,
         modifier = Modifier.scale(scale)
     ) {
@@ -477,9 +478,9 @@ private fun SelectionBottomBar(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        shadowElevation = 12.dp,
-        tonalElevation = 2.dp
+        shape = AppShape.extraLarge,
+        shadowElevation = AppElevation.lg,
+        tonalElevation = AppElevation.sm
     ) {
         Column(
             modifier = Modifier
@@ -676,7 +677,7 @@ private fun ActionButton(
         onClick = onClick,
         enabled = enabled,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = backgroundColor,
         modifier = Modifier.scale(scale)
     ) {
@@ -741,7 +742,7 @@ private fun ReadStatusButton(
         onClick = { if (showMarkAsRead) onMarkAsRead() else onMarkAsUnread() },
         enabled = enabled,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = backgroundColor,
         modifier = Modifier.scale(scale)
     ) {

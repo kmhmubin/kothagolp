@@ -72,8 +72,10 @@ import com.kmhmubin.kothagolp.tts.VoiceGender
 import com.kmhmubin.kothagolp.tts.VoiceInfo
 import com.kmhmubin.kothagolp.tts.VoiceManager
 import com.kmhmubin.kothagolp.tts.VoiceQuality
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.Orange400
 import com.kmhmubin.kothagolp.ui.theme.Orange500
+import com.kmhmubin.kothagolp.ui.theme.Success
 import com.kmhmubin.kothagolp.ui.theme.Zinc300
 import com.kmhmubin.kothagolp.ui.theme.Zinc400
 import com.kmhmubin.kothagolp.ui.theme.Zinc500
@@ -155,7 +157,7 @@ fun VoiceSelector(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = Zinc800,
                 border = androidx.compose.foundation.BorderStroke(1.dp, Zinc700)
             ) {
@@ -217,7 +219,7 @@ fun VoiceSelector(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Orange500,
                 unfocusedBorderColor = Zinc700,
@@ -337,7 +339,7 @@ private fun LanguageGroupItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     ) {
         Column {
             Row(
@@ -511,7 +513,7 @@ private fun VoiceListItem(
 private fun QualityBadge(quality: VoiceQuality) {
     val (color, text) = when (quality) {
         VoiceQuality.PREMIUM -> Orange500 to "Premium"
-        VoiceQuality.HIGH -> Color(0xFF4CAF50) to "HD"
+        VoiceQuality.HIGH -> Success to "HD"
         VoiceQuality.NORMAL -> Zinc500 to "Standard"
         VoiceQuality.LOW -> Zinc600 to "Basic"
         VoiceQuality.UNKNOWN -> Zinc600 to ""
@@ -519,7 +521,7 @@ private fun QualityBadge(quality: VoiceQuality) {
 
     if (text.isNotBlank()) {
         Surface(
-            shape = RoundedCornerShape(4.dp),
+            shape = AppShape.extraSmall,
             color = color.copy(alpha = 0.15f)
         ) {
             Row(
@@ -577,7 +579,7 @@ fun CompactVoiceSelector(
         modifier = modifier
             .fillMaxWidth()
             .alpha(if (enabled) 1f else 0.5f), // Dim when disabled
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = Zinc800,
         border = androidx.compose.foundation.BorderStroke(1.dp, Zinc700)
     ) {

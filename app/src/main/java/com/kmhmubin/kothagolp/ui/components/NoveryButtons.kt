@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,7 +39,7 @@ fun PrimaryButton(
         onClick = onClick,
         modifier = modifier.height(48.dp),
         enabled = enabled && !isLoading,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -85,7 +86,7 @@ fun SecondaryButton(
         onClick = onClick,
         modifier = modifier.height(48.dp),
         enabled = enabled,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             contentColor = MaterialTheme.colorScheme.onSurface,
@@ -149,7 +150,7 @@ fun DangerButton(
     Button(
         onClick = onClick,
         modifier = modifier.height(48.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.errorContainer,
             contentColor = MaterialTheme.colorScheme.error
@@ -180,7 +181,7 @@ fun FilterChip(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = if (selected)
             MaterialTheme.colorScheme.primary
         else
@@ -221,7 +222,7 @@ fun StatusChip(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = if (selected) selectedColor else MaterialTheme.colorScheme.surfaceContainerHigh,
         border = BorderStroke(
             1.dp,
