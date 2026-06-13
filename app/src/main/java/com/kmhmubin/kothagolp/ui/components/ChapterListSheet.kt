@@ -58,15 +58,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.domain.model.Chapter
-import com.kmhmubin.kothagolp.ui.theme.Orange400
-import com.kmhmubin.kothagolp.ui.theme.Orange500
-import com.kmhmubin.kothagolp.ui.theme.Zinc300
-import com.kmhmubin.kothagolp.ui.theme.Zinc400
-import com.kmhmubin.kothagolp.ui.theme.Zinc500
-import com.kmhmubin.kothagolp.ui.theme.Zinc600
-import com.kmhmubin.kothagolp.ui.theme.Zinc700
-import com.kmhmubin.kothagolp.ui.theme.Zinc800
-import com.kmhmubin.kothagolp.ui.theme.Zinc900
 
 /**
  * Chapter list bottom sheet for quick navigation
@@ -122,24 +113,6 @@ fun ChapterListSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Zinc900,
-        contentColor = Color.White,
-        dragHandle = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Box(
-                    modifier = Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(Zinc600)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-        }
     ) {
         Column(
             modifier = Modifier
@@ -162,7 +135,7 @@ fun ChapterListSheet(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            HorizontalDivider(color = Zinc800)
+            HorizontalDivider()
 
             // Chapter list
             if (displayedChapters.isEmpty()) {
@@ -223,12 +196,12 @@ private fun ChapterListHeader(
                 text = "Chapters",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = "$currentChapter of $totalChapters chapters",
                 style = MaterialTheme.typography.bodySmall,
-                color = Zinc400
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -240,7 +213,7 @@ private fun ChapterListHeader(
             Surface(
                 onClick = onSortToggle,
                 shape = RoundedCornerShape(8.dp),
-                color = Zinc800
+                color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -252,14 +225,14 @@ private fun ChapterListHeader(
                         else
                             Icons.Default.KeyboardArrowUp,
                         contentDescription = "Sort order",
-                        tint = Zinc300,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = if (sortDescending) "Newest" else "Oldest",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Zinc300
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -269,7 +242,7 @@ private fun ChapterListHeader(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Close",
-                    tint = Zinc400
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -286,13 +259,13 @@ private fun ChapterSearchBar(
         value = query,
         onValueChange = onQueryChange,
         placeholder = {
-            Text("Search chapters...", color = Zinc500)
+            Text("Search chapters...")
         },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = null,
-                tint = Zinc500
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         trailingIcon = {
@@ -301,7 +274,7 @@ private fun ChapterSearchBar(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Clear",
-                        tint = Zinc500,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -310,11 +283,11 @@ private fun ChapterSearchBar(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Orange500,
-            unfocusedBorderColor = Zinc700,
-            focusedContainerColor = Zinc800,
-            unfocusedContainerColor = Zinc800,
-            cursorColor = Orange500
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            cursorColor = MaterialTheme.colorScheme.primary
         ),
         singleLine = true
     )
@@ -330,7 +303,7 @@ private fun ChapterListItem(
 ) {
     val backgroundColor by animateColorAsState(
         targetValue = when {
-            isCurrentChapter -> Orange500.copy(alpha = 0.15f)
+            isCurrentChapter -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
             else -> Color.Transparent
         },
         label = "chapterBg"
@@ -352,13 +325,13 @@ private fun ChapterListItem(
         // Chapter number badge
         Surface(
             shape = RoundedCornerShape(6.dp),
-            color = if (isCurrentChapter) Orange500 else Zinc800
+            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             Text(
                 text = chapterNumber.toString(),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isCurrentChapter) Color.White else Zinc400,
+                color = if (isCurrentChapter) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
@@ -371,7 +344,7 @@ private fun ChapterListItem(
                 text = chapter.name,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isCurrentChapter) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (isCurrentChapter) Orange400 else Color.White,
+                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.alpha(textAlpha)
@@ -387,7 +360,7 @@ private fun ChapterListItem(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = "Read",
-                    tint = if (isCurrentChapter) Orange400 else Zinc600,
+                    tint = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -395,12 +368,12 @@ private fun ChapterListItem(
             if (isCurrentChapter) {
                 Surface(
                     shape = CircleShape,
-                    color = Orange500
+                    color = MaterialTheme.colorScheme.primary
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = "Current",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
                             .size(24.dp)
                             .padding(4.dp)
@@ -423,7 +396,7 @@ private fun EmptyChapterList(searchQuery: String) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = null,
-                tint = Zinc600,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(48.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -433,7 +406,7 @@ private fun EmptyChapterList(searchQuery: String) {
                 else
                     "No chapters available",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Zinc400
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

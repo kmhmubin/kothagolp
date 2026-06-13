@@ -1991,8 +1991,7 @@ private fun ProviderCard(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onFavoriteClick()
-                            },
-                            modifier = Modifier.size(32.dp)
+                            }
                         ) {
                             Icon(
                                 imageVector = if (isFavorite) {
@@ -2003,7 +2002,7 @@ private fun ProviderCard(
                                 contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                                 modifier = Modifier.size(18.dp),
                                 tint = if (isFavorite) {
-                                    Color(0xFFE91E63)
+                                    MaterialTheme.colorScheme.primary
                                 } else {
                                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                 }
@@ -2066,12 +2065,12 @@ private fun ProviderCard(
 private fun CookieStatusBadge(status: CloudflareManager.CookieStatus) {
     val (color, icon, label) = when (status) {
         CloudflareManager.CookieStatus.VALID -> Triple(
-            Color(0xFF10B981),
+            MaterialTheme.colorScheme.secondary,
             Icons.Rounded.VerifiedUser,
             "Active"
         )
         CloudflareManager.CookieStatus.EXPIRED -> Triple(
-            Color(0xFFF59E0B),
+            MaterialTheme.colorScheme.tertiary,
             Icons.Rounded.Warning,
             "Expired"
         )

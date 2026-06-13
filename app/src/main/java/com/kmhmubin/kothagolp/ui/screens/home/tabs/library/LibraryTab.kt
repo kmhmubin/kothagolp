@@ -121,24 +121,17 @@ import com.kmhmubin.kothagolp.ui.components.NovelCard
 import com.kmhmubin.kothagolp.ui.components.NovelCardSkeleton
 import com.kmhmubin.kothagolp.ui.components.NovelListItem
 import com.kmhmubin.kothagolp.ui.components.NovelListItemSkeleton
+import com.kmhmubin.kothagolp.ui.theme.Info
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
+import com.kmhmubin.kothagolp.ui.theme.NewChapters
+import com.kmhmubin.kothagolp.ui.theme.NewChaptersLight
+import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
+import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
+import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
+import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
+import com.kmhmubin.kothagolp.ui.theme.StatusReading
+import com.kmhmubin.kothagolp.ui.theme.StatusSpicy
 import com.kmhmubin.kothagolp.util.calculateGridColumns
-
-// ============================================================================
-// Colors
-// ============================================================================
-
-private object LibraryColors {
-    val NewChapters = Color(0xFF10B981)
-    val NewChaptersLight = Color(0xFF34D399)
-    val Spicy = Color(0xFFF97316)
-    val Reading = Color(0xFF3B82F6)
-    val Completed = Color(0xFF22C55E)
-    val OnHold = Color(0xFFF59E0B)
-    val PlanToRead = Color(0xFF8B5CF6)
-    val Dropped = Color(0xFFEF4444)
-    val Downloaded = Color(0xFF06B6D4)
-}
 
 // ============================================================================
 // Main Library Tab
@@ -445,7 +438,7 @@ private fun NotificationButton(
         modifier = modifier.size(48.dp),
         shape = RoundedCornerShape(16.dp),
         color = if (hasNotifications) {
-            LibraryColors.NewChapters.copy(alpha = 0.15f)
+            NewChapters.copy(alpha = 0.15f)
         } else {
             MaterialTheme.colorScheme.surfaceContainerHigh
         },
@@ -459,7 +452,7 @@ private fun NotificationButton(
                 badge = {
                     if (hasNotifications) {
                         Badge(
-                            containerColor = LibraryColors.NewChapters,
+                            containerColor = NewChapters,
                             contentColor = Color.White,
                             modifier = Modifier
                                 .scale(pulseScale)
@@ -479,7 +472,7 @@ private fun NotificationButton(
                     contentDescription = "Notifications",
                     modifier = Modifier.size(24.dp),
                     tint = if (hasNotifications) {
-                        LibraryColors.NewChapters
+                        NewChapters
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     }
@@ -623,7 +616,7 @@ private fun RefreshProgressCard(
             ) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = LibraryColors.NewChapters.copy(alpha = 0.15f)
+                    color = NewChapters.copy(alpha = 0.15f)
                 ) {
                     Row(
                         modifier = Modifier
@@ -636,13 +629,13 @@ private fun RefreshProgressCard(
                             imageVector = Icons.Rounded.AutoAwesome,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
-                            tint = LibraryColors.NewChapters
+                            tint = NewChapters
                         )
                         Text(
                             text = "Found ${progress.newChaptersFound} new chapters in ${progress.novelsWithNewChapters} novels",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = LibraryColors.NewChapters
+                            color = NewChapters
                         )
                     }
                 }
@@ -1009,43 +1002,43 @@ private fun getFilterEmptyContent(filter: LibraryFilter): FilterEmptyContent {
     return when (filter) {
         LibraryFilter.SPICY -> FilterEmptyContent(
             icon = Icons.Rounded.LocalFireDepartment,
-            color = LibraryColors.Spicy,
+            color = StatusSpicy,
             message = "No spicy novels yet",
             hint = "Assign a novel to Spicy to keep it on this separate shelf"
         )
         LibraryFilter.DOWNLOADED -> FilterEmptyContent(
             icon = Icons.Rounded.CloudDownload,
-            color = LibraryColors.Downloaded,
+            color = Info,
             message = "No downloads yet",
             hint = "Download chapters to read offline"
         )
         LibraryFilter.READING -> FilterEmptyContent(
             icon = Icons.Rounded.MenuBook,
-            color = LibraryColors.Reading,
+            color = StatusReading,
             message = "Nothing in progress",
             hint = "Start reading a novel to see it here"
         )
         LibraryFilter.COMPLETED -> FilterEmptyContent(
             icon = Icons.Rounded.CheckCircle,
-            color = LibraryColors.Completed,
+            color = StatusCompleted,
             message = "No completed novels",
             hint = "Mark novels as completed when you finish them"
         )
         LibraryFilter.ON_HOLD -> FilterEmptyContent(
             icon = Icons.Rounded.PauseCircle,
-            color = LibraryColors.OnHold,
+            color = StatusOnHold,
             message = "Nothing on hold",
             hint = "Put novels on hold when you need a break"
         )
         LibraryFilter.PLAN_TO_READ -> FilterEmptyContent(
             icon = Icons.Rounded.BookmarkAdd,
-            color = LibraryColors.PlanToRead,
+            color = StatusPlanToRead,
             message = "Reading list empty",
             hint = "Add novels you plan to read later"
         )
         LibraryFilter.DROPPED -> FilterEmptyContent(
             icon = Icons.Rounded.Cancel,
-            color = LibraryColors.Dropped,
+            color = StatusDROPPED,
             message = "No dropped novels",
             hint = "Novels you've stopped reading appear here"
         )
@@ -1293,13 +1286,13 @@ private fun LibraryFilterChip(
 private fun getFilterColor(filter: LibraryFilter): Color {
     return when (filter) {
         LibraryFilter.ALL -> MaterialTheme.colorScheme.primary
-        LibraryFilter.SPICY -> LibraryColors.Spicy
-        LibraryFilter.DOWNLOADED -> LibraryColors.Downloaded
-        LibraryFilter.READING -> LibraryColors.Reading
-        LibraryFilter.COMPLETED -> LibraryColors.Completed
-        LibraryFilter.ON_HOLD -> LibraryColors.OnHold
-        LibraryFilter.PLAN_TO_READ -> LibraryColors.PlanToRead
-        LibraryFilter.DROPPED -> LibraryColors.Dropped
+        LibraryFilter.SPICY -> StatusSpicy
+        LibraryFilter.DOWNLOADED -> Info
+        LibraryFilter.READING -> StatusReading
+        LibraryFilter.COMPLETED -> StatusCompleted
+        LibraryFilter.ON_HOLD -> StatusOnHold
+        LibraryFilter.PLAN_TO_READ -> StatusPlanToRead
+        LibraryFilter.DROPPED -> StatusDROPPED
     }
 }
 
