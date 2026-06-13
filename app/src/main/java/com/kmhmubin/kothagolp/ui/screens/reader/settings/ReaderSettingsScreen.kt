@@ -148,6 +148,9 @@ import com.kmhmubin.kothagolp.domain.model.TapZoneConfig
 import com.kmhmubin.kothagolp.domain.model.ThemeCategory
 import com.kmhmubin.kothagolp.domain.model.VolumeKeyDirection
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppSpacing
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import com.kmhmubin.kothagolp.domain.model.FontWeight as ReaderFontWeight
 import com.kmhmubin.kothagolp.domain.model.TextAlign as ReaderTextAlign
 
@@ -415,7 +418,7 @@ private fun LivePreviewSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = previewColors.background,
                 border = BorderStroke(1.dp, colors.border)
             ) {
@@ -476,7 +479,7 @@ private fun SettingsTabRow(
 
             Surface(
                 onClick = { onTabSelected(tab) },
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = if (isSelected)
                     colors.accent.copy(alpha = 0.15f)
                 else
@@ -606,7 +609,7 @@ private fun PresetSelector(
                 item {
                     Surface(
                         onClick = { showAllPresets = true },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = AppShape.extraLarge,
                         color = colors.surface,
                         border = BorderStroke(1.dp, colors.border)
                     ) {
@@ -655,7 +658,7 @@ private fun PresetDetailCard(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = if (isSelected) colors.accent.copy(alpha = 0.1f) else colors.surface,
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,

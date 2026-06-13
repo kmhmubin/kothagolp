@@ -95,6 +95,9 @@ import coil.request.ImageRequest
 import com.kmhmubin.kothagolp.data.repository.LibraryItem
 import com.kmhmubin.kothagolp.ui.components.SwipeDeleteState
 import com.kmhmubin.kothagolp.ui.components.TwoStageSwipeToDelete
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppSpacing
 
 // ============================================================================
 // Colors
@@ -315,7 +318,7 @@ private fun NotificationContent(
                     // Show unacknowledged count if any
                     if (uiState.unacknowledgedCount > 0) {
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = AppShape.small,
                             color = NotificationColors.NewChapters.copy(alpha = 0.15f)
                         ) {
                             Text(
@@ -329,7 +332,7 @@ private fun NotificationContent(
                     }
 
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = AppShape.small,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
                         Text(
@@ -347,7 +350,7 @@ private fun NotificationContent(
         item(key = "swipe_hint") {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
             ) {
                 Text(
@@ -368,7 +371,7 @@ private fun NotificationContent(
             TwoStageSwipeToDelete(
                 onDelete = { onRemoveFromNotifications(displayItem.libraryItem) },
                 deleteButtonWidth = 80.dp,
-                shape = RoundedCornerShape(20.dp)
+                shape = AppShape.extraLarge
             ) { swipeState, onResetSwipe ->
                 NotificationItemCard(
                     displayItem = displayItem,
@@ -450,9 +453,9 @@ private fun NotificationItemCard(
                 scaleX = scale
                 scaleY = scale
             },
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isNew) 2.dp else 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isNew) AppElevation.sm else AppElevation.xs),
         border = if (borderColor != Color.Transparent) BorderStroke(1.dp, borderColor) else null
     ) {
         Column(
@@ -477,7 +480,7 @@ private fun NotificationItemCard(
                         contentDescription = item.novel.name,
                         modifier = Modifier
                             .size(width = 64.dp, height = 90.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(AppShape.medium)
                             .alpha(if (isNew) 1f else 0.7f),
                         contentScale = ContentScale.Crop
                     )
@@ -488,9 +491,9 @@ private fun NotificationItemCard(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(4.dp),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = AppShape.small,
                             color = if (isNew) NotificationColors.NewChapters else NotificationColors.Acknowledged,
-                            shadowElevation = if (isNew) 4.dp else 0.dp
+                            shadowElevation = if (isNew) AppElevation.md else AppElevation.none
                         ) {
                             Text(
                                 text = "+${item.newChapterCount}",
@@ -545,7 +548,7 @@ private fun NotificationItemCard(
 
                     // Provider Badge
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
+                        shape = AppShape.extraSmall,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
                         Text(
@@ -712,7 +715,7 @@ private fun ClearNotificationsDialog(
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(20.dp)
+        shape = AppShape.extraLarge
     )
 }
 
@@ -742,7 +745,7 @@ private fun UpdatesSummaryCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -869,7 +872,7 @@ private fun UpdatesSummaryCard(
 private fun StatBadge(value: String, label: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.large,
         color = Color.White.copy(alpha = 0.2f)
     ) {
         Row(
@@ -925,7 +928,7 @@ private fun SummaryActionButton(
     Surface(
         onClick = onClick,
         modifier = modifier.graphicsLayer { scaleX = scale; scaleY = scale },
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.large,
         color = containerColor,
         interactionSource = interactionSource,
         enabled = !isLoading
@@ -979,7 +982,7 @@ private fun NotificationPrimaryButton(
     Surface(
         onClick = onClick,
         modifier = modifier.graphicsLayer { scaleX = scale; scaleY = scale },
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.large,
         color = containerColor,
         interactionSource = interactionSource
     ) {
@@ -1028,7 +1031,7 @@ private fun NotificationSecondaryButton(
         modifier = modifier
             .size(48.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale },
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.large,
         color = containerColor,
         interactionSource = interactionSource,
         enabled = !isLoading
@@ -1067,7 +1070,7 @@ private fun NotificationEmptyState(modifier: Modifier = Modifier) {
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Card(
-            shape = RoundedCornerShape(32.dp),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             modifier = Modifier.padding(32.dp)
         ) {
@@ -1116,7 +1119,7 @@ private fun NotificationEmptyState(modifier: Modifier = Modifier) {
                     )
                 }
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = AppShape.large,
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                 ) {
                     Row(
@@ -1176,14 +1179,14 @@ private fun NotificationLoadingState(
                     modifier = Modifier
                         .width(120.dp)
                         .height(20.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 )
                 Box(
                     modifier = Modifier
                         .width(60.dp)
                         .height(28.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(AppShape.small)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 )
             }
@@ -1213,7 +1216,7 @@ private fun NotificationSummarySkeleton(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = shimmerAlpha)
         )
@@ -1233,21 +1236,21 @@ private fun NotificationSummarySkeleton(
                         modifier = Modifier
                             .width(150.dp)
                             .height(24.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(AppShape.small)
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                     )
                     Box(
                         modifier = Modifier
                             .width(200.dp)
                             .height(16.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(AppShape.extraSmall)
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                     )
                 }
                 Box(
                     modifier = Modifier
                         .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(AppShape.small)
                         .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 )
             }
@@ -1261,7 +1264,7 @@ private fun NotificationSummarySkeleton(
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(AppShape.large)
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                     )
                 }
@@ -1276,7 +1279,7 @@ private fun NotificationSummarySkeleton(
                         modifier = Modifier
                             .weight(1f)
                             .height(46.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(AppShape.large)
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                     )
                 }
@@ -1302,7 +1305,7 @@ private fun NotificationItemSkeleton(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = shimmerAlpha)
         )
@@ -1321,7 +1324,7 @@ private fun NotificationItemSkeleton(
                 Box(
                     modifier = Modifier
                         .size(width = 64.dp, height = 90.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(AppShape.medium)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 )
 
@@ -1334,28 +1337,28 @@ private fun NotificationItemSkeleton(
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
                             .height(20.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(AppShape.extraSmall)
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     )
                     Box(
                         modifier = Modifier
                             .width(80.dp)
                             .height(22.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(AppShape.extraSmall)
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     )
                     Box(
                         modifier = Modifier
                             .width(120.dp)
                             .height(16.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(AppShape.extraSmall)
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     )
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(0.7f)
                             .height(16.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(AppShape.extraSmall)
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     )
                 }
@@ -1370,19 +1373,19 @@ private fun NotificationItemSkeleton(
                     modifier = Modifier
                         .weight(1f)
                         .height(44.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(AppShape.large)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 )
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(AppShape.large)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 )
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(AppShape.large)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 )
             }

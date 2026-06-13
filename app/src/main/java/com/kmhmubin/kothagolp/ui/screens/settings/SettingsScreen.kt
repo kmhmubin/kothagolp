@@ -34,7 +34,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
@@ -144,6 +143,9 @@ import com.kmhmubin.kothagolp.source.SourceLoader
 import com.kmhmubin.kothagolp.source.SourceSyncWorker
 import com.kmhmubin.kothagolp.ui.components.ColorPickerDialog
 import com.kmhmubin.kothagolp.ui.navigation.NavRoutes
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppSpacing
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -189,7 +191,7 @@ fun SettingsScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer
                     ),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = AppShape.large
                 ) {
                     Column {
                         SettingsNavRow(
@@ -241,7 +243,7 @@ fun SettingsScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer
                     ),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = AppShape.large
                 ) {
                     Column {
                         SettingsNavRow(
@@ -895,7 +897,7 @@ private fun SectionHeader(title: String, icon: ImageVector) {
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(10.dp)),
+                .background(MaterialTheme.colorScheme.primaryContainer, AppShape.medium),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, null, Modifier.size(20.dp), MaterialTheme.colorScheme.onPrimaryContainer)
@@ -909,7 +911,7 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        shape = RoundedCornerShape(16.dp)
+        shape = AppShape.large
     ) {
         Column(Modifier.padding(16.dp), content = content)
     }
@@ -970,7 +972,7 @@ private fun SettingsNavRow(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .background(iconTint.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                .background(iconTint.copy(alpha = 0.15f), AppShape.medium),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, null, Modifier.size(22.dp), iconTint)
@@ -1059,10 +1061,10 @@ private fun SelectableChip(
 
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .clickable(onClick = onClick),
         color = bg,
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     ) {
         Column(
             Modifier.padding(12.dp),
@@ -1094,7 +1096,7 @@ private fun ToggleItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .clickable(enabled) {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 onCheckedChange(!checked)
@@ -1143,7 +1145,7 @@ private fun DropdownItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .clickable {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 expanded = true
@@ -1219,7 +1221,7 @@ private fun SliderItem(
             }
             Surface(
                 color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(8.dp)
+                shape = AppShape.small
             ) {
                 Text(
                     valueLabel,
@@ -1276,7 +1278,7 @@ private fun ClickableItem(
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .clickable {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 onClick()
@@ -1313,7 +1315,7 @@ private fun NavigationItem(
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .clickable {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 onClick()
@@ -1369,13 +1371,13 @@ private fun DisplayModeRow(
                 Modifier
                     .weight(1f)
                     .height(36.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(AppShape.small)
                     .clickable {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         onSelect(mode)
                     },
                 color = bg,
-                shape = RoundedCornerShape(8.dp)
+                shape = AppShape.small
             ) {
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text(
@@ -1429,7 +1431,7 @@ private fun GridColumnsRow(
                 Modifier
                     .weight(1f)
                     .aspectRatio(1.2f)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(AppShape.small)
                     .background(bg)
                     .clickable {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1622,19 +1624,19 @@ private fun ThemePresetCard(
     Card(
         modifier = Modifier
             .width(100.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .clickable(onClick = onClick)
             .then(
                 if (isSelected) Modifier.border(
                     2.dp,
                     borderColor,
-                    RoundedCornerShape(12.dp)
+                    AppShape.medium
                 ) else Modifier
             ),
         colors = CardDefaults.cardColors(
             containerColor = Color(colors.backgroundColor)
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     ) {
         Column(
             modifier = Modifier.padding(8.dp),
@@ -1699,7 +1701,7 @@ private fun ColorPickerRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .clickable {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 onClick()
@@ -1711,12 +1713,12 @@ private fun ColorPickerRow(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(AppShape.medium)
                 .background(color)
                 .border(
                     width = 2.dp,
                     color = MaterialTheme.colorScheme.outline,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = AppShape.medium
                 )
         )
 
@@ -1735,7 +1737,7 @@ private fun ColorPickerRow(
 
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(6.dp)
+            shape = AppShape.extraSmall
         ) {
             Text(
                 colorToHex(color),
@@ -1761,7 +1763,7 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
         colors = CardDefaults.cardColors(
             containerColor = Color(colors.backgroundColor)
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = AppShape.large
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -1775,7 +1777,7 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
 
             Surface(
                 color = Color(colors.surfaceColor),
-                shape = RoundedCornerShape(12.dp)
+                shape = AppShape.medium
             ) {
                 Row(
                     modifier = Modifier
@@ -1787,7 +1789,7 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(AppShape.small)
                             .background(Color(colors.primaryColor).copy(alpha = 0.3f)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -1814,7 +1816,7 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
 
                     Surface(
                         color = Color(colors.primaryColor),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = AppShape.small
                     ) {
                         Text(
                             "Read",
@@ -1832,7 +1834,7 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
             ) {
                 Surface(
                     color = Color(colors.primaryColor).copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = AppShape.extraLarge
                 ) {
                     Text(
                         "Fantasy",
@@ -1843,7 +1845,7 @@ private fun ThemePreviewCard(colors: CustomThemeColors) {
                 }
                 Surface(
                     color = Color(colors.secondaryColor).copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = AppShape.extraLarge
                 ) {
                     Text(
                         "Adventure",
@@ -1963,7 +1965,7 @@ private fun ProviderItem(
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .zIndex(if (isDragging) 1f else 0f),
         color = bg,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         shadowElevation = elevation
     ) {
         Row(
@@ -2039,7 +2041,7 @@ private fun LibraryShelfItem(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = bg,
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     ) {
         Row(
             Modifier.padding(12.dp),
@@ -2127,6 +2129,6 @@ private fun ResetConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit
             }
         },
         dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
-        shape = RoundedCornerShape(20.dp)
+        shape = AppShape.extraLarge
     )
 }

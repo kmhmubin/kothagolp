@@ -85,6 +85,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.kmhmubin.kothagolp.service.QueuedDownload
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppSpacing
 
 // ================================================================
 // DATA CLASSES
@@ -473,7 +476,7 @@ private fun ActiveDownloadCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
     ) {
         Column(
@@ -508,7 +511,7 @@ private fun ActiveDownloadCard(
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 ) {
                     Text(
@@ -604,7 +607,7 @@ private fun ActiveDownloadCard(
                     Button(
                         onClick = onResume,
                         modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = AppShape.large,
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Icon(Icons.Rounded.PlayArrow, null, Modifier.size(20.dp))
@@ -615,7 +618,7 @@ private fun ActiveDownloadCard(
                     FilledTonalButton(
                         onClick = onPause,
                         modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = AppShape.large,
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Icon(Icons.Rounded.Pause, null, Modifier.size(20.dp))
@@ -627,7 +630,7 @@ private fun ActiveDownloadCard(
                 OutlinedButton(
                     onClick = onCancel,
                     modifier = Modifier.height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = AppShape.large,
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     ),
@@ -659,7 +662,7 @@ private fun QueuedStatusCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f))
     ) {
         Column(

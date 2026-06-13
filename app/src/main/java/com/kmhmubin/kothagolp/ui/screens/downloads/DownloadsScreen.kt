@@ -119,7 +119,11 @@ import coil.compose.AsyncImage
 import com.kmhmubin.kothagolp.epub.EpubExportOptions
 import com.kmhmubin.kothagolp.service.DownloadPriority
 import com.kmhmubin.kothagolp.ui.screens.downloads.components.EpubExportDialog
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppSpacing
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
+import com.kmhmubin.kothagolp.ui.theme.NewChapters
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -355,7 +359,7 @@ fun DownloadsScreen(
                     Spacer(Modifier.height(8.dp))
                     Surface(
                         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = AppShape.small
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
@@ -429,7 +433,7 @@ fun DownloadsScreen(
                         Spacer(Modifier.height(8.dp))
                         Surface(
                             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            shape = RoundedCornerShape(8.dp)
+                            shape = AppShape.small
                         ) {
                             Text(
                                 text = "$queueCount queued downloads will continue after cancellation.",
@@ -529,7 +533,7 @@ fun DownloadsScreen(
                     Spacer(Modifier.height(8.dp))
                     Surface(
                         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = AppShape.small
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
@@ -622,7 +626,7 @@ fun DownloadsScreen(
                     if (failed.errorMessage.isNotBlank()) {
                         Surface(
                             color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = AppShape.small
                         ) {
                             Text(
                                 text = "Error: ${failed.errorMessage}",
@@ -797,7 +801,7 @@ private fun DownloadsContent(
                                 y = if (isDragging) dragOffset.roundToInt() else 0
                             )
                         }
-                        .shadow(elevation, RoundedCornerShape(12.dp))
+                        .shadow(elevation, AppShape.medium)
                         .pointerInput(Unit) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = {
@@ -888,7 +892,7 @@ private fun StorageSummaryCard(
     failedCount: Int
 ) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         )
@@ -948,7 +952,7 @@ private fun StatusChip(
 ) {
     Surface(
         color = color.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(8.dp)
+        shape = AppShape.small
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -1008,7 +1012,7 @@ private fun FailedDownloadCard(
     onDismissClick: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
         )
@@ -1107,7 +1111,7 @@ private fun CurrentDownloadCard(
     )
 
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = if (download.isPaused) {
                 MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
@@ -1115,7 +1119,7 @@ private fun CurrentDownloadCard(
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
             }
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = AppElevation.sm)
     ) {
         Column(
             modifier = Modifier
@@ -1129,10 +1133,10 @@ private fun CurrentDownloadCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.size(60.dp),
-                    shadowElevation = 2.dp
+                    shadowElevation = AppElevation.sm
                 ) {
                     if (!download.coverUrl.isNullOrBlank()) {
                         AsyncImage(
@@ -1287,7 +1291,7 @@ private fun CurrentDownloadCard(
                                 Text(
                                     text = "✓ ${download.successCount}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF10B981)
+                                    color = NewChapters
                                 )
                             }
                             if (download.failedCount > 0) {
@@ -1320,7 +1324,7 @@ private fun PriorityBadge(priority: DownloadPriority) {
     when (priority) {
         DownloadPriority.HIGH -> {
             Surface(
-                shape = RoundedCornerShape(4.dp),
+                shape = AppShape.extraSmall,
                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
             ) {
                 Row(
@@ -1346,7 +1350,7 @@ private fun PriorityBadge(priority: DownloadPriority) {
         }
         DownloadPriority.LOW -> {
             Surface(
-                shape = RoundedCornerShape(4.dp),
+                shape = AppShape.extraSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
             ) {
                 Text(
@@ -1381,7 +1385,7 @@ private fun QueuedDownloadCard(
     var showMenu by remember { mutableStateOf(false) }
 
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (isDragging) {
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
@@ -1423,7 +1427,7 @@ private fun QueuedDownloadCard(
             }
 
             Surface(
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(44.dp)
             ) {
@@ -1620,7 +1624,7 @@ private fun SwipeableDownloadedNovelCard(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(AppShape.large)
                         .background(MaterialTheme.colorScheme.error),
                     contentAlignment = Alignment.CenterEnd
                 ) {
@@ -1657,7 +1661,7 @@ private fun DownloadedNovelCard(
 ) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -1671,10 +1675,10 @@ private fun DownloadedNovelCard(
         ) {
             // Cover
             Surface(
-                shape = RoundedCornerShape(10.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.size(64.dp),
-                shadowElevation = 1.dp
+                shadowElevation = AppElevation.xs
             ) {
                 if (!novel.coverUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -1716,8 +1720,8 @@ private fun DownloadedNovelCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFF10B981).copy(alpha = 0.12f)
+                        shape = AppShape.extraSmall,
+                        color = NewChapters.copy(alpha = 0.12f)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -1728,13 +1732,13 @@ private fun DownloadedNovelCard(
                                 imageVector = Icons.Rounded.CheckCircle,
                                 contentDescription = null,
                                 modifier = Modifier.size(12.dp),
-                                tint = Color(0xFF10B981)
+                                tint = NewChapters
                             )
                             Text(
                                 text = "${novel.downloadedChapters}",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF10B981)
+                                color = NewChapters
                             )
                         }
                     }
@@ -1885,7 +1889,7 @@ private fun SectionHeaderWithSort(
 
         Surface(
             onClick = onToggleSortOrder,
-            shape = RoundedCornerShape(8.dp),
+            shape = AppShape.small,
             color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             Row(
@@ -1922,7 +1926,7 @@ private fun DownloadsEmptyState() {
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
@@ -1973,7 +1977,7 @@ private fun DownloadsEmptyState() {
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 ) {
                     Row(

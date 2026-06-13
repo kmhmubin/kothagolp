@@ -131,6 +131,9 @@ import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
 import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
 import com.kmhmubin.kothagolp.ui.theme.StatusReading
 import com.kmhmubin.kothagolp.ui.theme.StatusSpicy
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppSpacing
 import com.kmhmubin.kothagolp.util.calculateGridColumns
 
 // ============================================================================
@@ -321,9 +324,9 @@ private fun LibrarySearchBarCompact(
 
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 2.dp
+        tonalElevation = AppElevation.sm
     ) {
         Row(
             modifier = Modifier
@@ -376,7 +379,7 @@ private fun LibrarySearchBarCompact(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = AppShape.small,
                         color = if (resultCount > 0) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
@@ -436,13 +439,13 @@ private fun NotificationButton(
     Surface(
         onClick = onClick,
         modifier = modifier.size(48.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = if (hasNotifications) {
             NewChapters.copy(alpha = 0.15f)
         } else {
             MaterialTheme.colorScheme.surfaceContainerHigh
         },
-        tonalElevation = 2.dp
+        tonalElevation = AppElevation.sm
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -499,9 +502,9 @@ private fun RefreshProgressCard(
 
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
-        tonalElevation = 4.dp
+        tonalElevation = AppElevation.md
     ) {
         Column(
             modifier = Modifier
@@ -531,7 +534,7 @@ private fun RefreshProgressCard(
                     )
 
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = AppShape.medium,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                         modifier = Modifier.size(44.dp)
                     ) {
@@ -565,7 +568,7 @@ private fun RefreshProgressCard(
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                 ) {
                     Row(
@@ -603,7 +606,7 @@ private fun RefreshProgressCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
+                    .clip(AppShape.extraSmall),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
                 strokeCap = StrokeCap.Round
@@ -615,7 +618,7 @@ private fun RefreshProgressCard(
                 exit = shrinkVertically() + fadeOut()
             ) {
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = AppShape.medium,
                     color = NewChapters.copy(alpha = 0.15f)
                 ) {
                     Row(
@@ -840,7 +843,7 @@ private fun LibraryEmptyState(
     totalItems: Int
 ) {
     Card(
-        shape = RoundedCornerShape(28.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
@@ -962,7 +965,7 @@ private fun LibraryEmptyState(
                     }
 
                     Surface(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = AppShape.large,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                     ) {
                         Row(
@@ -1090,13 +1093,13 @@ private fun LibraryLoadingSkeleton(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(AppShape.large)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         )
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(AppShape.large)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         )
                     }
@@ -1133,13 +1136,13 @@ private fun LibraryLoadingSkeleton(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(AppShape.large)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         )
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(AppShape.large)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         )
                     }
