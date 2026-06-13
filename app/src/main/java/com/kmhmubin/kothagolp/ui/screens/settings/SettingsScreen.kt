@@ -691,7 +691,10 @@ fun SettingsReaderPrefsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsSourcesScreen(onBack: () -> Unit) {
+fun SettingsSourcesScreen(
+    onBack: () -> Unit,
+    onNavigateToMigration: () -> Unit = {}
+) {
     val context = LocalContext.current
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
     val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
@@ -787,6 +790,19 @@ fun SettingsSourcesScreen(onBack: () -> Unit) {
                         preferencesManager.setProviderEnabled(name, enabled)
                     }
                 )
+            }
+
+            item { SectionHeader("Migration", Icons.Outlined.SwapVert) }
+            item {
+                SettingsCard {
+                    ClickableItem(
+                        icon = Icons.Outlined.SwapVert,
+                        title = "Migrate Sources",
+                        subtitle = "Move library novels from one source to another",
+                        tint = MaterialTheme.colorScheme.primary,
+                        onClick = onNavigateToMigration
+                    )
+                }
             }
 
             item { Spacer(Modifier.height(80.dp)) }

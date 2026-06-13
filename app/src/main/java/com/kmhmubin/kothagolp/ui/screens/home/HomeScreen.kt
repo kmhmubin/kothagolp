@@ -170,7 +170,8 @@ fun HomeScreen(
                             appSettings = appSettings,
                             onNavigateToProvider = onNavigateToProviderBrowse,
                             onNavigateToDetails = onNavigateToDetails,
-                            onNavigateToReader = onNavigateToReader
+                            onNavigateToReader = onNavigateToReader,
+                            onNavigateToMigration = onNavigateToMigration
                         )
                     }
 
@@ -199,7 +200,8 @@ fun HomeScreen(
                             onNavigateToDownloads = onNavigateToDownloads,
                             onNavigateToAbout = { onNavigateToAbout() },
                             onNavigateToSettings = onNavigateToSettings,
-                            onNavigateToStorage = onNavigateToStorage
+                            onNavigateToStorage = onNavigateToStorage,
+                            onNavigateToMigration = onNavigateToMigration
                         )
                     }
                 }

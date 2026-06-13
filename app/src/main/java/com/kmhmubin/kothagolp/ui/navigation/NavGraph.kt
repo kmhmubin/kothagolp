@@ -177,7 +177,12 @@ fun KothagolpNavGraph(
         }
 
         composable(route = NavRoutes.SettingsSources.route) {
-            SettingsSourcesScreen(onBack = { navController.popBackStack() })
+            SettingsSourcesScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToMigration = {
+                    navController.navigate(NavRoutes.MigrationSources.route)
+                }
+            )
         }
 
         composable(route = NavRoutes.SettingsAbout.route) {
