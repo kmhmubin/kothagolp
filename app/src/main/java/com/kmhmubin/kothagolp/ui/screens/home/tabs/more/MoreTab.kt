@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.CompareArrows
@@ -42,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import java.time.LocalTime
 
@@ -255,7 +255,7 @@ private fun MoreHeader(
                 // Streak Badge
                 if (currentStreak > 0 || isStreakActive) {
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = AppShape.extraLarge,
                         color = if (isStreakActive) {
                             MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
                         } else {
@@ -330,7 +330,7 @@ private fun QuickStatItem(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = color.copy(alpha = 0.1f)
     ) {
         Column(
@@ -368,7 +368,7 @@ private fun MoreMenuItem(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -418,7 +418,7 @@ private fun MoreMenuItem(
                     // Badge for active downloads
                     if (badge != null) {
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = AppShape.small,
                             color = iconTint
                         ) {
                             Text(

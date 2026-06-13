@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -55,6 +54,7 @@ import com.kmhmubin.kothagolp.domain.model.AuthorNoteDisplayMode
 import com.kmhmubin.kothagolp.ui.screens.reader.logic.AuthorNoteSection
 import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderDisplayItem
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 @Composable
 fun AuthorNoteItem(
@@ -110,7 +110,7 @@ fun AuthorNoteItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(AppShape.small)
                 .background(noteBackground)
                 .then(
                     // Only make the whole card clickable when collapsed
@@ -296,7 +296,7 @@ private fun AuthorNoteImage(
             contentDescription = altText,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(AppShape.small)
                 .background(colors.background.copy(alpha = 0.5f)),
             contentScale = ContentScale.FillWidth
         )

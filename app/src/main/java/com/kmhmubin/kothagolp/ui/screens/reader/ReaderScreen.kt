@@ -72,6 +72,7 @@ import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderUiState
 import com.kmhmubin.kothagolp.ui.screens.reader.model.SentenceBoundsInSegment
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderDefaults
+import com.kmhmubin.kothagolp.ui.theme.Warning
 import com.kmhmubin.kothagolp.util.ImmersiveModeEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -1065,7 +1066,7 @@ private fun WarmthOverlay(
 
     if (alpha > 0f) {
         Box(
-            modifier = modifier.background(Color(0xFFFF9800).copy(alpha = alpha))
+            modifier = modifier.background(Warning.copy(alpha = alpha))
         )
     }
 }

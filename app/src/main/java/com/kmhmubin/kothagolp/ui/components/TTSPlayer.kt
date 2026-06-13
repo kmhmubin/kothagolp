@@ -72,31 +72,15 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 // =============================================================================
 // DESIGN TOKENS
 // =============================================================================
 
-private object PlayerColors {
-    val surface = Color(0xFF18181B)
-    val surfaceVariant = Color(0xFF27272A)
-
-    val accent = Color(0xFFFF6B35)
-    val accentGlow = Color(0xFFFF6B35).copy(alpha = 0.2f)
-
-    val iconPrimary = Color(0xFFFAFAFA)
-    val iconSecondary = Color(0xFFA1A1AA)
-    val iconDisabled = Color(0xFF52525B)
-
-    val textSecondary = Color(0xFFA1A1AA)
-    val textMuted = Color(0xFF71717A)
-
-    val progressTrack = Color(0xFF3F3F46)
-    val progressActive = Color(0xFFFF6B35)
-}
+private val TtsAccent = Color(0xFFFF6B35)
 
 private object PlayerSizes {
-    val cornerRadius = 24.dp
     val playButtonSize = 64.dp
     val navButtonSize = 48.dp
     val actionButtonSize = 40.dp
@@ -166,8 +150,8 @@ fun TTSPlayer(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter),
-            shape = RoundedCornerShape(PlayerSizes.cornerRadius),
-            color = PlayerColors.surface,
+            shape = AppShape.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainer,
             shadowElevation = 24.dp
         ) {
             Column {
@@ -248,7 +232,7 @@ private fun PlayingGlow(
                 .drawBehind {
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(PlayerColors.accentGlow, Color.Transparent),
+                            colors = listOf(TtsAccent.copy(alpha = 0.2f), Color.Transparent),
                             center = Offset(size.width / 2, size.height * 0.8f),
                             radius = size.width * 0.5f
                         )
@@ -296,18 +280,18 @@ private fun ChapterTTSProgressSection(
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Medium
                     ),
-                    color = PlayerColors.textSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // Chapter badge
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = PlayerColors.surfaceVariant
+                    shape = AppShape.small,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
                     Text(
                         text = "Ch. $chapterNumber/$totalChapters",
                         style = MaterialTheme.typography.labelSmall,
-                        color = PlayerColors.textMuted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -322,18 +306,18 @@ private fun ChapterTTSProgressSection(
                     imageVector = Icons.Rounded.Timer,
                     contentDescription = null,
                     modifier = Modifier.size(12.dp),
-                    tint = PlayerColors.textMuted
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
                 Text(
                     text = timeRemaining,
                     style = MaterialTheme.typography.labelSmall,
-                    color = PlayerColors.textMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
 
                 Box(
                     modifier = Modifier
                         .size(3.dp)
-                        .background(PlayerColors.textMuted, CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), CircleShape)
                 )
 
                 Text(
@@ -341,7 +325,7 @@ private fun ChapterTTSProgressSection(
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = PlayerColors.accent
+                    color = TtsAccent
                 )
             }
         }
@@ -379,7 +363,7 @@ private fun PlayingIndicator(isPlaying: Boolean) {
 
             val h = if (isPlaying) height else 6f
             val color by animateColorAsState(
-                targetValue = if (isPlaying) PlayerColors.accent else PlayerColors.textMuted,
+                targetValue = if (isPlaying) TtsAccent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 label = "color"
             )
 
@@ -420,13 +404,13 @@ private fun ProgressBar(progress: Float, isPlaying: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .height(PlayerSizes.progressHeight)
-            .clip(RoundedCornerShape(PlayerSizes.progressHeight / 2))
+            .clip(AppShape.extraSmall)
     ) {
         // Track
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(PlayerColors.progressTrack)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         )
 
         // Fill
@@ -434,12 +418,12 @@ private fun ProgressBar(progress: Float, isPlaying: Boolean) {
             modifier = Modifier
                 .fillMaxWidth(animatedProgress.coerceAtLeast(0.001f))
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(PlayerSizes.progressHeight / 2))
+                .clip(AppShape.extraSmall)
                 .background(
                     Brush.horizontalGradient(
                         listOf(
-                            PlayerColors.progressActive.copy(alpha = 0.8f),
-                            PlayerColors.progressActive
+                            TtsAccent.copy(alpha = 0.8f),
+                            TtsAccent
                         )
                     )
                 )
@@ -473,7 +457,7 @@ private fun ProgressBar(progress: Float, isPlaying: Boolean) {
                         .size(PlayerSizes.progressHeight + 4.dp)
                         .offset(x = (PlayerSizes.progressHeight + 4.dp) / 2)
                         .shadow(if (isPlaying) 4.dp else 2.dp, CircleShape)
-                        .background(PlayerColors.progressActive, CircleShape)
+                        .background(TtsAccent, CircleShape)
                 )
             }
         }
@@ -550,14 +534,14 @@ private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(PlayerSizes.playButtonSize + 16.dp)
                     .blur(16.dp)
-                    .background(PlayerColors.accentGlow, CircleShape)
+                    .background(TtsAccent.copy(alpha = 0.2f), CircleShape)
             )
         }
 
         Surface(
             onClick = onClick,
             shape = CircleShape,
-            color = PlayerColors.accent,
+            color = TtsAccent,
             shadowElevation = shadow,
             modifier = Modifier.size(PlayerSizes.playButtonSize)
         ) {
@@ -585,7 +569,7 @@ private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
 @Composable
 private fun NavButton(icon: ImageVector, enabled: Boolean, onClick: () -> Unit, desc: String) {
     val tint by animateColorAsState(
-        targetValue = if (enabled) PlayerColors.iconPrimary else PlayerColors.iconDisabled,
+        targetValue = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
         label = "tint"
     )
     val scale by animateFloatAsState(
@@ -611,11 +595,11 @@ private fun ActionButton(icon: ImageVector, onClick: () -> Unit, desc: String) {
     Surface(
         onClick = onClick,
         shape = CircleShape,
-        color = PlayerColors.surfaceVariant,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.size(PlayerSizes.actionButtonSize)
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            Icon(icon, desc, Modifier.size(20.dp), PlayerColors.iconSecondary)
+            Icon(icon, desc, Modifier.size(20.dp), MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

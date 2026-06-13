@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.domain.model.ProgressStyle
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderDefaults
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 // =============================================================================
 // TOP BAR
@@ -343,7 +344,7 @@ fun TTSActiveIndicator(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = colors.accent.copy(alpha = 0.15f)
     ) {
         Row(

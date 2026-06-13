@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
@@ -69,7 +69,7 @@ fun BudgetStatusCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
@@ -205,7 +205,7 @@ fun BudgetStatusCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(AppShape.medium)
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -269,7 +269,7 @@ private fun ProviderBudgetRow(
     }
 
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp
     ) {
@@ -311,7 +311,7 @@ private fun ProviderBudgetRow(
 
                     if (status.inCooldown) {
                         Surface(
-                            shape = RoundedCornerShape(6.dp),
+                            shape = AppShape.extraSmall,
                             color = MaterialTheme.colorScheme.errorContainer
                         ) {
                             Row(
@@ -338,7 +338,7 @@ private fun ProviderBudgetRow(
 
                 // Remaining count badge
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = statusColor.copy(alpha = 0.1f)
                 ) {
                     Text(
@@ -356,14 +356,14 @@ private fun ProviderBudgetRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(AppShape.extraSmall)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(animatedProgress)
                         .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(AppShape.extraSmall)
                         .background(
                             Brush.horizontalGradient(
                                 colors = listOf(

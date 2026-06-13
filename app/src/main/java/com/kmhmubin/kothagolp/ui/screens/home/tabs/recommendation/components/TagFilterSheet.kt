@@ -19,7 +19,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Clear
@@ -238,7 +238,7 @@ fun TagFilterSheet(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = AppShape.large,
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -282,7 +282,7 @@ fun TagFilterSheet(
 
             // Legend
             Surface(
-                shape = RoundedCornerShape(14.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerLow
             ) {
                 Row(
@@ -367,7 +367,7 @@ private fun FilterCountChip(
     containerColor: Color
 ) {
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = AppShape.small,
         color = containerColor
     ) {
         Row(
@@ -410,7 +410,7 @@ private fun QuickFilterChip(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         border = null,
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     )
 }
 
@@ -460,7 +460,7 @@ private fun TagFilterRow(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = backgroundColor
     ) {
         Row(

@@ -40,7 +40,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.BrokenImage
@@ -97,6 +96,7 @@ import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -380,7 +380,7 @@ fun CoverZoomDialog(
                     )
                     Surface(
                         onClick = { openInBrowser() },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = AppShape.extraLarge,
                         color = Color.White.copy(alpha = 0.15f)
                     ) {
                         Row(
@@ -460,7 +460,7 @@ fun CoverZoomDialog(
             ) {
                 Surface(
                     color = Color.Black.copy(alpha = 0.6f),
-                    shape = RoundedCornerShape(24.dp)
+                    shape = AppShape.extraLarge
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -496,7 +496,7 @@ fun CoverZoomDialog(
                 ) {
                     Surface(
                         color = Color.Black.copy(alpha = 0.85f),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = AppShape.extraLarge,
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
                     ) {
                         Row(
@@ -531,7 +531,7 @@ fun CoverZoomDialog(
                     snackbarData = data,
                     containerColor = Color.DarkGray,
                     contentColor = Color.White,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = AppShape.medium
                 )
             }
         }
@@ -571,7 +571,7 @@ private fun TopControlBar(
     ) {
         Surface(
             color = Color.Black.copy(alpha = 0.65f),
-            shape = RoundedCornerShape(20.dp),
+            shape = AppShape.extraLarge,
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
         ) {
             Text(
@@ -658,7 +658,7 @@ private fun BottomActionBar(
     ) {
         Surface(
             color = Color.Black.copy(alpha = 0.75f),
-            shape = RoundedCornerShape(28.dp),
+            shape = AppShape.extraLarge,
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
         ) {
             Row(
@@ -711,7 +711,7 @@ private fun BottomActionBar(
 
         Surface(
             color = Color.Black.copy(alpha = 0.6f),
-            shape = RoundedCornerShape(14.dp),
+            shape = AppShape.medium,
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
         ) {
             Text(
@@ -743,7 +743,7 @@ private fun ActionButton(
     Surface(
         onClick = onClick,
         enabled = isEnabled,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = Color.Transparent
     ) {
         Column(
@@ -977,7 +977,7 @@ private fun CoverMenuDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color.DarkGray,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         title = {
             Text(
                 text = "Cover Options",
@@ -993,7 +993,7 @@ private fun CoverMenuDialog(
                 // Change Cover
                 Surface(
                     onClick = onChangeCover,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = Color.White.copy(alpha = 0.1f)
                 ) {
                     Row(
@@ -1028,7 +1028,7 @@ private fun CoverMenuDialog(
                 // Reset to Original
                 Surface(
                     onClick = onResetCover,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = Color.White.copy(alpha = 0.1f)
                 ) {
                     Row(

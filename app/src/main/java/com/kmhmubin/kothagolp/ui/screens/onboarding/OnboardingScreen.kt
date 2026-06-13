@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -64,6 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer.TagCategory
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.recommendation.model.GenreOption
 import com.kmhmubin.kothagolp.recommendation.model.OnboardingGenres
 
@@ -220,7 +220,7 @@ private fun WelcomeStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = AppShape.large
         ) {
             Text("Get Started", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.width(8.dp))
@@ -310,7 +310,7 @@ private fun ProviderCard(
 ) {
     Surface(
         onClick = onToggle,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = if (isSelected) {
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
         } else {
@@ -356,7 +356,7 @@ private fun ProviderCard(
                 ) {
                     // Novel count chip
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = AppShape.small,
                         color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Text(
@@ -369,7 +369,7 @@ private fun ProviderCard(
                     // Genre chips
                     provider.genres.take(2).forEach { genre ->
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = AppShape.small,
                             color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
                         ) {
                             Text(
@@ -538,7 +538,7 @@ private fun GenreChip(
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = containerColor,
         border = if (preference != GenrePreference.NEUTRAL) {
             BorderStroke(1.dp, borderColor)
@@ -641,7 +641,7 @@ private fun ContentStep(
             Spacer(modifier = Modifier.height(24.dp))
 
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerLow
             ) {
                 Row(
@@ -770,7 +770,7 @@ private fun ReadyStep(
 
         // Summary
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = AppShape.large,
             color = MaterialTheme.colorScheme.surfaceContainerLow
         ) {
             Column(
@@ -800,7 +800,7 @@ private fun ReadyStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = AppShape.large
         ) {
             Icon(Icons.Rounded.RocketLaunch, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -866,7 +866,7 @@ private fun SeedingStep(
     ) {
         // Animated loading
         Surface(
-            shape = RoundedCornerShape(28.dp),
+            shape = AppShape.extraLarge,
             color = MaterialTheme.colorScheme.primaryContainer,
             tonalElevation = 4.dp,
             modifier = Modifier.size(110.dp)
@@ -902,7 +902,7 @@ private fun SeedingStep(
             Spacer(modifier = Modifier.height(24.dp))
 
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -916,7 +916,7 @@ private fun SeedingStep(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(10.dp)
-                            .clip(RoundedCornerShape(5.dp)),
+                            .clip(AppShape.extraSmall),
                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
 
@@ -1004,7 +1004,7 @@ private fun StepNavigation(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(14.dp)
+                shape = AppShape.medium
             ) {
                 Text(nextLabel, style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.width(8.dp))
