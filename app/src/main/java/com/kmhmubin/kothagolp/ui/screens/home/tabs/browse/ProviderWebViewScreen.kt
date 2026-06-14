@@ -2044,7 +2044,7 @@ private fun StatusBadge(status: String) {
     }
 
     Surface(
-        shape = RoundedCornerShape(6.dp),
+        shape = AppShape.extraSmall,
         color = color.copy(alpha = 0.15f)
     ) {
         Text(
@@ -2088,7 +2088,7 @@ private fun StatItem(
 @Composable
 private fun GenreChip(genre: String) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.secondaryContainer
     ) {
         Text(
@@ -2175,7 +2175,7 @@ private fun EnhancedCookieStatusIndicator(status: CookieDisplayStatus) {
     )
 
     Surface(
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = bgColor,
         modifier = Modifier.graphicsLayer {
             scaleX = scale
@@ -2200,7 +2200,7 @@ private fun EnhancedCookieStatusIndicator(status: CookieDisplayStatus) {
 @Composable
 private fun EnhancedCookieSavedBanner() {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = WebViewColors.Success,
         shadowElevation = 12.dp
     ) {
@@ -2449,9 +2449,9 @@ private fun DisplayUrlBar(
     Surface(
         modifier = modifier
             .padding(horizontal = 4.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppShape.medium)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 1.dp
     ) {
@@ -2511,7 +2511,7 @@ private fun DisplayUrlBar(
                     // Provider badge for known sites
                     if (siteType is SiteType.KnownProvider) {
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
+                            shape = AppShape.extraSmall,
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
@@ -2562,7 +2562,7 @@ private fun EditableUrlBar(
 
     Surface(
         modifier = modifier.padding(horizontal = 4.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
         tonalElevation = 1.dp
     ) {
@@ -2654,7 +2654,7 @@ private fun EnhancedDropdownMenu(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(16.dp)
+        shape = AppShape.large
     ) {
         // Site type info
         when (siteType) {

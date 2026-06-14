@@ -421,7 +421,7 @@ private fun SeedingScreen(
                     )
 
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = AppShape.medium,
                         color = MaterialTheme.colorScheme.surfaceContainerLow,
                         modifier = Modifier.fillMaxWidth()
                     ) {

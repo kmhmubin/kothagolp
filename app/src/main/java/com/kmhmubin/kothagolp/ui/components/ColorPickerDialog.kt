@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -214,7 +214,7 @@ fun ColorPickerDialog(
                 Text("Cancel")
             }
         },
-        shape = RoundedCornerShape(24.dp)
+        shape = AppShape.extraLarge
     )
 }
 
@@ -228,7 +228,7 @@ private fun ColorPreview(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = AppShape.large
     ) {
         Row(
             modifier = Modifier
@@ -281,7 +281,7 @@ private fun SaturationBrightnessPicker(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1.5f)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(AppShape.large)
             .pointerInput(hue) {
                 detectTapGestures { offset ->
                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -354,7 +354,7 @@ private fun HueSlider(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(32.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(AppShape.small)
         ) {
             // Rainbow gradient background
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -418,7 +418,7 @@ private fun HexInput(
                 )
             }
         },
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     )
 }
 

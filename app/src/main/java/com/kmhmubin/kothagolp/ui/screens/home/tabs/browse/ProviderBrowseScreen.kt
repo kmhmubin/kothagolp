@@ -144,7 +144,6 @@ import kotlinx.coroutines.launch
 // ============================================================================
 
 private object BrowseDesign {
-    val radiusXl = 20.dp
     val radiusXxl = 28.dp
 
     val spacingXs = 4.dp
@@ -1351,7 +1350,7 @@ private fun SearchResultsIndicator(
     onClear: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(BrowseDesign.radiusXl),
+        shape = AppShape.extraLarge,
         color = MaterialTheme.colorScheme.primaryContainer,
         shadowElevation = 8.dp,
         tonalElevation = 4.dp
@@ -1499,7 +1498,7 @@ private fun EmptyStateCard(
     onOpenWebView: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(BrowseDesign.radiusXl),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
@@ -1839,7 +1838,7 @@ private fun ErrorStateCard(
     onOpenWebView: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(BrowseDesign.radiusXl),
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),

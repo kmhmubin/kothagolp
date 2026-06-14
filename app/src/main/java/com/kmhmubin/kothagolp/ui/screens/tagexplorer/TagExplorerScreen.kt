@@ -135,7 +135,6 @@ import kotlinx.coroutines.launch
 // ============================================================================
 
 private object BrowseDesign {
-    val radiusXl = 20.dp
     val radiusXxl = 28.dp
 
     val spacingXs = 4.dp
@@ -1485,7 +1484,7 @@ private fun ErrorState(
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(BrowseDesign.radiusXl),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
@@ -1571,7 +1570,7 @@ private fun NoResultsState(
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(BrowseDesign.radiusXl),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
