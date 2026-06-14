@@ -143,9 +143,16 @@ import com.kmhmubin.kothagolp.source.SourceLoader
 import com.kmhmubin.kothagolp.source.SourceSyncWorker
 import com.kmhmubin.kothagolp.ui.components.ColorPickerDialog
 import com.kmhmubin.kothagolp.ui.navigation.NavRoutes
+import com.kmhmubin.kothagolp.ui.theme.AccentCyan
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.AppSpacing
-import com.kmhmubin.kothagolp.ui.theme.AppElevation
+import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
+import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
+import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
+import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
+import com.kmhmubin.kothagolp.ui.theme.StatusReading
+import com.kmhmubin.kothagolp.ui.theme.StatusSpicy
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -204,7 +211,7 @@ fun SettingsScreen(
                         RowDivider()
                         SettingsNavRow(
                             icon = Icons.AutoMirrored.Outlined.LibraryBooks,
-                            iconTint = Color(0xFF3B82F6),
+                            iconTint = StatusReading,
                             title = "Library",
                             subtitle = "Shelves, sorting and visibility",
                             onClick = { onNavigateTo(NavRoutes.SettingsLibrary.route) }
@@ -212,7 +219,7 @@ fun SettingsScreen(
                         RowDivider()
                         SettingsNavRow(
                             icon = Icons.Outlined.Search,
-                            iconTint = Color(0xFF06B6D4),
+                            iconTint = AccentCyan,
                             title = "Browse & Downloads",
                             subtitle = "Search, ratings and auto-downloads",
                             onClick = { onNavigateTo(NavRoutes.SettingsBrowse.route) }
@@ -220,7 +227,7 @@ fun SettingsScreen(
                         RowDivider()
                         SettingsNavRow(
                             icon = Icons.AutoMirrored.Outlined.MenuBook,
-                            iconTint = Color(0xFF8B5CF6),
+                            iconTint = StatusPlanToRead,
                             title = "Reader",
                             subtitle = "Reading experience and preferences",
                             onClick = { onNavigateTo(NavRoutes.SettingsReader.route) }
@@ -228,7 +235,7 @@ fun SettingsScreen(
                         RowDivider()
                         SettingsNavRow(
                             icon = Icons.Outlined.Extension,
-                            iconTint = Color(0xFFF97316),
+                            iconTint = StatusSpicy,
                             title = "Sources",
                             subtitle = "Manage sources and updates",
                             onClick = { onNavigateTo(NavRoutes.SettingsSources.route) }
@@ -248,7 +255,7 @@ fun SettingsScreen(
                     Column {
                         SettingsNavRow(
                             icon = Icons.Outlined.Storage,
-                            iconTint = Color(0xFF22C55E),
+                            iconTint = StatusCompleted,
                             title = "Data",
                             subtitle = "Storage, cache and backup",
                             onClick = { onNavigateTo(NavRoutes.Storage.route) }
@@ -2085,13 +2092,13 @@ private fun getLibraryShelfIcon(filter: LibraryFilter): ImageVector {
 private fun getLibraryShelfColor(filter: LibraryFilter): Color {
     return when (filter) {
         LibraryFilter.ALL -> MaterialTheme.colorScheme.primary
-        LibraryFilter.SPICY -> Color(0xFFF97316)
-        LibraryFilter.DOWNLOADED -> Color(0xFF06B6D4)
-        LibraryFilter.READING -> Color(0xFF3B82F6)
-        LibraryFilter.COMPLETED -> Color(0xFF22C55E)
-        LibraryFilter.ON_HOLD -> Color(0xFFF59E0B)
-        LibraryFilter.PLAN_TO_READ -> Color(0xFF8B5CF6)
-        LibraryFilter.DROPPED -> Color(0xFFEF4444)
+        LibraryFilter.SPICY -> StatusSpicy
+        LibraryFilter.DOWNLOADED -> AccentCyan
+        LibraryFilter.READING -> StatusReading
+        LibraryFilter.COMPLETED -> StatusCompleted
+        LibraryFilter.ON_HOLD -> StatusOnHold
+        LibraryFilter.PLAN_TO_READ -> StatusPlanToRead
+        LibraryFilter.DROPPED -> StatusDROPPED
     }
 }
 
