@@ -31,7 +31,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,9 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
@@ -94,12 +91,11 @@ fun ReaderScreen(
     onNavigateToSettings: () -> Unit,
     viewModel: ReaderViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val ttsScrollLocked by viewModel.ttsScrollLocked.collectAsState()
-    val ensureVisibleIndex by viewModel.ttsShouldEnsureVisible.collectAsState()
-    val sentenceBounds by viewModel.sentenceBounds.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val ttsScrollLocked by viewModel.ttsScrollLocked.collectAsStateWithLifecycle()
+    val ensureVisibleIndex by viewModel.ttsShouldEnsureVisible.collectAsStateWithLifecycle()
+    val sentenceBounds by viewModel.sentenceBounds.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
     val chapterListSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -188,23 +184,12 @@ fun ReaderScreen(
     }
 
     // Lifecycle handling for reading time tracking AND TTS visibility sync
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    viewModel.onPauseReading()
-                    viewModel.onReaderBecameInvisible()
-                }
-                Lifecycle.Event.ON_RESUME -> {
-                    viewModel.onResumeReading()
-                    viewModel.onReaderBecameVisible()
-                }
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+    LifecycleResumeEffect(Unit) {
+        viewModel.onResumeReading()
+        viewModel.onReaderBecameVisible()
+        onPauseOrDispose {
+            viewModel.onPauseReading()
+            viewModel.onReaderBecameInvisible()
         }
     }
 
@@ -979,7 +964,6 @@ private fun ControlsOverlay(
                 isBookmarked = uiState.isCurrentChapterBookmarked,
                 chapterProgress = chapterProgress,
                 estimatedTimeLeft = estimatedTimeLeft,
-                colors = colors,
                 progressStyle = if (uiState.settings.showProgress) uiState.settings.progressStyle else ProgressStyle.NONE,
                 largerTouchTargets = uiState.settings.largerTouchTargets,
                 onBack = onBack,
