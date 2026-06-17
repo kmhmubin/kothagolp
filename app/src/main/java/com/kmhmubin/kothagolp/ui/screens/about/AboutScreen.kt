@@ -263,9 +263,9 @@ private fun AppHeaderCard(currentVersion: String) {
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        painter = painterResource(id = R.drawable.ic_launcher_icon_transparent),
                         contentDescription = "App logo",
-                        modifier = Modifier.size(56.dp),
+                        modifier = Modifier.size(72.dp),
                         contentScale = ContentScale.Fit
                     )
                 }
