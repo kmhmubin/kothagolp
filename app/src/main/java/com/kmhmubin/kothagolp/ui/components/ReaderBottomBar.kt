@@ -65,6 +65,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -135,11 +136,14 @@ fun ReaderBottomBar(
     onOpenChapterList: () -> Unit,
     onStartTTS: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onSettingsExpandedChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
     val haptic = LocalHapticFeedback.current
     var showSettings by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showSettings) { onSettingsExpandedChange(showSettings) }
 
     Column(
         modifier = modifier

@@ -103,6 +103,7 @@ fun ReaderScreen(
 
     // Auto-hide controls timer
     var autoHideJob by remember { mutableStateOf<Job?>(null) }
+    var bottomBarSettingsExpanded by remember { mutableStateOf(false) }
 
     // Initialize context for TTS
     LaunchedEffect(Unit) {
@@ -166,15 +167,16 @@ fun ReaderScreen(
             uiState.showChapterList
     ImmersiveModeEffect(showSystemBars = showSystemBars)
 
-    // Auto-hide controls
-    LaunchedEffect(uiState.showControls, uiState.settings.autoHideControlsDelay) {
+    // Auto-hide controls — suppressed while bottom bar settings panel is open
+    LaunchedEffect(uiState.showControls, uiState.settings.autoHideControlsDelay, bottomBarSettingsExpanded) {
         autoHideJob?.cancel()
 
         if (uiState.showControls &&
             uiState.settings.autoHideControlsDelay > 0 &&
             !uiState.isTTSActive &&
             !uiState.showTTSSettings &&
-            !uiState.showChapterList
+            !uiState.showChapterList &&
+            !bottomBarSettingsExpanded
         ) {
             autoHideJob = scope.launch {
                 delay(uiState.settings.autoHideControlsDelay)
@@ -525,7 +527,8 @@ fun ReaderScreen(
         },
         onPrevious = viewModel::navigateToPrevious,
         onNext = viewModel::navigateToNext,
-        onConfirmScrollReset = viewModel::confirmScrollReset
+        onConfirmScrollReset = viewModel::confirmScrollReset,
+        onBottomBarSettingsExpandedChange = { bottomBarSettingsExpanded = it }
     )
 }
 
@@ -701,7 +704,8 @@ private fun ReaderScreenContent(
     onTTSAutoAdvanceChapterChange: (Boolean) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onConfirmScrollReset: () -> Unit
+    onConfirmScrollReset: () -> Unit,
+    onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {}
 ) {
     val tapZones = uiState.settings.tapZones
 
@@ -841,7 +845,8 @@ private fun ReaderScreenContent(
                         onStopTTS = onStopTTS,
                         onTTSNext = onTTSNext,
                         onTTSPrevious = onTTSPrevious,
-                        onToggleTTSSettings = onToggleTTSSettings
+                        onToggleTTSSettings = onToggleTTSSettings,
+                        onBottomBarSettingsExpandedChange = onBottomBarSettingsExpandedChange
                     )
 
                     // TTS Settings Panel
@@ -940,7 +945,8 @@ private fun ControlsOverlay(
     onStopTTS: () -> Unit,
     onTTSNext: () -> Unit,
     onTTSPrevious: () -> Unit,
-    onToggleTTSSettings: () -> Unit
+    onToggleTTSSettings: () -> Unit,
+    onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {}
 ) {
     val animationDuration = if (uiState.settings.reduceMotion) 0 else ReaderDefaults.ControlsAnimationDuration
 
@@ -1026,7 +1032,8 @@ private fun ControlsOverlay(
                         onSettingsChange = onSettingsChange,
                         onOpenChapterList = onToggleChapterList,
                         onStartTTS = onStartTTS,
-                        onNavigateToSettings = onNavigateToSettings
+                        onNavigateToSettings = onNavigateToSettings,
+                        onSettingsExpandedChange = onBottomBarSettingsExpandedChange
                     )
                 }
             }
