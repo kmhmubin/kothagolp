@@ -98,22 +98,27 @@ import com.kmhmubin.kothagolp.ui.components.TwoStageSwipeToDelete
 import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.AppSpacing
+import com.kmhmubin.kothagolp.ui.theme.Info
+import com.kmhmubin.kothagolp.ui.theme.NewChapters as ThemeNewChapters
+import com.kmhmubin.kothagolp.ui.theme.NewChaptersLight as ThemeNewChaptersLight
+import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
+import com.kmhmubin.kothagolp.ui.theme.StatusSpicy
 
 // ============================================================================
 // Colors
 // ============================================================================
 
 private object NotificationColors {
-    val NewChapters = Color(0xFF10B981)
-    val NewChaptersLight = Color(0xFF34D399)
-    val NewChaptersDark = Color(0xFF059669)
-    val Download = Color(0xFF3B82F6)
-    val DownloadLight = Color(0xFF60A5FA)
-    val Continue = Color(0xFFE85609)
-    val ContinueLight = Color(0xFFF97316)
-    val MarkSeen = Color(0xFF8B5CF6)
-    val MarkSeenLight = Color(0xFFA78BFA)
-    val Acknowledged = Color(0xFF6B7280)
+    val NewChapters = ThemeNewChapters          // emerald-500
+    val NewChaptersLight = ThemeNewChaptersLight // emerald-400
+    val NewChaptersDark = Color(0xFF059669)      // emerald-600 — no token
+    val Download = Info                          // blue
+    val DownloadLight = Color(0xFF60A5FA)        // blue-400 — no token
+    val Continue = Color(0xFFE85609)             // deep orange — no token
+    val ContinueLight = StatusSpicy              // orange-500
+    val MarkSeen = StatusPlanToRead              // violet
+    val MarkSeenLight = Color(0xFFA78BFA)        // violet-400 — no token
+    val Acknowledged = Color(0xFF6B7280)         // gray-500 — no token
 }
 
 // ============================================================================

@@ -92,6 +92,13 @@ import com.kmhmubin.kothagolp.ui.screens.profile.ProfileViewModel
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.ui.theme.NewChapters
+import com.kmhmubin.kothagolp.ui.theme.AccentCyan
+import com.kmhmubin.kothagolp.ui.theme.AppOrange
+import com.kmhmubin.kothagolp.ui.theme.Error
+import com.kmhmubin.kothagolp.ui.theme.Info
+import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
+import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
+import com.kmhmubin.kothagolp.ui.theme.Success
 import kotlinx.coroutines.flow.collectLatest
 
 // ============================================================================
@@ -99,26 +106,26 @@ import kotlinx.coroutines.flow.collectLatest
 // ============================================================================
 
 private object ProfileColors {
-    val StreakOrange = Color(0xFFFF6B35)
-    val StreakYellow = Color(0xFFFFB800)
-    val GoalPrimary = Color(0xFF6366F1)
-    val GoalSecondary = Color(0xFF8B5CF6)
-    val ChapterBlue = Color(0xFF3B82F6)
-    val TimeGreen = NewChapters
-    val DaysAmber = Color(0xFFF59E0B)
-    val AchievementGold = Color(0xFFFFD700)
-    val LevelPurple = Color(0xFF9333EA)
-    val InsightCyan = Color(0xFF06B6D4)
+    val StreakOrange = AppOrange            // brand orange
+    val StreakYellow = Color(0xFFFFB800)    // warm yellow — no token
+    val GoalPrimary = Color(0xFF6366F1)     // indigo — no token
+    val GoalSecondary = StatusPlanToRead    // violet
+    val ChapterBlue = Info                  // blue
+    val TimeGreen = NewChapters             // emerald
+    val DaysAmber = StatusOnHold            // amber
+    val AchievementGold = Color(0xFFFFD700) // gold — no token
+    val LevelPurple = Color(0xFF9333EA)     // purple — no token
+    val InsightCyan = AccentCyan            // cyan
 
     fun getLevelColor(level: Int): Color = when (level) {
-        1 -> Color(0xFF94A3B8)
-        2 -> Color(0xFF22C55E)
-        3 -> Color(0xFF3B82F6)
-        4 -> Color(0xFF8B5CF6)
-        5 -> Color(0xFFF59E0B)
-        6 -> Color(0xFFEF4444)
+        1 -> Color(0xFF94A3B8)    // slate — no token
+        2 -> Success
+        3 -> Info
+        4 -> StatusPlanToRead
+        5 -> StatusOnHold
+        6 -> Error
         7 -> AchievementGold
-        else -> Color(0xFFE879F9)
+        else -> Color(0xFFE879F9) // fuchsia — no token
     }
 }
 

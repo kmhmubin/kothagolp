@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppOrange
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
@@ -70,7 +71,7 @@ fun StreakCard(
     isStreakActive: Boolean = true
 ) {
     val fireColor = if (isStreakActive) {
-        Color(0xFFFF6B35)
+        AppOrange
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
     }

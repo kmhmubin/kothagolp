@@ -75,6 +75,8 @@ val StatusOnHold = Warning
 val StatusPlanToRead = Color(0xFF8B5CF6)
 val StatusDROPPED = Error
 
+val AppOrange = Color(0xFFFF6B35)     // brand orange — reader TTS accent, streak fire
+
 // New chapters indicator
 val NewChapters = Color(0xFF10B981)      // Emerald-500
 val NewChaptersLight = Color(0xFF34D399) // Emerald-400

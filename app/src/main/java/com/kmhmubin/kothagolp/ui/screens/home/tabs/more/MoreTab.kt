@@ -43,6 +43,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
+import com.kmhmubin.kothagolp.ui.theme.Error
+import com.kmhmubin.kothagolp.ui.theme.Info
+import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
+import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
+import com.kmhmubin.kothagolp.ui.theme.Success
 import java.time.LocalTime
 
 @Composable
@@ -450,12 +455,12 @@ private fun MoreMenuItem(
 }
 
 private fun getLevelColor(level: Int): Color = when (level) {
-    1 -> Color(0xFF94A3B8)
-    2 -> Color(0xFF22C55E)
-    3 -> Color(0xFF3B82F6)
-    4 -> Color(0xFF8B5CF6)
-    5 -> Color(0xFFF59E0B)
-    6 -> Color(0xFFEF4444)
-    7 -> Color(0xFFFFD700)
-    else -> Color(0xFFE879F9)
+    1 -> Color(0xFF94A3B8)    // slate-400 — no token
+    2 -> Success
+    3 -> Info
+    4 -> StatusPlanToRead
+    5 -> StatusOnHold
+    6 -> Error
+    7 -> Color(0xFFFFD700)    // gold — no token
+    else -> Color(0xFFE879F9) // fuchsia — no token
 }

@@ -100,6 +100,15 @@ import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppOrange
+import com.kmhmubin.kothagolp.ui.theme.Error
+import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
+import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
+import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
+import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
+import com.kmhmubin.kothagolp.ui.theme.StatusReading
+import com.kmhmubin.kothagolp.ui.theme.StatusSpicy
+import com.kmhmubin.kothagolp.ui.theme.Success
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.RatingFormat
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
@@ -111,17 +120,8 @@ import kotlinx.coroutines.launch
 // ================================================================
 
 private object ActionSheetColors {
-    val Pink = Color(0xFFE91E63)
-    val Success = Color(0xFF22C55E)
-    val Star = Color(0xFFFBBF24)
-    val Error = Color(0xFFEF4444)
-
-    val StatusReading = Color(0xFF3B82F6)
-    val StatusSpicy = Color(0xFFF97316)
-    val StatusCompleted = Color(0xFF22C55E)
-    val StatusOnHold = Color(0xFFF59E0B)
-    val StatusPlanToRead = Color(0xFF8B5CF6)
-    val StatusDropped = Color(0xFFEF4444)
+    val Pink = Color(0xFFE91E63)    // Hot pink — no Color.kt token
+    val Star = Color(0xFFFBBF24)    // Amber-400 star — no Color.kt token
 
     fun forStatus(status: ReadingStatus) = when (status) {
         ReadingStatus.READING -> StatusReading
@@ -129,7 +129,7 @@ private object ActionSheetColors {
         ReadingStatus.COMPLETED -> StatusCompleted
         ReadingStatus.ON_HOLD -> StatusOnHold
         ReadingStatus.PLAN_TO_READ -> StatusPlanToRead
-        ReadingStatus.DROPPED -> StatusDropped
+        ReadingStatus.DROPPED -> StatusDROPPED
     }
 }
 
@@ -605,7 +605,7 @@ private fun InlineStats(data: NovelActionSheetData) {
                 icon = Icons.Rounded.Visibility,
                 value = "${data.readCount}$percentage",
                 label = "read",
-                color = ActionSheetColors.Success
+                color = Success
             )
         }
 
@@ -1145,7 +1145,7 @@ private fun RemoveOptionItem(onClick: () -> Unit) {
         ) {
             Surface(
                 shape = CircleShape,
-                color = ActionSheetColors.Error.copy(alpha = 0.1f),
+                color = Error.copy(alpha = 0.1f),
                 modifier = Modifier.size(32.dp)
             ) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -1153,14 +1153,14 @@ private fun RemoveOptionItem(onClick: () -> Unit) {
                         imageVector = Icons.Rounded.DeleteForever,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = ActionSheetColors.Error
+                        tint = Error
                     )
                 }
             }
             Text(
                 text = "Remove from Library",
                 style = MaterialTheme.typography.bodyMedium,
-                color = ActionSheetColors.Error
+                color = Error
             )
         }
     }
