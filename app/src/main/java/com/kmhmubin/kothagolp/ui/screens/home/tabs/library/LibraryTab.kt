@@ -85,8 +85,13 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -113,6 +118,7 @@ import com.kmhmubin.kothagolp.data.repository.LibraryItem
 import com.kmhmubin.kothagolp.domain.model.AppSettings
 import com.kmhmubin.kothagolp.domain.model.DisplayMode
 import com.kmhmubin.kothagolp.domain.model.LibraryFilter
+import com.kmhmubin.kothagolp.domain.model.LibrarySortOrder
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.UiDensity
 import com.kmhmubin.kothagolp.ui.components.NovelActionSheet
@@ -158,6 +164,28 @@ fun LibraryTab(
     val gridColumns = calculateGridColumns(appSettings.libraryGridColumns)
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     val pullToRefreshState = rememberPullToRefreshState()
+
+    val pagerState = rememberPagerState(
+        initialPage = uiState.visibleFilters.indexOf(uiState.filter).coerceAtLeast(0),
+        pageCount = { uiState.visibleFilters.size }
+    )
+
+    // Swipe settles → update ViewModel filter
+    LaunchedEffect(pagerState.settledPage) {
+        val swipedFilter = uiState.visibleFilters.getOrNull(pagerState.settledPage) ?: return@LaunchedEffect
+        if (swipedFilter != uiState.filter) {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            viewModel.setFilter(swipedFilter)
+        }
+    }
+
+    // Filter chip tap → jump pager to correct page instantly
+    LaunchedEffect(uiState.filter) {
+        val targetPage = uiState.visibleFilters.indexOf(uiState.filter)
+        if (targetPage >= 0 && targetPage != pagerState.currentPage && !pagerState.isScrollInProgress) {
+            pagerState.scrollToPage(targetPage)
+        }
+    }
 
     // Action Sheet
     if (actionSheetState.isVisible && actionSheetState.data != null) {
@@ -216,43 +244,64 @@ fun LibraryTab(
                         displayMode = appSettings.libraryDisplayMode
                     )
                 }
-                uiState.filteredItems.isEmpty() -> {
-                    LibraryEmptyContent(
-                        uiState = uiState,
-                        onQueryChange = viewModel::setSearchQuery,
-                        onNotificationClick = onNavigateToNotifications,
-                        statusBarPadding = statusBarPadding,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
                 else -> {
-                    LibraryContent(
-                        uiState = uiState,
-                        gridColumns = gridColumns,
-                        statusBarPadding = statusBarPadding,
-                        onQueryChange = viewModel::setSearchQuery,
-                        onNotificationClick = onNavigateToNotifications,
-                        onNovelClick = { item ->
-                            if (item.hasNewChapters) {
-                                viewModel.acknowledgeNewChapters(item.novel.url)
-                            }
-                            val position = item.lastReadPosition
-                            if (position != null) {
-                                onNavigateToReader(
-                                    position.chapterUrl,
-                                    item.novel.url,
-                                    item.novel.apiName
-                                )
-                            } else {
-                                onNavigateToDetails(item.novel.url, item.novel.apiName)
-                            }
-                        },
-                        onNovelLongClick = { item ->
-                            viewModel.showActionSheet(item)
-                        },
-                        appSettings = appSettings,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        beyondViewportPageCount = 1,
+                        flingBehavior = PagerDefaults.flingBehavior(
+                            state = pagerState,
+                            snapPositionalThreshold = 0.3f,
+                            snapAnimationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessHigh
+                            )
+                        )
+                    ) { page ->
+                        val pageFilter = uiState.visibleFilters.getOrElse(page) { LibraryFilter.ALL }
+                        val pageItems by remember(pageFilter) {
+                            derivedStateOf { computePageItems(uiState, pageFilter) }
+                        }
+                        val pageState = uiState.copy(filteredItems = pageItems, filter = pageFilter)
+
+                        if (pageItems.isEmpty()) {
+                            LibraryEmptyContent(
+                                uiState = pageState,
+                                onQueryChange = viewModel::setSearchQuery,
+                                onNotificationClick = onNavigateToNotifications,
+                                statusBarPadding = statusBarPadding,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            LibraryContent(
+                                uiState = pageState,
+                                gridColumns = gridColumns,
+                                statusBarPadding = statusBarPadding,
+                                onQueryChange = viewModel::setSearchQuery,
+                                onNotificationClick = onNavigateToNotifications,
+                                onNovelClick = { item ->
+                                    if (item.hasNewChapters) {
+                                        viewModel.acknowledgeNewChapters(item.novel.url)
+                                    }
+                                    val position = item.lastReadPosition
+                                    if (position != null) {
+                                        onNavigateToReader(
+                                            position.chapterUrl,
+                                            item.novel.url,
+                                            item.novel.apiName
+                                        )
+                                    } else {
+                                        onNavigateToDetails(item.novel.url, item.novel.apiName)
+                                    }
+                                },
+                                onNovelLongClick = { item ->
+                                    viewModel.showActionSheet(item)
+                                },
+                                appSettings = appSettings,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1308,6 +1357,40 @@ private fun getFilterIcon(filter: LibraryFilter): ImageVector? {
         LibraryFilter.ON_HOLD -> Icons.Rounded.PauseCircle
         LibraryFilter.PLAN_TO_READ -> Icons.Rounded.BookmarkAdd
         LibraryFilter.DROPPED -> Icons.Rounded.Cancel
+    }
+}
+
+private fun computePageItems(
+    uiState: LibraryUiState,
+    filter: LibraryFilter
+): List<LibraryItem> {
+    val query = uiState.searchQuery.lowercase().trim()
+    val counts = uiState.downloadCounts
+
+    val searched = if (query.isBlank()) uiState.items else uiState.items.filter { item ->
+        item.novel.name.lowercase().contains(query) ||
+                item.novel.apiName.lowercase().contains(query) ||
+                item.readingStatus.displayName().lowercase().contains(query)
+    }
+
+    val filtered = when (filter) {
+        LibraryFilter.ALL -> searched
+        LibraryFilter.SPICY -> searched.filter { it.readingStatus == ReadingStatus.SPICY }
+        LibraryFilter.DOWNLOADED -> searched.filter { (counts[it.novel.url] ?: 0) > 0 }
+        LibraryFilter.READING -> searched.filter { it.readingStatus == ReadingStatus.READING }
+        LibraryFilter.COMPLETED -> searched.filter { it.readingStatus == ReadingStatus.COMPLETED }
+        LibraryFilter.ON_HOLD -> searched.filter { it.readingStatus == ReadingStatus.ON_HOLD }
+        LibraryFilter.PLAN_TO_READ -> searched.filter { it.readingStatus == ReadingStatus.PLAN_TO_READ }
+        LibraryFilter.DROPPED -> searched.filter { it.readingStatus == ReadingStatus.DROPPED }
+    }
+
+    return when (uiState.sortOrder) {
+        LibrarySortOrder.NEW_CHAPTERS -> filtered.sortedByDescending { it.newChapterCount }
+        LibrarySortOrder.LAST_READ -> filtered.sortedByDescending { it.lastReadPosition?.timestamp ?: it.addedAt }
+        LibrarySortOrder.TITLE_ASC -> filtered.sortedBy { it.novel.name.lowercase() }
+        LibrarySortOrder.TITLE_DESC -> filtered.sortedByDescending { it.novel.name.lowercase() }
+        LibrarySortOrder.DATE_ADDED -> filtered.sortedByDescending { it.addedAt }
+        LibrarySortOrder.UNREAD_COUNT -> filtered.sortedByDescending { it.unreadChapterCount }
     }
 }
 
