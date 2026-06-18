@@ -91,6 +91,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -253,13 +254,13 @@ fun LibraryTab(
                             snapPositionalThreshold = 0.3f,
                             snapAnimationSpec = spring(
                                 dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMedium
+                                stiffness = Spring.StiffnessHigh
                             )
                         )
                     ) { page ->
                         val pageFilter = uiState.visibleFilters.getOrElse(page) { LibraryFilter.ALL }
-                        val pageItems = remember(uiState.items, uiState.searchQuery, uiState.downloadCounts, uiState.sortOrder, pageFilter) {
-                            computePageItems(uiState, pageFilter)
+                        val pageItems by remember(pageFilter) {
+                            derivedStateOf { computePageItems(uiState, pageFilter) }
                         }
                         val pageState = uiState.copy(filteredItems = pageItems, filter = pageFilter)
 
