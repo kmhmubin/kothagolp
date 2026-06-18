@@ -112,6 +112,15 @@ sealed class NavRoutes(val route: String) {
     }
 
     // ================================================================
+    // GLOBAL SEARCH
+    // ================================================================
+
+    object GlobalSearch : NavRoutes("global_search?query={query}") {
+        fun createRoute(query: String = "") =
+            if (query.isBlank()) "global_search" else "global_search?query=${encodeUrl(query)}"
+    }
+
+    // ================================================================
     // TAG EXPLORER
     // ================================================================
 

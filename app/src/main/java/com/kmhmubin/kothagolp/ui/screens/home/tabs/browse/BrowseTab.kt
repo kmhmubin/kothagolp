@@ -209,6 +209,7 @@ fun BrowseTab(
     onNavigateToDetails: (novelUrl: String, providerName: String) -> Unit,
     onNavigateToReader: (chapterUrl: String, novelUrl: String, providerName: String) -> Unit,
     onNavigateToMigration: (() -> Unit)? = null,
+    onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
     viewModel: BrowseViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -415,7 +416,8 @@ fun BrowseTab(
                                 onProviderClick = onNavigateToProvider,
                                 onToggleFavorite = { viewModel.toggleFavoriteProvider(it) },
                                 onRefresh = { viewModel.retryLoadProviders() },
-                                onNavigateToMigration = onNavigateToMigration
+                                onNavigateToMigration = onNavigateToMigration,
+                                onNavigateToGlobalSearch = onNavigateToGlobalSearch
                             )
                         }
                     }
@@ -618,7 +620,7 @@ private fun EmptySearchState(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun SearchFiltersSheet(
+internal fun SearchFiltersSheet(
     filters: SearchFilters,
     availableProviders: List<String>,
     onDismiss: () -> Unit,
@@ -799,16 +801,22 @@ private fun SearchResultsContent(
             )
         }
 
-        // Build an ordering that prioritizes favorite providers, and follows
-        // the provider order defined in settings (via `providers` list).
+        // Ordering: providers with results first (in settings order), then loading,
+        // then empty/error at bottom — so useful content rises to the top.
         val providerOrder = providers.map { it.name }
         val available = providerStates.keys
-
-        val favoritesInOrder = providerOrder.filter { it in favoriteProviders && it in available }
-        val nonFavoritesInOrder = providerOrder.filter { it !in favoriteProviders && it in available }
         val remaining = providerStates.keys.filter { it !in providerOrder }
+        val allNamesOrdered = (providerOrder.filter { it in available }) + remaining
 
-        val orderedNames = favoritesInOrder + nonFavoritesInOrder + remaining
+        fun hasResults(name: String) = providerStates[name] is ProviderSearchState.Success &&
+                (providerStates[name] as ProviderSearchState.Success).novels.isNotEmpty()
+        fun isLoading(name: String) = providerStates[name] is ProviderSearchState.Loading
+
+        val withResults = allNamesOrdered.filter { hasResults(it) }
+        val loading = allNamesOrdered.filter { isLoading(it) }
+        val noResults = allNamesOrdered.filter { !hasResults(it) && !isLoading(it) }
+
+        val orderedNames = withResults + loading + noResults
 
         val sortedProviders = orderedNames.mapNotNull { name ->
             providerStates[name]?.let { state -> name to state }
@@ -1658,7 +1666,8 @@ private fun ProviderGrid(
     onProviderClick: (String) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onRefresh: () -> Unit,
-    onNavigateToMigration: (() -> Unit)? = null
+    onNavigateToMigration: (() -> Unit)? = null,
+    onNavigateToGlobalSearch: ((query: String) -> Unit)? = null
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -1698,6 +1707,12 @@ private fun ProviderGrid(
                     providerCount = providers.size,
                     favoriteCount = favoriteProviders.size
                 )
+            }
+
+            if (onNavigateToGlobalSearch != null) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    GlobalSearchBannerCard(onClick = { onNavigateToGlobalSearch("") })
+                }
             }
 
             if (onNavigateToMigration != null) {
@@ -2409,6 +2424,53 @@ private fun ProviderErrorState(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GlobalSearchBannerCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = AppShape.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Global Search",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "Search for novels across all sources at once",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+            )
         }
     }
 }
