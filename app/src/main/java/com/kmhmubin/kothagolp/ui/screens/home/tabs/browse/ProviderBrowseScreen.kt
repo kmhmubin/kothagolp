@@ -130,19 +130,14 @@ import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.provider.MainProvider
 import com.kmhmubin.kothagolp.ui.components.DuplicateLibraryDialog
-import com.kmhmubin.kothagolp.ui.components.NovelActionSheet
 import com.kmhmubin.kothagolp.ui.components.NovelCard
 import com.kmhmubin.kothagolp.ui.components.NovelGridSkeleton
 import com.kmhmubin.kothagolp.ui.components.KothagolpPullToRefreshBox
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.material.icons.rounded.BookmarkAdd
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 // ============================================================================
 // Design Constants
@@ -204,39 +199,6 @@ fun ProviderBrowseScreen(
 
     LaunchedEffect(uiState.isSearchMode) {
         if (uiState.isSearchMode) isFilterOverlayOpen = false
-    }
-
-    if (actionSheetState.isVisible && actionSheetState.data != null) {
-        val data = actionSheetState.data!!
-        NovelActionSheet(
-            data = data,
-            sheetState = sheetState,
-            onDismiss = { viewModel.hideActionSheet() },
-            onViewDetails = {
-                viewModel.hideActionSheet()
-                onNavigateToDetails(data.novel.url, providerName)
-            },
-            onContinueReading = {
-                viewModel.hideActionSheet()
-                val position = viewModel.getReadingPosition(data.novel.url)
-                if (position != null) {
-                    onNavigateToReader(position.chapterUrl, data.novel.url, providerName)
-                } else {
-                    scope.launch {
-                        val history = viewModel.getHistoryChapter(data.novel.url)
-                        if (history != null) {
-                            onNavigateToReader(history.first, data.novel.url, providerName)
-                        } else {
-                            onNavigateToDetails(data.novel.url, providerName)
-                        }
-                    }
-                }
-            },
-            onAddToLibrary = { status: ReadingStatus -> viewModel.addToLibrary(data.novel, status) }
-                .takeIf { !data.isInLibrary },
-            onRemoveFromLibrary = { viewModel.removeFromLibrary(data.novel.url) }.takeIf { data.isInLibrary },
-            onRemoveFromHistory = null
-        )
     }
 
     actionSheetState.duplicateWarning?.let { warning ->
@@ -341,10 +303,6 @@ fun ProviderBrowseScreen(
                                         onNavigateToDetails(novel.url, providerName)
                                     },
                                     onNovelLongClick = { novel ->
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        viewModel.showActionSheet(novel)
-                                    },
-                                    onNovelHoldSave = { novel ->
                                         viewModel.quickSaveToLibrary(novel, appSettings.quickSaveStatus)
                                     },
                                     onLoadMore = viewModel::loadNextPage,
@@ -1718,12 +1676,10 @@ private fun MainContent(
     gridColumns: Int,
     onNovelClick: (Novel) -> Unit,
     onNovelLongClick: (Novel) -> Unit,
-    onNovelHoldSave: (Novel) -> Unit,
     onLoadMore: () -> Unit,
     appSettings: AppSettings
 ) {
     val dimensions = KothagolpTheme.dimensions
-    val haptic = LocalHapticFeedback.current
 
     when (appSettings.browseDisplayMode) {
         com.kmhmubin.kothagolp.domain.model.DisplayMode.GRID -> {
@@ -1752,19 +1708,13 @@ private fun MainContent(
                     Spacer(Modifier.height(BrowseDesign.spacingSm))
                 }
                 items(items = uiState.displayNovels, key = { it.url }) { novel ->
-                    HoldToSaveWrapper(
-                        novelUrl = novel.url,
-                        haptic = haptic,
-                        onHoldSave = { onNovelHoldSave(novel) }
-                    ) {
-                        NovelCard(
-                            novel = novel,
-                            onClick = { onNovelClick(novel) },
-                            onLongClick = { onNovelLongClick(novel) },
-                            density = appSettings.uiDensity,
-                            modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
-                        )
-                    }
+                    NovelCard(
+                        novel = novel,
+                        onClick = { onNovelClick(novel) },
+                        onLongClick = { onNovelLongClick(novel) },
+                        density = appSettings.uiDensity,
+                        modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
+                    )
                 }
                 if (uiState.isLoadingMore) {
                     item(span = { GridItemSpan(maxLineSpan) }, key = "load_more_indicator") {
@@ -1798,19 +1748,13 @@ private fun MainContent(
                     Spacer(Modifier.height(BrowseDesign.spacingSm))
                 }
                 items(uiState.displayNovels, key = { it.url }) { novel ->
-                    HoldToSaveWrapper(
-                        novelUrl = novel.url,
-                        haptic = haptic,
-                        onHoldSave = { onNovelHoldSave(novel) }
-                    ) {
-                        com.kmhmubin.kothagolp.ui.components.NovelListItem(
-                            novel = novel,
-                            onClick = { onNovelClick(novel) },
-                            onLongClick = { onNovelLongClick(novel) },
-                            density = appSettings.uiDensity,
-                            modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
-                        )
-                    }
+                    com.kmhmubin.kothagolp.ui.components.NovelListItem(
+                        novel = novel,
+                        onClick = { onNovelClick(novel) },
+                        onLongClick = { onNovelLongClick(novel) },
+                        density = appSettings.uiDensity,
+                        modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
+                    )
                 }
                 if (uiState.isLoadingMore) {
                     item(key = "load_more_indicator") {
@@ -1839,35 +1783,8 @@ private fun LoadMoreIndicator() {
 }
 
 // ============================================================================
-// Quick-save hold wrapper + toast
+// Quick-save toast
 // ============================================================================
-
-@Composable
-private fun HoldToSaveWrapper(
-    novelUrl: String,
-    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
-    onHoldSave: () -> Unit,
-    content: @Composable () -> Unit
-) {
-    Box(
-        modifier = Modifier.pointerInput(novelUrl) {
-            awaitEachGesture {
-                val down = awaitPointerEvent(PointerEventPass.Initial)
-                if (down.changes.none { it.pressed }) return@awaitEachGesture
-                val timedOut = withTimeoutOrNull(3000L) {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Final)
-                        if (event.changes.none { it.pressed }) break
-                    }
-                } == null
-                if (timedOut) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onHoldSave()
-                }
-            }
-        }
-    ) { content() }
-}
 
 @Composable
 private fun QuickSaveToast(message: String) {
