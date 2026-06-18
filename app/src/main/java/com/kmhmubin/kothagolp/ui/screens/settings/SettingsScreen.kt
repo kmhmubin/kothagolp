@@ -571,6 +571,19 @@ fun SettingsBrowseScreen(onBack: () -> Unit) {
                             )
                         }
                     )
+                    SettingsDivider()
+                    DropdownItem(
+                        icon = Icons.Rounded.BookmarkAdd,
+                        title = "Quick-Save Category",
+                        selectedValue = settings.quickSaveStatus.displayName(),
+                        options = ReadingStatus.entries.map { it.displayName() },
+                        selectedIndex = ReadingStatus.entries.indexOf(settings.quickSaveStatus),
+                        onSelect = {
+                            preferencesManager.updateAppSettings(
+                                settings.copy(quickSaveStatus = ReadingStatus.entries[it])
+                            )
+                        }
+                    )
                 }
             }
 

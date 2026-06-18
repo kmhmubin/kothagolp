@@ -130,12 +130,12 @@ import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.provider.MainProvider
 import com.kmhmubin.kothagolp.ui.components.DuplicateLibraryDialog
-import com.kmhmubin.kothagolp.ui.components.NovelActionSheet
 import com.kmhmubin.kothagolp.ui.components.NovelCard
 import com.kmhmubin.kothagolp.ui.components.NovelGridSkeleton
 import com.kmhmubin.kothagolp.ui.components.KothagolpPullToRefreshBox
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
+import androidx.compose.material.icons.rounded.BookmarkAdd
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 
@@ -199,39 +199,6 @@ fun ProviderBrowseScreen(
 
     LaunchedEffect(uiState.isSearchMode) {
         if (uiState.isSearchMode) isFilterOverlayOpen = false
-    }
-
-    if (actionSheetState.isVisible && actionSheetState.data != null) {
-        val data = actionSheetState.data!!
-        NovelActionSheet(
-            data = data,
-            sheetState = sheetState,
-            onDismiss = { viewModel.hideActionSheet() },
-            onViewDetails = {
-                viewModel.hideActionSheet()
-                onNavigateToDetails(data.novel.url, providerName)
-            },
-            onContinueReading = {
-                viewModel.hideActionSheet()
-                val position = viewModel.getReadingPosition(data.novel.url)
-                if (position != null) {
-                    onNavigateToReader(position.chapterUrl, data.novel.url, providerName)
-                } else {
-                    scope.launch {
-                        val history = viewModel.getHistoryChapter(data.novel.url)
-                        if (history != null) {
-                            onNavigateToReader(history.first, data.novel.url, providerName)
-                        } else {
-                            onNavigateToDetails(data.novel.url, providerName)
-                        }
-                    }
-                }
-            },
-            onAddToLibrary = { status: ReadingStatus -> viewModel.addToLibrary(data.novel, status) }
-                .takeIf { !data.isInLibrary },
-            onRemoveFromLibrary = { viewModel.removeFromLibrary(data.novel.url) }.takeIf { data.isInLibrary },
-            onRemoveFromHistory = null
-        )
     }
 
     actionSheetState.duplicateWarning?.let { warning ->
@@ -336,8 +303,7 @@ fun ProviderBrowseScreen(
                                         onNavigateToDetails(novel.url, providerName)
                                     },
                                     onNovelLongClick = { novel ->
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        viewModel.showActionSheet(novel)
+                                        viewModel.quickSaveToLibrary(novel, appSettings.quickSaveStatus)
                                     },
                                     onLoadMore = viewModel::loadNextPage,
                                     appSettings = appSettings
@@ -345,13 +311,25 @@ fun ProviderBrowseScreen(
                             }
                         }
 
-                        // Floating search results indicator
-                        Box(
+                        // Floating indicators (quick-save toast + search results)
+                        Column(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .navigationBarsPadding()
-                                .padding(bottom = BrowseDesign.spacingXl)
+                                .padding(bottom = BrowseDesign.spacingXl),
+                            verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = uiState.quickSaveMessage != null,
+                                enter = slideInVertically(
+                                    initialOffsetY = { it },
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                ) + fadeIn(),
+                                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                            ) {
+                                uiState.quickSaveMessage?.let { QuickSaveToast(message = it) }
+                            }
                             androidx.compose.animation.AnimatedVisibility(
                                 visible = uiState.showSearchIndicator,
                                 enter = slideInVertically(
@@ -1734,6 +1712,7 @@ private fun MainContent(
                         novel = novel,
                         onClick = { onNovelClick(novel) },
                         onLongClick = { onNovelLongClick(novel) },
+                        isInLibrary = novel.url in uiState.libraryUrls,
                         density = appSettings.uiDensity,
                         modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
                     )
@@ -1774,6 +1753,7 @@ private fun MainContent(
                         novel = novel,
                         onClick = { onNovelClick(novel) },
                         onLongClick = { onNovelLongClick(novel) },
+                        isInLibrary = novel.url in uiState.libraryUrls,
                         density = appSettings.uiDensity,
                         modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
                     )
@@ -1801,6 +1781,39 @@ private fun LoadMoreIndicator() {
             strokeWidth = 3.dp,
             color = MaterialTheme.colorScheme.primary
         )
+    }
+}
+
+// ============================================================================
+// Quick-save toast
+// ============================================================================
+
+@Composable
+private fun QuickSaveToast(message: String) {
+    Surface(
+        shape = AppShape.extraLarge,
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shadowElevation = 8.dp,
+        tonalElevation = 4.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = BrowseDesign.spacingLg, vertical = BrowseDesign.spacingMd),
+            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.BookmarkAdd,
+                contentDescription = null,
+                modifier = Modifier.size(BrowseDesign.iconMd),
+                tint = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+        }
     }
 }
 

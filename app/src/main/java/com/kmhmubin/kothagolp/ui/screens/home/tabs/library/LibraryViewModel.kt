@@ -32,6 +32,7 @@ class LibraryViewModel : ViewModel() {
     private val novelRepository = RepositoryProvider.getNovelRepository()
     private val preferencesManager = RepositoryProvider.getPreferencesManager()
     private val notificationRepository = RepositoryProvider.getNotificationRepository()
+    private val historyRepository = RepositoryProvider.getHistoryRepository()
 
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
@@ -642,6 +643,80 @@ class LibraryViewModel : ViewModel() {
     }
 
     fun getReadingPosition(novelUrl: String) = actionSheetManager.getReadingPosition(novelUrl)
+
+    // ================================================================
+    // MULTISELECT
+    // ================================================================
+
+    fun enterMultiSelect(novelUrl: String) {
+        actionSheetManager.hide()
+        _uiState.update { it.copy(
+            isMultiSelectMode = true,
+            selectedNovelUrls = setOf(novelUrl)
+        )}
+    }
+
+    fun toggleSelection(novelUrl: String) {
+        _uiState.update { state ->
+            val updated = if (novelUrl in state.selectedNovelUrls)
+                state.selectedNovelUrls - novelUrl
+            else
+                state.selectedNovelUrls + novelUrl
+            state.copy(
+                selectedNovelUrls = updated,
+                isMultiSelectMode = updated.isNotEmpty()
+            )
+        }
+    }
+
+    fun exitMultiSelect() {
+        _uiState.update { it.copy(isMultiSelectMode = false, selectedNovelUrls = emptySet()) }
+    }
+
+    fun changeStatusForSelected(status: ReadingStatus) {
+        viewModelScope.launch {
+            val urls = _uiState.value.selectedNovelUrls.toList()
+            urls.forEach { url ->
+                try { libraryRepository.updateStatus(url, status) } catch (e: Exception) {
+                    Log.e(TAG, "Error updating status for $url", e)
+                }
+            }
+            exitMultiSelect()
+        }
+    }
+
+    fun markAllReadForSelected() {
+        viewModelScope.launch {
+            val selected = _uiState.value.selectedNovelUrls.toList()
+            val items = _uiState.value.items.filter { it.novel.url in selected }
+            items.forEach { item ->
+                try {
+                    libraryRepository.acknowledgeNewChapters(item.novel.url)
+                    val provider = novelRepository.getProvider(item.novel.apiName) ?: return@forEach
+                    val details = novelRepository.loadNovelDetails(provider, item.novel.url, forceRefresh = false).getOrNull()
+                    val chapterUrls = details?.chapters?.map { it.url } ?: return@forEach
+                    if (chapterUrls.isNotEmpty()) {
+                        historyRepository.markChaptersRead(item.novel.url, chapterUrls)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error marking all read for ${item.novel.url}", e)
+                }
+            }
+            exitMultiSelect()
+        }
+    }
+
+    fun deleteSelected() {
+        viewModelScope.launch {
+            val urls = _uiState.value.selectedNovelUrls.toList()
+            urls.forEach { url ->
+                try { libraryRepository.removeFromLibrary(url) } catch (e: Exception) {
+                    Log.e(TAG, "Error deleting $url", e)
+                }
+            }
+            exitMultiSelect()
+        }
+    }
 
     private fun getHiddenStatuses(state: LibraryUiState): Set<ReadingStatus> =
         LibraryFilter.hiddenStatuses(state.visibleFilters)

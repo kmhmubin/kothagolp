@@ -68,17 +68,24 @@ import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.PauseCircle
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Label
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Sync
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -88,12 +95,19 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -164,6 +178,10 @@ fun LibraryTab(
     val gridColumns = calculateGridColumns(appSettings.libraryGridColumns)
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     val pullToRefreshState = rememberPullToRefreshState()
+    var showStatusPicker by remember { mutableStateOf(false) }
+    val statusPickerSheetState = rememberModalBottomSheetState()
+
+    BackHandler(enabled = uiState.isMultiSelectMode) { viewModel.exitMultiSelect() }
 
     val pagerState = rememberPagerState(
         initialPage = uiState.visibleFilters.indexOf(uiState.filter).coerceAtLeast(0),
@@ -212,6 +230,17 @@ fun LibraryTab(
             onRemoveFromLibrary = { viewModel.removeFromLibrary(data.novel.url) },
             onRemoveFromHistory = null,
             onStatusChange = { status -> viewModel.updateReadingStatus(status) }
+        )
+    }
+
+    if (showStatusPicker) {
+        MultiSelectStatusPicker(
+            sheetState = statusPickerSheetState,
+            onSelect = { status ->
+                viewModel.changeStatusForSelected(status)
+                showStatusPicker = false
+            },
+            onDismiss = { showStatusPicker = false }
         )
     }
 
@@ -280,23 +309,26 @@ fun LibraryTab(
                                 onQueryChange = viewModel::setSearchQuery,
                                 onNotificationClick = onNavigateToNotifications,
                                 onNovelClick = { item ->
-                                    if (item.hasNewChapters) {
-                                        viewModel.acknowledgeNewChapters(item.novel.url)
-                                    }
-                                    val position = item.lastReadPosition
-                                    if (position != null) {
-                                        onNavigateToReader(
-                                            position.chapterUrl,
-                                            item.novel.url,
-                                            item.novel.apiName
-                                        )
+                                    if (uiState.isMultiSelectMode) {
+                                        viewModel.toggleSelection(item.novel.url)
                                     } else {
-                                        onNavigateToDetails(item.novel.url, item.novel.apiName)
+                                        if (item.hasNewChapters) viewModel.acknowledgeNewChapters(item.novel.url)
+                                        val position = item.lastReadPosition
+                                        if (position != null) {
+                                            onNavigateToReader(position.chapterUrl, item.novel.url, item.novel.apiName)
+                                        } else {
+                                            onNavigateToDetails(item.novel.url, item.novel.apiName)
+                                        }
                                     }
                                 },
                                 onNovelLongClick = { item ->
-                                    viewModel.showActionSheet(item)
+                                    if (uiState.isMultiSelectMode) {
+                                        viewModel.toggleSelection(item.novel.url)
+                                    } else {
+                                        viewModel.showActionSheet(item)
+                                    }
                                 },
+                                onEnterMultiSelect = { url -> viewModel.enterMultiSelect(url) },
                                 appSettings = appSettings,
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -306,17 +338,30 @@ fun LibraryTab(
             }
         }
 
-        // Filter Bar
-        LibraryFilterBar(
-            selectedFilter = uiState.filter,
-            visibleFilters = uiState.visibleFilters,
-            onFilterChange = { filter ->
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                viewModel.onFilterChipPressed(filter)
-            },
-            itemCounts = uiState.getFilterCounts(),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        Column(modifier = Modifier.align(Alignment.BottomCenter)) {
+            AnimatedVisibility(
+                visible = uiState.isMultiSelectMode,
+                enter = slideInVertically { it } + fadeIn(tween(200)),
+                exit = slideOutVertically { it } + fadeOut(tween(150))
+            ) {
+                MultiSelectBar(
+                    selectedCount = uiState.selectedNovelUrls.size,
+                    onChangeCategory = { showStatusPicker = true },
+                    onMarkAllRead = { viewModel.markAllReadForSelected() },
+                    onDelete = { viewModel.deleteSelected() },
+                    onDismiss = { viewModel.exitMultiSelect() }
+                )
+            }
+            LibraryFilterBar(
+                selectedFilter = uiState.filter,
+                visibleFilters = uiState.visibleFilters,
+                onFilterChange = { filter ->
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    viewModel.onFilterChipPressed(filter)
+                },
+                itemCounts = uiState.getFilterCounts()
+            )
+        }
     }
 }
 
@@ -708,10 +753,12 @@ private fun LibraryContent(
     onNotificationClick: () -> Unit,
     onNovelClick: (LibraryItem) -> Unit,
     onNovelLongClick: (LibraryItem) -> Unit,
+    onEnterMultiSelect: (String) -> Unit,
     appSettings: AppSettings,
     modifier: Modifier = Modifier
 ) {
     val dimensions = KothagolpTheme.dimensions
+    val haptic = LocalHapticFeedback.current
     val showRefreshProgress = uiState.refreshProgress != null
     val novelsWithNewChapters = uiState.items.count { it.hasNewChapters }
     val displayMode = appSettings.libraryDisplayMode
@@ -767,15 +814,23 @@ private fun LibraryContent(
                     items = uniqueItems,
                     key = { index, item -> "novel_${item.novel.url}_$index" }
                 ) { _, item ->
-                    NovelCard(
-                        novel = item.novel,
-                        onClick = { onNovelClick(item) },
-                        onLongClick = { onNovelLongClick(item) },
-                        newChapterCount = if (appSettings.showBadges) item.newChapterCount else 0,
-                        readingStatus = if (appSettings.showBadges) item.readingStatus else null,
-                        lastReadChapter = item.lastReadPosition?.chapterName,
-                        density = appSettings.uiDensity
-                    )
+                    HoldToSelectWrapper(
+                        novelUrl = item.novel.url,
+                        isMultiSelectMode = uiState.isMultiSelectMode,
+                        haptic = haptic,
+                        onEnterMultiSelect = { onEnterMultiSelect(item.novel.url) }
+                    ) {
+                        NovelCard(
+                            novel = item.novel,
+                            onClick = { onNovelClick(item) },
+                            onLongClick = { onNovelLongClick(item) },
+                            newChapterCount = if (appSettings.showBadges) item.newChapterCount else 0,
+                            readingStatus = if (appSettings.showBadges) item.readingStatus else null,
+                            lastReadChapter = item.lastReadPosition?.chapterName,
+                            density = appSettings.uiDensity,
+                            isSelected = item.novel.url in uiState.selectedNovelUrls
+                        )
+                    }
                 }
             }
         }
@@ -822,15 +877,23 @@ private fun LibraryContent(
                     items = uniqueItems,
                     key = { index, item -> "novel_${item.novel.url}_$index" }
                 ) { _, item ->
-                    NovelListItem(
-                        novel = item.novel,
-                        onClick = { onNovelClick(item) },
-                        onLongClick = { onNovelLongClick(item) },
-                        newChapterCount = if (appSettings.showBadges) item.newChapterCount else 0,
-                        readingStatus = if (appSettings.showBadges) item.readingStatus else null,
-                        lastReadChapter = item.lastReadPosition?.chapterName,
-                        density = appSettings.uiDensity
-                    )
+                    HoldToSelectWrapper(
+                        novelUrl = item.novel.url,
+                        isMultiSelectMode = uiState.isMultiSelectMode,
+                        haptic = haptic,
+                        onEnterMultiSelect = { onEnterMultiSelect(item.novel.url) }
+                    ) {
+                        NovelListItem(
+                            novel = item.novel,
+                            onClick = { onNovelClick(item) },
+                            onLongClick = { onNovelLongClick(item) },
+                            newChapterCount = if (appSettings.showBadges) item.newChapterCount else 0,
+                            readingStatus = if (appSettings.showBadges) item.readingStatus else null,
+                            lastReadChapter = item.lastReadPosition?.chapterName,
+                            density = appSettings.uiDensity,
+                            isSelected = item.novel.url in uiState.selectedNovelUrls
+                        )
+                    }
                 }
             }
         }
@@ -1357,6 +1420,178 @@ private fun getFilterIcon(filter: LibraryFilter): ImageVector? {
         LibraryFilter.ON_HOLD -> Icons.Rounded.PauseCircle
         LibraryFilter.PLAN_TO_READ -> Icons.Rounded.BookmarkAdd
         LibraryFilter.DROPPED -> Icons.Rounded.Cancel
+    }
+}
+
+// ============================================================================
+// Multiselect — hold-to-select wrapper
+// ============================================================================
+
+@Composable
+private fun HoldToSelectWrapper(
+    novelUrl: String,
+    isMultiSelectMode: Boolean,
+    haptic: HapticFeedback,
+    onEnterMultiSelect: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = Modifier.pointerInput(novelUrl, isMultiSelectMode) {
+            if (isMultiSelectMode) return@pointerInput
+            awaitEachGesture {
+                val down = awaitPointerEvent(PointerEventPass.Initial)
+                if (down.changes.none { it.pressed }) return@awaitEachGesture
+                val timedOut = withTimeoutOrNull(5000L) {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Final)
+                        if (event.changes.none { it.pressed }) break
+                    }
+                } == null
+                if (timedOut) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onEnterMultiSelect()
+                }
+            }
+        }
+    ) {
+        content()
+    }
+}
+
+// ============================================================================
+// Multiselect — floating action bar
+// ============================================================================
+
+@Composable
+private fun MultiSelectBar(
+    selectedCount: Int,
+    onChangeCategory: () -> Unit,
+    onMarkAllRead: () -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        shape = AppShape.extraLarge,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shadowElevation = AppElevation.lg,
+        tonalElevation = AppElevation.lg
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onDismiss) {
+                Icon(
+                    imageVector = Icons.Rounded.Close,
+                    contentDescription = "Exit selection",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+            Text(
+                text = "$selectedCount selected",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = onChangeCategory) {
+                Icon(
+                    imageVector = Icons.Rounded.Label,
+                    contentDescription = "Change category",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+            IconButton(onClick = onMarkAllRead) {
+                Icon(
+                    imageVector = Icons.Rounded.DoneAll,
+                    contentDescription = "Mark all read",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.errorContainer
+            ) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Multiselect — status picker sheet
+// ============================================================================
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MultiSelectStatusPicker(
+    sheetState: androidx.compose.material3.SheetState,
+    onSelect: (ReadingStatus) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val statuses = listOf(
+        ReadingStatus.READING to (StatusReading to "Reading"),
+        ReadingStatus.COMPLETED to (StatusCompleted to "Completed"),
+        ReadingStatus.ON_HOLD to (StatusOnHold to "On Hold"),
+        ReadingStatus.PLAN_TO_READ to (StatusPlanToRead to "Plan to Read"),
+        ReadingStatus.DROPPED to (StatusDROPPED to "Dropped"),
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Change Category",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+            )
+            HorizontalDivider()
+            statuses.forEach { (status, pair) ->
+                val (color, label) = pair
+                Surface(
+                    onClick = { onSelect(status) },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color.Transparent
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                        )
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

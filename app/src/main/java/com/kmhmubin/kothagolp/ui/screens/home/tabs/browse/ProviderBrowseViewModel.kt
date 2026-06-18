@@ -23,6 +23,7 @@ class ProviderBrowseViewModel(
 ) : ViewModel() {
 
     private val novelRepository = RepositoryProvider.getNovelRepository()
+    private val libraryRepository = RepositoryProvider.getLibraryRepository()
 
     private val _uiState = MutableStateFlow(ProviderBrowseUiState())
     val uiState: StateFlow<ProviderBrowseUiState> = _uiState.asStateFlow()
@@ -40,6 +41,13 @@ class ProviderBrowseViewModel(
     }
 
     init {
+        // Observe library membership so browse cards show the bookmark badge
+        viewModelScope.launch {
+            libraryRepository.observeLibrary().collect { items ->
+                _uiState.update { it.copy(libraryUrls = items.map { item -> item.novel.url }.toSet()) }
+            }
+        }
+
         // Live initialize and react to preference/provider registry changes
         var hadProvider = false
 
@@ -478,6 +486,15 @@ class ProviderBrowseViewModel(
 
     fun addToLibrary(novel: Novel, status: ReadingStatus) {
         viewModelScope.launch { actionSheetManager.addToLibrary(novel, status) }
+    }
+
+    fun quickSaveToLibrary(novel: Novel, status: ReadingStatus) {
+        viewModelScope.launch {
+            actionSheetManager.addToLibrary(novel, status)
+            _uiState.update { it.copy(quickSaveMessage = "Saved to ${status.displayName()}") }
+            delay(2000L)
+            _uiState.update { it.copy(quickSaveMessage = null) }
+        }
     }
 
     fun addDuplicateAnyway() {

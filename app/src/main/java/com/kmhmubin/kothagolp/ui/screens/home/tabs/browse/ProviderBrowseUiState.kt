@@ -23,7 +23,9 @@ data class ProviderBrowseUiState(
     val isRefreshing: Boolean = false,
     val error: String? = null,
     val selectedExtraFilters: Map<String, String> = emptyMap(),
-    val isCloudflareError: Boolean = false
+    val isCloudflareError: Boolean = false,
+    val quickSaveMessage: String? = null,
+    val libraryUrls: Set<String> = emptySet()
 ) {
     val displayNovels: List<Novel>
         get() = if (isSearchMode) searchResults else novels
