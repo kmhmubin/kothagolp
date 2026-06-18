@@ -86,6 +86,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -177,11 +178,11 @@ fun LibraryTab(
         }
     }
 
-    // Filter chip tap → animate pager to correct page
+    // Filter chip tap → jump pager to correct page instantly
     LaunchedEffect(uiState.filter) {
         val targetPage = uiState.visibleFilters.indexOf(uiState.filter)
         if (targetPage >= 0 && targetPage != pagerState.currentPage && !pagerState.isScrollInProgress) {
-            pagerState.animateScrollToPage(targetPage)
+            pagerState.scrollToPage(targetPage)
         }
     }
 
@@ -246,7 +247,15 @@ fun LibraryTab(
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize(),
-                        beyondViewportPageCount = 1
+                        beyondViewportPageCount = 1,
+                        flingBehavior = PagerDefaults.flingBehavior(
+                            state = pagerState,
+                            snapPositionalThreshold = 0.3f,
+                            snapAnimationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        )
                     ) { page ->
                         val pageFilter = uiState.visibleFilters.getOrElse(page) { LibraryFilter.ALL }
                         val pageItems = remember(uiState.items, uiState.searchQuery, uiState.downloadCounts, uiState.sortOrder, pageFilter) {
