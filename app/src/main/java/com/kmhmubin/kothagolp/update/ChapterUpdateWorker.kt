@@ -24,44 +24,79 @@ class ChapterUpdateWorker(
     params: WorkerParameters
 ) : CoroutineWorker(ctx, params) {
 
+    private val nm by lazy {
+        applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val prefs = RepositoryProvider.getPreferencesManager()
+        val settings = prefs.appSettings.value
+
+        if (!settings.chapterUpdateNotify && settings.chapterUpdateInterval.hours() == 0L) {
+            return@withContext Result.success()
+        }
+
+        postProgressNotification(0, 0)
         try {
-            val prefs = RepositoryProvider.getPreferencesManager()
-            val settings = prefs.appSettings.value
-
-            if (!settings.chapterUpdateNotify && settings.chapterUpdateInterval.hours() == 0L) {
-                return@withContext Result.success()
-            }
-
             val libraryRepo = RepositoryProvider.getLibraryRepository()
 
             val result = libraryRepo.refreshNovelsWithFilter(
                 getProvider = { apiName -> MainProvider.getProvider(apiName) },
-                filter = LibraryFilter.ALL
+                filter = LibraryFilter.ALL,
+                onProgress = { current, total, _ -> postProgressNotification(current, total) }
             )
 
             Log.d(TAG, "Chapter update: ${result.updatedCount} novels updated, ${result.totalNewChapters} new chapters")
 
             if (settings.chapterUpdateNotify && result.updatedCount > 0) {
                 val novelsWithNew = libraryRepo.getLibrary().filter { it.hasNewChapters }
-                postNotification(result.updatedCount, result.totalNewChapters, novelsWithNew.map { it.novel.name })
+                postResultNotification(result.updatedCount, result.totalNewChapters, novelsWithNew.map { it.novel.name })
             }
 
             Result.success()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            Log.d(TAG, "Chapter update cancelled")
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Chapter update check failed", e)
             Result.retry()
+        } finally {
+            nm.cancel(NOTIFICATION_ID_PROGRESS)
         }
     }
 
-    private fun postNotification(
+    private fun postProgressNotification(current: Int, total: Int) {
+        ensureChannel()
+        val indeterminate = total == 0
+        val contentText = if (indeterminate) "Scanning your library…" else "$current / $total books"
+        val cancelIntent = Intent(NotificationHelper.ACTION_CHAPTER_UPDATE_CANCEL).apply {
+            setPackage(applicationContext.packageName)
+        }
+        val cancelPending = PendingIntent.getBroadcast(
+            applicationContext, 0, cancelIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(applicationContext, NotificationHelper.CHANNEL_SYNC)
+            .setSmallIcon(R.drawable.ic_notification_download)
+            .setContentTitle("Checking for new chapters")
+            .setContentText(contentText)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setProgress(total, current, indeterminate)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setShowWhen(false)
+            .addAction(R.drawable.ic_notification_cancel, "Cancel", cancelPending)
+            .build()
+        nm.notify(NOTIFICATION_ID_PROGRESS, notification)
+    }
+
+    private fun postResultNotification(
         novelCount: Int,
         totalNewChapters: Int,
         novelNames: List<String>
     ) {
         ensureChannel()
-
-        val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val tapIntent = Intent(applicationContext, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -120,6 +155,7 @@ class ChapterUpdateWorker(
 
     companion object {
         private const val TAG = "ChapterUpdateWorker"
+        private const val NOTIFICATION_ID_PROGRESS = 7001
         const val NOTIFICATION_ID = 7000
     }
 }

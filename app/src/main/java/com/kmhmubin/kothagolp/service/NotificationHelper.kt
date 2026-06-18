@@ -46,6 +46,7 @@ object NotificationHelper {
     const val ACTION_DOWNLOAD_RESUME = "com.kmhmubin.kothagolp.action.DOWNLOAD_RESUME"
     const val ACTION_DOWNLOAD_CANCEL = "com.kmhmubin.kothagolp.action.DOWNLOAD_CANCEL"
     const val ACTION_SYNC_CANCEL = "com.kmhmubin.kothagolp.action.SYNC_CANCEL"
+    const val ACTION_CHAPTER_UPDATE_CANCEL = "com.kmhmubin.kothagolp.action.CHAPTER_UPDATE_CANCEL"
 
     const val ACTION_TTS_PLAY = "com.kmhmubin.kothagolp.action.TTS_PLAY"
     const val ACTION_TTS_PAUSE = "com.kmhmubin.kothagolp.action.TTS_PAUSE"

@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.kmhmubin.kothagolp.domain.model.ChapterUpdateInterval
@@ -47,4 +49,18 @@ object ChapterUpdateScheduler {
     fun cancel(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
     }
+
+    fun runNow(context: Context) {
+        val request = OneTimeWorkRequestBuilder<ChapterUpdateWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(WORK_NAME_ONETIME, ExistingWorkPolicy.REPLACE, request)
+    }
+
+    internal const val WORK_NAME_ONETIME = "chapter_update_onetime"
 }

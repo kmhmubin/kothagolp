@@ -564,6 +564,19 @@ fun SettingsLibraryScreen(onBack: () -> Unit) {
                             }
                         )
                     }
+                    SettingsDivider()
+                    ClickableItem(
+                        icon = Icons.Outlined.Sync,
+                        title = "Check Now",
+                        subtitle = "Run chapter check immediately",
+                        tint = MaterialTheme.colorScheme.primary,
+                        onClick = {
+                            ChapterUpdateScheduler.runNow(context)
+                            scope.launch {
+                                snackbarState.showSnackbar("Checking for new chapters…")
+                            }
+                        }
+                    )
                 }
             }
 
