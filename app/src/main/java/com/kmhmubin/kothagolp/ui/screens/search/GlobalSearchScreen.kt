@@ -355,7 +355,14 @@ private fun SearchResults(
         contentPadding = PaddingValues(vertical = dimensions.spacingMd),
         verticalArrangement = Arrangement.spacedBy(dimensions.spacingXl)
     ) {
-        uiState.filteredProviderStates.forEach { (providerName, state) ->
+        // Same ordering as BrowseTab: results-with-content first, loading next, empty/error at bottom
+        val states = uiState.filteredProviderStates
+        val withResults = states.filter { (_, s) -> s is ProviderSearchState.Success && (s as ProviderSearchState.Success).novels.isNotEmpty() }
+        val loading = states.filter { (_, s) -> s is ProviderSearchState.Loading }
+        val noResults = states.filter { (_, s) -> s !is ProviderSearchState.Loading && !(s is ProviderSearchState.Success && (s as ProviderSearchState.Success).novels.isNotEmpty()) }
+        val ordered = withResults + loading + noResults
+
+        ordered.forEach { (providerName, state) ->
             item(key = "provider_$providerName") {
                 AnimatedVisibility(
                     visible = true,

@@ -94,7 +94,8 @@ fun HomeScreen(
                         appSettings = appSettings,
                         onNavigateToDetails = onNavigateToDetails,
                         onNavigateToReader = onNavigateToReader,
-                        onNavigateToNotifications = onNavigateToNotifications
+                        onNavigateToNotifications = onNavigateToNotifications,
+                        onNavigateToGlobalSearch = onNavigateToGlobalSearch
                     )
                 }
 

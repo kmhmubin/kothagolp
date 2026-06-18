@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,6 +56,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ManageSearch
 import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BookmarkAdd
@@ -83,6 +85,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -166,6 +169,7 @@ fun LibraryTab(
     onNavigateToDetails: (novelUrl: String, providerName: String) -> Unit,
     onNavigateToReader: (chapterUrl: String, novelUrl: String, providerName: String) -> Unit,
     onNavigateToNotifications: () -> Unit,
+    onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
     viewModel: LibraryViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -299,7 +303,8 @@ fun LibraryTab(
                                 onQueryChange = viewModel::setSearchQuery,
                                 onNotificationClick = onNavigateToNotifications,
                                 statusBarPadding = statusBarPadding,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
+                                onNavigateToGlobalSearch = onNavigateToGlobalSearch
                             )
                         } else {
                             LibraryContent(
@@ -910,7 +915,8 @@ private fun LibraryEmptyContent(
     onQueryChange: (String) -> Unit,
     onNotificationClick: () -> Unit,
     statusBarPadding: PaddingValues,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigateToGlobalSearch: ((query: String) -> Unit)? = null
 ) {
     val dimensions = KothagolpTheme.dimensions
     val novelsWithNewChapters = uiState.items.count { it.hasNewChapters }
@@ -941,7 +947,10 @@ private fun LibraryEmptyContent(
             LibraryEmptyState(
                 searchQuery = uiState.searchQuery,
                 filter = uiState.filter,
-                totalItems = uiState.items.size
+                totalItems = uiState.items.size,
+                onSearchAllSources = if (onNavigateToGlobalSearch != null && uiState.searchQuery.isNotBlank()) {
+                    { onNavigateToGlobalSearch(uiState.searchQuery) }
+                } else null
             )
         }
     }
@@ -951,7 +960,8 @@ private fun LibraryEmptyContent(
 private fun LibraryEmptyState(
     searchQuery: String,
     filter: LibraryFilter,
-    totalItems: Int
+    totalItems: Int,
+    onSearchAllSources: (() -> Unit)? = null
 ) {
     Card(
         shape = AppShape.extraLarge,
@@ -1000,6 +1010,21 @@ private fun LibraryEmptyState(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
+                    }
+
+                    if (onSearchAllSources != null) {
+                        OutlinedButton(
+                            onClick = onSearchAllSources,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.ManageSearch,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "Search all sources")
+                        }
                     }
                 }
 

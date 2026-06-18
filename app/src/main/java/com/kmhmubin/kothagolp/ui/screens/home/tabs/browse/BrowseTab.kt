@@ -801,16 +801,22 @@ private fun SearchResultsContent(
             )
         }
 
-        // Build an ordering that prioritizes favorite providers, and follows
-        // the provider order defined in settings (via `providers` list).
+        // Ordering: providers with results first (in settings order), then loading,
+        // then empty/error at bottom — so useful content rises to the top.
         val providerOrder = providers.map { it.name }
         val available = providerStates.keys
-
-        val favoritesInOrder = providerOrder.filter { it in favoriteProviders && it in available }
-        val nonFavoritesInOrder = providerOrder.filter { it !in favoriteProviders && it in available }
         val remaining = providerStates.keys.filter { it !in providerOrder }
+        val allNamesOrdered = (providerOrder.filter { it in available }) + remaining
 
-        val orderedNames = favoritesInOrder + nonFavoritesInOrder + remaining
+        fun hasResults(name: String) = providerStates[name] is ProviderSearchState.Success &&
+                (providerStates[name] as ProviderSearchState.Success).novels.isNotEmpty()
+        fun isLoading(name: String) = providerStates[name] is ProviderSearchState.Loading
+
+        val withResults = allNamesOrdered.filter { hasResults(it) }
+        val loading = allNamesOrdered.filter { isLoading(it) }
+        val noResults = allNamesOrdered.filter { !hasResults(it) && !isLoading(it) }
+
+        val orderedNames = withResults + loading + noResults
 
         val sortedProviders = orderedNames.mapNotNull { name ->
             providerStates[name]?.let { state -> name to state }
