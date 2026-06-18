@@ -17,7 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.BrokenImage
@@ -149,17 +150,17 @@ fun RelatedNovelCard(
             .scale(scale)
             .shadow(
                 elevation = if (isPressed) 2.dp else 6.dp,
-                shape = RoundedCornerShape(16.dp),
+                shape = AppShape.large,
                 ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                 spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(AppShape.large)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -233,9 +234,9 @@ fun RelatedNovelCard(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(8.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = AppShape.small,
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f),
-                        shadowElevation = 2.dp
+                        shadowElevation = AppElevation.sm
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
@@ -277,7 +278,7 @@ fun RelatedNovelCard(
                 // Provider chip
                 if (novel.apiName.isNotBlank()) {
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
+                        shape = AppShape.extraSmall,
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
                     ) {
                         Text(

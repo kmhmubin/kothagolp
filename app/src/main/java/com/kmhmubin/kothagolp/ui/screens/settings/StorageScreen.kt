@@ -36,7 +36,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -102,6 +101,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.data.backup.BackupData
 import com.kmhmubin.kothagolp.data.backup.BackupManager
 import com.kmhmubin.kothagolp.data.backup.BackupMetadata
@@ -806,7 +806,7 @@ private fun BackupRestoreCard(
                     onClick = onCreateBackup,
                     enabled = !isCreatingBackup && !isRestoring,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = AppShape.medium
                 ) {
                     AnimatedContent(
                         targetState = isCreatingBackup,
@@ -838,7 +838,7 @@ private fun BackupRestoreCard(
                     onClick = onRestore,
                     enabled = !isRestoring && !isCreatingBackup,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = AppShape.medium
                 ) {
                     AnimatedContent(
                         targetState = isRestoring,
@@ -905,7 +905,7 @@ private fun StorageOverviewCard(
                 if (cacheInfo.totalSize > 0) {
                     FilledTonalButton(
                         onClick = onClearAll,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = AppShape.medium
                     ) {
                         Icon(
                             Icons.Outlined.DeleteSweep,
@@ -953,7 +953,7 @@ private fun StorageOverviewCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(10.dp)
-                        .clip(RoundedCornerShape(5.dp))
+                        .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Box(
@@ -1044,7 +1044,7 @@ private fun StorageLoadingPlaceholder() {
                 modifier = Modifier
                     .width(90.dp)
                     .height(14.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(AppShape.extraSmall)
                     .background(placeholderColor)
             )
             Spacer(Modifier.height(8.dp))
@@ -1052,7 +1052,7 @@ private fun StorageLoadingPlaceholder() {
                 modifier = Modifier
                     .width(120.dp)
                     .height(28.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(AppShape.extraSmall)
                     .background(placeholderColor)
             )
             Spacer(Modifier.height(20.dp))
@@ -1060,7 +1060,7 @@ private fun StorageLoadingPlaceholder() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(10.dp)
-                    .clip(RoundedCornerShape(5.dp))
+                    .clip(AppShape.extraSmall)
                     .background(placeholderColor)
             )
             Spacer(Modifier.height(12.dp))
@@ -1073,7 +1073,7 @@ private fun StorageLoadingPlaceholder() {
                         modifier = Modifier
                             .width(60.dp)
                             .height(12.dp)
-                            .clip(RoundedCornerShape(3.dp))
+                            .clip(AppShape.extraSmall)
                             .background(placeholderColor)
                     )
                 }
@@ -1094,7 +1094,7 @@ private fun LegendItem(
         Box(
             modifier = Modifier
                 .size(10.dp)
-                .clip(RoundedCornerShape(3.dp))
+                .clip(AppShape.extraSmall)
                 .background(color)
         )
         Spacer(Modifier.width(6.dp))
@@ -1140,7 +1140,7 @@ private fun CacheCategoryCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(44.dp)
             ) {
@@ -1215,7 +1215,7 @@ private fun NovelDownloadItem(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f)
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     ) {
         Row(
             modifier = Modifier
@@ -1348,7 +1348,7 @@ private fun RestoreOptionsDialog(
                                 Spacer(Modifier.width(8.dp))
                                 Surface(
                                     color = MaterialTheme.colorScheme.primaryContainer,
-                                    shape = RoundedCornerShape(4.dp)
+                                    shape = AppShape.extraSmall
                                 ) {
                                     Text(
                                         text = "QuickNovel",
@@ -1601,7 +1601,7 @@ private fun RestoreOptionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(AppShape.small)
             .clickable(enabled = enabled) { onCheckedChange(!checked) }
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically

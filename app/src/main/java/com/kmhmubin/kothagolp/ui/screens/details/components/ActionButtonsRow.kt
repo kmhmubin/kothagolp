@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
@@ -96,7 +96,7 @@ private fun LastReadIndicator(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
         ) {
@@ -202,7 +202,7 @@ private fun ReadButton(
     Button(
         onClick = onClick,
         modifier = modifier.height(52.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.large,
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 4.dp,
             pressedElevation = 8.dp
@@ -232,7 +232,7 @@ private fun DownloadButton(
     OutlinedButton(
         onClick = if (isDownloading && onViewDownloads != null) onViewDownloads else onClick,
         modifier = Modifier.height(52.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.large,
         border = BorderStroke(
             1.5.dp,
             if (isDownloading) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
@@ -327,7 +327,7 @@ fun CompactActionButtonsRow(
             modifier = Modifier
                 .weight(1.5f)
                 .height(48.dp),
-            shape = RoundedCornerShape(12.dp)
+            shape = AppShape.medium
         ) {
             Icon(
                 imageVector = if (hasStartedReading) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook,
@@ -348,7 +348,7 @@ fun CompactActionButtonsRow(
             modifier = Modifier
                 .weight(1f)
                 .height(48.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             border = BorderStroke(
                 1.dp,
                 if (isDownloading) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline

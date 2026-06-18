@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -150,7 +150,7 @@ fun FastScrollerContainer(
                     .wrapContentSize(unbounded = true, align = Alignment.CenterEnd)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = MaterialTheme.colorScheme.inverseSurface,
                     shadowElevation = 6.dp
                 ) {
@@ -191,7 +191,7 @@ fun FastScrollerContainer(
                         .align(Alignment.Center)
                         .width(4.dp)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(2.dp))
+                        .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f))
                         .pointerInput(Unit) {
                             detectTapGestures { offset ->
@@ -210,7 +210,7 @@ fun FastScrollerContainer(
                     modifier = Modifier
                         .offset { IntOffset(0, thumbY.roundToInt() - with(density) { 20.dp.roundToPx() }) }
                         .size(20.dp, 40.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(AppShape.medium)
                         .background(
                             if (isDragging)
                                 MaterialTheme.colorScheme.primary

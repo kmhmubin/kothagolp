@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -94,7 +95,7 @@ fun EmptyReviewsMessage(modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .size(64.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(AppShape.large)
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
@@ -163,7 +164,7 @@ fun LoadMoreReviewsButton(
     ) {
         FilledTonalButton(
             onClick = onClick,
-            shape = RoundedCornerShape(12.dp)
+            shape = AppShape.medium
         ) {
             Text("Load More")
         }

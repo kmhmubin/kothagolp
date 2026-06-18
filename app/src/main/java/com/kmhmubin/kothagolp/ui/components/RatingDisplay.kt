@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.util.RatingColor
 import com.kmhmubin.kothagolp.util.RatingDisplayStyle
 import com.kmhmubin.kothagolp.util.RatingUtils
@@ -186,7 +187,7 @@ fun RatingChip(
 
     Surface(
         modifier = modifier,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+        shape = AppShape.extraSmall,
         color = color.copy(alpha = 0.15f)
     ) {
         Row(

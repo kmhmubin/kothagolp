@@ -12,7 +12,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -318,28 +317,10 @@ fun KothagolpTheme(
         else -> LightColorScheme
     }
 
-    // Update system bars
+    // Update status/nav bar icon appearance for current theme
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            val backgroundColor = when {
-                appSettings.useCustomTheme && !appSettings.useDynamicColor -> {
-                    if (useDarkTheme) {
-                        if (appSettings.amoledBlack) Color.Black
-                        else Color(appSettings.customThemeColors.backgroundColor)
-                    } else {
-                        Zinc50
-                    }
-                }
-                useDarkTheme -> {
-                    if (appSettings.amoledBlack) Color.Black else SunsetBase100
-                }
-                else -> Color(0xFFF8F9FA)
-            }
-
-            window.statusBarColor = backgroundColor.toArgb()
-            window.navigationBarColor = backgroundColor.toArgb()
-
             WindowCompat.getInsetsController(window, view).apply {
                 isAppearanceLightStatusBars = !useDarkTheme
                 isAppearanceLightNavigationBars = !useDarkTheme

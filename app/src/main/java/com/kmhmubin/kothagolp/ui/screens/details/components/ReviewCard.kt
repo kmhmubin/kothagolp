@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.ExpandLess
@@ -65,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.kmhmubin.kothagolp.domain.model.ReviewScore
 import com.kmhmubin.kothagolp.domain.model.UserReview
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import java.util.Locale
 
 /**
@@ -93,7 +93,7 @@ fun ReviewCard(
                     stiffness = Spring.StiffnessLow
                 )
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
@@ -240,7 +240,7 @@ fun ReviewCard(
 private fun PinnedBadge() {
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-        shape = RoundedCornerShape(6.dp)
+        shape = AppShape.extraSmall
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -318,7 +318,7 @@ private fun LevelBadge(level: Int) {
     }
 
     Surface(
-        shape = RoundedCornerShape(4.dp),
+        shape = AppShape.extraSmall,
         color = color.copy(alpha = 0.15f)
     ) {
         Text(
@@ -334,7 +334,7 @@ private fun LevelBadge(level: Int) {
 @Composable
 private fun RoleBadge(text: String, color: Color) {
     Surface(
-        shape = RoundedCornerShape(4.dp),
+        shape = AppShape.extraSmall,
         color = color.copy(alpha = 0.12f)
     ) {
         Text(
@@ -353,7 +353,7 @@ private fun RatingBadge(score: Int) {
     val ratingColor = getRatingColor(starValue)
 
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = AppShape.small,
         color = ratingColor.copy(alpha = 0.12f),
         border = BorderStroke(1.dp, ratingColor.copy(alpha = 0.2f))
     ) {
@@ -384,7 +384,7 @@ private fun ReplyIndicator(
     parentContent: String?
 ) {
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = AppShape.small,
         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
     ) {
         Row(
@@ -443,7 +443,7 @@ private fun ScoreChip(category: String, score: Int) {
     val scoreColor = getRatingColor(starValue)
 
     Surface(
-        shape = RoundedCornerShape(6.dp),
+        shape = AppShape.extraSmall,
         color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
     ) {
         Row(
@@ -555,7 +555,7 @@ private fun SpoilerOverlay(onReveal: () -> Unit) {
             .fillMaxSize()
             .background(
                 MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
-                RoundedCornerShape(8.dp)
+                AppShape.small
             )
             .clickable(onClick = onReveal),
         contentAlignment = Alignment.Center

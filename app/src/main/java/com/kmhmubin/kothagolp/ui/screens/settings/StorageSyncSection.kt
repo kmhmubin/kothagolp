@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CloudSync
@@ -198,7 +198,7 @@ fun StorageSyncSection(
 
                 if (!isGoogleDriveConfigured) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = AppShape.medium,
                         color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Text(
@@ -283,7 +283,7 @@ fun StorageSyncSection(
                             OutlinedButton(
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !syncState.isRunning,
-                                shape = RoundedCornerShape(12.dp),
+                                shape = AppShape.medium,
                                 onClick = { showDisconnectDialog = true }
                             ) {
                                 Text(
@@ -473,7 +473,7 @@ private fun OptionField(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Row(
@@ -557,7 +557,7 @@ private fun SyncActions(
                 OutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isRunning,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     onClick = onPurge
                 ) {
                     ButtonLabel("Delete remote")
@@ -581,7 +581,7 @@ private fun SyncActions(
                 OutlinedButton(
                     modifier = Modifier.weight(1f),
                     enabled = !isRunning,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     onClick = onPurge
                 ) {
                     ButtonLabel("Delete remote")
@@ -604,7 +604,7 @@ private fun SyncPrimaryAction(
         Button(
             modifier = modifier,
             enabled = !isRunning && configured,
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             onClick = onSync
         ) {
             ButtonLabel(if (isRunning) "Syncing" else "Sync")
@@ -613,7 +613,7 @@ private fun SyncPrimaryAction(
         OutlinedButton(
             modifier = modifier,
             enabled = configured,
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             onClick = onSignIn
         ) {
             ButtonLabel("Sign in")

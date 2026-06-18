@@ -20,6 +20,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteSweep
@@ -119,7 +120,7 @@ fun FilterManagementSheet(
             // Tab row
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                shape = RoundedCornerShape(16.dp),
+                shape = AppShape.large,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
@@ -304,7 +305,7 @@ private fun HiddenNovelItem(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Row(
@@ -316,7 +317,7 @@ private fun HiddenNovelItem(
         ) {
             // Icon placeholder
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
                 modifier = Modifier.size(50.dp)
             ) {
@@ -357,7 +358,7 @@ private fun HiddenNovelItem(
             FilledTonalButton(
                 onClick = onUnhide,
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = AppShape.medium
             ) {
                 Icon(
                     Icons.Rounded.Visibility,
@@ -429,7 +430,7 @@ private fun BlockedAuthorItem(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Row(
@@ -472,7 +473,7 @@ private fun BlockedAuthorItem(
             FilledTonalButton(
                 onClick = onUnblock,
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = AppShape.medium
             ) {
                 Icon(
                     Icons.Rounded.PersonAdd,

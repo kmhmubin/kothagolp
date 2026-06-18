@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
@@ -266,7 +267,7 @@ private fun CrossProviderSettingCard(
     )
 
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = backgroundColor,
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -280,7 +281,7 @@ private fun CrossProviderSettingCard(
         ) {
             // Icon
             Surface(
-                shape = RoundedCornerShape(14.dp),
+                shape = AppShape.large,
                 color = if (enabled)
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                 else
@@ -336,7 +337,7 @@ private fun CrossProviderSettingCard(
 
     // Explanation card
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
             .fillMaxWidth()
@@ -363,7 +364,7 @@ private fun ResetPreferencesCard(
     onReset: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -376,7 +377,7 @@ private fun ResetPreferencesCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    shape = RoundedCornerShape(14.dp),
+                    shape = AppShape.large,
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.size(52.dp)
                 ) {
@@ -411,7 +412,7 @@ private fun ResetPreferencesCard(
             OutlinedButton(
                 onClick = onReset,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.primary
                 )
@@ -439,7 +440,7 @@ private fun ExpandableSettingCard(
     expandedContent: @Composable () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -448,14 +449,14 @@ private fun ExpandableSettingCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(AppShape.extraLarge)
                     .clickable(onClick = onToggleExpand)
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = if (count > 0)
                         MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                     else
@@ -573,7 +574,7 @@ private fun HiddenNovelItem(
     onUnhide: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp
     ) {
@@ -598,7 +599,7 @@ private fun HiddenNovelItem(
             FilledTonalButton(
                 onClick = onUnhide,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                shape = RoundedCornerShape(10.dp)
+                shape = AppShape.medium
             ) {
                 Icon(
                     Icons.Rounded.Visibility,
@@ -661,7 +662,7 @@ private fun BlockedAuthorItem(
     onUnblock: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp
     ) {
@@ -699,7 +700,7 @@ private fun BlockedAuthorItem(
             FilledTonalButton(
                 onClick = onUnblock,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                shape = RoundedCornerShape(10.dp)
+                shape = AppShape.medium
             ) {
                 Icon(
                     Icons.Rounded.PersonAdd,

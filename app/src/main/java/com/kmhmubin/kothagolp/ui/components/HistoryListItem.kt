@@ -50,13 +50,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.kmhmubin.kothagolp.data.repository.HistoryItem
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.util.formatRelativeTime
 
 private object HistoryItemTokens {
-    val CardShape = RoundedCornerShape(14.dp)
-    val CompactCardShape = RoundedCornerShape(10.dp)
-    val ImageShape = RoundedCornerShape(10.dp)
-    val CompactImageShape = RoundedCornerShape(8.dp)
+    val CardShape = AppShape.large
+    val CompactCardShape = AppShape.medium
+    val ImageShape = AppShape.medium
+    val CompactImageShape = AppShape.small
 
     val CoverWidth = 56.dp
     val CoverHeight = 80.dp

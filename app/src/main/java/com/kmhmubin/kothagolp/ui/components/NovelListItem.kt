@@ -79,7 +79,8 @@ import coil.compose.SubcomposeAsyncImageContent
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.UiDensity
-import com.kmhmubin.kothagolp.ui.screens.details.util.DetailsColors
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
 import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
 import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
@@ -92,10 +93,10 @@ import com.kmhmubin.kothagolp.ui.theme.StatusSpicy
 // ══════════════════════════════════════════════════════════════════════════════
 
 private object ListItemTokens {
-    val CardShape = RoundedCornerShape(16.dp)
-    val ImageShape = RoundedCornerShape(12.dp)
-    val BadgeShape = RoundedCornerShape(8.dp)
-    val PillShape = RoundedCornerShape(50)
+    val CardShape = AppShape.large
+    val ImageShape = AppShape.medium
+    val BadgeShape = AppShape.small
+    val PillShape = AppShape.pill
 
     object Height {
         val Compact = 100.dp
@@ -117,10 +118,10 @@ private object ListItemTokens {
     }
 
     object Elevation {
-        val Resting = 2.dp
+        val Resting = AppElevation.sm
         val Pressed = 1.dp
-        val Selected = 4.dp
-        val Badge = 4.dp
+        val Selected = AppElevation.md
+        val Badge = AppElevation.md
     }
 
     object Animation {
@@ -591,7 +592,7 @@ private fun ListStatusDot(
         modifier = modifier,
         shape = CircleShape,
         color = Color.Black.copy(alpha = 0.5f),
-        shadowElevation = 2.dp
+        shadowElevation = AppElevation.sm
     ) {
         Box(
             modifier = Modifier.padding(5.dp),
@@ -628,7 +629,7 @@ private fun ListLibraryBookmarkBadge(
     Surface(
         modifier = modifier.size(if (compact) 20.dp else 22.dp),
         shape = CircleShape,
-        color = DetailsColors.Pink.copy(alpha = 0.9f),
+        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
         shadowElevation = ListItemTokens.Elevation.Badge
     ) {
         Box(
@@ -672,7 +673,7 @@ private fun ListNewChaptersBadge(
 
     Surface(
         modifier = modifier.graphicsLayer { alpha = pulseAlpha },
-        shape = if (compact) CircleShape else RoundedCornerShape(6.dp),
+        shape = if (compact) CircleShape else AppShape.extraSmall,
         color = MaterialTheme.colorScheme.primary,
         shadowElevation = ListItemTokens.Elevation.Badge
     ) {
@@ -814,7 +815,7 @@ fun NovelListItemSkeleton(
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
                             .height(14.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(AppShape.extraSmall)
                             .shimmerEffect()
                     )
                     // Title line 2
@@ -822,7 +823,7 @@ fun NovelListItemSkeleton(
                         modifier = Modifier
                             .fillMaxWidth(0.6f)
                             .height(14.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(AppShape.extraSmall)
                             .shimmerEffect()
                     )
                     // Source
@@ -830,7 +831,7 @@ fun NovelListItemSkeleton(
                         modifier = Modifier
                             .fillMaxWidth(0.3f)
                             .height(10.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(AppShape.extraSmall)
                             .shimmerEffect()
                     )
                 }
@@ -845,7 +846,7 @@ fun NovelListItemSkeleton(
                         modifier = Modifier
                             .width(70.dp)
                             .height(22.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(AppShape.small)
                             .shimmerEffect()
                     )
                     // Chapter placeholder
@@ -853,7 +854,7 @@ fun NovelListItemSkeleton(
                         modifier = Modifier
                             .width(80.dp)
                             .height(12.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(AppShape.extraSmall)
                             .shimmerEffect()
                     )
                 }

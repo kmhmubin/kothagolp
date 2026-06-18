@@ -18,7 +18,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Shape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Icon
@@ -71,7 +72,7 @@ enum class SwipeDeleteState {
 fun TwoStageSwipeToDelete(
     onDelete: () -> Unit,
     deleteButtonWidth: Dp = 80.dp,
-    shape: RoundedCornerShape = RoundedCornerShape(16.dp),
+    shape: Shape = AppShape.large,
     modifier: Modifier = Modifier,
     content: @Composable (swipeState: SwipeDeleteState, onResetSwipe: () -> Unit) -> Unit
 ) {
@@ -196,7 +197,7 @@ private fun DeleteButtonBackground(
     revealProgress: Float,
     isPrimed: Boolean,
     width: Dp,
-    shape: RoundedCornerShape,
+    shape: Shape,
     modifier: Modifier = Modifier
 ) {
     val backgroundColor by animateColorAsState(

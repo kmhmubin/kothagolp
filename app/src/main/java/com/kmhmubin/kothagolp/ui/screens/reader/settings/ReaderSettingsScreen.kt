@@ -37,7 +37,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -76,7 +75,7 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.ViewColumn
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.outlined.Brightness4
 import androidx.compose.material.icons.outlined.Gesture
@@ -148,6 +147,9 @@ import com.kmhmubin.kothagolp.domain.model.TapZoneConfig
 import com.kmhmubin.kothagolp.domain.model.ThemeCategory
 import com.kmhmubin.kothagolp.domain.model.VolumeKeyDirection
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppSpacing
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import com.kmhmubin.kothagolp.domain.model.FontWeight as ReaderFontWeight
 import com.kmhmubin.kothagolp.domain.model.TextAlign as ReaderTextAlign
 
@@ -415,7 +417,7 @@ private fun LivePreviewSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = previewColors.background,
                 border = BorderStroke(1.dp, colors.border)
             ) {
@@ -476,7 +478,7 @@ private fun SettingsTabRow(
 
             Surface(
                 onClick = { onTabSelected(tab) },
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = if (isSelected)
                     colors.accent.copy(alpha = 0.15f)
                 else
@@ -606,7 +608,7 @@ private fun PresetSelector(
                 item {
                     Surface(
                         onClick = { showAllPresets = true },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = AppShape.extraLarge,
                         color = colors.surface,
                         border = BorderStroke(1.dp, colors.border)
                     ) {
@@ -655,7 +657,7 @@ private fun PresetDetailCard(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = if (isSelected) colors.accent.copy(alpha = 0.1f) else colors.surface,
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
@@ -704,7 +706,7 @@ private fun PresetChip(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = if (isSelected) colors.accent else colors.surface,
         border = BorderStroke(
             width = 1.dp,
@@ -787,7 +789,7 @@ private fun ThemeCategorySection(
     Column {
         Surface(
             onClick = onExpandChange,
-            shape = RoundedCornerShape(8.dp),
+            shape = AppShape.small,
             color = if (hasSelectedTheme)
                 colors.accent.copy(alpha = 0.08f)
             else
@@ -897,7 +899,7 @@ private fun ThemeButton(
         modifier = modifier
             .height(48.dp)
             .scale(scale),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = themeColors.background,
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
@@ -940,7 +942,7 @@ private fun ThemeGridItem(
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
+        shape = AppShape.small,
         color = themeColors.background,
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
@@ -1015,7 +1017,7 @@ private fun BrightnessControl(
                         if (isSystemBrightness) 0.5f else ReaderSettings.BRIGHTNESS_SYSTEM
                     )
                 },
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = if (isSystemBrightness)
                     colors.accent.copy(alpha = 0.15f)
                 else
@@ -1133,7 +1135,7 @@ private fun WarmthControl(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(24.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .clip(AppShape.extraSmall)
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
@@ -1354,7 +1356,7 @@ private fun FontSizeControl(
                 Surface(
                     onClick = { onFontSizeChange(size) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
                 ) {
@@ -1439,7 +1441,7 @@ private fun FontFamilyChip(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = if (isSelected) colors.accent else colors.surface,
         border = BorderStroke(
             width = 1.dp,
@@ -1494,7 +1496,7 @@ private fun FontWeightSelector(
 
             Surface(
                 onClick = { onWeightChange(weight) },
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = if (isSelected) colors.accent else colors.surface,
                 border = BorderStroke(
                     width = 1.dp,
@@ -1550,7 +1552,7 @@ private fun LineHeightControl(
                 Surface(
                     onClick = { onLineHeightChange(value) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(
                         width = 1.dp,
@@ -1602,7 +1604,7 @@ private fun LetterSpacingControl(
             Surface(
                 onClick = { onLetterSpacingChange(value) },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = if (isSelected) colors.accent else colors.surface,
                 border = BorderStroke(
                     width = 1.dp,
@@ -1652,7 +1654,7 @@ private fun WordSpacingControl(
                 Surface(
                     onClick = { onWordSpacingChange(value) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(
                         width = 1.dp,
@@ -1811,7 +1813,7 @@ private fun MaxWidthSelector(
 
                 Surface(
                     onClick = { onWidthChange(width) },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(
                         width = 1.dp,
@@ -1835,7 +1837,7 @@ private fun MaxWidthSelector(
                                     }
                                 )
                                 .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
+                                .clip(AppShape.extraSmall)
                                 .background(if (isSelected) colors.onAccent else colors.textSecondary)
                         )
 
@@ -1918,7 +1920,7 @@ private fun ParagraphSpacingControl(
                 Surface(
                     onClick = { onSpacingChange(value) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
                 ) {
@@ -1967,7 +1969,7 @@ private fun ParagraphIndentControl(
             Surface(
                 onClick = { onIndentChange(value) },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = if (isSelected) colors.accent else colors.surface,
                 border = BorderStroke(
                     width = 1.dp,
@@ -2041,7 +2043,7 @@ private fun ReadingSettings(
         // Volume Key Navigation
         SettingSection(
             title = "Volume Key Navigation",
-            icon = Icons.Default.VolumeUp,
+            icon = Icons.AutoMirrored.Filled.VolumeUp,
             colors = colors
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -2126,7 +2128,7 @@ private fun PageAnimationSelector(
 
             Surface(
                 onClick = { onAnimationChange(animation) },
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = if (isSelected) colors.accent else colors.surface,
                 border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
             ) {
@@ -2202,7 +2204,7 @@ private fun ScrollSensitivityControl(
                 Surface(
                     onClick = { onSensitivityChange(value) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
                 ) {
@@ -2255,7 +2257,7 @@ private fun TapZoneSelector(
                 Surface(
                     onClick = { onTapZonesChange(config) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
                 ) {
@@ -2307,9 +2309,9 @@ private fun TapZonePreview(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(AppShape.small)
             .background(colors.surface)
-            .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+            .border(1.dp, colors.border, AppShape.small)
     ) {
         // Left zone
         Box(
@@ -2472,7 +2474,7 @@ private fun TapActionDropdown(
         Box {
             Surface(
                 onClick = { expanded = true },
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = colors.surface,
                 border = BorderStroke(1.dp, colors.border)
             ) {
@@ -2750,7 +2752,7 @@ private fun AdvancedSettings(
             colors = colors
         ) {
             Surface(
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = colors.surface
             ) {
                 Column(
@@ -2845,7 +2847,7 @@ private fun AutoScrollSpeedControl(
                 Surface(
                     onClick = { onSpeedChange(value) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
                 ) {
@@ -2888,7 +2890,7 @@ private fun ProgressStyleSelector(
 
                 Surface(
                     onClick = { onStyleChange(style) },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
                 ) {
@@ -2939,7 +2941,7 @@ private fun AutoHideDelaySelector(
             Surface(
                 onClick = { onDelayChange(value) },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = if (isSelected) colors.accent else colors.surface,
                 border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
             ) {
@@ -3145,7 +3147,7 @@ private fun TTSSpeedControl(
                         onSpeedChange(value)
                     },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
                 ) {
@@ -3236,7 +3238,7 @@ private fun TTSPitchControl(
                         onPitchChange(value)
                     },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = if (isSelected) colors.accent else colors.surface,
                     border = BorderStroke(1.dp, if (isSelected) colors.accent else colors.border)
                 ) {

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.recommendation.model.LibrarySourceNovel
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 /**
  * Section showing recommendations based on a selected library novel.
@@ -136,7 +137,7 @@ private fun NoSourceRecommendationsFound(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = modifier
             .fillMaxWidth()

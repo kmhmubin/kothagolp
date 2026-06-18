@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -69,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -261,7 +261,7 @@ private fun TargetSourceSelector(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -278,7 +278,7 @@ private fun TargetSourceSelector(
                 OutlinedButton(
                     onClick = { expanded = true },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = AppShape.small
                 ) {
                     Text(
                         text = selectedSource ?: "Select source…",
@@ -323,7 +323,7 @@ private fun BulkMigrationRow(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = when (item.searchState) {
                 is BulkSearchState.Found -> if (item.selected)
@@ -361,11 +361,11 @@ private fun BulkMigrationRow(
                     model = ImageRequest.Builder(LocalContext.current).data(coverUrl).crossfade(true).build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(width = 36.dp, height = 48.dp).clip(RoundedCornerShape(4.dp))
+                    modifier = Modifier.size(width = 36.dp, height = 48.dp).clip(AppShape.extraSmall)
                 )
             } else {
                 Box(
-                    modifier = Modifier.size(width = 36.dp, height = 48.dp).clip(RoundedCornerShape(4.dp)),
+                    modifier = Modifier.size(width = 36.dp, height = 48.dp).clip(AppShape.extraSmall),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Rounded.Bookmarks, contentDescription = null,

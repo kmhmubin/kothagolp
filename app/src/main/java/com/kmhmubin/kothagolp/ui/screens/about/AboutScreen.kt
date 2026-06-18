@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -63,6 +62,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.ui.components.MarkdownText
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.NewChapters
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -262,9 +263,9 @@ private fun AppHeaderCard(currentVersion: String) {
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        painter = painterResource(id = R.drawable.ic_launcher_icon_transparent),
                         contentDescription = "App logo",
-                        modifier = Modifier.size(56.dp),
+                        modifier = Modifier.size(72.dp),
                         contentScale = ContentScale.Fit
                     )
                 }
@@ -431,7 +432,7 @@ private fun UpdateCard(
                                 Icons.Outlined.CheckCircle,
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp),
-                                tint = Color(0xFF10B981)
+                                tint = NewChapters
                             )
                             Text(
                                 text = "You're up to date",
@@ -458,7 +459,7 @@ private fun UpdateCard(
                 FilledTonalButton(
                     onClick = onCheckUpdate,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = AppShape.medium
                 ) {
                     Icon(
                         Icons.Outlined.Update,
@@ -506,7 +507,7 @@ private fun UpdateAvailableContent(
                 }
                 result.formattedApkSize()?.let { size ->
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = AppShape.small,
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
@@ -551,7 +552,7 @@ private fun UpdateAvailableContent(
                 OutlinedButton(
                     onClick = { onViewRelease(url) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = AppShape.medium
                 ) {
                     Text("View Release")
                 }
@@ -561,7 +562,7 @@ private fun UpdateAvailableContent(
                 Button(
                     onClick = { onDownload(url) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = AppShape.medium
                 ) {
                     Icon(
                         Icons.Outlined.Download,

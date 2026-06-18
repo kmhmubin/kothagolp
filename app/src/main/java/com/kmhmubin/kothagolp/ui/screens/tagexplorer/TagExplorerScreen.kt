@@ -124,6 +124,7 @@ import com.kmhmubin.kothagolp.recommendation.TagNormalizer
 import com.kmhmubin.kothagolp.ui.components.NovelCard
 import com.kmhmubin.kothagolp.ui.components.NovelGridSkeleton
 import com.kmhmubin.kothagolp.ui.screens.tagexplorer.components.TagSelectorSheet
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
 import kotlinx.coroutines.delay
@@ -134,10 +135,6 @@ import kotlinx.coroutines.launch
 // ============================================================================
 
 private object BrowseDesign {
-    val radiusSm = 8.dp
-    val radiusMd = 12.dp
-    val radiusLg = 16.dp
-    val radiusXl = 20.dp
     val radiusXxl = 28.dp
 
     val spacingXs = 4.dp
@@ -280,7 +277,7 @@ fun TagExplorerScreen(
                                 showTagSelector = true
                             },
                             color = Color.Transparent,
-                            modifier = Modifier.clip(RoundedCornerShape(BrowseDesign.radiusSm))
+                            modifier = Modifier.clip(AppShape.small)
                         ) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
@@ -577,7 +574,7 @@ private fun FilterFab(
     Box(modifier = modifier) {
         Surface(
             onClick = onClick,
-            shape = RoundedCornerShape(BrowseDesign.radiusLg),
+            shape = AppShape.large,
             color = fabColor,
             shadowElevation = if (isOpen) 12.dp else 6.dp,
             modifier = Modifier
@@ -714,7 +711,7 @@ private fun FilterOverlay(
                                 .height(4.dp)
                                 .background(
                                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                                    RoundedCornerShape(2.dp)
+                                    AppShape.extraSmall
                                 )
                         )
                     }
@@ -773,7 +770,7 @@ private fun FilterOverlay(
                                 ) {
                                     Surface(
                                         onClick = onClearFilters,
-                                        shape = RoundedCornerShape(BrowseDesign.radiusMd),
+                                        shape = AppShape.medium,
                                         color = MaterialTheme.colorScheme.errorContainer
                                     ) {
                                         Row(
@@ -908,7 +905,7 @@ private fun FilterOverlay(
                                             )
                                             Surface(
                                                 onClick = onClearProviders,
-                                                shape = RoundedCornerShape(BrowseDesign.radiusSm),
+                                                shape = AppShape.small,
                                                 color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
                                             ) {
                                                 Text(
@@ -968,7 +965,7 @@ private fun FilterOverlay(
                                     .fillMaxWidth()
                                     .padding(BrowseDesign.spacingXxl)
                                     .height(BrowseDesign.buttonHeight),
-                                shape = RoundedCornerShape(BrowseDesign.radiusMd),
+                                shape = AppShape.medium,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = primaryColor
                                 ),
@@ -1014,7 +1011,7 @@ private fun OverlayFilterSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                shape = RoundedCornerShape(BrowseDesign.radiusSm),
+                shape = AppShape.small,
                 color = accentColor.copy(alpha = 0.15f),
                 modifier = Modifier.size(28.dp)
             ) {
@@ -1060,7 +1057,7 @@ private fun OverlayFilterChip(
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(BrowseDesign.radiusMd),
+        shape = AppShape.medium,
         color = bgColor,
         modifier = Modifier.height(BrowseDesign.chipHeight)
     ) {
@@ -1173,7 +1170,7 @@ private fun ActiveFiltersChipRow(
             item {
                 Surface(
                     onClick = onClearAll,
-                    shape = RoundedCornerShape(BrowseDesign.radiusSm),
+                    shape = AppShape.small,
                     color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
                 ) {
                     Text(
@@ -1200,7 +1197,7 @@ private fun DismissibleChip(
     onDismiss: () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(BrowseDesign.radiusSm),
+        shape = AppShape.small,
         color = color.copy(alpha = 0.15f),
         border = BorderStroke(1.dp, color.copy(alpha = 0.3f))
     ) {
@@ -1358,7 +1355,7 @@ private fun StatBadge(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(BrowseDesign.radiusMd),
+        shape = AppShape.medium,
         color = color.copy(alpha = 0.15f),
         border = BorderStroke(1.dp, color.copy(alpha = 0.3f))
     ) {
@@ -1487,7 +1484,7 @@ private fun ErrorState(
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(BrowseDesign.radiusXl),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
@@ -1536,7 +1533,7 @@ private fun ErrorState(
 
                 Button(
                     onClick = onRetry,
-                    shape = RoundedCornerShape(BrowseDesign.radiusMd),
+                    shape = AppShape.medium,
                     colors = ButtonDefaults.buttonColors(containerColor = color),
                     contentPadding = PaddingValues(
                         horizontal = BrowseDesign.spacingXl,
@@ -1573,7 +1570,7 @@ private fun NoResultsState(
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(BrowseDesign.radiusXl),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
@@ -1631,7 +1628,7 @@ private fun NoResultsState(
                 if (hasFilters) {
                     Button(
                         onClick = onClearFilters,
-                        shape = RoundedCornerShape(BrowseDesign.radiusMd),
+                        shape = AppShape.medium,
                         colors = ButtonDefaults.buttonColors(containerColor = color),
                         contentPadding = PaddingValues(
                             horizontal = BrowseDesign.spacingXl,

@@ -105,12 +105,20 @@ val LocalKothagolpDimensions = staticCompositionLocalOf {
 }
 
 /**
- * Convenience accessor for dimensions
+ * Convenience accessor for all design tokens.
+ * - [dimensions]  density-aware grid/card/icon sizes
+ * - [spacing]     fixed spacing scale (AppSpacing)
+ * - [shape]       canonical corner radii (AppShape)
+ * - [elevation]   tonal elevation levels (AppElevation)
  */
 object KothagolpTheme {
     val dimensions: KothagolpDimensions
         @Composable
         get() = LocalKothagolpDimensions.current
+
+    val spacing   get() = AppSpacing
+    val shape     get() = AppShape
+    val elevation get() = AppElevation
 }
 
 /**

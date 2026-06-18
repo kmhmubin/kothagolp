@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -71,6 +70,7 @@ import com.kmhmubin.kothagolp.ui.screens.reader.logic.TableRow
 import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderDisplayItem
 import com.kmhmubin.kothagolp.ui.screens.reader.model.SentenceHighlight
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.Zinc600
 import com.kmhmubin.kothagolp.ui.theme.Zinc800
 
@@ -603,7 +603,7 @@ fun ChapterDividerItem(
             Spacer(modifier = Modifier.height(24.dp))
 
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = colors.accent.copy(alpha = 0.1f)
             ) {
                 Text(
@@ -652,10 +652,10 @@ fun ChapterNavButton(
     Surface(
         modifier = modifier
             .height(height)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .clickable(enabled = enabled, onClick = onClick),
         color = backgroundColor,
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     ) {
         Row(
             modifier = Modifier
@@ -850,7 +850,7 @@ fun BlockquoteSegmentItem(
                 .height(IntrinsicSize.Min)
                 .background(
                     colors.accent.copy(alpha = 0.5f),
-                    RoundedCornerShape(2.dp)
+                    AppShape.extraSmall
                 )
         )
 
@@ -862,7 +862,7 @@ fun BlockquoteSegmentItem(
                 .weight(1f)
                 .background(
                     colors.surface.copy(alpha = 0.3f),
-                    RoundedCornerShape(4.dp)
+                    AppShape.extraSmall
                 )
                 .padding(12.dp)
         ) {
@@ -1061,7 +1061,7 @@ fun TableItem(
         // Table content with border
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(8.dp),
+            shape = AppShape.small,
             color = colors.surface.copy(alpha = 0.3f),
             border = androidx.compose.foundation.BorderStroke(
                 1.dp,

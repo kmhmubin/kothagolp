@@ -128,24 +128,18 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import com.kmhmubin.kothagolp.data.remote.CloudflareManager
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.Info
+import com.kmhmubin.kothagolp.ui.theme.NewChapters
+import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
+import com.kmhmubin.kothagolp.ui.theme.Success
+import com.kmhmubin.kothagolp.ui.theme.Warning as WarningColor
 import com.kmhmubin.kothagolp.provider.MainProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-
-// ============================================================================
-// Color Constants
-// ============================================================================
-
-private object WebViewColors {
-    val Success = Color(0xFF10B981)
-    val Warning = Color(0xFFF59E0B)
-    val Info = Color(0xFF3B82F6)
-    val Secure = Color(0xFF22C55E)
-    val Generic = Color(0xFF8B5CF6)  // Purple for generic/unknown sites
-}
 
 // ============================================================================
 // Extraction System for Novel Sites
@@ -1622,14 +1616,14 @@ private fun GenericSiteActionButton(
 
     // Different colors based on state
     val buttonColor = when {
-        hasExtractedData && isLikelyNovel -> WebViewColors.Success
-        hasExtractedData -> WebViewColors.Generic
-        else -> WebViewColors.Info
+        hasExtractedData && isLikelyNovel -> NewChapters
+        hasExtractedData -> StatusPlanToRead
+        else -> Info
     }
 
     Surface(
         onClick = if (hasExtractedData) onOpenData else onExtract,
-        shape = RoundedCornerShape(24.dp),
+        shape = AppShape.extraLarge,
         color = buttonColor,
         shadowElevation = 16.dp,
         tonalElevation = 4.dp,
@@ -1764,7 +1758,7 @@ private fun ExtractedDataBottomSheet(
                 // Cover image
                 if (data.coverImage.isNotBlank()) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = AppShape.medium,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier = Modifier.size(width = 100.dp, height = 140.dp)
                     ) {
@@ -1917,7 +1911,7 @@ private fun ExtractedDataBottomSheet(
                 OutlinedButton(
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = AppShape.medium
                 ) {
                     Text("Cancel")
                 }
@@ -1925,7 +1919,7 @@ private fun ExtractedDataBottomSheet(
                 Button(
                     onClick = onUseData,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     enabled = data.confidence >= 30 && data.pageType == "novel"
                 ) {
                     Icon(
@@ -1941,8 +1935,8 @@ private fun ExtractedDataBottomSheet(
             // Confidence warning
             if (data.confidence < 50) {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = WebViewColors.Warning.copy(alpha = 0.1f)
+                    shape = AppShape.small,
+                    color = WarningColor.copy(alpha = 0.1f)
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp),
@@ -1952,7 +1946,7 @@ private fun ExtractedDataBottomSheet(
                         Icon(
                             imageVector = Icons.Rounded.Warning,
                             contentDescription = null,
-                            tint = WebViewColors.Warning,
+                            tint = WarningColor,
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
@@ -1967,7 +1961,7 @@ private fun ExtractedDataBottomSheet(
             // Page type warning
             if (data.pageType != "novel") {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                 ) {
                     Row(
@@ -1999,13 +1993,13 @@ private fun ExtractedDataBottomSheet(
 @Composable
 private fun ConfidenceBadge(confidence: Int, pageType: String) {
     val (color, icon) = when {
-        confidence >= 70 && pageType == "novel" -> Pair(WebViewColors.Success, Icons.Rounded.CheckCircle)
-        confidence >= 40 -> Pair(WebViewColors.Warning, Icons.Rounded.Info)
+        confidence >= 70 && pageType == "novel" -> Pair(NewChapters, Icons.Rounded.CheckCircle)
+        confidence >= 40 -> Pair(WarningColor, Icons.Rounded.Info)
         else -> Pair(MaterialTheme.colorScheme.error, Icons.Rounded.Warning)
     }
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = color.copy(alpha = 0.15f)
     ) {
         Row(
@@ -2034,16 +2028,16 @@ private fun StatusBadge(status: String) {
     val statusLower = status.lowercase()
     val (color, text) = when {
         statusLower.contains("ongoing") || statusLower.contains("updating") ->
-            Pair(WebViewColors.Info, status)
+            Pair(Info, status)
         statusLower.contains("completed") || statusLower.contains("finished") ->
-            Pair(WebViewColors.Success, status)
+            Pair(NewChapters, status)
         statusLower.contains("hiatus") || statusLower.contains("dropped") ->
-            Pair(WebViewColors.Warning, status)
+            Pair(WarningColor, status)
         else -> Pair(MaterialTheme.colorScheme.outline, status)
     }
 
     Surface(
-        shape = RoundedCornerShape(6.dp),
+        shape = AppShape.extraSmall,
         color = color.copy(alpha = 0.15f)
     ) {
         Text(
@@ -2087,7 +2081,7 @@ private fun StatItem(
 @Composable
 private fun GenreChip(genre: String) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.secondaryContainer
     ) {
         Text(
@@ -2153,14 +2147,14 @@ private fun EnhancedCookieStatusIndicator(status: CookieDisplayStatus) {
             MaterialTheme.colorScheme.tertiaryContainer
         )
         CookieDisplayStatus.VALID -> Triple(
-            WebViewColors.Success,
+            NewChapters,
             Icons.Rounded.VerifiedUser,
-            WebViewColors.Success.copy(alpha = 0.15f)
+            NewChapters.copy(alpha = 0.15f)
         )
         CookieDisplayStatus.EXPIRED -> Triple(
-            WebViewColors.Warning,
+            WarningColor,
             Icons.Rounded.Warning,
-            WebViewColors.Warning.copy(alpha = 0.15f)
+            WarningColor.copy(alpha = 0.15f)
         )
     }
 
@@ -2174,7 +2168,7 @@ private fun EnhancedCookieStatusIndicator(status: CookieDisplayStatus) {
     )
 
     Surface(
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = bgColor,
         modifier = Modifier.graphicsLayer {
             scaleX = scale
@@ -2199,8 +2193,8 @@ private fun EnhancedCookieStatusIndicator(status: CookieDisplayStatus) {
 @Composable
 private fun EnhancedCookieSavedBanner() {
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = WebViewColors.Success,
+        shape = AppShape.extraLarge,
+        color = NewChapters,
         shadowElevation = 12.dp
     ) {
         Row(
@@ -2448,9 +2442,9 @@ private fun DisplayUrlBar(
     Surface(
         modifier = modifier
             .padding(horizontal = 4.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppShape.medium)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 1.dp
     ) {
@@ -2464,11 +2458,11 @@ private fun DisplayUrlBar(
             // Site type indicator
             val (indicatorColor, indicatorIcon) = when (siteType) {
                 is SiteType.KnownProvider -> Pair(
-                    if (isSecure) WebViewColors.Secure else MaterialTheme.colorScheme.error,
+                    if (isSecure) Success else MaterialTheme.colorScheme.error,
                     if (isSecure) Icons.Rounded.Lock else Icons.Rounded.LockOpen
                 )
                 is SiteType.GenericSite -> Pair(
-                    WebViewColors.Generic,
+                    StatusPlanToRead,
                     Icons.Rounded.Public
                 )
                 SiteType.Unknown -> Pair(
@@ -2510,7 +2504,7 @@ private fun DisplayUrlBar(
                     // Provider badge for known sites
                     if (siteType is SiteType.KnownProvider) {
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
+                            shape = AppShape.extraSmall,
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
@@ -2561,7 +2555,7 @@ private fun EditableUrlBar(
 
     Surface(
         modifier = modifier.padding(horizontal = 4.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
         tonalElevation = 1.dp
     ) {
@@ -2653,7 +2647,7 @@ private fun EnhancedDropdownMenu(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(16.dp)
+        shape = AppShape.large
     ) {
         // Site type info
         when (siteType) {
@@ -2668,7 +2662,7 @@ private fun EnhancedDropdownMenu(
                             Text(
                                 text = "Supported provider",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = WebViewColors.Success
+                                color = NewChapters
                             )
                         }
                     },
@@ -2694,7 +2688,7 @@ private fun EnhancedDropdownMenu(
                             Text(
                                 text = if (siteType.isLikelyNovelPage) "Novel page detected" else "Generic website",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (siteType.isLikelyNovelPage) WebViewColors.Success else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (siteType.isLikelyNovelPage) NewChapters else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     },
@@ -2704,7 +2698,7 @@ private fun EnhancedDropdownMenu(
                         Icon(
                             imageVector = Icons.Rounded.Public,
                             contentDescription = null,
-                            tint = WebViewColors.Generic
+                            tint = StatusPlanToRead
                         )
                     }
                 )
@@ -2725,7 +2719,7 @@ private fun EnhancedDropdownMenu(
                 text = "Extract Page Data",
                 description = "Analyze page for novel content",
                 icon = Icons.Rounded.ContentPaste,
-                iconTint = WebViewColors.Generic,
+                iconTint = StatusPlanToRead,
                 onClick = onExtractData
             )
         }
@@ -2806,7 +2800,7 @@ private fun EnhancedOpenInAppButton(
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
+        shape = AppShape.extraLarge,
         color = MaterialTheme.colorScheme.primary,
         shadowElevation = 16.dp,
         tonalElevation = 4.dp,

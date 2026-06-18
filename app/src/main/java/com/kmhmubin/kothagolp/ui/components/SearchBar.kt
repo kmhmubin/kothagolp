@@ -40,12 +40,13 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.SearchOff
-import androidx.compose.material.icons.outlined.TrendingUp
+import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.NorthWest
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -82,6 +83,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.data.local.PreferencesManager
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -102,7 +104,7 @@ fun KothagolpSearchBar(
     hasActiveFilters: Boolean = false,
     onFilterClick: () -> Unit = {}
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = AppShape.large
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
@@ -316,7 +318,7 @@ fun KothagolpSearchBar(
                         focusManager.clearFocus()
                     },
                     enabled = query.isNotBlank() && !isLoading,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
@@ -376,7 +378,7 @@ fun SearchSuggestionsDropdown(
             Surface(
                 modifier = modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
+                shape = AppShape.large,
                 tonalElevation = 2.dp,
                 shadowElevation = 4.dp
             ) {
@@ -412,7 +414,7 @@ fun SearchSuggestionsDropdown(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         tonalElevation = 2.dp,
         shadowElevation = 4.dp
     ) {
@@ -450,7 +452,7 @@ fun SearchSuggestionsDropdown(
                             // Show count when filtering
                             if (currentQuery.isNotBlank()) {
                                 Surface(
-                                    shape = RoundedCornerShape(6.dp),
+                                    shape = AppShape.extraSmall,
                                     color = MaterialTheme.colorScheme.primaryContainer
                                 ) {
                                     Text(
@@ -526,7 +528,7 @@ fun SearchSuggestionsDropdown(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.TrendingUp,
+                            imageVector = Icons.AutoMirrored.Rounded.TrendingUp,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.tertiary
@@ -697,7 +699,7 @@ private fun TrendingChip(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.pill,
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
         border = BorderStroke(
             1.dp,
@@ -710,7 +712,7 @@ private fun TrendingChip(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Outlined.TrendingUp,
+                imageVector = Icons.AutoMirrored.Outlined.TrendingUp,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
                 tint = MaterialTheme.colorScheme.tertiary

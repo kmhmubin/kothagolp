@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.recommendation.model.ProfileMaturity
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -120,7 +121,7 @@ fun ProfileHeader(
                         )
                         // Maturity indicator
                         Surface(
-                            shape = RoundedCornerShape(6.dp),
+                            shape = AppShape.extraSmall,
                             color = getMaturityColor(profileMaturity).copy(alpha = 0.15f)
                         ) {
                             Row(
@@ -339,7 +340,7 @@ private fun PreferenceChip(
     emoji: String?
 ) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = if (isTop)
             MaterialTheme.colorScheme.secondaryContainer
         else
@@ -373,7 +374,7 @@ private fun AuthorChip(
     isTop: Boolean
 ) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         color = if (isTop)
             MaterialTheme.colorScheme.tertiaryContainer
         else

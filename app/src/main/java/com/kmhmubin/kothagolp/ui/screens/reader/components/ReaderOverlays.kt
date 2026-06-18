@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.domain.model.ProgressStyle
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderDefaults
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 // =============================================================================
 // TOP BAR
@@ -55,7 +56,6 @@ fun ReaderTopBar(
     isBookmarked: Boolean,
     chapterProgress: Float,
     estimatedTimeLeft: String?,
-    colors: ReaderColors,
     progressStyle: ProgressStyle = ProgressStyle.BAR,
     largerTouchTargets: Boolean = false,
     onBack: () -> Unit,
@@ -65,12 +65,12 @@ fun ReaderTopBar(
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     val buttonSize = if (largerTouchTargets) 56.dp else 48.dp
 
-    // Clean up estimated time - treat empty string as null
     val displayTimeLeft = estimatedTimeLeft?.takeIf { it.isNotBlank() }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = colors.controlsBackground,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = ReaderDefaults.TopBarElevation,
         shadowElevation = ReaderDefaults.TopBarElevation
     ) {
         Column {
@@ -81,7 +81,6 @@ fun ReaderTopBar(
                     .padding(horizontal = 4.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Back button
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier.size(buttonSize)
@@ -89,11 +88,10 @@ fun ReaderTopBar(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Go back",
-                        tint = colors.icon
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                // Title and info - centered
                 Column(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -105,7 +103,7 @@ fun ReaderTopBar(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center,
-                        color = colors.text
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Row(
@@ -117,13 +115,11 @@ fun ReaderTopBar(
                             chapterNumber = chapterNumber,
                             totalChapters = totalChapters,
                             estimatedTimeLeft = displayTimeLeft,
-                            style = progressStyle,
-                            colors = colors
+                            style = progressStyle
                         )
                     }
                 }
 
-                // Bookmark button
                 IconButton(
                     onClick = onBookmarkClick,
                     modifier = Modifier.size(buttonSize)
@@ -134,20 +130,19 @@ fun ReaderTopBar(
                         else
                             Icons.Default.BookmarkBorder,
                         contentDescription = if (isBookmarked) "Remove bookmark" else "Add bookmark",
-                        tint = if (isBookmarked) colors.accent else colors.icon
+                        tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            // Progress bar at bottom (only if style is BAR)
             if (progressStyle == ProgressStyle.BAR) {
                 LinearProgressIndicator(
                     progress = { chapterProgress.coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(2.dp),
-                    color = colors.accent,
-                    trackColor = colors.progressTrack.copy(alpha = 0.3f)
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
                 )
             }
         }
@@ -160,48 +155,35 @@ private fun ProgressIndicator(
     chapterNumber: Int,
     totalChapters: Int,
     estimatedTimeLeft: String?,
-    style: ProgressStyle,
-    colors: ReaderColors
+    style: ProgressStyle
 ) {
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+    val primary = MaterialTheme.colorScheme.primary
+
     when (style) {
-        ProgressStyle.NONE -> {
-            // Show nothing
-        }
+        ProgressStyle.NONE -> Unit
 
         ProgressStyle.BAR -> {
-            // Bar is shown separately, show chapter info and optional time
             Text(
                 text = "$chapterNumber / $totalChapters",
                 style = MaterialTheme.typography.labelSmall,
-                color = colors.textSecondary
+                color = secondary
             )
-
-            // Chapter progress percentage
             Text(
                 text = " • ${(progress * 100).toInt()}%",
                 style = MaterialTheme.typography.labelSmall,
-                color = colors.textSecondary
+                color = secondary
             )
-
-            // Only show time if we have a valid value
             if (estimatedTimeLeft != null) {
-                Text(
-                    text = " • ",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.textSecondary
-                )
+                Text(text = " • ", style = MaterialTheme.typography.labelSmall, color = secondary)
                 Icon(
                     imageVector = Icons.Default.Timer,
                     contentDescription = null,
                     modifier = Modifier.size(12.dp),
-                    tint = colors.textSecondary
+                    tint = secondary
                 )
                 Spacer(modifier = Modifier.width(2.dp))
-                Text(
-                    text = estimatedTimeLeft,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.textSecondary
-                )
+                Text(text = estimatedTimeLeft, style = MaterialTheme.typography.labelSmall, color = secondary)
             }
         }
 
@@ -210,93 +192,43 @@ private fun ProgressIndicator(
                 text = "${(progress * 100).toInt()}%",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = colors.accent
+                color = primary
             )
-
-            Text(
-                text = " • Ch. $chapterNumber/$totalChapters",
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.textSecondary
-            )
-
+            Text(text = " • Ch. $chapterNumber/$totalChapters", style = MaterialTheme.typography.labelSmall, color = secondary)
             if (estimatedTimeLeft != null) {
-                Text(
-                    text = " • $estimatedTimeLeft",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.textSecondary
-                )
+                Text(text = " • $estimatedTimeLeft", style = MaterialTheme.typography.labelSmall, color = secondary)
             }
         }
 
         ProgressStyle.PAGES -> {
-            val estimatedPages = (progress * 100).toInt()
             Text(
-                text = "~$estimatedPages%",
+                text = "~${(progress * 100).toInt()}%",
                 style = MaterialTheme.typography.labelSmall,
-                color = colors.textSecondary
+                color = secondary
             )
-
-            Text(
-                text = " • Ch. $chapterNumber/$totalChapters",
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.textSecondary
-            )
-
+            Text(text = " • Ch. $chapterNumber/$totalChapters", style = MaterialTheme.typography.labelSmall, color = secondary)
             if (estimatedTimeLeft != null) {
-                Text(
-                    text = " • $estimatedTimeLeft left",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.textSecondary
-                )
+                Text(text = " • $estimatedTimeLeft left", style = MaterialTheme.typography.labelSmall, color = secondary)
             }
         }
 
         ProgressStyle.DOTS -> {
-            DotsProgressIndicator(
-                progress = progress,
-                colors = colors
-            )
-
+            DotsProgressIndicator(progress = progress)
             if (estimatedTimeLeft != null) {
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = estimatedTimeLeft,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.textSecondary
-                )
+                Text(text = estimatedTimeLeft, style = MaterialTheme.typography.labelSmall, color = secondary)
             }
         }
 
         ProgressStyle.TIME_LEFT -> {
             if (estimatedTimeLeft != null) {
-                Icon(
-                    imageVector = Icons.Default.Timer,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = colors.accent
-                )
+                Icon(imageVector = Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(14.dp), tint = primary)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = estimatedTimeLeft,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.accent
-                )
+                Text(text = estimatedTimeLeft, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = primary)
             } else {
-                // Fallback to percentage if no time available
-                Text(
-                    text = "${(progress * 100).toInt()}%",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.accent
-                )
+                Text(text = "${(progress * 100).toInt()}%", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = primary)
             }
-
-            Text(
-                text = " • Ch. $chapterNumber",
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.textSecondary
-            )
+            Text(text = " • Ch. $chapterNumber", style = MaterialTheme.typography.labelSmall, color = secondary)
         }
     }
 }
@@ -304,9 +236,11 @@ private fun ProgressIndicator(
 @Composable
 private fun DotsProgressIndicator(
     progress: Float,
-    colors: ReaderColors,
     dotCount: Int = 5
 ) {
+    val primary = MaterialTheme.colorScheme.primary
+    val track = MaterialTheme.colorScheme.surfaceContainerHighest
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -322,9 +256,9 @@ private fun DotsProgressIndicator(
                     .clip(CircleShape)
                     .background(
                         when {
-                            isActive -> colors.accent
-                            isPartial -> colors.accent.copy(alpha = 0.4f)
-                            else -> colors.progressTrack
+                            isActive -> primary
+                            isPartial -> primary.copy(alpha = 0.4f)
+                            else -> track
                         }
                     )
             )
@@ -343,7 +277,7 @@ fun TTSActiveIndicator(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = colors.accent.copy(alpha = 0.15f)
     ) {
         Row(

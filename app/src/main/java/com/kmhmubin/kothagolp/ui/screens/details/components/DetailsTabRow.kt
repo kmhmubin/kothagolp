@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AutoStories
@@ -32,6 +31,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.ui.screens.details.DetailsTab
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 @Composable
 fun DetailsTabRow(
@@ -129,7 +129,7 @@ private fun TabItem(
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShape.medium)
             .background(backgroundColor)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },

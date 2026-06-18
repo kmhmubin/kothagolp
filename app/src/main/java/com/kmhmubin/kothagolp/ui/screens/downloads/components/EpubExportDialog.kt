@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Error
@@ -81,7 +81,7 @@ fun EpubExportDialog(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = AppShape.medium
                 ) {
                     Column(
                         modifier = Modifier.padding(12.dp),
@@ -239,7 +239,7 @@ private fun ExportProgressSection(state: EpubExportState) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(6.dp)
-                .clip(RoundedCornerShape(3.dp))
+                .clip(AppShape.extraSmall)
         )
 
         Row(
@@ -268,7 +268,7 @@ private fun ExportSuccessSection(state: EpubExportState) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     ) {
         Row(
             modifier = Modifier
@@ -305,7 +305,7 @@ private fun ExportErrorSection(error: String) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = AppShape.medium
     ) {
         Row(
             modifier = Modifier

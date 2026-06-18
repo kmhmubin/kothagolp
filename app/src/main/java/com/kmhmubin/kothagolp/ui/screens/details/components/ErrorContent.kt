@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -106,7 +106,7 @@ private fun ErrorActionButtons(
     ) {
         OutlinedButton(
             onClick = onBack,
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             modifier = Modifier.height(48.dp)
         ) {
             Icon(
@@ -120,7 +120,7 @@ private fun ErrorActionButtons(
 
         Button(
             onClick = onRetry,
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             modifier = Modifier.height(48.dp)
         ) {
             Icon(

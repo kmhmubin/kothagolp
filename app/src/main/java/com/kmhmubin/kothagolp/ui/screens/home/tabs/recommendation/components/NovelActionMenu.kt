@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PersonOff
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -54,6 +55,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
 import com.kmhmubin.kothagolp.recommendation.model.ScoreBreakdown
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 @Composable
 fun NovelActionMenu(
@@ -82,7 +84,7 @@ fun NovelActionMenu(
     ) {
         Surface(
             modifier = modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
+            shape = AppShape.extraLarge,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp
         ) {
@@ -157,7 +159,7 @@ fun NovelActionMenu(
                 // Action items
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     ActionMenuItem(
-                        icon = Icons.Rounded.OpenInNew,
+                        icon = Icons.AutoMirrored.Rounded.OpenInNew,
                         label = "View Details",
                         sublabel = "See full novel information",
                         onClick = {
@@ -229,7 +231,7 @@ private fun ActionMenuItem(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppShape.medium)
             .clickable(onClick = onClick),
         color = Color.Transparent
     ) {
@@ -241,7 +243,7 @@ private fun ActionMenuItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = iconTint.copy(alpha = 0.1f),
                 modifier = Modifier.size(44.dp)
             ) {
@@ -286,7 +288,7 @@ private fun ScoreBreakdownSection(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Column(
@@ -335,7 +337,7 @@ private fun ScoreBreakdownSection(
 
             // Total
             Surface(
-                shape = RoundedCornerShape(10.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
             ) {
                 Row(
@@ -394,7 +396,7 @@ private fun ScoreBar(label: String, value: Float) {
             modifier = Modifier
                 .weight(1f)
                 .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
+                .clip(AppShape.extraSmall),
             color = barColor,
             trackColor = MaterialTheme.colorScheme.surfaceVariant
         )

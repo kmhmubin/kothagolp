@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -100,7 +100,7 @@ fun ChapterListHeader(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = AppShape.large
     ) {
         Column(
             modifier = Modifier
@@ -186,7 +186,7 @@ private fun ChapterHeaderTitleRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Surface(
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             ) {
                 Icon(
@@ -419,7 +419,7 @@ private fun ChaptersPerPageSelector(
                                 style = MaterialTheme.typography.labelSmall
                             )
                         },
-                        shape = RoundedCornerShape(8.dp)
+                        shape = AppShape.small
                     )
                 }
             }
@@ -436,7 +436,7 @@ private fun QuickNavigationButton(
     Surface(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = AppShape.small,
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Text(
@@ -563,7 +563,7 @@ private fun ChapterSearchField(
                 }
             },
             singleLine = true,
-            shape = RoundedCornerShape(12.dp),
+            shape = AppShape.medium,
             textStyle = MaterialTheme.typography.bodyMedium,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -657,7 +657,7 @@ private fun ChapterFilterChip(
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
                 )
                 Surface(
-                    shape = RoundedCornerShape(4.dp),
+                    shape = AppShape.extraSmall,
                     color = if (selected)
                         MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
                     else
@@ -681,7 +681,7 @@ private fun ChapterFilterChip(
                 )
             }
         } else null,
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
             selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer

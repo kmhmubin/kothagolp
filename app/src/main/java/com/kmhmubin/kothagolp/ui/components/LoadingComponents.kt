@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kmhmubin.kothagolp.R
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.Error
 
 // ============================================================================
@@ -152,7 +154,7 @@ fun LoadingOverlay(
             modifier = Modifier
                 .widthIn(max = 340.dp)
                 .padding(24.dp),
-            shape = RoundedCornerShape(24.dp),
+            shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
@@ -233,14 +235,14 @@ fun LoadingOverlay(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(AppShape.extraSmall)
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(animatedProgress.coerceIn(0f, 1f))
                                 .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .clip(AppShape.extraSmall)
                                 .background(
                                     Brush.horizontalGradient(
                                         colors = listOf(
@@ -282,7 +284,7 @@ fun LoadingOverlay(
                     OutlinedButton(
                         onClick = onCancel,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = AppShape.medium,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Error)
                     ) {
                         Text(
@@ -442,7 +444,7 @@ fun PulsingDotsLoader(
 @Composable
 fun SkeletonBox(
     modifier: Modifier = Modifier,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(8.dp)
+    shape: androidx.compose.ui.graphics.Shape = AppShape.small
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
     val shimmerOffset by infiniteTransition.animateFloat(

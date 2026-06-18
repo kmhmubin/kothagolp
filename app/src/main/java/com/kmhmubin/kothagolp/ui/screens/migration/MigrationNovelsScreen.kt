@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -46,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.kmhmubin.kothagolp.data.local.entity.LibraryEntity
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -144,7 +144,7 @@ private fun NovelMigrationCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
@@ -167,13 +167,13 @@ private fun NovelMigrationCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(width = 48.dp, height = 64.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(AppShape.extraSmall)
                 )
             } else {
                 Box(
                     modifier = Modifier
                         .size(width = 48.dp, height = 64.dp)
-                        .clip(RoundedCornerShape(6.dp)),
+                        .clip(AppShape.extraSmall),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

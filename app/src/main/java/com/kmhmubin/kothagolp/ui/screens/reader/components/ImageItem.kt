@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +31,7 @@ import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderDisplayItem
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 /**
  * Displays an image from chapter content
@@ -74,7 +74,7 @@ fun ChapterImageItem(
             .fillMaxWidth()
             .padding(horizontal = horizontalPadding)
             .padding(vertical = 8.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(AppShape.small)
             .background(colors.text.copy(alpha = 0.05f))
             .then(
                 if (!hasLoadedSize) {

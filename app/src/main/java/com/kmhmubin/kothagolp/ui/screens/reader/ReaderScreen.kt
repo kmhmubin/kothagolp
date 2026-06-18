@@ -31,7 +31,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,9 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
@@ -72,6 +69,7 @@ import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderUiState
 import com.kmhmubin.kothagolp.ui.screens.reader.model.SentenceBoundsInSegment
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderDefaults
+import com.kmhmubin.kothagolp.ui.theme.Warning
 import com.kmhmubin.kothagolp.util.ImmersiveModeEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -93,12 +91,11 @@ fun ReaderScreen(
     onNavigateToSettings: () -> Unit,
     viewModel: ReaderViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val ttsScrollLocked by viewModel.ttsScrollLocked.collectAsState()
-    val ensureVisibleIndex by viewModel.ttsShouldEnsureVisible.collectAsState()
-    val sentenceBounds by viewModel.sentenceBounds.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val ttsScrollLocked by viewModel.ttsScrollLocked.collectAsStateWithLifecycle()
+    val ensureVisibleIndex by viewModel.ttsShouldEnsureVisible.collectAsStateWithLifecycle()
+    val sentenceBounds by viewModel.sentenceBounds.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
     val chapterListSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -106,6 +103,7 @@ fun ReaderScreen(
 
     // Auto-hide controls timer
     var autoHideJob by remember { mutableStateOf<Job?>(null) }
+    var bottomBarSettingsExpanded by remember { mutableStateOf(false) }
 
     // Initialize context for TTS
     LaunchedEffect(Unit) {
@@ -169,15 +167,16 @@ fun ReaderScreen(
             uiState.showChapterList
     ImmersiveModeEffect(showSystemBars = showSystemBars)
 
-    // Auto-hide controls
-    LaunchedEffect(uiState.showControls, uiState.settings.autoHideControlsDelay) {
+    // Auto-hide controls — suppressed while bottom bar settings panel is open
+    LaunchedEffect(uiState.showControls, uiState.settings.autoHideControlsDelay, bottomBarSettingsExpanded) {
         autoHideJob?.cancel()
 
         if (uiState.showControls &&
             uiState.settings.autoHideControlsDelay > 0 &&
             !uiState.isTTSActive &&
             !uiState.showTTSSettings &&
-            !uiState.showChapterList
+            !uiState.showChapterList &&
+            !bottomBarSettingsExpanded
         ) {
             autoHideJob = scope.launch {
                 delay(uiState.settings.autoHideControlsDelay)
@@ -187,23 +186,12 @@ fun ReaderScreen(
     }
 
     // Lifecycle handling for reading time tracking AND TTS visibility sync
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    viewModel.onPauseReading()
-                    viewModel.onReaderBecameInvisible()
-                }
-                Lifecycle.Event.ON_RESUME -> {
-                    viewModel.onResumeReading()
-                    viewModel.onReaderBecameVisible()
-                }
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+    LifecycleResumeEffect(Unit) {
+        viewModel.onResumeReading()
+        viewModel.onReaderBecameVisible()
+        onPauseOrDispose {
+            viewModel.onPauseReading()
+            viewModel.onReaderBecameInvisible()
         }
     }
 
@@ -539,7 +527,8 @@ fun ReaderScreen(
         },
         onPrevious = viewModel::navigateToPrevious,
         onNext = viewModel::navigateToNext,
-        onConfirmScrollReset = viewModel::confirmScrollReset
+        onConfirmScrollReset = viewModel::confirmScrollReset,
+        onBottomBarSettingsExpandedChange = { bottomBarSettingsExpanded = it }
     )
 }
 
@@ -715,7 +704,8 @@ private fun ReaderScreenContent(
     onTTSAutoAdvanceChapterChange: (Boolean) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onConfirmScrollReset: () -> Unit
+    onConfirmScrollReset: () -> Unit,
+    onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {}
 ) {
     val tapZones = uiState.settings.tapZones
 
@@ -855,7 +845,8 @@ private fun ReaderScreenContent(
                         onStopTTS = onStopTTS,
                         onTTSNext = onTTSNext,
                         onTTSPrevious = onTTSPrevious,
-                        onToggleTTSSettings = onToggleTTSSettings
+                        onToggleTTSSettings = onToggleTTSSettings,
+                        onBottomBarSettingsExpandedChange = onBottomBarSettingsExpandedChange
                     )
 
                     // TTS Settings Panel
@@ -954,7 +945,8 @@ private fun ControlsOverlay(
     onStopTTS: () -> Unit,
     onTTSNext: () -> Unit,
     onTTSPrevious: () -> Unit,
-    onToggleTTSSettings: () -> Unit
+    onToggleTTSSettings: () -> Unit,
+    onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {}
 ) {
     val animationDuration = if (uiState.settings.reduceMotion) 0 else ReaderDefaults.ControlsAnimationDuration
 
@@ -978,7 +970,6 @@ private fun ControlsOverlay(
                 isBookmarked = uiState.isCurrentChapterBookmarked,
                 chapterProgress = chapterProgress,
                 estimatedTimeLeft = estimatedTimeLeft,
-                colors = colors,
                 progressStyle = if (uiState.settings.showProgress) uiState.settings.progressStyle else ProgressStyle.NONE,
                 largerTouchTargets = uiState.settings.largerTouchTargets,
                 onBack = onBack,
@@ -1041,7 +1032,8 @@ private fun ControlsOverlay(
                         onSettingsChange = onSettingsChange,
                         onOpenChapterList = onToggleChapterList,
                         onStartTTS = onStartTTS,
-                        onNavigateToSettings = onNavigateToSettings
+                        onNavigateToSettings = onNavigateToSettings,
+                        onSettingsExpandedChange = onBottomBarSettingsExpandedChange
                     )
                 }
             }
@@ -1065,7 +1057,7 @@ private fun WarmthOverlay(
 
     if (alpha > 0f) {
         Box(
-            modifier = modifier.background(Color(0xFFFF9800).copy(alpha = alpha))
+            modifier = modifier.background(Warning.copy(alpha = alpha))
         )
     }
 }

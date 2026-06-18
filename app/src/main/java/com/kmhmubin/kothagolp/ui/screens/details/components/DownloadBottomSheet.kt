@@ -85,6 +85,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.kmhmubin.kothagolp.service.QueuedDownload
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppSpacing
 
 // ================================================================
 // DATA CLASSES
@@ -473,7 +476,7 @@ private fun ActiveDownloadCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
     ) {
         Column(
@@ -508,7 +511,7 @@ private fun ActiveDownloadCard(
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 ) {
                     Text(
@@ -538,14 +541,14 @@ private fun ActiveDownloadCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(12.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(animatedProgress)
                             .height(12.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(AppShape.extraSmall)
                             .background(
                                 Brush.horizontalGradient(
                                     colors = listOf(
@@ -604,7 +607,7 @@ private fun ActiveDownloadCard(
                     Button(
                         onClick = onResume,
                         modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = AppShape.large,
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Icon(Icons.Rounded.PlayArrow, null, Modifier.size(20.dp))
@@ -615,7 +618,7 @@ private fun ActiveDownloadCard(
                     FilledTonalButton(
                         onClick = onPause,
                         modifier = Modifier.weight(1f).height(48.dp),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = AppShape.large,
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         Icon(Icons.Rounded.Pause, null, Modifier.size(20.dp))
@@ -627,7 +630,7 @@ private fun ActiveDownloadCard(
                 OutlinedButton(
                     onClick = onCancel,
                     modifier = Modifier.height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = AppShape.large,
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     ),
@@ -659,7 +662,7 @@ private fun QueuedStatusCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShape.extraLarge,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f))
     ) {
         Column(
@@ -709,7 +712,7 @@ private fun QueuedStatusCard(
             OutlinedButton(
                 onClick = onRemoveFromQueue,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(14.dp),
+                shape = AppShape.medium,
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.error
                 ),
@@ -737,7 +740,7 @@ private fun CurrentDownloadInfoCard(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Column(
@@ -777,14 +780,14 @@ private fun CurrentDownloadInfoCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp))
+                    .clip(AppShape.extraSmall)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(progress)
                         .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.primary)
                 )
             }
@@ -804,7 +807,7 @@ private fun OtherDownloadBanner(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
     ) {
         Row(
@@ -957,7 +960,7 @@ private fun DownloadOptionsContent(
         // Info text
         if (!state.hasUndownloaded) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -1013,7 +1016,7 @@ private fun QueueSection(
             if (queuedDownloads.size > 1) {
                 Surface(
                     onClick = onClearQueue,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = AppShape.small,
                     color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                 ) {
                     Text(
@@ -1055,7 +1058,7 @@ private fun QueueItem(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Row(
@@ -1130,7 +1133,7 @@ private fun QuickDownloadChip(
     Surface(
         onClick = onClick,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.primaryContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
         modifier = modifier.scale(scale)
@@ -1181,7 +1184,7 @@ private fun DownloadOptionItem(
         enabled = enabled,
         interactionSource = interactionSource,
         modifier = modifier.fillMaxWidth().scale(scale),
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShape.medium,
         color = Color.Transparent
     ) {
         Row(
@@ -1189,7 +1192,7 @@ private fun DownloadOptionItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f * contentAlpha),
                 modifier = Modifier.size(48.dp)
             ) {
@@ -1250,7 +1253,7 @@ private fun CustomAmountDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
+            shape = AppShape.extraLarge,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp
         ) {
@@ -1293,7 +1296,7 @@ private fun CustomAmountDialog(
                             if (isValid) onConfirm(inputValue!!)
                         }
                     ),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = AppShape.medium,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -1308,7 +1311,7 @@ private fun CustomAmountDialog(
                         if (amount <= maxAmount) {
                             Surface(
                                 onClick = { inputText = amount.toString() },
-                                shape = RoundedCornerShape(8.dp),
+                                shape = AppShape.small,
                                 color = if (inputText == amount.toString()) {
                                     MaterialTheme.colorScheme.primaryContainer
                                 } else {
@@ -1340,7 +1343,7 @@ private fun CustomAmountDialog(
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(14.dp)
+                        shape = AppShape.medium
                     ) {
                         Text("Cancel")
                     }
@@ -1349,7 +1352,7 @@ private fun CustomAmountDialog(
                         onClick = { inputValue?.let { onConfirm(it) } },
                         modifier = Modifier.weight(1f),
                         enabled = isValid,
-                        shape = RoundedCornerShape(14.dp)
+                        shape = AppShape.medium
                     ) {
                         Text(
                             text = if (isValid) "Download $inputValue" else "Download",

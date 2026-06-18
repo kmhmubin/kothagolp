@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.CompareArrows
@@ -42,7 +41,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
+import com.kmhmubin.kothagolp.ui.theme.Error
+import com.kmhmubin.kothagolp.ui.theme.Info
+import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
+import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
+import com.kmhmubin.kothagolp.ui.theme.Success
 import java.time.LocalTime
 
 @Composable
@@ -117,7 +122,7 @@ fun MoreTab(
                 icon = Icons.Rounded.Insights,
                 title = "Reading Stats",
                 subtitle = "See how much you've read",
-                iconTint = Color(0xFF6366F1),
+                iconTint = MaterialTheme.colorScheme.tertiary,
                 onClick = onNavigateToProfile,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
@@ -132,7 +137,7 @@ fun MoreTab(
                 } else {
                     "Manage offline content"
                 },
-                iconTint = Color(0xFF10B981),
+                iconTint = MaterialTheme.colorScheme.secondary,
                 badge = if (uiState.activeDownloads > 0) "${uiState.activeDownloads}" else null,
                 onClick = onNavigateToDownloads,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
@@ -144,7 +149,7 @@ fun MoreTab(
                 icon = Icons.Rounded.Storage,
                 title = "Storage & Backup",
                 subtitle = "Clear cache, export or import backups",
-                iconTint = Color(0xFFF59E0B),
+                iconTint = MaterialTheme.colorScheme.secondary,
                 onClick = onNavigateToStorage,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
@@ -156,7 +161,7 @@ fun MoreTab(
                     icon = Icons.AutoMirrored.Rounded.CompareArrows,
                     title = "Migrate Sources",
                     subtitle = "Move library novels to a different source",
-                    iconTint = Color(0xFF06B6D4),
+                    iconTint = MaterialTheme.colorScheme.primary,
                     onClick = onNavigateToMigration,
                     modifier = Modifier.padding(horizontal = dimensions.gridPadding)
                 )
@@ -168,7 +173,7 @@ fun MoreTab(
                 icon = Icons.Rounded.Settings,
                 title = "Settings",
                 subtitle = "Appearance, reading and downloads",
-                iconTint = Color(0xFF8B5CF6),
+                iconTint = MaterialTheme.colorScheme.primary,
                 onClick = onNavigateToSettings,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
@@ -194,7 +199,7 @@ fun MoreTab(
                 icon = Icons.Rounded.Info,
                 title = "About Kothagolp",
                 subtitle = "App info, updates and credits",
-                iconTint = Color(0xFF3B82F6),
+                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
                 onClick = onNavigateToAbout,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
@@ -255,9 +260,9 @@ private fun MoreHeader(
                 // Streak Badge
                 if (currentStreak > 0 || isStreakActive) {
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = AppShape.extraLarge,
                         color = if (isStreakActive) {
-                            Color(0xFFFF6B35).copy(alpha = 0.15f)
+                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
                         } else {
                             MaterialTheme.colorScheme.surfaceContainerHigh
                         }
@@ -271,14 +276,14 @@ private fun MoreHeader(
                                 imageVector = Icons.Rounded.LocalFireDepartment,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = if (isStreakActive) Color(0xFFFF6B35)
+                                tint = if (isStreakActive) MaterialTheme.colorScheme.tertiary
                                 else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = "$currentStreak",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isStreakActive) Color(0xFFFF6B35)
+                                color = if (isStreakActive) MaterialTheme.colorScheme.tertiary
                                 else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -303,19 +308,19 @@ private fun QuickStatsSummary(
         QuickStatItem(
             value = "$totalChapters",
             label = "Chapters",
-            color = Color(0xFF3B82F6),
+            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.weight(1f)
         )
         QuickStatItem(
             value = "${totalHours}h",
             label = "Reading",
-            color = Color(0xFF10B981),
+            color = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.weight(1f)
         )
         QuickStatItem(
             value = "$downloadCount",
             label = "Offline",
-            color = Color(0xFF8B5CF6),
+            color = MaterialTheme.colorScheme.tertiary,
             modifier = Modifier.weight(1f)
         )
     }
@@ -330,7 +335,7 @@ private fun QuickStatItem(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = color.copy(alpha = 0.1f)
     ) {
         Column(
@@ -368,7 +373,7 @@ private fun MoreMenuItem(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -418,7 +423,7 @@ private fun MoreMenuItem(
                     // Badge for active downloads
                     if (badge != null) {
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
+                            shape = AppShape.small,
                             color = iconTint
                         ) {
                             Text(
@@ -450,12 +455,12 @@ private fun MoreMenuItem(
 }
 
 private fun getLevelColor(level: Int): Color = when (level) {
-    1 -> Color(0xFF94A3B8)
-    2 -> Color(0xFF22C55E)
-    3 -> Color(0xFF3B82F6)
-    4 -> Color(0xFF8B5CF6)
-    5 -> Color(0xFFF59E0B)
-    6 -> Color(0xFFEF4444)
-    7 -> Color(0xFFFFD700)
-    else -> Color(0xFFE879F9)
+    1 -> Color(0xFF94A3B8)    // slate-400 — no token
+    2 -> Success
+    3 -> Info
+    4 -> StatusPlanToRead
+    5 -> StatusOnHold
+    6 -> Error
+    7 -> Color(0xFFFFD700)    // gold — no token
+    else -> Color(0xFFE879F9) // fuchsia — no token
 }

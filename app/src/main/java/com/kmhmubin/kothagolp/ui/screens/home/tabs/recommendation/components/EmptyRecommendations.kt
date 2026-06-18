@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Explore
@@ -51,7 +52,7 @@ fun EmptyRecommendations(
         ) {
             // Icon
             Surface(
-                shape = RoundedCornerShape(24.dp),
+                shape = AppShape.extraLarge,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(100.dp)
             ) {
@@ -97,7 +98,7 @@ fun EmptyRecommendations(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(14.dp)
+                shape = AppShape.large
             ) {
                 Icon(Icons.Rounded.Explore, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -111,7 +112,7 @@ fun EmptyRecommendations(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = AppShape.large
                 ) {
                     Icon(Icons.Rounded.Tune, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -124,7 +125,7 @@ fun EmptyRecommendations(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.surfaceContainerLow
                 ) {
                     Row(

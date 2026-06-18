@@ -32,7 +32,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
+import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.Deselect
@@ -67,7 +68,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kmhmubin.kothagolp.ui.screens.details.util.DetailsColors
+import com.kmhmubin.kothagolp.ui.theme.Success
+import com.kmhmubin.kothagolp.ui.theme.Warning
 
 // ================================================================
 // DATA CLASSES
@@ -176,9 +178,9 @@ private fun SelectionTopBar(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
-        shadowElevation = 8.dp,
-        tonalElevation = 2.dp
+        shape = AppShape.extraLarge,
+        shadowElevation = AppElevation.lg,
+        tonalElevation = AppElevation.sm
     ) {
         Column(
             modifier = Modifier
@@ -309,7 +311,7 @@ private fun SelectionCounterPill(
     totalCount: Int
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShape.large,
         color = MaterialTheme.colorScheme.primary
     ) {
         Row(
@@ -416,7 +418,7 @@ private fun QuickFilterChip(
     Surface(
         onClick = onClick,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(10.dp),
+        shape = AppShape.medium,
         color = backgroundColor,
         modifier = Modifier.scale(scale)
     ) {
@@ -476,9 +478,9 @@ private fun SelectionBottomBar(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        shadowElevation = 12.dp,
-        tonalElevation = 2.dp
+        shape = AppShape.extraLarge,
+        shadowElevation = AppElevation.lg,
+        tonalElevation = AppElevation.sm
     ) {
         Column(
             modifier = Modifier
@@ -518,7 +520,7 @@ private fun StatusIndicatorsRow(selectionState: SelectionState) {
             icon = Icons.Rounded.DownloadDone,
             count = selectionState.selectedDownloadedCount,
             label = "Downloaded",
-            color = DetailsColors.Success,
+            color = Success,
             isActive = selectionState.selectedDownloadedCount > 0
         )
 
@@ -526,7 +528,7 @@ private fun StatusIndicatorsRow(selectionState: SelectionState) {
             icon = Icons.Rounded.VisibilityOff,
             count = selectionState.selectedUnreadCount,
             label = "Unread",
-            color = DetailsColors.Warning,
+            color = Warning,
             isActive = selectionState.selectedUnreadCount > 0
         )
 
@@ -627,7 +629,7 @@ private fun ActionButtonsRow(
             icon = Icons.Rounded.Bookmark,
             label = "Last Read",
             enabled = selectionState.selectedCount == 1,
-            color = DetailsColors.Warning,
+            color = Warning,
             onClick = callbacks.onMarkAsLastRead
         )
 
@@ -675,7 +677,7 @@ private fun ActionButton(
         onClick = onClick,
         enabled = enabled,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = backgroundColor,
         modifier = Modifier.scale(scale)
     ) {
@@ -716,7 +718,7 @@ private fun ReadStatusButton(
     val enabled = if (showMarkAsRead) canMarkRead else canMarkUnread
     val icon = if (showMarkAsRead) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff
     val label = if (showMarkAsRead) "Read" else "Unread"
-    val color = if (showMarkAsRead) DetailsColors.Success else MaterialTheme.colorScheme.secondary
+    val color = if (showMarkAsRead) Success else MaterialTheme.colorScheme.secondary
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) 0.92f else 1f,
@@ -740,7 +742,7 @@ private fun ReadStatusButton(
         onClick = { if (showMarkAsRead) onMarkAsRead() else onMarkAsUnread() },
         enabled = enabled,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = backgroundColor,
         modifier = Modifier.scale(scale)
     ) {

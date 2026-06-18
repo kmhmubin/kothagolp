@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.NewReleases
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -83,7 +84,7 @@ fun RecommendationSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = AppShape.medium,
                     color = sectionColor.copy(alpha = 0.12f),
                     modifier = Modifier.size(40.dp)
                 ) {
@@ -164,7 +165,7 @@ private fun getSectionIcon(type: RecommendationType): ImageVector {
         RecommendationType.FOR_YOU -> Icons.Rounded.AutoAwesome
         RecommendationType.SIMILAR_TO -> Icons.Rounded.LocalFireDepartment
         RecommendationType.BECAUSE_YOU_READ -> Icons.Rounded.LocalFireDepartment
-        RecommendationType.TRENDING_IN_YOUR_GENRES -> Icons.Rounded.TrendingUp
+        RecommendationType.TRENDING_IN_YOUR_GENRES -> Icons.AutoMirrored.Rounded.TrendingUp
         RecommendationType.FROM_AUTHORS_YOU_LIKE -> Icons.Rounded.Person
         RecommendationType.TOP_RATED_FOR_YOU -> Icons.Rounded.Star
         RecommendationType.NEW_FOR_YOU -> Icons.Rounded.NewReleases

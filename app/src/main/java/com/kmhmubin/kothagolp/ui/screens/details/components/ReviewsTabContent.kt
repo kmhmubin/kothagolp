@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Reviews
 import androidx.compose.material.icons.filled.Star
@@ -184,7 +185,7 @@ private fun ReviewsTabHeader(
             ) {
                 // Icon
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Icon(
@@ -319,7 +320,7 @@ private fun LoadMoreButton(
     ) {
         FilledTonalButton(
             onClick = onClick,
-            shape = RoundedCornerShape(12.dp)
+            shape = AppShape.medium
         ) {
             Text(
                 text = if (reviewStyle == ReviewStyle.DETAILED)
@@ -348,7 +349,7 @@ private fun EmptyState(
             Box(
                 modifier = Modifier
                     .size(72.dp)
-                    .clip(RoundedCornerShape(18.dp))
+                    .clip(AppShape.large)
                     .background(
                         Brush.linearGradient(
                             colors = listOf(

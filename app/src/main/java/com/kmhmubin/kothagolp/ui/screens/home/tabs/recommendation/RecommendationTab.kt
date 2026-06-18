@@ -52,6 +52,7 @@ import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.Rec
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.RecommendationSettingsSheet
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.SourceRecommendationsSection
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.TagFilterSheet
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -280,7 +281,7 @@ fun RecommendationTab(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Surface(
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = AppShape.medium,
                                     color = MaterialTheme.colorScheme.surfaceContainerLow
                                 ) {
                                     Text(
@@ -385,7 +386,7 @@ private fun SeedingScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Surface(
-                shape = RoundedCornerShape(28.dp),
+                shape = AppShape.extraLarge,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 tonalElevation = 4.dp,
                 modifier = Modifier.size(110.dp)
@@ -420,7 +421,7 @@ private fun SeedingScreen(
                     )
 
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = AppShape.medium,
                         color = MaterialTheme.colorScheme.surfaceContainerLow,
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -434,7 +435,7 @@ private fun SeedingScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(10.dp)
-                                    .clip(RoundedCornerShape(5.dp)),
+                                    .clip(AppShape.extraSmall),
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
 

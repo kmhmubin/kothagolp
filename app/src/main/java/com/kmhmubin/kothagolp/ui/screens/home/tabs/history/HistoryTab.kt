@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -62,6 +61,7 @@ import com.kmhmubin.kothagolp.domain.model.AppSettings
 import com.kmhmubin.kothagolp.domain.model.UiDensity
 import com.kmhmubin.kothagolp.ui.components.HistoryListItem
 import com.kmhmubin.kothagolp.ui.components.HistoryListItemCompact
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -224,7 +224,7 @@ private fun HistoryHeader(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = AppShape.medium,
                     color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier.size(40.dp)
                 ) {
@@ -255,7 +255,7 @@ private fun HistoryHeader(
 
             Surface(
                 onClick = onClearHistory,
-                shape = RoundedCornerShape(8.dp),
+                shape = AppShape.small,
                 color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
             ) {
                 Row(
@@ -363,7 +363,7 @@ private fun HistorySearchBar(
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         BasicTextField(
@@ -539,7 +539,7 @@ private fun DateGroupHeader(
             )
 
             Surface(
-                shape = RoundedCornerShape(10.dp),
+                shape = AppShape.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Text(
@@ -570,7 +570,7 @@ private fun EmptyHistoryState() {
             modifier = Modifier.padding(32.dp)
         ) {
             Surface(
-                shape = RoundedCornerShape(24.dp),
+                shape = AppShape.extraLarge,
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 modifier = Modifier.size(88.dp)
             ) {
@@ -619,7 +619,7 @@ private fun NoResultsState(query: String) {
             modifier = Modifier.padding(32.dp)
         ) {
             Surface(
-                shape = RoundedCornerShape(20.dp),
+                shape = AppShape.extraLarge,
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 modifier = Modifier.size(72.dp)
             ) {
@@ -720,7 +720,7 @@ private fun ClearHistoryConfirmationDialog(
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(20.dp)
+        shape = AppShape.extraLarge
     )
 }
 
@@ -770,6 +770,6 @@ private fun DeleteSelectedConfirmationDialog(
             }
         },
         containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(20.dp)
+        shape = AppShape.extraLarge
     )
 }

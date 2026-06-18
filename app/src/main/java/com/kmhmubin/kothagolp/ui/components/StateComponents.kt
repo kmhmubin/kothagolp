@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -25,7 +26,7 @@ fun ErrorMessage(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(
             containerColor = Error.copy(alpha = 0.1f)
         ),
@@ -84,15 +85,15 @@ fun EmptyState(
     ) {
         Surface(
             modifier = Modifier.size(80.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = Zinc900.copy(alpha = 0.5f)
+            shape = AppShape.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
-                    tint = Zinc700
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -102,7 +103,7 @@ fun EmptyState(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = Zinc300
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -110,19 +111,14 @@ fun EmptyState(
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = Zinc500,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
         if (actionLabel != null && onAction != null) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = onAction,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Orange600
-                )
-            ) {
+            Button(onClick = onAction) {
                 Text(actionLabel)
             }
         }
@@ -137,7 +133,7 @@ fun EmptyLibrary(
     onBrowse: () -> Unit
 ) {
     EmptyState(
-        icon = Icons.Default.LibraryBooks,
+        icon = Icons.AutoMirrored.Filled.LibraryBooks,
         title = "Nothing here",
         message = "Start browsing to add novels to your collection.",
         actionLabel = "Go to Browse",
