@@ -480,6 +480,15 @@ class ProviderBrowseViewModel(
         viewModelScope.launch { actionSheetManager.addToLibrary(novel, status) }
     }
 
+    fun quickSaveToLibrary(novel: Novel, status: ReadingStatus) {
+        viewModelScope.launch {
+            actionSheetManager.addToLibrary(novel, status)
+            _uiState.update { it.copy(quickSaveMessage = "Saved to ${status.displayName()}") }
+            delay(2000L)
+            _uiState.update { it.copy(quickSaveMessage = null) }
+        }
+    }
+
     fun addDuplicateAnyway() {
         viewModelScope.launch { actionSheetManager.addDuplicateAnyway() }
     }

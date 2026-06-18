@@ -136,8 +136,13 @@ import com.kmhmubin.kothagolp.ui.components.NovelGridSkeleton
 import com.kmhmubin.kothagolp.ui.components.KothagolpPullToRefreshBox
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 // ============================================================================
 // Design Constants
@@ -339,19 +344,34 @@ fun ProviderBrowseScreen(
                                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                         viewModel.showActionSheet(novel)
                                     },
+                                    onNovelHoldSave = { novel ->
+                                        viewModel.quickSaveToLibrary(novel, appSettings.quickSaveStatus)
+                                    },
                                     onLoadMore = viewModel::loadNextPage,
                                     appSettings = appSettings
                                 )
                             }
                         }
 
-                        // Floating search results indicator
-                        Box(
+                        // Floating indicators (quick-save toast + search results)
+                        Column(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .navigationBarsPadding()
-                                .padding(bottom = BrowseDesign.spacingXl)
+                                .padding(bottom = BrowseDesign.spacingXl),
+                            verticalArrangement = Arrangement.spacedBy(BrowseDesign.spacingSm),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = uiState.quickSaveMessage != null,
+                                enter = slideInVertically(
+                                    initialOffsetY = { it },
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                ) + fadeIn(),
+                                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                            ) {
+                                uiState.quickSaveMessage?.let { QuickSaveToast(message = it) }
+                            }
                             androidx.compose.animation.AnimatedVisibility(
                                 visible = uiState.showSearchIndicator,
                                 enter = slideInVertically(
@@ -1698,10 +1718,12 @@ private fun MainContent(
     gridColumns: Int,
     onNovelClick: (Novel) -> Unit,
     onNovelLongClick: (Novel) -> Unit,
+    onNovelHoldSave: (Novel) -> Unit,
     onLoadMore: () -> Unit,
     appSettings: AppSettings
 ) {
     val dimensions = KothagolpTheme.dimensions
+    val haptic = LocalHapticFeedback.current
 
     when (appSettings.browseDisplayMode) {
         com.kmhmubin.kothagolp.domain.model.DisplayMode.GRID -> {
@@ -1730,13 +1752,19 @@ private fun MainContent(
                     Spacer(Modifier.height(BrowseDesign.spacingSm))
                 }
                 items(items = uiState.displayNovels, key = { it.url }) { novel ->
-                    NovelCard(
-                        novel = novel,
-                        onClick = { onNovelClick(novel) },
-                        onLongClick = { onNovelLongClick(novel) },
-                        density = appSettings.uiDensity,
-                        modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
-                    )
+                    HoldToSaveWrapper(
+                        novelUrl = novel.url,
+                        haptic = haptic,
+                        onHoldSave = { onNovelHoldSave(novel) }
+                    ) {
+                        NovelCard(
+                            novel = novel,
+                            onClick = { onNovelClick(novel) },
+                            onLongClick = { onNovelLongClick(novel) },
+                            density = appSettings.uiDensity,
+                            modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
+                        )
+                    }
                 }
                 if (uiState.isLoadingMore) {
                     item(span = { GridItemSpan(maxLineSpan) }, key = "load_more_indicator") {
@@ -1770,13 +1798,19 @@ private fun MainContent(
                     Spacer(Modifier.height(BrowseDesign.spacingSm))
                 }
                 items(uiState.displayNovels, key = { it.url }) { novel ->
-                    com.kmhmubin.kothagolp.ui.components.NovelListItem(
-                        novel = novel,
-                        onClick = { onNovelClick(novel) },
-                        onLongClick = { onNovelLongClick(novel) },
-                        density = appSettings.uiDensity,
-                        modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
-                    )
+                    HoldToSaveWrapper(
+                        novelUrl = novel.url,
+                        haptic = haptic,
+                        onHoldSave = { onNovelHoldSave(novel) }
+                    ) {
+                        com.kmhmubin.kothagolp.ui.components.NovelListItem(
+                            novel = novel,
+                            onClick = { onNovelClick(novel) },
+                            onLongClick = { onNovelLongClick(novel) },
+                            density = appSettings.uiDensity,
+                            modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
+                        )
+                    }
                 }
                 if (uiState.isLoadingMore) {
                     item(key = "load_more_indicator") {
@@ -1801,6 +1835,66 @@ private fun LoadMoreIndicator() {
             strokeWidth = 3.dp,
             color = MaterialTheme.colorScheme.primary
         )
+    }
+}
+
+// ============================================================================
+// Quick-save hold wrapper + toast
+// ============================================================================
+
+@Composable
+private fun HoldToSaveWrapper(
+    novelUrl: String,
+    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
+    onHoldSave: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = Modifier.pointerInput(novelUrl) {
+            awaitEachGesture {
+                val down = awaitPointerEvent(PointerEventPass.Initial)
+                if (down.changes.none { it.pressed }) return@awaitEachGesture
+                val timedOut = withTimeoutOrNull(3000L) {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Final)
+                        if (event.changes.none { it.pressed }) break
+                    }
+                } == null
+                if (timedOut) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onHoldSave()
+                }
+            }
+        }
+    ) { content() }
+}
+
+@Composable
+private fun QuickSaveToast(message: String) {
+    Surface(
+        shape = AppShape.extraLarge,
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shadowElevation = 8.dp,
+        tonalElevation = 4.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = BrowseDesign.spacingLg, vertical = BrowseDesign.spacingMd),
+            horizontalArrangement = Arrangement.spacedBy(BrowseDesign.spacingMd),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.BookmarkAdd,
+                contentDescription = null,
+                modifier = Modifier.size(BrowseDesign.iconMd),
+                tint = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+        }
     }
 }
 
