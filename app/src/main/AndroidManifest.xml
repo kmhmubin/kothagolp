@@ -78,6 +78,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".update.ChapterUpdateCancelReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.kmhmubin.kothagolp.action.CHAPTER_UPDATE_CANCEL" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"

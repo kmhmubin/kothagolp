@@ -57,7 +57,9 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Search
@@ -130,6 +132,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.work.WorkManager
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.domain.model.AppSettings
+import com.kmhmubin.kothagolp.domain.model.ChapterUpdateInterval
 import com.kmhmubin.kothagolp.domain.model.CustomThemeColors
 import com.kmhmubin.kothagolp.domain.model.DisplayMode
 import com.kmhmubin.kothagolp.domain.model.GridColumns
@@ -139,6 +142,7 @@ import com.kmhmubin.kothagolp.domain.model.RatingFormat
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.ThemeMode
 import com.kmhmubin.kothagolp.domain.model.UiDensity
+import com.kmhmubin.kothagolp.update.ChapterUpdateScheduler
 import com.kmhmubin.kothagolp.source.SourceLoader
 import com.kmhmubin.kothagolp.source.SourceSyncWorker
 import com.kmhmubin.kothagolp.ui.components.ColorPickerDialog
@@ -411,8 +415,11 @@ fun SettingsAppearanceScreen(onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsLibraryScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
     val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val snackbarState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -427,7 +434,8 @@ fun SettingsLibraryScreen(onBack: () -> Unit) {
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarState) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -502,6 +510,74 @@ fun SettingsLibraryScreen(onBack: () -> Unit) {
                         preferencesManager.setLibraryShelfEnabled(filter, enabled)
                     }
                 )
+            }
+
+            item { SectionHeader("Chapter Updates", Icons.Outlined.Sync) }
+            item {
+                SettingsCard {
+                    DropdownItem(
+                        icon = Icons.Outlined.Schedule,
+                        title = "Check Interval",
+                        selectedValue = settings.chapterUpdateInterval.displayName(),
+                        options = ChapterUpdateInterval.entries.map { it.displayName() },
+                        selectedIndex = settings.chapterUpdateInterval.ordinal,
+                        onSelect = { idx ->
+                            val interval = ChapterUpdateInterval.entries[idx]
+                            preferencesManager.updateAppSettings(
+                                settings.copy(chapterUpdateInterval = interval)
+                            )
+                            ChapterUpdateScheduler.schedule(
+                                context = context,
+                                interval = interval,
+                                wifiOnly = settings.chapterUpdateOnWifiOnly
+                            )
+                        }
+                    )
+                    if (settings.chapterUpdateInterval != ChapterUpdateInterval.OFF) {
+                        SettingsDivider()
+                        ToggleItem(
+                            icon = Icons.Outlined.Wifi,
+                            title = "Wi-Fi Only",
+                            subtitle = "Only check when connected to Wi-Fi",
+                            checked = settings.chapterUpdateOnWifiOnly,
+                            onCheckedChange = { wifiOnly ->
+                                preferencesManager.updateAppSettings(
+                                    settings.copy(chapterUpdateOnWifiOnly = wifiOnly)
+                                )
+                                ChapterUpdateScheduler.schedule(
+                                    context = context,
+                                    interval = settings.chapterUpdateInterval,
+                                    wifiOnly = wifiOnly
+                                )
+                            }
+                        )
+                        SettingsDivider()
+                        ToggleItem(
+                            icon = Icons.Outlined.Notifications,
+                            title = "Show Notifications",
+                            subtitle = "Notify when new chapters are found",
+                            checked = settings.chapterUpdateNotify,
+                            onCheckedChange = {
+                                preferencesManager.updateAppSettings(
+                                    settings.copy(chapterUpdateNotify = it)
+                                )
+                            }
+                        )
+                    }
+                    SettingsDivider()
+                    ClickableItem(
+                        icon = Icons.Outlined.Sync,
+                        title = "Check Now",
+                        subtitle = "Run chapter check immediately",
+                        tint = MaterialTheme.colorScheme.primary,
+                        onClick = {
+                            ChapterUpdateScheduler.runNow(context)
+                            scope.launch {
+                                snackbarState.showSnackbar("Checking for new chapters…")
+                            }
+                        }
+                    )
+                }
             }
 
             item { Spacer(Modifier.height(80.dp)) }
