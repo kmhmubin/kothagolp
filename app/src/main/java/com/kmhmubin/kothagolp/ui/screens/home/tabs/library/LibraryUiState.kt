@@ -33,7 +33,9 @@ data class LibraryUiState(
         showSpicyFilter = false
     ),
     val isAutoDownloading: Boolean = false,
-    val autoDownloadProgress: AutoDownloadProgress? = null
+    val autoDownloadProgress: AutoDownloadProgress? = null,
+    val isMultiSelectMode: Boolean = false,
+    val selectedNovelUrls: Set<String> = emptySet(),
 )
 
 data class AutoDownloadProgress(
