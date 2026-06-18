@@ -1476,7 +1476,7 @@ private fun MultiSelectBar(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 6.dp),
         shape = AppShape.extraLarge,
-        color = MaterialTheme.colorScheme.inverseSurface,
+        color = MaterialTheme.colorScheme.secondaryContainer,
         shadowElevation = AppElevation.lg,
         tonalElevation = AppElevation.lg
     ) {
@@ -1488,28 +1488,28 @@ private fun MultiSelectBar(
                 Icon(
                     imageVector = Icons.Rounded.Close,
                     contentDescription = "Exit selection",
-                    tint = MaterialTheme.colorScheme.inverseOnSurface
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
             Text(
                 text = "$selectedCount selected",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.inverseOnSurface,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onChangeCategory) {
                 Icon(
                     imageVector = Icons.Rounded.Label,
                     contentDescription = "Change category",
-                    tint = MaterialTheme.colorScheme.inverseOnSurface
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
             IconButton(onClick = onMarkAllRead) {
                 Icon(
                     imageVector = Icons.Rounded.DoneAll,
                     contentDescription = "Mark all read",
-                    tint = MaterialTheme.colorScheme.inverseOnSurface
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
             IconButton(onClick = onDelete) {
