@@ -23,6 +23,7 @@ class ProviderBrowseViewModel(
 ) : ViewModel() {
 
     private val novelRepository = RepositoryProvider.getNovelRepository()
+    private val libraryRepository = RepositoryProvider.getLibraryRepository()
 
     private val _uiState = MutableStateFlow(ProviderBrowseUiState())
     val uiState: StateFlow<ProviderBrowseUiState> = _uiState.asStateFlow()
@@ -40,6 +41,13 @@ class ProviderBrowseViewModel(
     }
 
     init {
+        // Observe library membership so browse cards show the bookmark badge
+        viewModelScope.launch {
+            libraryRepository.observeLibrary().collect { items ->
+                _uiState.update { it.copy(libraryUrls = items.map { item -> item.novel.url }.toSet()) }
+            }
+        }
+
         // Live initialize and react to preference/provider registry changes
         var hadProvider = false
 

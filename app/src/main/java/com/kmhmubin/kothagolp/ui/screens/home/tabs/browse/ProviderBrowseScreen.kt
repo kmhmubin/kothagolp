@@ -1712,6 +1712,7 @@ private fun MainContent(
                         novel = novel,
                         onClick = { onNovelClick(novel) },
                         onLongClick = { onNovelLongClick(novel) },
+                        isInLibrary = novel.url in uiState.libraryUrls,
                         density = appSettings.uiDensity,
                         modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
                     )
@@ -1752,6 +1753,7 @@ private fun MainContent(
                         novel = novel,
                         onClick = { onNovelClick(novel) },
                         onLongClick = { onNovelLongClick(novel) },
+                        isInLibrary = novel.url in uiState.libraryUrls,
                         density = appSettings.uiDensity,
                         modifier = Modifier.padding(horizontal = dimensions.gridPadding / 2)
                     )
