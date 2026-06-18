@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.filled.BookmarkAdded
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.automirrored.rounded.ManageSearch
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,7 +54,8 @@ fun ActionButtonsRow(
     downloadProgress: Float,
     onRead: () -> Unit,
     onDownload: () -> Unit,
-    onViewDownloads: (() -> Unit)? = null  // New parameter for navigation
+    onViewDownloads: (() -> Unit)? = null,
+    onFindOnOtherSources: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -75,6 +77,29 @@ fun ActionButtonsRow(
             onDownload = onDownload,
             onViewDownloads = onViewDownloads
         )
+
+        // Find on other sources button
+        if (onFindOnOtherSources != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onFindOnOtherSources,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = AppShape.large
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ManageSearch,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Find on other sources",
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
     }
 }
 

@@ -108,6 +108,7 @@ fun DetailsScreen(
     onNavigateToDownloads: () -> Unit = {},
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
     onNavigateToMigration: ((novelUrl: String, sourceName: String) -> Unit)? = null,
+    onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
     viewModel: DetailsViewModel = viewModel()
 ) {
     val showCoverOptions by viewModel.showCoverOptions.collectAsState()
@@ -281,6 +282,7 @@ fun DetailsScreen(
                                         onNavigateToDownloads = onNavigateToDownloads,
                                         onNavigateToTagExplorer = onNavigateToTagExplorer,
                                         onNavigateToMigration = onNavigateToMigration,
+                                        onNavigateToGlobalSearch = onNavigateToGlobalSearch,
                                         onExportEpub = {
                                             if (viewModel.hasDownloadedChapters()) {
                                                 epubFilePicker.launch(viewModel.generateEpubFileName())
@@ -317,6 +319,7 @@ fun DetailsScreen(
                                     onOpenInWebView = onOpenInWebView,
                                     onNavigateToDownloads = onNavigateToDownloads,
                                     onNavigateToTagExplorer = onNavigateToTagExplorer,
+                                    onNavigateToGlobalSearch = onNavigateToGlobalSearch,
                                     onExportEpub = {
                                         if (viewModel.hasDownloadedChapters()) {
                                             epubFilePicker.launch(viewModel.generateEpubFileName())
@@ -560,6 +563,7 @@ private fun DetailsContent(
     onTabSelected: (DetailsTab) -> Unit,
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
     onNavigateToMigration: ((novelUrl: String, sourceName: String) -> Unit)? = null,
+    onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
     viewModel: DetailsViewModel,
     scope: CoroutineScope
 ) {
@@ -621,7 +625,10 @@ private fun DetailsContent(
                     }
                 },
                 onDownload = { viewModel.showDownloadMenu() },
-                onViewDownloads = onNavigateToDownloads
+                onViewDownloads = onNavigateToDownloads,
+                onFindOnOtherSources = onNavigateToGlobalSearch?.let { navigate ->
+                    { navigate(details.name) }
+                }
             )
         }
 

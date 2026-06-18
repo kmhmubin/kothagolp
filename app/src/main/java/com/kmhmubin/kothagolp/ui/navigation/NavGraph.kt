@@ -2,6 +2,7 @@ package com.kmhmubin.kothagolp.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -38,6 +39,8 @@ import com.kmhmubin.kothagolp.ui.screens.migration.MigrationBulkScreen
 import com.kmhmubin.kothagolp.ui.screens.migration.MigrationNovelsScreen
 import com.kmhmubin.kothagolp.ui.screens.migration.MigrationSearchScreen
 import com.kmhmubin.kothagolp.ui.screens.migration.MigrationSourcesScreen
+import com.kmhmubin.kothagolp.ui.screens.search.GlobalSearchScreen
+import com.kmhmubin.kothagolp.ui.screens.search.GlobalSearchViewModel
 import com.kmhmubin.kothagolp.ui.screens.tagexplorer.TagExplorerScreen
 
 @Composable
@@ -123,6 +126,9 @@ fun KothagolpNavGraph(
                 },
                 onNavigateToMigration = {
                     navController.navigate(NavRoutes.MigrationSources.route)
+                },
+                onNavigateToGlobalSearch = { query ->
+                    navController.navigate(NavRoutes.GlobalSearch.createRoute(query))
                 }
             )
         }
@@ -407,7 +413,7 @@ fun KothagolpNavGraph(
                 onNavigateToDownloads = {
                     navController.navigate(NavRoutes.Downloads.route)
                 },
-                onNavigateToTagExplorer = { tagCategory -> // NEW
+                onNavigateToTagExplorer = { tagCategory ->
                     navController.navigate(
                         NavRoutes.TagExplorer.createRoute(tagCategory)
                     )
@@ -416,7 +422,46 @@ fun KothagolpNavGraph(
                     navController.navigate(
                         NavRoutes.MigrationSearch.createRoute(nUrl, sourceName)
                     )
+                },
+                onNavigateToGlobalSearch = { query ->
+                    navController.navigate(NavRoutes.GlobalSearch.createRoute(query))
                 }
+            )
+        }
+
+        // ================================================================
+        // GLOBAL SEARCH
+        // ================================================================
+        composable(
+            route = NavRoutes.GlobalSearch.route,
+            arguments = listOf(
+                navArgument("query") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                }
+            )
+        ) { backStackEntry ->
+            val encodedQuery = backStackEntry.arguments?.getString("query") ?: ""
+            val initialQuery = if (encodedQuery.isNotBlank()) NavRoutes.decodeUrl(encodedQuery) else ""
+
+            GlobalSearchScreen(
+                initialQuery = initialQuery,
+                appSettings = appSettings,
+                onBack = { navController.popBackStack() },
+                onNavigateToDetails = { novelUrl, providerName ->
+                    navController.navigate(
+                        NavRoutes.Details.createRoute(novelUrl, providerName)
+                    )
+                },
+                onNavigateToReader = { chapterUrl, novelUrl, providerName ->
+                    navController.navigate(
+                        NavRoutes.Reader.createRoute(chapterUrl, novelUrl, providerName)
+                    )
+                },
+                viewModel = viewModel(
+                    factory = GlobalSearchViewModel.Factory(initialQuery)
+                )
             )
         }
 

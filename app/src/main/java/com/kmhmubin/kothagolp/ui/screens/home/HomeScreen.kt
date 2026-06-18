@@ -42,7 +42,8 @@ fun HomeScreen(
     onNavigateToStorage: () -> Unit,
     onNavigateToOnboarding: () -> Unit = {},
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
-    onNavigateToMigration: (() -> Unit)? = null
+    onNavigateToMigration: (() -> Unit)? = null,
+    onNavigateToGlobalSearch: ((query: String) -> Unit)? = null
 ) {
     // Initialize shared state
     LaunchedEffect(Unit) {
@@ -103,7 +104,8 @@ fun HomeScreen(
                         onNavigateToProvider = onNavigateToProviderBrowse,
                         onNavigateToDetails = onNavigateToDetails,
                         onNavigateToReader = onNavigateToReader,
-                        onNavigateToMigration = onNavigateToMigration
+                        onNavigateToMigration = onNavigateToMigration,
+                        onNavigateToGlobalSearch = onNavigateToGlobalSearch
                     )
                 }
 
