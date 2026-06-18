@@ -20,6 +20,7 @@ object NotificationHelper {
     const val CHANNEL_DOWNLOAD_COMPLETE = "kothagolp_download_complete_channel"
     const val CHANNEL_TTS = "kothagolp_tts_channel"
     const val CHANNEL_SYNC = "kothagolp_sync_channel"
+    const val CHANNEL_CHAPTER_UPDATES = "kothagolp_chapter_updates_channel"
 
     // ID ranges to avoid collisions:
     // 1001 = preparing/initial notification
@@ -122,8 +123,17 @@ object NotificationHelper {
                 setSound(null, null)
             }
 
+            val chapterUpdatesChannel = NotificationChannel(
+                CHANNEL_CHAPTER_UPDATES,
+                "New Chapters",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifies when new chapters are available in your library"
+                setShowBadge(true)
+            }
+
             notificationManager.createNotificationChannels(
-                listOf(downloadChannel, downloadCompleteChannel, ttsChannel, syncChannel)
+                listOf(downloadChannel, downloadCompleteChannel, ttsChannel, syncChannel, chapterUpdatesChannel)
             )
         }
     }

@@ -283,8 +283,40 @@ data class AppSettings(
     val autoUpdateSources: Boolean = true,
 
     // Browse quick-save
-    val quickSaveStatus: ReadingStatus = ReadingStatus.PLAN_TO_READ
+    val quickSaveStatus: ReadingStatus = ReadingStatus.PLAN_TO_READ,
+
+    // Chapter update checker
+    val chapterUpdateInterval: ChapterUpdateInterval = ChapterUpdateInterval.EVERY_12H,
+    val chapterUpdateOnWifiOnly: Boolean = true,
+    val chapterUpdateNotify: Boolean = true
 )
+
+/**
+ * How often to check for new chapters in the background.
+ */
+enum class ChapterUpdateInterval {
+    OFF,
+    EVERY_6H,
+    EVERY_12H,
+    EVERY_24H,
+    EVERY_48H;
+
+    fun displayName(): String = when (this) {
+        OFF -> "Off"
+        EVERY_6H -> "Every 6 hours"
+        EVERY_12H -> "Every 12 hours"
+        EVERY_24H -> "Every 24 hours"
+        EVERY_48H -> "Every 48 hours"
+    }
+
+    fun hours(): Long = when (this) {
+        OFF -> 0L
+        EVERY_6H -> 6L
+        EVERY_12H -> 12L
+        EVERY_24H -> 24L
+        EVERY_48H -> 48L
+    }
+}
 
 /**
  * Library sort options

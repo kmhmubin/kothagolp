@@ -22,6 +22,7 @@ import com.kmhmubin.kothagolp.source.SourceLoader
 import com.kmhmubin.kothagolp.source.SourceSyncWorker
 import com.kmhmubin.kothagolp.tts.TTSManager
 import com.kmhmubin.kothagolp.tts.VoiceManager
+import com.kmhmubin.kothagolp.update.ChapterUpdateScheduler
 
 /**
  * Application class - initializes app-wide dependencies.
@@ -75,6 +76,14 @@ class KothagolpApp : Application() {
 
         // Restore background sync scheduling from saved preferences.
         SyncWorker.schedule(this)
+
+        // Schedule periodic chapter update checker
+        val chapterUpdateSettings = RepositoryProvider.getPreferencesManager().appSettings.value
+        ChapterUpdateScheduler.schedule(
+            context = this,
+            interval = chapterUpdateSettings.chapterUpdateInterval,
+            wifiOnly = chapterUpdateSettings.chapterUpdateOnWifiOnly
+        )
     }
 
     override fun onTerminate() {
