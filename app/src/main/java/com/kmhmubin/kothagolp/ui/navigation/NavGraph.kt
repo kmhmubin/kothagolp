@@ -42,6 +42,7 @@ import com.kmhmubin.kothagolp.ui.screens.migration.MigrationSourcesScreen
 import com.kmhmubin.kothagolp.ui.screens.search.GlobalSearchScreen
 import com.kmhmubin.kothagolp.ui.screens.search.GlobalSearchViewModel
 import com.kmhmubin.kothagolp.ui.screens.tagexplorer.TagExplorerScreen
+import com.kmhmubin.kothagolp.ui.screens.notes.NotesHighlightsScreen
 
 @Composable
 fun KothagolpNavGraph(
@@ -112,6 +113,9 @@ fun KothagolpNavGraph(
                 },
                 onNavigateToAbout = {
                     navController.navigate(NavRoutes.About.route)
+                },
+                onNavigateToNotesHighlights = {
+                    navController.navigate(NavRoutes.NotesHighlights.route)
                 },
                 onNavigateToStorage = {
                     navController.navigate(NavRoutes.Storage.route)
@@ -305,6 +309,20 @@ fun KothagolpNavGraph(
         composable(route = NavRoutes.About.route) {
             AboutScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ================================================================
+        // NOTES & HIGHLIGHTS
+        // ================================================================
+        composable(route = NavRoutes.NotesHighlights.route) {
+            NotesHighlightsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToReader = { chapterUrl, novelUrl, providerName ->
+                    navController.navigate(
+                        NavRoutes.Reader.createRoute(chapterUrl, novelUrl, providerName)
+                    )
+                }
             )
         }
 

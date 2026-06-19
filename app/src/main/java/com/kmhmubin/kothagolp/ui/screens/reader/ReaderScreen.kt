@@ -531,7 +531,9 @@ fun ReaderScreen(
         onBottomBarSettingsExpandedChange = { bottomBarSettingsExpanded = it },
         onLoadHighlights = viewModel::loadHighlightsForChapter,
         onAddHighlight = viewModel::addTextHighlight,
-        onRemoveHighlight = viewModel::removeTextHighlight
+        onRemoveHighlight = viewModel::removeTextHighlight,
+        onUpdateNote = viewModel::updateHighlightNote,
+        onChangeHighlightColor = viewModel::updateHighlightColor
     )
 }
 
@@ -711,7 +713,9 @@ private fun ReaderScreenContent(
     onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {},
     onLoadHighlights: (chapterUrl: String) -> Unit = {},
     onAddHighlight: (segmentId: String, segmentIndex: Int, text: String, start: Int, end: Int, color: String) -> Unit = { _, _, _, _, _, _ -> },
-    onRemoveHighlight: (id: Long) -> Unit = {}
+    onRemoveHighlight: (id: Long) -> Unit = {},
+    onUpdateNote: (id: Long, note: String?) -> Unit = { _, _ -> },
+    onChangeHighlightColor: (id: Long, color: String) -> Unit = { _, _ -> }
 ) {
     val tapZones = uiState.settings.tapZones
 
@@ -837,7 +841,9 @@ private fun ReaderScreenContent(
                             onBack = onBack,
                             onRetryChapter = onRetryChapter,
                             onAddHighlight = onAddHighlight,
-                            onRemoveHighlight = onRemoveHighlight
+                            onRemoveHighlight = onRemoveHighlight,
+                            onUpdateNote = onUpdateNote,
+                            onChangeHighlightColor = onChangeHighlightColor
                         )
                     }
                 }

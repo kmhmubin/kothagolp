@@ -31,8 +31,10 @@ data class BookmarkEntity(
 
     /** User additions */
     val note: String? = null,
+    val userNote: String? = null,
     val category: String = "default",
     val color: String? = null,
+    val providerName: String? = null,
 
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()

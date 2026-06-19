@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.CompareArrows
+import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Insights
@@ -58,6 +59,7 @@ fun MoreTab(
     onNavigateToAbout: () -> Unit,
     onNavigateToStorage: () -> Unit,
     onNavigateToMigration: (() -> Unit)? = null,
+    onNavigateToNotesHighlights: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: MoreViewModel = viewModel()
 ) {
@@ -142,6 +144,19 @@ fun MoreTab(
                 onClick = onNavigateToDownloads,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
+        }
+
+        if (onNavigateToNotesHighlights != null) {
+            item(key = "notes_highlights_menu") {
+                MoreMenuItem(
+                    icon = Icons.Outlined.StickyNote2,
+                    title = "Notes & Highlights",
+                    subtitle = "View your highlights and annotations",
+                    iconTint = MaterialTheme.colorScheme.tertiary,
+                    onClick = onNavigateToNotesHighlights,
+                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+                )
+            }
         }
 
         item(key = "storage_menu") {

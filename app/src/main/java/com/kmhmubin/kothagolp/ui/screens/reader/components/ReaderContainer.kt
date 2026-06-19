@@ -62,7 +62,9 @@ fun ReaderContainer(
     onBack: () -> Unit,
     onRetryChapter: (Int) -> Unit,
     onAddHighlight: ((segmentId: String, segmentIndex: Int, text: String, start: Int, end: Int, color: String) -> Unit)? = null,
-    onRemoveHighlight: ((id: Long) -> Unit)? = null
+    onRemoveHighlight: ((id: Long) -> Unit)? = null,
+    onUpdateNote: ((id: Long, note: String?) -> Unit)? = null,
+    onChangeHighlightColor: ((id: Long, color: String) -> Unit)? = null
 ) {
     val settings = uiState.settings
     val density = LocalDensity.current
@@ -392,13 +394,17 @@ fun ReaderContainer(
                                             textHighlights = uiState.textHighlights.filter { it.segmentId == item.segment.id },
                                             onWordSelected = if (!settings.longPressSelection) {
                                                 { word, start, end, segId, segIdx, existingId ->
+                                                    val existingNote = if (existingId != null) {
+                                                        uiState.textHighlights.find { it.id == existingId }?.userNote
+                                                    } else null
                                                     pendingWordSelection = WordSelection(
                                                         word = word,
                                                         startOffset = start,
                                                         endOffset = end,
                                                         segmentId = segId,
                                                         segmentIndex = segIdx,
-                                                        existingHighlightId = existingId
+                                                        existingHighlightId = existingId,
+                                                        existingNote = existingNote
                                                     )
                                                 }
                                             } else null,
@@ -469,14 +475,20 @@ fun ReaderContainer(
                     selection = sel,
                     onDismiss = { pendingWordSelection = null },
                     onHighlight = { color ->
-                        onAddHighlight?.invoke(
-                            sel.segmentId, sel.segmentIndex,
-                            sel.word, sel.startOffset, sel.endOffset, color
-                        )
+                        val existingId = sel.existingHighlightId
+                        if (existingId != null) {
+                            onChangeHighlightColor?.invoke(existingId, color)
+                        } else {
+                            onAddHighlight?.invoke(
+                                sel.segmentId, sel.segmentIndex,
+                                sel.word, sel.startOffset, sel.endOffset, color
+                            )
+                        }
                     },
                     onRemoveHighlight = {
                         sel.existingHighlightId?.let { id -> onRemoveHighlight?.invoke(id) }
-                    }
+                    },
+                    onUpdateNote = onUpdateNote
                 )
             }
         }

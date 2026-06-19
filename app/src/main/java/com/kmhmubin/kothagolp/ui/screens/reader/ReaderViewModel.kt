@@ -2471,7 +2471,8 @@ class ReaderViewModel : ViewModel() {
                     startOffset = start,
                     endOffset = end,
                     color = entity.color ?: "#FFD54F",
-                    text = entity.textSnippet ?: ""
+                    text = entity.textSnippet ?: "",
+                    userNote = entity.userNote
                 )
             }
             _uiState.update { it.copy(textHighlights = highlights) }
@@ -2490,9 +2491,10 @@ class ReaderViewModel : ViewModel() {
         val chapterUrl = state.currentChapterUrl
         val novelUrl = currentNovelUrl ?: return
         viewModelScope.launch {
+            val novelDetails = offlineRepository.getNovelDetails(novelUrl)
             bookmarkRepository.createBookmark(
                 novelUrl = novelUrl,
-                novelName = "",
+                novelName = novelDetails?.name ?: "",
                 chapterUrl = chapterUrl,
                 chapterName = state.currentChapterName,
                 segmentId = segmentId,
@@ -2500,7 +2502,8 @@ class ReaderViewModel : ViewModel() {
                 textSnippet = text.take(200),
                 note = "$startOffset:$endOffset",
                 category = "highlight",
-                color = color
+                color = color,
+                providerName = currentProvider?.name
             )
             loadHighlightsForChapter(chapterUrl)
         }
@@ -2510,6 +2513,22 @@ class ReaderViewModel : ViewModel() {
         val chapterUrl = _uiState.value.currentChapterUrl
         viewModelScope.launch {
             bookmarkRepository.deleteHighlight(id)
+            loadHighlightsForChapter(chapterUrl)
+        }
+    }
+
+    fun updateHighlightNote(id: Long, note: String?) {
+        val chapterUrl = _uiState.value.currentChapterUrl
+        viewModelScope.launch {
+            bookmarkRepository.updateUserNote(id, note?.ifBlank { null })
+            loadHighlightsForChapter(chapterUrl)
+        }
+    }
+
+    fun updateHighlightColor(id: Long, color: String) {
+        val chapterUrl = _uiState.value.currentChapterUrl
+        viewModelScope.launch {
+            bookmarkRepository.updateHighlightColor(id, color)
             loadHighlightsForChapter(chapterUrl)
         }
     }
