@@ -16,9 +16,14 @@ import com.kmhmubin.kothagolp.service.DownloadRequest
 import com.kmhmubin.kothagolp.service.DownloadServiceManager
 import com.kmhmubin.kothagolp.ui.screens.home.shared.ActionSheetManager
 import com.kmhmubin.kothagolp.ui.screens.home.shared.ActionSheetSource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -36,6 +41,16 @@ class LibraryViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
+
+    val precomputedPages: StateFlow<Map<LibraryFilter, List<LibraryItem>>> = _uiState
+        .map { state ->
+            if (state.isLoading || state.items.isEmpty()) emptyMap()
+            else LibraryFilter.entries.associateWith { filter ->
+                computePageItemsForFilter(state, filter)
+            }
+        }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyMap())
 
     private var lastAllFilterTapAt = 0L
 
@@ -157,6 +172,40 @@ class LibraryViewModel : ViewModel() {
     fun setSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
         applyFilters()
+    }
+
+    private fun computePageItemsForFilter(
+        state: LibraryUiState,
+        filter: LibraryFilter
+    ): List<LibraryItem> {
+        val query = state.searchQuery.lowercase().trim()
+        val counts = state.downloadCounts
+
+        val searched = if (query.isBlank()) state.items else state.items.filter { item ->
+            item.novel.name.lowercase().contains(query) ||
+                    item.novel.apiName.lowercase().contains(query) ||
+                    item.readingStatus.displayName().lowercase().contains(query)
+        }
+
+        val filtered = when (filter) {
+            LibraryFilter.ALL -> searched
+            LibraryFilter.SPICY -> searched.filter { it.readingStatus == ReadingStatus.SPICY }
+            LibraryFilter.DOWNLOADED -> searched.filter { (counts[it.novel.url] ?: 0) > 0 }
+            LibraryFilter.READING -> searched.filter { it.readingStatus == ReadingStatus.READING }
+            LibraryFilter.COMPLETED -> searched.filter { it.readingStatus == ReadingStatus.COMPLETED }
+            LibraryFilter.ON_HOLD -> searched.filter { it.readingStatus == ReadingStatus.ON_HOLD }
+            LibraryFilter.PLAN_TO_READ -> searched.filter { it.readingStatus == ReadingStatus.PLAN_TO_READ }
+            LibraryFilter.DROPPED -> searched.filter { it.readingStatus == ReadingStatus.DROPPED }
+        }
+
+        return when (state.sortOrder) {
+            LibrarySortOrder.NEW_CHAPTERS -> filtered.sortedByDescending { it.newChapterCount }
+            LibrarySortOrder.LAST_READ -> filtered.sortedByDescending { it.lastReadPosition?.timestamp ?: it.addedAt }
+            LibrarySortOrder.TITLE_ASC -> filtered.sortedBy { it.novel.name.lowercase() }
+            LibrarySortOrder.TITLE_DESC -> filtered.sortedByDescending { it.novel.name.lowercase() }
+            LibrarySortOrder.DATE_ADDED -> filtered.sortedByDescending { it.addedAt }
+            LibrarySortOrder.UNREAD_COUNT -> filtered.sortedByDescending { it.unreadChapterCount }
+        }
     }
 
     private fun applyFilters() {

@@ -103,8 +103,8 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -176,6 +176,7 @@ fun LibraryTab(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
+    val precomputedPages by viewModel.precomputedPages.collectAsStateWithLifecycle()
     val actionSheetState by viewModel.actionSheetState.collectAsState()
     val sheetState = rememberModalBottomSheetState()
 
@@ -293,9 +294,7 @@ fun LibraryTab(
                         )
                     ) { page ->
                         val pageFilter = uiState.visibleFilters.getOrElse(page) { LibraryFilter.ALL }
-                        val pageItems by remember(pageFilter) {
-                            derivedStateOf { computePageItems(uiState, pageFilter) }
-                        }
+                        val pageItems = precomputedPages[pageFilter] ?: emptyList()
                         val pageState = uiState.copy(filteredItems = pageItems, filter = pageFilter)
 
                         if (pageItems.isEmpty()) {
@@ -1621,40 +1620,6 @@ private fun MultiSelectStatusPicker(
                 }
             }
         }
-    }
-}
-
-private fun computePageItems(
-    uiState: LibraryUiState,
-    filter: LibraryFilter
-): List<LibraryItem> {
-    val query = uiState.searchQuery.lowercase().trim()
-    val counts = uiState.downloadCounts
-
-    val searched = if (query.isBlank()) uiState.items else uiState.items.filter { item ->
-        item.novel.name.lowercase().contains(query) ||
-                item.novel.apiName.lowercase().contains(query) ||
-                item.readingStatus.displayName().lowercase().contains(query)
-    }
-
-    val filtered = when (filter) {
-        LibraryFilter.ALL -> searched
-        LibraryFilter.SPICY -> searched.filter { it.readingStatus == ReadingStatus.SPICY }
-        LibraryFilter.DOWNLOADED -> searched.filter { (counts[it.novel.url] ?: 0) > 0 }
-        LibraryFilter.READING -> searched.filter { it.readingStatus == ReadingStatus.READING }
-        LibraryFilter.COMPLETED -> searched.filter { it.readingStatus == ReadingStatus.COMPLETED }
-        LibraryFilter.ON_HOLD -> searched.filter { it.readingStatus == ReadingStatus.ON_HOLD }
-        LibraryFilter.PLAN_TO_READ -> searched.filter { it.readingStatus == ReadingStatus.PLAN_TO_READ }
-        LibraryFilter.DROPPED -> searched.filter { it.readingStatus == ReadingStatus.DROPPED }
-    }
-
-    return when (uiState.sortOrder) {
-        LibrarySortOrder.NEW_CHAPTERS -> filtered.sortedByDescending { it.newChapterCount }
-        LibrarySortOrder.LAST_READ -> filtered.sortedByDescending { it.lastReadPosition?.timestamp ?: it.addedAt }
-        LibrarySortOrder.TITLE_ASC -> filtered.sortedBy { it.novel.name.lowercase() }
-        LibrarySortOrder.TITLE_DESC -> filtered.sortedByDescending { it.novel.name.lowercase() }
-        LibrarySortOrder.DATE_ADDED -> filtered.sortedByDescending { it.addedAt }
-        LibrarySortOrder.UNREAD_COUNT -> filtered.sortedByDescending { it.unreadChapterCount }
     }
 }
 

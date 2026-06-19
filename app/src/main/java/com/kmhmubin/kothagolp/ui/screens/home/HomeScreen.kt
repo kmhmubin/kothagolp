@@ -10,6 +10,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -88,7 +90,11 @@ fun HomeScreen(
             NavHost(
                 navController = tabNavState.navController,
                 startDestination = HomeTabs.LIBRARY.route,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None },
+                popEnterTransition = { EnterTransition.None },
+                popExitTransition = { ExitTransition.None }
             ) {
                 composable(HomeTabs.LIBRARY.route) {
                     LibraryTab(
@@ -159,7 +165,11 @@ fun HomeScreen(
             ) {
                 NavHost(
                     navController = tabNavState.navController,
-                    startDestination = HomeTabs.LIBRARY.route
+                    startDestination = HomeTabs.LIBRARY.route,
+                    enterTransition = { EnterTransition.None },
+                    exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None },
+                    popExitTransition = { ExitTransition.None }
                 ) {
                     composable(HomeTabs.LIBRARY.route) {
                         LibraryTab(
