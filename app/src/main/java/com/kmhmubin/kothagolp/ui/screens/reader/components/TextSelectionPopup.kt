@@ -22,7 +22,9 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -52,7 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
-import com.kmhmubin.kothagolp.ui.screens.reader.model.WordSelection
+import com.kmhmubin.kothagolp.ui.screens.reader.model.TextHighlight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,6 +73,7 @@ private val HIGHLIGHT_COLORS = listOf(
 private sealed class SheetView {
     object Actions : SheetView()
     object NoteEdit : SheetView()
+    object HighlightColors : SheetView()
     object DictLoading : SheetView()
     data class DictResult(val word: String, val phonetic: String?, val meanings: List<DictMeaning>) : SheetView()
     data class DictError(val message: String) : SheetView()
@@ -81,8 +84,10 @@ private data class DictMeaning(val partOfSpeech: String, val definitions: List<S
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextSelectionPopup(
-    selection: WordSelection,
+    selectedText: String,
+    existingHighlight: TextHighlight? = null,
     onDismiss: () -> Unit,
+    onSelectAll: (() -> Unit)? = null,
     onHighlight: (color: String) -> Unit,
     onRemoveHighlight: () -> Unit,
     onUpdateNote: ((id: Long, note: String?) -> Unit)? = null
@@ -92,11 +97,13 @@ fun TextSelectionPopup(
     val clipboard = LocalClipboardManager.current
 
     var view by remember { mutableStateOf<SheetView>(SheetView.Actions) }
-    var noteText by remember { mutableStateOf(selection.existingNote ?: "") }
+    var noteText by remember { mutableStateOf(existingHighlight?.userNote ?: "") }
 
     val dismiss: () -> Unit = {
         scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
     }
+
+    val firstWord = remember(selectedText) { selectedText.trim().split("\\s+".toRegex()).firstOrNull() ?: selectedText }
 
     fun fetchDictionary(word: String) {
         view = SheetView.DictLoading
@@ -139,29 +146,36 @@ fun TextSelectionPopup(
         ) {
             when (val v = view) {
                 is SheetView.Actions -> ActionsView(
-                    selection = selection,
-                    noteText = if (selection.existingHighlightId != null) selection.existingNote else null,
-                    onCopy = { clipboard.setText(AnnotatedString(selection.word)); dismiss() },
-                    onDictionary = { fetchDictionary(selection.word) },
-                    onHighlight = { color -> onHighlight(color); dismiss() },
+                    selectedText = selectedText,
+                    existingHighlight = existingHighlight,
+                    onCopy = { clipboard.setText(AnnotatedString(selectedText)); dismiss() },
+                    onSelectAll = onSelectAll?.let { sa -> { sa() } },
+                    onDictionary = { fetchDictionary(firstWord) },
+                    onShowColors = { view = SheetView.HighlightColors },
                     onRemoveHighlight = { onRemoveHighlight(); dismiss() },
                     onEditNote = { view = SheetView.NoteEdit }
                 )
 
+                is SheetView.HighlightColors -> HighlightColorsView(
+                    existingHighlight = existingHighlight,
+                    onBack = { view = SheetView.Actions },
+                    onColorSelected = { color -> onHighlight(color); dismiss() }
+                )
+
                 is SheetView.NoteEdit -> NoteEditView(
-                    word = selection.word,
+                    label = selectedText.take(60).let { if (selectedText.length > 60) "$it…" else it },
                     noteText = noteText,
                     onNoteChange = { noteText = it },
                     onBack = { view = SheetView.Actions },
                     onSave = {
-                        val id = selection.existingHighlightId ?: return@NoteEditView
+                        val id = existingHighlight?.id ?: return@NoteEditView
                         onUpdateNote?.invoke(id, noteText.ifBlank { null })
                         dismiss()
                     }
                 )
 
                 is SheetView.DictLoading -> {
-                    DictHeader(word = selection.word, onBack = { view = SheetView.Actions })
+                    DictHeader(word = firstWord, onBack = { view = SheetView.Actions })
                     Spacer(modifier = Modifier.height(32.dp))
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(modifier = Modifier.size(32.dp))
@@ -207,7 +221,7 @@ fun TextSelectionPopup(
                 }
 
                 is SheetView.DictError -> {
-                    DictHeader(word = selection.word, onBack = { view = SheetView.Actions })
+                    DictHeader(word = firstWord, onBack = { view = SheetView.Actions })
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = v.message,
@@ -223,27 +237,28 @@ fun TextSelectionPopup(
 
 @Composable
 private fun ActionsView(
-    selection: WordSelection,
-    noteText: String?,
+    selectedText: String,
+    existingHighlight: TextHighlight?,
     onCopy: () -> Unit,
+    onSelectAll: (() -> Unit)? = null,
     onDictionary: () -> Unit,
-    onHighlight: (String) -> Unit,
+    onShowColors: () -> Unit,
     onRemoveHighlight: () -> Unit,
     onEditNote: () -> Unit
 ) {
     Text(
-        text = "\"${selection.word}\"",
+        text = "\"$selectedText\"",
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
-        maxLines = 2,
+        maxLines = 3,
         overflow = TextOverflow.Ellipsis,
         color = MaterialTheme.colorScheme.onSurface
     )
 
-    if (!noteText.isNullOrBlank()) {
+    if (!existingHighlight?.userNote.isNullOrBlank()) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = noteText,
+            text = existingHighlight!!.userNote!!,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 3,
@@ -253,6 +268,7 @@ private fun ActionsView(
 
     Spacer(modifier = Modifier.height(16.dp))
 
+    // Row 1: Copy | Dictionary
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilledTonalButton(onClick = onCopy, modifier = Modifier.weight(1f)) {
             Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -266,47 +282,46 @@ private fun ActionsView(
         }
     }
 
-    if (selection.existingHighlightId != null) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Spacer(modifier = Modifier.height(8.dp))
+
+    // Row 2: Highlight | (Edit Note or Select All)
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilledTonalButton(onClick = onShowColors, modifier = Modifier.weight(1f)) {
+            Icon(Icons.Outlined.Colorize, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(if (existingHighlight != null) "Change Color" else "Highlight")
+        }
+        if (existingHighlight != null) {
             FilledTonalButton(onClick = onEditNote, modifier = Modifier.weight(1f)) {
                 Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(if (noteText.isNullOrBlank()) "Add Note" else "Edit Note")
+                Text(if (existingHighlight.userNote.isNullOrBlank()) "Add Note" else "Edit Note")
             }
-            FilledTonalButton(onClick = onRemoveHighlight, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+        } else if (onSelectAll != null) {
+            FilledTonalButton(onClick = onSelectAll, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Outlined.SelectAll, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Remove")
+                Text("Select All")
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = "Change color",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        HighlightColorRow(onColorSelected = { onHighlight(it) })
-    } else {
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = "Highlight",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        HighlightColorRow(onColorSelected = { onHighlight(it) })
+    }
+
+    if (existingHighlight != null) {
+        Spacer(modifier = Modifier.height(8.dp))
+        FilledTonalButton(
+            onClick = onRemoveHighlight,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("Remove Highlight")
+        }
     }
 }
 
 @Composable
 private fun NoteEditView(
-    word: String,
+    label: String,
     noteText: String,
     onNoteChange: (String) -> Unit,
     onBack: () -> Unit,
@@ -318,7 +333,7 @@ private fun NoteEditView(
         }
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "\"$word\"",
+            text = "\"$label\"",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
@@ -363,6 +378,28 @@ private fun HighlightColorRow(onColorSelected: (String) -> Unit) {
             )
         }
     }
+}
+
+@Composable
+private fun HighlightColorsView(
+    existingHighlight: TextHighlight?,
+    onBack: () -> Unit,
+    onColorSelected: (String) -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = if (existingHighlight != null) "Change Color" else "Highlight",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+    Spacer(modifier = Modifier.height(16.dp))
+    HighlightColorRow(onColorSelected = onColorSelected)
+    Spacer(modifier = Modifier.height(8.dp))
 }
 
 @Composable

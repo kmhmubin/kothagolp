@@ -530,7 +530,7 @@ fun ReaderScreen(
         onConfirmScrollReset = viewModel::confirmScrollReset,
         onBottomBarSettingsExpandedChange = { bottomBarSettingsExpanded = it },
         onLoadHighlights = viewModel::loadHighlightsForChapter,
-        onAddHighlight = viewModel::addTextHighlight,
+        onAddHighlight = viewModel::addHighlightForSelectedText,
         onRemoveHighlight = viewModel::removeTextHighlight,
         onUpdateNote = viewModel::updateHighlightNote,
         onChangeHighlightColor = viewModel::updateHighlightColor
@@ -712,7 +712,7 @@ private fun ReaderScreenContent(
     onConfirmScrollReset: () -> Unit,
     onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {},
     onLoadHighlights: (chapterUrl: String) -> Unit = {},
-    onAddHighlight: (segmentId: String, segmentIndex: Int, text: String, start: Int, end: Int, color: String) -> Unit = { _, _, _, _, _, _ -> },
+    onAddHighlight: (text: String, color: String) -> Unit = { _, _ -> },
     onRemoveHighlight: (id: Long) -> Unit = {},
     onUpdateNote: (id: Long, note: String?) -> Unit = { _, _ -> },
     onChangeHighlightColor: (id: Long, color: String) -> Unit = { _, _ -> }

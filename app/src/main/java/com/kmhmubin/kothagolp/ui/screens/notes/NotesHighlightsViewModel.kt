@@ -32,6 +32,7 @@ data class NotesHighlightsUiState(
     val items: List<AnnotationItem> = emptyList(),
     val filter: AnnotationFilter = AnnotationFilter.ALL,
     val searchQuery: String = "",
+    val novelUrlFilter: String? = null,
     val groupedItems: Map<String, List<AnnotationItem>> = emptyMap()
 )
 
@@ -51,6 +52,11 @@ class NotesHighlightsViewModel : ViewModel() {
                 applyFilterAndSearch()
             }
             .launchIn(viewModelScope)
+    }
+
+    fun setNovelUrlFilter(novelUrl: String?) {
+        _uiState.update { it.copy(novelUrlFilter = novelUrl) }
+        applyFilterAndSearch()
     }
 
     fun setFilter(filter: AnnotationFilter) {
@@ -78,6 +84,10 @@ class NotesHighlightsViewModel : ViewModel() {
     private fun applyFilterAndSearch() {
         val state = _uiState.value
         var filtered = allItems
+
+        state.novelUrlFilter?.let { url ->
+            filtered = filtered.filter { it.novelUrl == url }
+        }
 
         filtered = when (state.filter) {
             AnnotationFilter.ALL -> filtered

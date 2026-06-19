@@ -109,6 +109,7 @@ fun DetailsScreen(
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
     onNavigateToMigration: ((novelUrl: String, sourceName: String) -> Unit)? = null,
     onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
+    onNavigateToNotes: ((novelUrl: String) -> Unit)? = null,
     viewModel: DetailsViewModel = viewModel()
 ) {
     val showCoverOptions by viewModel.showCoverOptions.collectAsState()
@@ -283,6 +284,7 @@ fun DetailsScreen(
                                         onNavigateToTagExplorer = onNavigateToTagExplorer,
                                         onNavigateToMigration = onNavigateToMigration,
                                         onNavigateToGlobalSearch = onNavigateToGlobalSearch,
+                                        onNavigateToNotes = onNavigateToNotes,
                                         onExportEpub = {
                                             if (viewModel.hasDownloadedChapters()) {
                                                 epubFilePicker.launch(viewModel.generateEpubFileName())
@@ -320,6 +322,7 @@ fun DetailsScreen(
                                     onNavigateToDownloads = onNavigateToDownloads,
                                     onNavigateToTagExplorer = onNavigateToTagExplorer,
                                     onNavigateToGlobalSearch = onNavigateToGlobalSearch,
+                                    onNavigateToNotes = onNavigateToNotes,
                                     onExportEpub = {
                                         if (viewModel.hasDownloadedChapters()) {
                                             epubFilePicker.launch(viewModel.generateEpubFileName())
@@ -564,6 +567,7 @@ private fun DetailsContent(
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
     onNavigateToMigration: ((novelUrl: String, sourceName: String) -> Unit)? = null,
     onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
+    onNavigateToNotes: ((novelUrl: String) -> Unit)? = null,
     viewModel: DetailsViewModel,
     scope: CoroutineScope
 ) {
@@ -606,7 +610,8 @@ private fun DetailsContent(
                 onExportEpub = onExportEpub,
                 onMigrate = if (uiState.isFavorite) {
                     { onNavigateToMigration?.invoke(novelUrl, providerName) }
-                } else null
+                } else null,
+                onNavigateToNotes = onNavigateToNotes?.let { nav -> { nav(novelUrl) } }
             )
             // Note: CoverOptionsBottomSheet is now handled in DetailsDialogs
         }

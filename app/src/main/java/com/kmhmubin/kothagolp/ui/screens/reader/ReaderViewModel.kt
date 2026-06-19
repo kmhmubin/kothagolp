@@ -2509,6 +2509,41 @@ class ReaderViewModel : ViewModel() {
         }
     }
 
+    fun addHighlightForSelectedText(selectedText: String, color: String) {
+        val state = _uiState.value
+        val chapterUrl = state.currentChapterUrl
+        val novelUrl = currentNovelUrl ?: return
+        val trimmed = selectedText.trim()
+        val matchingItem = state.displayItems
+            .filterIsInstance<ReaderDisplayItem.Segment>()
+            .firstOrNull { it.segment.text.contains(trimmed) }
+        viewModelScope.launch {
+            val novelDetails = offlineRepository.getNovelDetails(novelUrl)
+            val segmentId = matchingItem?.segment?.id ?: ""
+            val segmentIndex = if (matchingItem != null) {
+                state.displayItems.indexOfFirst {
+                    it is ReaderDisplayItem.Segment && it.segment.id == matchingItem.segment.id
+                }.coerceAtLeast(0)
+            } else 0
+            val startOffset = matchingItem?.segment?.text?.indexOf(trimmed) ?: 0
+            val endOffset = startOffset + trimmed.length
+            bookmarkRepository.createBookmark(
+                novelUrl = novelUrl,
+                novelName = novelDetails?.name ?: "",
+                chapterUrl = chapterUrl,
+                chapterName = state.currentChapterName,
+                segmentId = segmentId,
+                segmentIndex = segmentIndex,
+                textSnippet = trimmed.take(200),
+                note = if (matchingItem != null) "$startOffset:$endOffset" else "",
+                category = "highlight",
+                color = color,
+                providerName = currentProvider?.name
+            )
+            loadHighlightsForChapter(chapterUrl)
+        }
+    }
+
     fun removeTextHighlight(id: Long) {
         val chapterUrl = _uiState.value.currentChapterUrl
         viewModelScope.launch {

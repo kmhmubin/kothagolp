@@ -206,7 +206,8 @@ fun HomeScreen(
                             onNavigateToAbout = { onNavigateToAbout() },
                             onNavigateToSettings = onNavigateToSettings,
                             onNavigateToStorage = onNavigateToStorage,
-                            onNavigateToMigration = onNavigateToMigration
+                            onNavigateToMigration = onNavigateToMigration,
+                            onNavigateToNotesHighlights = onNavigateToNotesHighlights
                         )
                     }
                 }
