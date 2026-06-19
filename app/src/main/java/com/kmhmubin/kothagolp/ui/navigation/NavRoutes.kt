@@ -59,6 +59,12 @@ sealed class NavRoutes(val route: String) {
 
     object About : NavRoutes("more/about")
 
+    object NotesHighlights : NavRoutes("more/notes_highlights?novelUrl={novelUrl}") {
+        fun createRoute(novelUrl: String? = null): String =
+            if (novelUrl != null) "more/notes_highlights?novelUrl=${encodeUrl(novelUrl)}"
+            else "more/notes_highlights"
+    }
+
     // ================================================================
     // READER DESTINATIONS
     // ================================================================

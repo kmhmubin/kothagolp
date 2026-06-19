@@ -5,7 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.ActionMode
 import android.view.KeyEvent
+import com.kmhmubin.kothagolp.util.ReaderState
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -179,6 +181,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    // Suppress native floating text-selection toolbar while reader is active.
+    // Our custom bottom sheet replaces it; SelectionContainer still provides drag handles.
+    override fun onWindowStartingActionMode(callback: ActionMode.Callback?, type: Int): ActionMode? {
+        if (ReaderState.readerActive.get() && type == ActionMode.TYPE_FLOATING) return null
+        return super.onWindowStartingActionMode(callback, type)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

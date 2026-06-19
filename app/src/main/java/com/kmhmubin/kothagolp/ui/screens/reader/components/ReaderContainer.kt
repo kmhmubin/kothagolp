@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -20,7 +19,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +39,6 @@ import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderDisplayItem
 import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderUiState
 import com.kmhmubin.kothagolp.ui.screens.reader.model.SentenceBoundsInSegment
 import com.kmhmubin.kothagolp.ui.screens.reader.model.TTSScrollEdge
-import com.kmhmubin.kothagolp.ui.screens.reader.model.WordSelection
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.FontProvider
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
 import com.kmhmubin.kothagolp.domain.model.TextAlign as ReaderTextAlign
@@ -61,14 +58,20 @@ fun ReaderContainer(
     onNext: () -> Unit,
     onBack: () -> Unit,
     onRetryChapter: (Int) -> Unit,
-    onAddHighlight: ((segmentId: String, segmentIndex: Int, text: String, start: Int, end: Int, color: String) -> Unit)? = null,
-    onRemoveHighlight: ((id: Long) -> Unit)? = null
+    onAddHighlight: ((text: String, color: String) -> Unit)? = null,
+    onRemoveHighlight: ((id: Long) -> Unit)? = null,
+    onUpdateNote: ((id: Long, note: String?) -> Unit)? = null,
+    onChangeHighlightColor: ((id: Long, color: String) -> Unit)? = null
 ) {
     val settings = uiState.settings
     val density = LocalDensity.current
 
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
-    var pendingWordSelection by remember { mutableStateOf<WordSelection?>(null) }
+    var pendingSelectionText by remember { mutableStateOf<String?>(null) }
+    var selectionSegmentId by remember { mutableStateOf<String?>(null) }
+    var selectionStart by remember { mutableStateOf(-1) }
+    var selectionEnd by remember { mutableStateOf(-1) }
+
     val layoutDirection = remember(settings.readingDirection) {
         when (settings.readingDirection) {
             ReadingDirection.RTL -> LayoutDirection.Rtl
@@ -390,19 +393,37 @@ fun ReaderContainer(
                                             linkColor = effectiveColors.linkColor,
                                             onLinkClick = null,
                                             textHighlights = uiState.textHighlights.filter { it.segmentId == item.segment.id },
-                                            onWordSelected = if (!settings.longPressSelection) {
-                                                { word, start, end, segId, segIdx, existingId ->
-                                                    pendingWordSelection = WordSelection(
-                                                        word = word,
-                                                        startOffset = start,
-                                                        endOffset = end,
-                                                        segmentId = segId,
-                                                        segmentIndex = segIdx,
-                                                        existingHighlightId = existingId
-                                                    )
+                                            onSentenceBoundsCalculated = onSentenceBoundsUpdated,
+                                            onTextSelected = { text, start, end, segId, _, existingId ->
+                                                selectionSegmentId = segId
+                                                selectionStart = start
+                                                selectionEnd = end
+                                                if (existingId != null) {
+                                                    // Saved highlight → open popup immediately
+                                                    val existing = uiState.textHighlights.find { it.id == existingId }
+                                                    pendingSelectionText = existing?.text ?: text
                                                 }
+                                                // New word: only show handles; popup opens on tap or drag-end
+                                            },
+                                            tempSelectionStart = if (item.segment.id == selectionSegmentId) selectionStart else -1,
+                                            tempSelectionEnd = if (item.segment.id == selectionSegmentId) selectionEnd else -1,
+                                            onHandleDragStart = if (item.segment.id == selectionSegmentId) {
+                                                { pendingSelectionText = null }
                                             } else null,
-                                            onSentenceBoundsCalculated = onSentenceBoundsUpdated
+                                            onHandleDragUpdate = if (item.segment.id == selectionSegmentId) { s, e ->
+                                                selectionStart = s
+                                                selectionEnd = e
+                                            } else null,
+                                            onHandleDragEnd = if (item.segment.id == selectionSegmentId) { text ->
+                                                pendingSelectionText = text
+                                            } else null,
+                                            onSelectionTapped = if (item.segment.id == selectionSegmentId) {
+                                                {
+                                                    val s = selectionStart.coerceAtLeast(0)
+                                                    val e = selectionEnd.coerceAtMost(item.segment.text.length)
+                                                    if (e > s) pendingSelectionText = item.segment.text.substring(s, e).trim()
+                                                }
+                                            } else null
                                         )
                                     }
                                 }
@@ -449,13 +470,7 @@ fun ReaderContainer(
                 }
             }
 
-            if (settings.longPressSelection) {
-                SelectionContainer {
-                    content()
-                }
-            } else {
-                content()
-            }
+            content()
 
             fullScreenImageUrl?.let { url ->
                 ImageViewerDialog(
@@ -464,19 +479,28 @@ fun ReaderContainer(
                 )
             }
 
-            pendingWordSelection?.let { sel ->
+            pendingSelectionText?.let { text ->
+                val existingHighlight = uiState.textHighlights.find { h -> h.text.trim() == text }
                 TextSelectionPopup(
-                    selection = sel,
-                    onDismiss = { pendingWordSelection = null },
+                    selectedText = text,
+                    existingHighlight = existingHighlight,
+                    onDismiss = {
+                        pendingSelectionText = null
+                        selectionSegmentId = null
+                        selectionStart = -1
+                        selectionEnd = -1
+                    },
                     onHighlight = { color ->
-                        onAddHighlight?.invoke(
-                            sel.segmentId, sel.segmentIndex,
-                            sel.word, sel.startOffset, sel.endOffset, color
-                        )
+                        if (existingHighlight != null) {
+                            onChangeHighlightColor?.invoke(existingHighlight.id, color)
+                        } else {
+                            onAddHighlight?.invoke(text, color)
+                        }
                     },
                     onRemoveHighlight = {
-                        sel.existingHighlightId?.let { id -> onRemoveHighlight?.invoke(id) }
-                    }
+                        existingHighlight?.let { h -> onRemoveHighlight?.invoke(h.id) }
+                    },
+                    onUpdateNote = onUpdateNote
                 )
             }
         }

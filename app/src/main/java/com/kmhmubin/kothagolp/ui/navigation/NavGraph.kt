@@ -42,6 +42,7 @@ import com.kmhmubin.kothagolp.ui.screens.migration.MigrationSourcesScreen
 import com.kmhmubin.kothagolp.ui.screens.search.GlobalSearchScreen
 import com.kmhmubin.kothagolp.ui.screens.search.GlobalSearchViewModel
 import com.kmhmubin.kothagolp.ui.screens.tagexplorer.TagExplorerScreen
+import com.kmhmubin.kothagolp.ui.screens.notes.NotesHighlightsScreen
 
 @Composable
 fun KothagolpNavGraph(
@@ -112,6 +113,9 @@ fun KothagolpNavGraph(
                 },
                 onNavigateToAbout = {
                     navController.navigate(NavRoutes.About.route)
+                },
+                onNavigateToNotesHighlights = {
+                    navController.navigate(NavRoutes.NotesHighlights.route)
                 },
                 onNavigateToStorage = {
                     navController.navigate(NavRoutes.Storage.route)
@@ -309,6 +313,32 @@ fun KothagolpNavGraph(
         }
 
         // ================================================================
+        // NOTES & HIGHLIGHTS
+        // ================================================================
+        composable(
+            route = NavRoutes.NotesHighlights.route,
+            arguments = listOf(
+                navArgument("novelUrl") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val encodedNovelUrl = backStackEntry.arguments?.getString("novelUrl")
+            val novelUrlFilter = encodedNovelUrl?.let { NavRoutes.decodeUrl(it) }
+            NotesHighlightsScreen(
+                onBack = { navController.popBackStack() },
+                novelUrlFilter = novelUrlFilter,
+                onNavigateToReader = { chapterUrl, nUrl, providerName ->
+                    navController.navigate(
+                        NavRoutes.Reader.createRoute(chapterUrl, nUrl, providerName)
+                    )
+                }
+            )
+        }
+
+        // ================================================================
         // PROVIDER BROWSE (novels from specific provider)
         // ================================================================
         composable(
@@ -425,6 +455,9 @@ fun KothagolpNavGraph(
                 },
                 onNavigateToGlobalSearch = { query ->
                     navController.navigate(NavRoutes.GlobalSearch.createRoute(query))
+                },
+                onNavigateToNotes = { nUrl ->
+                    navController.navigate(NavRoutes.NotesHighlights.createRoute(nUrl))
                 }
             )
         }

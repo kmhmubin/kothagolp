@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -173,8 +175,14 @@ fun SegmentItem(
     linkColor: Color = Color(0xFF1976D2),
     onLinkClick: ((String) -> Unit)? = null,
     textHighlights: List<TextHighlight> = emptyList(),
-    onWordSelected: ((word: String, start: Int, end: Int, segmentId: String, segmentIndex: Int, existingHighlightId: Long?) -> Unit)? = null,
-    onSentenceBoundsCalculated: ((displayIndex: Int, topOffset: Float, bottomOffset: Float) -> Unit)? = null
+    onSentenceBoundsCalculated: ((displayIndex: Int, topOffset: Float, bottomOffset: Float) -> Unit)? = null,
+    onTextSelected: ((text: String, start: Int, end: Int, segmentId: String, segmentIndex: Int, existingHighlightId: Long?) -> Unit)? = null,
+    tempSelectionStart: Int = -1,
+    tempSelectionEnd: Int = -1,
+    onHandleDragStart: (() -> Unit)? = null,
+    onHandleDragUpdate: ((start: Int, end: Int) -> Unit)? = null,
+    onHandleDragEnd: ((text: String) -> Unit)? = null,
+    onSelectionTapped: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val segment = item.segment
@@ -366,6 +374,15 @@ fun SegmentItem(
         processedStyledText.getStringAnnotations("URL", 0, processedStyledText.length).isNotEmpty()
     }
 
+    // rememberUpdatedState so pointerInput coroutine always reads latest values
+    // without needing to relaunch (which would cancel an in-progress drag)
+    val latestTempStart by rememberUpdatedState(tempSelectionStart)
+    val latestTempEnd by rememberUpdatedState(tempSelectionEnd)
+    val latestOnHandleDragStart by rememberUpdatedState(onHandleDragStart)
+    val latestOnHandleDragUpdate by rememberUpdatedState(onHandleDragUpdate)
+    val latestOnHandleDragEnd by rememberUpdatedState(onHandleDragEnd)
+    val latestOnSelectionTapped by rememberUpdatedState(onSelectionTapped)
+
     // Extra vertical padding for larger touch targets
     val extraPadding = if (settings.largerTouchTargets) 4.dp else 0.dp
 
@@ -385,32 +402,100 @@ fun SegmentItem(
             .padding(horizontal = horizontalPadding)
             .padding(vertical = paragraphSpacing / 2 + extraPadding)
             .then(
-                if (onWordSelected != null) {
+                if (onTextSelected != null) {
+                    // Keys do NOT include tempSelectionStart/End — those change on every drag
+                    // frame and would cancel the in-progress drag coroutine if used as keys.
+                    // Latest values are read via rememberUpdatedState refs instead.
                     Modifier.pointerInput(segment.id, textHighlights) {
+                        val handleTouchRadius = 28.dp.toPx()
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
-                            val longPress = awaitLongPressOrCancellation(down.id)
-                            if (longPress != null) {
-                                longPress.consume()
-                                val layout = textLayoutResult ?: return@awaitEachGesture
-                                val charOffset = layout.getOffsetForPosition(down.position)
-                                    .coerceIn(0, (segment.text.length - 1).coerceAtLeast(0))
-                                val boundary = layout.getWordBoundary(charOffset)
-                                val rawText = processedStyledText.text
-                                val wStart = boundary.start.coerceIn(0, rawText.length)
-                                val wEnd = boundary.end.coerceIn(0, rawText.length)
-                                val word = rawText.substring(wStart, wEnd).trim()
-                                if (word.isNotBlank() && word.any { it.isLetter() }) {
-                                    val existing = textHighlights.find { h ->
-                                        h.segmentId == segment.id &&
-                                        charOffset >= h.startOffset &&
-                                        charOffset <= h.endOffset
+                            val layout = textLayoutResult
+
+                            // Snapshot current selection at gesture start
+                            val curTempStart = latestTempStart
+                            val curTempEnd = latestTempEnd
+
+                            // Detect touch near a handle
+                            var draggingStart = false
+                            var draggingEnd = false
+                            if (layout != null && curTempStart >= 0 && curTempEnd > curTempStart) {
+                                val textLen = layout.layoutInput.text.length
+                                if (textLen > 0) {
+                                    val safeStart = curTempStart.coerceIn(0, textLen - 1)
+                                    val safeEndCursor = curTempEnd.coerceIn(0, textLen)
+                                    val startRect = layout.getCursorRect(safeStart)
+                                    val endRect = layout.getCursorRect(safeEndCursor)
+                                    val startCenter = Offset(startRect.left, startRect.bottom + 12.dp.toPx())
+                                    val endCenter = Offset(endRect.right, endRect.bottom + 12.dp.toPx())
+                                    draggingStart = (down.position - startCenter).getDistance() < handleTouchRadius
+                                    draggingEnd = !draggingStart && (down.position - endCenter).getDistance() < handleTouchRadius
+                                }
+                            }
+
+                            if (draggingStart || draggingEnd) {
+                                latestOnHandleDragStart?.invoke()
+                                // Local vars track drag position — avoids reading stale
+                                // state that hasn't recomposed yet after onHandleDragUpdate
+                                var dragStart = curTempStart
+                                var dragEnd = curTempEnd
+                                drag(down.id) { change ->
+                                    change.consume()
+                                    val l = textLayoutResult ?: return@drag
+                                    val newOffset = l.getOffsetForPosition(change.position)
+                                        .coerceIn(0, segment.text.length)
+                                    if (draggingStart) {
+                                        dragStart = newOffset.coerceAtMost((dragEnd - 1).coerceAtLeast(0))
+                                    } else {
+                                        dragEnd = newOffset.coerceAtLeast(dragStart + 1)
+                                            .coerceAtMost(segment.text.length)
                                     }
-                                    onWordSelected(
-                                        word, wStart, wEnd,
-                                        segment.id, displayIndex,
-                                        existing?.id
-                                    )
+                                    latestOnHandleDragUpdate?.invoke(dragStart, dragEnd)
+                                }
+                                val finalStart = dragStart.coerceAtLeast(0)
+                                val finalEnd = dragEnd.coerceAtMost(segment.text.length)
+                                if (finalEnd > finalStart) {
+                                    val draggedText = segment.text.substring(finalStart, finalEnd).trim()
+                                    if (draggedText.isNotBlank()) latestOnHandleDragEnd?.invoke(draggedText)
+                                }
+                            } else {
+                                // Check if touch landed inside the active temp selection
+                                val curStart = latestTempStart
+                                val curEnd = latestTempEnd
+                                val tapOffset = layout?.getOffsetForPosition(down.position)
+                                    ?.coerceIn(0, (segment.text.length - 1).coerceAtLeast(0)) ?: -1
+                                val insideSelection = curStart >= 0 && curEnd > curStart &&
+                                    tapOffset >= curStart && tapOffset < curEnd
+
+                                if (insideSelection) {
+                                    // Tap on active selection → open popup
+                                    latestOnSelectionTapped?.invoke()
+                                } else {
+                                    // Long press → detect word or existing highlight
+                                    val longPress = awaitLongPressOrCancellation(down.id)
+                                    if (longPress != null) {
+                                        val l = textLayoutResult ?: return@awaitEachGesture
+                                        val charOffset = l.getOffsetForPosition(down.position)
+                                            .coerceIn(0, (segment.text.length - 1).coerceAtLeast(0))
+                                        val existing = textHighlights.find { h ->
+                                            h.segmentId == segment.id &&
+                                            charOffset >= h.startOffset &&
+                                            charOffset < h.endOffset
+                                        }
+                                        if (existing != null) {
+                                            onTextSelected(existing.text, existing.startOffset, existing.endOffset, segment.id, displayIndex, existing.id)
+                                        } else {
+                                            val rawText = segment.text
+                                            val boundary = l.getWordBoundary(charOffset)
+                                            val wordText = rawText.substring(
+                                                boundary.start.coerceAtLeast(0),
+                                                boundary.end.coerceAtMost(rawText.length)
+                                            ).trim()
+                                            if (wordText.isNotBlank()) {
+                                                onTextSelected(wordText, boundary.start, boundary.end, segment.id, displayIndex, null)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -474,12 +559,53 @@ fun SegmentItem(
                 }
             )
         }
+
+        // Selection handles overlay
+        if (tempSelectionStart >= 0 && tempSelectionEnd > tempSelectionStart && textLayoutResult != null) {
+            val layout = textLayoutResult!!
+            val textLen = layout.layoutInput.text.length
+            if (textLen > 0) {
+                val safeStart = tempSelectionStart.coerceIn(0, textLen - 1)
+                // safeEndChar: inclusive last char index (for line detection)
+                val safeEndChar = (tempSelectionEnd - 1).coerceIn(0, textLen - 1)
+                // safeEndCursor: exclusive end (cursor AFTER last char, for correct visual position)
+                val safeEndCursor = tempSelectionEnd.coerceIn(0, textLen)
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    val handleRadius = 8.dp.toPx()
+                    val stemWidth = 2.dp.toPx()
+                    val handleColor = Color(0xFF1976D2)
+                    val selectionColor = Color(0x331976D2)
+
+                    // Draw selection background line by line
+                    val startLine = layout.getLineForOffset(safeStart)
+                    val endLine = layout.getLineForOffset(safeEndChar)
+                    for (lineIdx in startLine..endLine) {
+                        val left = if (lineIdx == startLine) layout.getCursorRect(safeStart).left else layout.getLineLeft(lineIdx)
+                        val right = if (lineIdx == endLine) layout.getCursorRect(safeEndCursor).right else layout.getLineRight(lineIdx)
+                        val top = layout.getLineTop(lineIdx)
+                        val bottom = layout.getLineBottom(lineIdx)
+                        drawRect(
+                            color = selectionColor,
+                            topLeft = Offset(left, top),
+                            size = androidx.compose.ui.geometry.Size(right - left, bottom - top)
+                        )
+                    }
+
+                    // Start handle: vertical stem + circle below
+                    val startRect = layout.getCursorRect(safeStart)
+                    drawLine(color = handleColor, start = Offset(startRect.left, startRect.top), end = Offset(startRect.left, startRect.bottom + handleRadius), strokeWidth = stemWidth)
+                    drawCircle(color = handleColor, radius = handleRadius, center = Offset(startRect.left, startRect.bottom + handleRadius))
+
+                    // End handle: uses safeEndCursor so circle sits after the last character
+                    val endRect = layout.getCursorRect(safeEndCursor)
+                    drawLine(color = handleColor, start = Offset(endRect.right, endRect.top), end = Offset(endRect.right, endRect.bottom + handleRadius), strokeWidth = stemWidth)
+                    drawCircle(color = handleColor, radius = handleRadius, center = Offset(endRect.right, endRect.bottom + handleRadius))
+                }
+            }
+        }
     }
 }
 
-/**
- * Apply word spacing to an AnnotatedString while preserving styles
- */
 private fun applyWordSpacingToAnnotatedString(
     annotatedString: AnnotatedString,
     multiplier: Float

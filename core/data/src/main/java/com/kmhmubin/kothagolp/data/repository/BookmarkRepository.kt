@@ -131,7 +131,8 @@ class BookmarkRepository(
         textSnippet: String? = null,
         note: String? = null,
         category: String = "default",
-        color: String? = null
+        color: String? = null,
+        providerName: String? = null
     ): Long = withContext(Dispatchers.IO) {
         val entity = BookmarkEntity(
             novelUrl = novelUrl,
@@ -143,7 +144,8 @@ class BookmarkRepository(
             textSnippet = textSnippet?.take(200),
             note = note,
             category = category,
-            color = color
+            color = color,
+            providerName = providerName
         )
         bookmarkDao.insert(entity)
     }
@@ -227,5 +229,15 @@ class BookmarkRepository(
 
     suspend fun deleteHighlight(id: Long) = withContext(Dispatchers.IO) {
         bookmarkDao.deleteById(id)
+    }
+
+    fun observeAllAnnotations() = bookmarkDao.observeAllAnnotations()
+
+    suspend fun updateUserNote(id: Long, userNote: String?) = withContext(Dispatchers.IO) {
+        bookmarkDao.updateUserNote(id, userNote, System.currentTimeMillis())
+    }
+
+    suspend fun updateHighlightColor(id: Long, color: String) = withContext(Dispatchers.IO) {
+        bookmarkDao.updateHighlightColor(id, color, System.currentTimeMillis())
     }
 }

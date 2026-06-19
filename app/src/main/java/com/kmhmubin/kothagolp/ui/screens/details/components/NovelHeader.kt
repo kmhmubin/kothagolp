@@ -46,6 +46,7 @@ import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Favorite
@@ -127,6 +128,7 @@ fun NovelHeader(
     onOpenInWebView: (() -> Unit)? = null,
     onExportEpub: (() -> Unit)? = null,
     onMigrate: (() -> Unit)? = null,
+    onNavigateToNotes: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -147,7 +149,8 @@ fun NovelHeader(
                 onShare = onShare,
                 onOpenInWebView = onOpenInWebView,
                 onExportEpub = onExportEpub,
-                onMigrate = onMigrate
+                onMigrate = onMigrate,
+                onNavigateToNotes = onNavigateToNotes
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -239,7 +242,8 @@ private fun HeaderTopBar(
     onShare: (() -> Unit)?,
     onOpenInWebView: (() -> Unit)?,
     onExportEpub: (() -> Unit)? = null,
-    onMigrate: (() -> Unit)? = null
+    onMigrate: (() -> Unit)? = null,
+    onNavigateToNotes: (() -> Unit)? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -341,6 +345,23 @@ private fun HeaderTopBar(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.CompareArrows,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    )
+                }
+
+                if (onNavigateToNotes != null) {
+                    DropdownMenuItem(
+                        text = { Text("Notes & Highlights") },
+                        onClick = {
+                            showMenu = false
+                            onNavigateToNotes()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.StickyNote2,
                                 contentDescription = null,
                                 modifier = Modifier.size(20.dp)
                             )

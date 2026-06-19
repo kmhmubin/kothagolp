@@ -96,7 +96,7 @@ class DatabaseConverters {
         BlockedAuthorEntity::class,
         AuthorPreferenceEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
@@ -135,7 +135,8 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_6_7,
                         MIGRATION_7_8,
                         MIGRATION_8_9,
-                        MIGRATION_9_10
+                        MIGRATION_9_10,
+                        MIGRATION_10_11
                     )
                     .fallbackToDestructiveMigration()
                     .build()
@@ -430,6 +431,17 @@ abstract class NovelDatabase : RoomDatabase() {
 
                 // Add customCoverUrl to history table (reading history)
                 safeAddColumn(database, "history", "customCoverUrl", "TEXT")
+            }
+        }
+
+        /**
+         * Migration 10 -> 11
+         * Adds userNote (user annotation text) and providerName to bookmarks table.
+         */
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                safeAddColumn(database, "bookmarks", "userNote", "TEXT")
+                safeAddColumn(database, "bookmarks", "providerName", "TEXT")
             }
         }
 

@@ -6,7 +6,8 @@ data class TextHighlight(
     val startOffset: Int,
     val endOffset: Int,
     val color: String,
-    val text: String
+    val text: String,
+    val userNote: String? = null
 )
 
 data class WordSelection(
@@ -15,5 +16,6 @@ data class WordSelection(
     val endOffset: Int,
     val segmentId: String,
     val segmentIndex: Int,
-    val existingHighlightId: Long? = null
+    val existingHighlightId: Long? = null,
+    val existingNote: String? = null
 )

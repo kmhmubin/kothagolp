@@ -57,6 +57,15 @@ interface BookmarkDao {
     @Query("SELECT * FROM bookmarks WHERE chapterUrl = :chapterUrl AND category = 'highlight' ORDER BY segmentIndex, createdAt")
     suspend fun getHighlightsForChapter(chapterUrl: String): List<BookmarkEntity>
 
+    @Query("SELECT * FROM bookmarks WHERE category = 'highlight' ORDER BY createdAt DESC")
+    fun observeAllAnnotations(): Flow<List<BookmarkEntity>>
+
+    @Query("UPDATE bookmarks SET userNote = :userNote, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateUserNote(id: Long, userNote: String?, updatedAt: Long)
+
+    @Query("UPDATE bookmarks SET color = :color, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateHighlightColor(id: Long, color: String, updatedAt: Long)
+
     @Query("""
         SELECT * FROM bookmarks
         WHERE note LIKE '%' || :query || '%'

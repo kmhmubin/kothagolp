@@ -21,7 +21,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -30,7 +33,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,7 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
-import com.kmhmubin.kothagolp.ui.screens.reader.model.WordSelection
+import com.kmhmubin.kothagolp.ui.screens.reader.model.TextHighlight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -65,210 +70,122 @@ private val HIGHLIGHT_COLORS = listOf(
     "#FFB74D" to "Orange"
 )
 
-private sealed class DictView {
-    object Actions : DictView()
-    object Loading : DictView()
-    data class Result(
-        val word: String,
-        val phonetic: String?,
-        val meanings: List<DictMeaning>
-    ) : DictView()
-    data class Error(val message: String) : DictView()
+private sealed class SheetView {
+    object Actions : SheetView()
+    object NoteEdit : SheetView()
+    object HighlightColors : SheetView()
+    object DictLoading : SheetView()
+    data class DictResult(val word: String, val phonetic: String?, val meanings: List<DictMeaning>) : SheetView()
+    data class DictError(val message: String) : SheetView()
 }
 
-private data class DictMeaning(
-    val partOfSpeech: String,
-    val definitions: List<String>
-)
+private data class DictMeaning(val partOfSpeech: String, val definitions: List<String>)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextSelectionPopup(
-    selection: WordSelection,
+    selectedText: String,
+    existingHighlight: TextHighlight? = null,
     onDismiss: () -> Unit,
+    onSelectAll: (() -> Unit)? = null,
     onHighlight: (color: String) -> Unit,
-    onRemoveHighlight: () -> Unit
+    onRemoveHighlight: () -> Unit,
+    onUpdateNote: ((id: Long, note: String?) -> Unit)? = null
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
 
-    var dictView by remember { mutableStateOf<DictView>(DictView.Actions) }
+    var view by remember { mutableStateOf<SheetView>(SheetView.Actions) }
+    var noteText by remember { mutableStateOf(existingHighlight?.userNote ?: "") }
 
     val dismiss: () -> Unit = {
         scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
     }
 
+    val firstWord = remember(selectedText) { selectedText.trim().split("\\s+".toRegex()).firstOrNull() ?: selectedText }
+
     fun fetchDictionary(word: String) {
-        dictView = DictView.Loading
+        view = SheetView.DictLoading
         scope.launch(Dispatchers.IO) {
             try {
                 val encoded = URLEncoder.encode(word.lowercase().trim(), "UTF-8")
-                val conn = URL("https://api.dictionaryapi.dev/api/v2/entries/en/$encoded")
-                    .openConnection()
+                val conn = URL("https://api.dictionaryapi.dev/api/v2/entries/en/$encoded").openConnection()
                 conn.connectTimeout = 5000
                 conn.readTimeout = 5000
                 val json = conn.getInputStream().bufferedReader().readText()
                 val arr = JSONArray(json)
                 val entry = arr.getJSONObject(0)
-                val phonetic = runCatching { entry.getString("phonetic") }.getOrNull()
-                    ?.takeIf { it.isNotBlank() }
+                val phonetic = runCatching { entry.getString("phonetic") }.getOrNull()?.takeIf { it.isNotBlank() }
                 val meaningsArr = entry.getJSONArray("meanings")
                 val meanings = buildList {
                     for (i in 0 until meaningsArr.length()) {
                         val m = meaningsArr.getJSONObject(i)
                         val pos = m.getString("partOfSpeech")
                         val defs = m.getJSONArray("definitions")
-                        val defList = buildList {
+                        add(DictMeaning(pos, buildList {
                             for (j in 0 until minOf(defs.length(), 3)) {
                                 add(defs.getJSONObject(j).getString("definition"))
                             }
-                        }
-                        add(DictMeaning(pos, defList))
+                        }))
                     }
                 }
-                withContext(Dispatchers.Main) {
-                    dictView = DictView.Result(word, phonetic, meanings)
-                }
+                withContext(Dispatchers.Main) { view = SheetView.DictResult(word, phonetic, meanings) }
             } catch (_: Exception) {
-                withContext(Dispatchers.Main) {
-                    dictView = DictView.Error("No definition found for \"$word\"")
-                }
+                withContext(Dispatchers.Main) { view = SheetView.DictError("No definition found for \"$word\"") }
             }
         }
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
-    ) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
         ) {
-            when (val view = dictView) {
-                is DictView.Actions -> {
-                    Text(
-                        text = "\"${selection.word}\"",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+            when (val v = view) {
+                is SheetView.Actions -> ActionsView(
+                    selectedText = selectedText,
+                    existingHighlight = existingHighlight,
+                    onCopy = { clipboard.setText(AnnotatedString(selectedText)); dismiss() },
+                    onSelectAll = onSelectAll?.let { sa -> { sa() } },
+                    onDictionary = { fetchDictionary(firstWord) },
+                    onShowColors = { view = SheetView.HighlightColors },
+                    onRemoveHighlight = { onRemoveHighlight(); dismiss() },
+                    onEditNote = { view = SheetView.NoteEdit }
+                )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                is SheetView.HighlightColors -> HighlightColorsView(
+                    existingHighlight = existingHighlight,
+                    onBack = { view = SheetView.Actions },
+                    onColorSelected = { color -> onHighlight(color); dismiss() }
+                )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilledTonalButton(
-                            onClick = {
-                                clipboard.setText(AnnotatedString(selection.word))
-                                dismiss()
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                Icons.Outlined.ContentCopy,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Copy")
-                        }
-
-                        FilledTonalButton(
-                            onClick = { fetchDictionary(selection.word) },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Search,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Dictionary")
-                        }
+                is SheetView.NoteEdit -> NoteEditView(
+                    label = selectedText.take(60).let { if (selectedText.length > 60) "$it…" else it },
+                    noteText = noteText,
+                    onNoteChange = { noteText = it },
+                    onBack = { view = SheetView.Actions },
+                    onSave = {
+                        val id = existingHighlight?.id ?: return@NoteEditView
+                        onUpdateNote?.invoke(id, noteText.ifBlank { null })
+                        dismiss()
                     }
+                )
 
-                    if (selection.existingHighlightId != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        FilledTonalButton(
-                            onClick = {
-                                onRemoveHighlight()
-                                dismiss()
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                Icons.Outlined.Delete,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Remove Highlight")
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        HorizontalDivider()
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = "Highlight",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            HIGHLIGHT_COLORS.forEach { (hex, _) ->
-                                val color = try {
-                                    Color(hex.toColorInt())
-                                } catch (_: Exception) {
-                                    Color(0xFFFFD54F)
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                        .border(
-                                            2.dp,
-                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                            CircleShape
-                                        )
-                                        .clickable {
-                                            onHighlight(hex)
-                                            dismiss()
-                                        }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                is DictView.Loading -> {
-                    DictHeader(word = selection.word, onBack = { dictView = DictView.Actions })
+                is SheetView.DictLoading -> {
+                    DictHeader(word = firstWord, onBack = { view = SheetView.Actions })
                     Spacer(modifier = Modifier.height(32.dp))
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(modifier = Modifier.size(32.dp))
                     }
                     Spacer(modifier = Modifier.height(32.dp))
                 }
 
-                is DictView.Result -> {
-                    DictHeader(word = view.word, onBack = { dictView = DictView.Actions })
-                    view.phonetic?.let { phonetic ->
+                is SheetView.DictResult -> {
+                    DictHeader(word = v.word, onBack = { view = SheetView.Actions })
+                    v.phonetic?.let { phonetic ->
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = phonetic,
@@ -279,12 +196,10 @@ fun TextSelectionPopup(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Column(
-                        modifier = Modifier
-                            .heightIn(max = 320.dp)
-                            .verticalScroll(rememberScrollState()),
+                        modifier = Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        view.meanings.forEach { meaning ->
+                        v.meanings.forEach { meaning ->
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(
                                     text = meaning.partOfSpeech,
@@ -305,11 +220,11 @@ fun TextSelectionPopup(
                     }
                 }
 
-                is DictView.Error -> {
-                    DictHeader(word = selection.word, onBack = { dictView = DictView.Actions })
+                is SheetView.DictError -> {
+                    DictHeader(word = firstWord, onBack = { view = SheetView.Actions })
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = view.message,
+                        text = v.message,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -321,24 +236,179 @@ fun TextSelectionPopup(
 }
 
 @Composable
-private fun DictHeader(word: String, onBack: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
+private fun ActionsView(
+    selectedText: String,
+    existingHighlight: TextHighlight?,
+    onCopy: () -> Unit,
+    onSelectAll: (() -> Unit)? = null,
+    onDictionary: () -> Unit,
+    onShowColors: () -> Unit,
+    onRemoveHighlight: () -> Unit,
+    onEditNote: () -> Unit
+) {
+    Text(
+        text = "\"$selectedText\"",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 3,
+        overflow = TextOverflow.Ellipsis,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+
+    if (!existingHighlight?.userNote.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = existingHighlight!!.userNote!!,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    // Row 1: Copy | Dictionary
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilledTonalButton(onClick = onCopy, modifier = Modifier.weight(1f)) {
+            Icon(Icons.Outlined.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("Copy")
+        }
+        FilledTonalButton(onClick = onDictionary, modifier = Modifier.weight(1f)) {
+            Icon(Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("Dictionary")
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    // Row 2: Highlight | (Edit Note or Select All)
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilledTonalButton(onClick = onShowColors, modifier = Modifier.weight(1f)) {
+            Icon(Icons.Outlined.Colorize, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(if (existingHighlight != null) "Change Color" else "Highlight")
+        }
+        if (existingHighlight != null) {
+            FilledTonalButton(onClick = onEditNote, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(if (existingHighlight.userNote.isNullOrBlank()) "Add Note" else "Edit Note")
+            }
+        } else if (onSelectAll != null) {
+            FilledTonalButton(onClick = onSelectAll, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Outlined.SelectAll, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Select All")
+            }
+        }
+    }
+
+    if (existingHighlight != null) {
+        Spacer(modifier = Modifier.height(8.dp))
+        FilledTonalButton(
+            onClick = onRemoveHighlight,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("Remove Highlight")
+        }
+    }
+}
+
+@Composable
+private fun NoteEditView(
+    label: String,
+    noteText: String,
+    onNoteChange: (String) -> Unit,
+    onBack: () -> Unit,
+    onSave: () -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
-            Icon(
-                Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = "Back",
-                modifier = Modifier.size(20.dp)
-            )
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = word,
+            text = "\"$label\"",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
         )
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = noteText,
+        onValueChange = onNoteChange,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp),
+        placeholder = { Text("Add a note…", style = MaterialTheme.typography.bodyMedium) },
+        textStyle = MaterialTheme.typography.bodyMedium,
+        minLines = 3,
+        maxLines = 6
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        TextButton(onClick = onBack) { Text("Cancel") }
+        Spacer(modifier = Modifier.width(8.dp))
+        FilledTonalButton(onClick = onSave) { Text("Save") }
+    }
+}
+
+@Composable
+private fun HighlightColorRow(onColorSelected: (String) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        HIGHLIGHT_COLORS.forEach { (hex, _) ->
+            val color = try { Color(hex.toColorInt()) } catch (_: Exception) { Color(0xFFFFD54F) }
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(color)
+                    .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
+                    .clickable { onColorSelected(hex) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun HighlightColorsView(
+    existingHighlight: TextHighlight?,
+    onBack: () -> Unit,
+    onColorSelected: (String) -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = if (existingHighlight != null) "Change Color" else "Highlight",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+    Spacer(modifier = Modifier.height(16.dp))
+    HighlightColorRow(onColorSelected = onColorSelected)
+    Spacer(modifier = Modifier.height(8.dp))
+}
+
+@Composable
+private fun DictHeader(word: String, onBack: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = word, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
     }
 }
