@@ -528,7 +528,10 @@ fun ReaderScreen(
         onPrevious = viewModel::navigateToPrevious,
         onNext = viewModel::navigateToNext,
         onConfirmScrollReset = viewModel::confirmScrollReset,
-        onBottomBarSettingsExpandedChange = { bottomBarSettingsExpanded = it }
+        onBottomBarSettingsExpandedChange = { bottomBarSettingsExpanded = it },
+        onLoadHighlights = viewModel::loadHighlightsForChapter,
+        onAddHighlight = viewModel::addTextHighlight,
+        onRemoveHighlight = viewModel::removeTextHighlight
     )
 }
 
@@ -705,7 +708,10 @@ private fun ReaderScreenContent(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onConfirmScrollReset: () -> Unit,
-    onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {}
+    onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {},
+    onLoadHighlights: (chapterUrl: String) -> Unit = {},
+    onAddHighlight: (segmentId: String, segmentIndex: Int, text: String, start: Int, end: Int, color: String) -> Unit = { _, _, _, _, _, _ -> },
+    onRemoveHighlight: (id: Long) -> Unit = {}
 ) {
     val tapZones = uiState.settings.tapZones
 
@@ -756,6 +762,13 @@ private fun ReaderScreenContent(
     // Reset the flag when chapter changes
     LaunchedEffect(uiState.currentChapterUrl) {
         hasCompletedScrollReset = false
+    }
+
+    // Load text highlights whenever the current chapter changes
+    LaunchedEffect(uiState.currentChapterUrl) {
+        if (uiState.currentChapterUrl.isNotEmpty()) {
+            onLoadHighlights(uiState.currentChapterUrl)
+        }
     }
 
     // Determine if content should be visible
@@ -822,7 +835,9 @@ private fun ReaderScreenContent(
                             onPrevious = onPrevious,
                             onNext = onNext,
                             onBack = onBack,
-                            onRetryChapter = onRetryChapter
+                            onRetryChapter = onRetryChapter,
+                            onAddHighlight = onAddHighlight,
+                            onRemoveHighlight = onRemoveHighlight
                         )
                     }
                 }

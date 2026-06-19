@@ -36,6 +36,7 @@ import com.kmhmubin.kothagolp.ui.screens.reader.model.SentenceBoundsInSegment
 import com.kmhmubin.kothagolp.ui.screens.reader.model.SentenceHighlight
 import com.kmhmubin.kothagolp.ui.screens.reader.model.StableScrollPosition
 import com.kmhmubin.kothagolp.ui.screens.reader.model.StableTargetScrollPosition
+import com.kmhmubin.kothagolp.ui.screens.reader.model.TextHighlight
 import com.kmhmubin.kothagolp.ui.screens.reader.model.TTSPosition
 import com.kmhmubin.kothagolp.ui.screens.reader.model.TTSScrollEdge
 import com.kmhmubin.kothagolp.ui.screens.reader.model.TTSSettingsState
@@ -2450,6 +2451,67 @@ class ReaderViewModel : ViewModel() {
 
     fun updateReaderSettings(settings: ReaderSettings) {
         preferencesManager.updateReaderSettings(settings)
+    }
+
+    // =========================================================================
+    // TEXT HIGHLIGHTS
+    // =========================================================================
+
+    fun loadHighlightsForChapter(chapterUrl: String) {
+        viewModelScope.launch {
+            val entities = bookmarkRepository.getHighlightsForChapter(chapterUrl)
+            val highlights = entities.mapNotNull { entity ->
+                val parts = entity.note?.split(":")
+                val start = parts?.getOrNull(0)?.toIntOrNull() ?: return@mapNotNull null
+                val end = parts.getOrNull(1)?.toIntOrNull() ?: return@mapNotNull null
+                val segId = entity.segmentId ?: return@mapNotNull null
+                TextHighlight(
+                    id = entity.id,
+                    segmentId = segId,
+                    startOffset = start,
+                    endOffset = end,
+                    color = entity.color ?: "#FFD54F",
+                    text = entity.textSnippet ?: ""
+                )
+            }
+            _uiState.update { it.copy(textHighlights = highlights) }
+        }
+    }
+
+    fun addTextHighlight(
+        segmentId: String,
+        segmentIndex: Int,
+        text: String,
+        startOffset: Int,
+        endOffset: Int,
+        color: String
+    ) {
+        val state = _uiState.value
+        val chapterUrl = state.currentChapterUrl
+        val novelUrl = currentNovelUrl ?: return
+        viewModelScope.launch {
+            bookmarkRepository.createBookmark(
+                novelUrl = novelUrl,
+                novelName = "",
+                chapterUrl = chapterUrl,
+                chapterName = state.currentChapterName,
+                segmentId = segmentId,
+                segmentIndex = segmentIndex,
+                textSnippet = text.take(200),
+                note = "$startOffset:$endOffset",
+                category = "highlight",
+                color = color
+            )
+            loadHighlightsForChapter(chapterUrl)
+        }
+    }
+
+    fun removeTextHighlight(id: Long) {
+        val chapterUrl = _uiState.value.currentChapterUrl
+        viewModelScope.launch {
+            bookmarkRepository.deleteHighlight(id)
+            loadHighlightsForChapter(chapterUrl)
+        }
     }
 
     // =========================================================================

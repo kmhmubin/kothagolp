@@ -54,9 +54,12 @@ interface BookmarkDao {
     @Query("DELETE FROM bookmarks")
     suspend fun deleteAll()
 
+    @Query("SELECT * FROM bookmarks WHERE chapterUrl = :chapterUrl AND category = 'highlight' ORDER BY segmentIndex, createdAt")
+    suspend fun getHighlightsForChapter(chapterUrl: String): List<BookmarkEntity>
+
     @Query("""
-        SELECT * FROM bookmarks 
-        WHERE note LIKE '%' || :query || '%' 
+        SELECT * FROM bookmarks
+        WHERE note LIKE '%' || :query || '%'
            OR textSnippet LIKE '%' || :query || '%'
         ORDER BY createdAt DESC
     """)

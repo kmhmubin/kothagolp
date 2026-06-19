@@ -217,4 +217,15 @@ class BookmarkRepository(
         "#FFEB3B", "#4CAF50", "#2196F3", "#E91E63",
         "#FF9800", "#9C27B0", "#00BCD4", "#F44336"
     )
+
+    // ================================================================
+    // TEXT HIGHLIGHTS
+    // ================================================================
+
+    suspend fun getHighlightsForChapter(chapterUrl: String): List<BookmarkEntity> =
+        withContext(Dispatchers.IO) { bookmarkDao.getHighlightsForChapter(chapterUrl) }
+
+    suspend fun deleteHighlight(id: Long) = withContext(Dispatchers.IO) {
+        bookmarkDao.deleteById(id)
+    }
 }

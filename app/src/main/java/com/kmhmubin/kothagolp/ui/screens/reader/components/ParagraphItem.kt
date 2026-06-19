@@ -5,6 +5,9 @@ import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ParagraphStyle
@@ -60,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kmhmubin.kothagolp.domain.model.ReaderSettings
 import com.kmhmubin.kothagolp.ui.components.GhostButton
+import com.kmhmubin.kothagolp.ui.screens.reader.model.TextHighlight
 import com.kmhmubin.kothagolp.ui.screens.reader.logic.CellAlignment
 import com.kmhmubin.kothagolp.ui.screens.reader.logic.ListItemContent
 import com.kmhmubin.kothagolp.ui.screens.reader.logic.ListStyleType
@@ -167,7 +172,8 @@ fun SegmentItem(
     paragraphSpacing: Dp,
     linkColor: Color = Color(0xFF1976D2),
     onLinkClick: ((String) -> Unit)? = null,
-    // NEW: Callback to report sentence bounds
+    textHighlights: List<TextHighlight> = emptyList(),
+    onWordSelected: ((word: String, start: Int, end: Int, segmentId: String, segmentIndex: Int, existingHighlightId: Long?) -> Unit)? = null,
     onSentenceBoundsCalculated: ((displayIndex: Int, topOffset: Float, bottomOffset: Float) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -263,7 +269,7 @@ fun SegmentItem(
         }
     }
 
-    // Build final annotated string with link styling and TTS highlight
+    // Build final annotated string with link styling, text highlights, and TTS highlight
     val annotatedText = remember(
         processedStyledText,
         hasSentenceHighlight,
@@ -273,7 +279,8 @@ fun SegmentItem(
         lineBreak,
         textColor,
         linkColor,
-        settings.wordSpacing
+        settings.wordSpacing,
+        textHighlights
     ) {
         buildAnnotatedString {
             // Apply paragraph style
@@ -303,6 +310,27 @@ fun SegmentItem(
                         end = annotation.end
                     )
                 }
+
+            // Apply saved text highlights (rendered under TTS highlight)
+            val textLen = processedStyledText.length
+            for (h in textHighlights) {
+                if (h.segmentId == segment.id && h.startOffset < h.endOffset) {
+                    val hStart = h.startOffset.coerceIn(0, textLen)
+                    val hEnd = h.endOffset.coerceIn(0, textLen)
+                    if (hStart < hEnd) {
+                        val argb = try {
+                            android.graphics.Color.parseColor(h.color)
+                        } catch (_: Exception) {
+                            android.graphics.Color.parseColor("#FFD54F")
+                        }
+                        addStyle(
+                            SpanStyle(background = Color(argb).copy(alpha = 0.55f)),
+                            start = hStart,
+                            end = hEnd
+                        )
+                    }
+                }
+            }
 
             // Apply TTS highlight if active
             if (hasSentenceHighlight && currentSentenceHighlight != null) {
@@ -356,6 +384,39 @@ fun SegmentItem(
             .fillMaxWidth()
             .padding(horizontal = horizontalPadding)
             .padding(vertical = paragraphSpacing / 2 + extraPadding)
+            .then(
+                if (onWordSelected != null) {
+                    Modifier.pointerInput(segment.id, textHighlights) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            val longPress = awaitLongPressOrCancellation(down.id)
+                            if (longPress != null) {
+                                longPress.consume()
+                                val layout = textLayoutResult ?: return@awaitEachGesture
+                                val charOffset = layout.getOffsetForPosition(down.position)
+                                    .coerceIn(0, (segment.text.length - 1).coerceAtLeast(0))
+                                val boundary = layout.getWordBoundary(charOffset)
+                                val rawText = processedStyledText.text
+                                val wStart = boundary.start.coerceIn(0, rawText.length)
+                                val wEnd = boundary.end.coerceIn(0, rawText.length)
+                                val word = rawText.substring(wStart, wEnd).trim()
+                                if (word.isNotBlank() && word.any { it.isLetter() }) {
+                                    val existing = textHighlights.find { h ->
+                                        h.segmentId == segment.id &&
+                                        charOffset >= h.startOffset &&
+                                        charOffset <= h.endOffset
+                                    }
+                                    onWordSelected(
+                                        word, wStart, wEnd,
+                                        segment.id, displayIndex,
+                                        existing?.id
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else Modifier
+            )
     ) {
         if (hasLinks) {
             // For ClickableText, we can't get onTextLayout directly

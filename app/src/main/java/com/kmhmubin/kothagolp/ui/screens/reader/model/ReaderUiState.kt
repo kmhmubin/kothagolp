@@ -234,7 +234,10 @@ data class ReaderUiState(
     val ttsSettings: TTSSettingsState = TTSSettingsState(),
 
     // Track which edge the sentence was last at for flip behavior
-    val lastTTSScrollEdge: TTSScrollEdge = TTSScrollEdge.NONE
+    val lastTTSScrollEdge: TTSScrollEdge = TTSScrollEdge.NONE,
+
+    // Text highlights (saved user highlights for current chapter)
+    val textHighlights: List<TextHighlight> = emptyList()
 ) {
     val shouldShowLoadingOverlay: Boolean
         get() = isLoading || !isContentReady || pendingScrollReset
