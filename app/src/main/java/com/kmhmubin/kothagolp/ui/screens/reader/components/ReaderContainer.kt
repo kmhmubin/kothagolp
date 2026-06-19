@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderDisplayItem
 import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderUiState
 import com.kmhmubin.kothagolp.ui.screens.reader.model.SentenceBoundsInSegment
 import com.kmhmubin.kothagolp.ui.screens.reader.model.TTSScrollEdge
+import com.kmhmubin.kothagolp.ui.screens.reader.model.WordSelection
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.FontProvider
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
 import com.kmhmubin.kothagolp.domain.model.TextAlign as ReaderTextAlign
@@ -58,13 +60,15 @@ fun ReaderContainer(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit,
-    onRetryChapter: (Int) -> Unit
+    onRetryChapter: (Int) -> Unit,
+    onAddHighlight: ((segmentId: String, segmentIndex: Int, text: String, start: Int, end: Int, color: String) -> Unit)? = null,
+    onRemoveHighlight: ((id: Long) -> Unit)? = null
 ) {
     val settings = uiState.settings
     val density = LocalDensity.current
 
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
-
+    var pendingWordSelection by remember { mutableStateOf<WordSelection?>(null) }
     val layoutDirection = remember(settings.readingDirection) {
         when (settings.readingDirection) {
             ReadingDirection.RTL -> LayoutDirection.Rtl
@@ -385,7 +389,19 @@ fun ReaderContainer(
                                             paragraphSpacing = paragraphSpacing,
                                             linkColor = effectiveColors.linkColor,
                                             onLinkClick = null,
-                                            // NEW: Report sentence bounds
+                                            textHighlights = uiState.textHighlights.filter { it.segmentId == item.segment.id },
+                                            onWordSelected = if (!settings.longPressSelection) {
+                                                { word, start, end, segId, segIdx, existingId ->
+                                                    pendingWordSelection = WordSelection(
+                                                        word = word,
+                                                        startOffset = start,
+                                                        endOffset = end,
+                                                        segmentId = segId,
+                                                        segmentIndex = segIdx,
+                                                        existingHighlightId = existingId
+                                                    )
+                                                }
+                                            } else null,
                                             onSentenceBoundsCalculated = onSentenceBoundsUpdated
                                         )
                                     }
@@ -445,6 +461,22 @@ fun ReaderContainer(
                 ImageViewerDialog(
                     imageUrl = url,
                     onDismiss = { fullScreenImageUrl = null }
+                )
+            }
+
+            pendingWordSelection?.let { sel ->
+                TextSelectionPopup(
+                    selection = sel,
+                    onDismiss = { pendingWordSelection = null },
+                    onHighlight = { color ->
+                        onAddHighlight?.invoke(
+                            sel.segmentId, sel.segmentIndex,
+                            sel.word, sel.startOffset, sel.endOffset, color
+                        )
+                    },
+                    onRemoveHighlight = {
+                        sel.existingHighlightId?.let { id -> onRemoveHighlight?.invoke(id) }
+                    }
                 )
             }
         }
