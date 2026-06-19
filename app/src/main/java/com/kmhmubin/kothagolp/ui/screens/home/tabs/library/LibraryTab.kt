@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.library
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutCubic
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.LinearEasing
@@ -364,7 +365,7 @@ fun LibraryTab(
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     viewModel.onFilterChipPressed(filter)
                 },
-                itemCounts = uiState.getFilterCounts()
+                itemCounts = remember(uiState) { uiState.getFilterCounts() }
             )
         }
     }
@@ -523,16 +524,17 @@ private fun NotificationButton(
 ) {
     val hasNotifications = count > 0
 
-    val infiniteTransition = rememberInfiniteTransition(label = "notification_pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (hasNotifications) 1.1f else 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = EaseInOutCubic),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
-    )
+    val pulseScale = remember { Animatable(1f) }
+    LaunchedEffect(hasNotifications) {
+        if (hasNotifications) {
+            while (true) {
+                pulseScale.animateTo(1.1f, tween(800, easing = EaseInOutCubic))
+                pulseScale.animateTo(1f, tween(800, easing = EaseInOutCubic))
+            }
+        } else {
+            pulseScale.snapTo(1f)
+        }
+    }
 
     Surface(
         onClick = onClick,
@@ -556,7 +558,7 @@ private fun NotificationButton(
                             containerColor = NewChapters,
                             contentColor = Color.White,
                             modifier = Modifier
-                                .scale(pulseScale)
+                                .scale(pulseScale.value)
                                 .offset(x = (-2).dp, y = 2.dp)
                         ) {
                             Text(
@@ -765,7 +767,7 @@ private fun LibraryContent(
     val dimensions = KothagolpTheme.dimensions
     val haptic = LocalHapticFeedback.current
     val showRefreshProgress = uiState.refreshProgress != null
-    val novelsWithNewChapters = uiState.items.count { it.hasNewChapters }
+    val novelsWithNewChapters = remember(uiState.items) { uiState.items.count { it.hasNewChapters } }
     val displayMode = appSettings.libraryDisplayMode
 
     // Deduplicate items by URL to prevent key collisions
@@ -921,7 +923,7 @@ private fun LibraryEmptyContent(
     onNavigateToGlobalSearch: ((query: String) -> Unit)? = null
 ) {
     val dimensions = KothagolpTheme.dimensions
-    val novelsWithNewChapters = uiState.items.count { it.hasNewChapters }
+    val novelsWithNewChapters = remember(uiState.items) { uiState.items.count { it.hasNewChapters } }
 
     Column(
         modifier = modifier.padding(

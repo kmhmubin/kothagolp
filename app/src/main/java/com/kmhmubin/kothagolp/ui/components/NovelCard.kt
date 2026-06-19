@@ -53,10 +53,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -66,7 +66,6 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -76,7 +75,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -938,9 +936,13 @@ private fun CompactSkeleton(modifier: Modifier = Modifier) {
 // Shimmer Effect
 // ══════════════════════════════════════════════════════════════════════════════
 
-fun Modifier.shimmerEffect(): Modifier = composed {
-    var size by remember { mutableStateOf(IntSize.Zero) }
-
+@Composable
+fun Modifier.shimmerEffect(): Modifier {
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHighest
+    val surfaceMid = MaterialTheme.colorScheme.surfaceContainerHigh
+    val shimmerColors = remember(surfaceHigh, surfaceMid) {
+        listOf(surfaceHigh, surfaceMid.copy(alpha = 0.7f), surfaceHigh)
+    }
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim by transition.animateFloat(
         initialValue = 0f,
@@ -954,31 +956,16 @@ fun Modifier.shimmerEffect(): Modifier = composed {
         ),
         label = "shimmer_translate"
     )
-
-    val shimmerColors = listOf(
-        MaterialTheme.colorScheme.surfaceContainerHighest,
-        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f),
-        MaterialTheme.colorScheme.surfaceContainerHighest
-    )
-
-    this
-        .onGloballyPositioned { size = it.size }
-        .drawWithCache {
-            val width = size.width.toFloat()
-            val height = size.height.toFloat()
-            val shimmerWidth = width * 0.4f
-            val startX = -shimmerWidth + (width + shimmerWidth * 2) * translateAnim
-
-            val brush = Brush.linearGradient(
-                colors = shimmerColors,
-                start = Offset(startX, 0f),
-                end = Offset(startX + shimmerWidth, height)
-            )
-
-            onDrawBehind {
-                drawRect(brush)
-            }
-        }
+    return this.drawBehind {
+        val shimmerWidth = size.width * 0.4f
+        val startX = -shimmerWidth + (size.width + shimmerWidth * 2) * translateAnim
+        val brush = Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset(startX, 0f),
+            end = Offset(startX + shimmerWidth, size.height)
+        )
+        drawRect(brush)
+    }
 }
 
 @Composable

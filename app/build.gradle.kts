@@ -43,6 +43,12 @@ android {
         freeCompilerArgs += "-Xjvm-default=all"
     }
 
+    composeCompiler {
+        stabilityConfigurationFiles.add(
+            rootProject.layout.projectDirectory.file("compose_stability.conf")
+        )
+    }
+
     buildFeatures {
         compose = true
     }

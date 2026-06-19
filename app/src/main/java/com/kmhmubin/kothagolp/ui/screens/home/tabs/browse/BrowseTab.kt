@@ -100,7 +100,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -140,7 +139,17 @@ import kotlinx.coroutines.launch
 // Shimmer Effect Extension
 // ============================================================================
 
-fun Modifier.shimmerEffect(): Modifier = composed {
+@Composable
+fun Modifier.shimmerEffect(): Modifier {
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val surfaceHighest = MaterialTheme.colorScheme.surfaceContainerHighest
+    val shimmerColors = remember(surfaceHigh, surfaceHighest) {
+        listOf(
+            surfaceHigh.copy(alpha = 0.9f),
+            surfaceHighest.copy(alpha = 0.5f),
+            surfaceHigh.copy(alpha = 0.9f)
+        )
+    }
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnimation by transition.animateFloat(
         initialValue = 0f,
@@ -151,14 +160,7 @@ fun Modifier.shimmerEffect(): Modifier = composed {
         ),
         label = "shimmer_translate"
     )
-
-    val shimmerColors = listOf(
-        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
-        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
-        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)
-    )
-
-    this.drawWithContent {
+    return this.drawWithContent {
         drawContent()
         drawRect(
             brush = Brush.linearGradient(
