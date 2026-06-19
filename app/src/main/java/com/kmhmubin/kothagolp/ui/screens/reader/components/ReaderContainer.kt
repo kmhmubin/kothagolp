@@ -72,6 +72,11 @@ fun ReaderContainer(
     var selectionStart by remember { mutableStateOf(-1) }
     var selectionEnd by remember { mutableStateOf(-1) }
 
+    // Pre-group highlights by segmentId: O(1) lookup per item instead of O(n) filter per item
+    val highlightsBySegment = remember(uiState.textHighlights) {
+        uiState.textHighlights.groupBy { it.segmentId }
+    }
+
     val layoutDirection = remember(settings.readingDirection) {
         when (settings.readingDirection) {
             ReadingDirection.RTL -> LayoutDirection.Rtl
@@ -264,7 +269,8 @@ fun ReaderContainer(
                 ) {
                     itemsIndexed(
                         items = uiState.displayItems,
-                        key = { _, item -> item.itemId }
+                        key = { _, item -> item.itemId },
+                        contentType = { _, item -> item::class }
                     ) { index, item ->
                         when (item) {
                             is ReaderDisplayItem.ChapterHeader -> {
@@ -392,7 +398,7 @@ fun ReaderContainer(
                                             paragraphSpacing = paragraphSpacing,
                                             linkColor = effectiveColors.linkColor,
                                             onLinkClick = null,
-                                            textHighlights = uiState.textHighlights.filter { it.segmentId == item.segment.id },
+                                            textHighlights = highlightsBySegment[item.segment.id] ?: emptyList(),
                                             onSentenceBoundsCalculated = onSentenceBoundsUpdated,
                                             onTextSelected = { text, start, end, segId, _, existingId ->
                                                 selectionSegmentId = segId

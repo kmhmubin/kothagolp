@@ -79,8 +79,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.request.ImageRequest
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.UiDensity
@@ -467,23 +469,26 @@ private fun NovelCoverImage(
     title: String,
     modifier: Modifier = Modifier
 ) {
-    SubcomposeAsyncImage(
-        model = url,
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = ContentScale.Crop
-    ) {
-        val state = painter.state
+    var imageState by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
+    val context = LocalContext.current
 
+    Box(modifier = modifier) {
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(url)
+                .crossfade(300)
+                .build(),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            onState = { imageState = it }
+        )
         when {
-            state is coil.compose.AsyncImagePainter.State.Loading -> {
+            imageState is AsyncImagePainter.State.Loading || imageState is AsyncImagePainter.State.Empty -> {
                 CoverPlaceholder(title = title)
             }
-            state is coil.compose.AsyncImagePainter.State.Error || url.isNullOrBlank() -> {
+            imageState is AsyncImagePainter.State.Error || url.isNullOrBlank() -> {
                 CoverFallback(title = title)
-            }
-            else -> {
-                SubcomposeAsyncImageContent()
             }
         }
     }

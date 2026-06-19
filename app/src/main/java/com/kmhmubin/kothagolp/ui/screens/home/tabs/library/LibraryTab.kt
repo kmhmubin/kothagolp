@@ -817,7 +817,8 @@ private fun LibraryContent(
                 // Use itemsIndexed with composite key to guarantee uniqueness
                 itemsIndexed(
                     items = uniqueItems,
-                    key = { index, item -> "novel_${item.novel.url}_$index" }
+                    key = { _, item -> item.novel.url },
+                    contentType = { _, _ -> "novel_card" }
                 ) { _, item ->
                     HoldToSelectWrapper(
                         novelUrl = item.novel.url,
@@ -880,7 +881,8 @@ private fun LibraryContent(
                 // Use itemsIndexed with composite key to guarantee uniqueness
                 itemsIndexed(
                     items = uniqueItems,
-                    key = { index, item -> "novel_${item.novel.url}_$index" }
+                    key = { _, item -> item.novel.url },
+                    contentType = { _, _ -> "novel_list" }
                 ) { _, item ->
                     HoldToSelectWrapper(
                         novelUrl = item.novel.url,

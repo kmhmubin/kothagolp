@@ -829,7 +829,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.chaptersTabContent(
     } else {
         itemsIndexed(
             items = displayedChapters,
-            key = { _, chapter -> "chapter_${chapter.url}" }
+            key = { _, chapter -> "chapter_${chapter.url}" },
+            contentType = { _, _ -> "chapter" }
         ) { displayIndex, chapter ->
             // Calculate the actual index in the full filtered list
             val actualIndex = when (uiState.chapterDisplayMode) {
@@ -908,7 +909,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.relatedTabContent(
         val rows = novels.chunked(2)
         itemsIndexed(
             items = rows,
-            key = { index, _ -> "related_row_$index" }
+            key = { index, _ -> "related_row_$index" },
+            contentType = { _, _ -> "related_row" }
         ) { _, rowNovels ->
             RelatedNovelRow(
                 novels = rowNovels,
@@ -945,7 +947,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.reviewsTabContent(
     } else {
         itemsIndexed(
             items = reviews,
-            key = { index, review -> "review_${index}_${review.username}_${review.time}" }
+            key = { index, review -> "review_${index}_${review.username}_${review.time}" },
+            contentType = { _, _ -> "review" }
         ) { _, review ->
             ReviewCard(
                 review = review,

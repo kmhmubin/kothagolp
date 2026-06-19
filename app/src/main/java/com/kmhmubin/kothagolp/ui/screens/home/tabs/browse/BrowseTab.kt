@@ -1745,7 +1745,8 @@ private fun ProviderGrid(
 
             itemsIndexed(
                 items = providers,
-                key = { _, provider -> provider.name }
+                key = { _, provider -> provider.name },
+                contentType = { _, _ -> "provider" }
             ) { index, provider ->
                 val animatedAlpha by animateFloatAsState(
                     targetValue = if (animationStarted) 1f else 0f,
