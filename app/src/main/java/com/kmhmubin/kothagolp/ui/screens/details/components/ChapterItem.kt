@@ -1,20 +1,13 @@
 package com.kmhmubin.kothagolp.ui.screens.details.components
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -107,36 +100,53 @@ fun ChapterItem(
         label = "swipe_offset"
     )
 
-    val backgroundColor by animateColorAsState(
-        targetValue = when {
-            isSelectionMode && isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-            isLastRead -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-            isRead -> MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f)
+    // Colors computed once per state change — no per-frame animator overhead during scrolling
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val tertiaryContainer = MaterialTheme.colorScheme.tertiaryContainer
+    val surfaceContainer = MaterialTheme.colorScheme.surfaceContainer
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+
+    val backgroundColor = remember(isSelectionMode, isSelected, isLastRead, isRead, primaryContainer, tertiaryContainer, surfaceContainer) {
+        when {
+            isSelectionMode && isSelected -> primaryContainer.copy(alpha = 0.6f)
+            isLastRead -> tertiaryContainer.copy(alpha = 0.4f)
+            isRead -> surfaceContainer.copy(alpha = 0.3f)
             else -> Color.Transparent
-        },
-        animationSpec = tween(200),
-        label = "bg_color"
-    )
+        }
+    }
 
-    val textColor by animateColorAsState(
-        targetValue = when {
-            isSelectionMode && isSelected -> MaterialTheme.colorScheme.primary
-            isRead -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
-            else -> MaterialTheme.colorScheme.onSurface
-        },
-        animationSpec = tween(200),
-        label = "text_color"
-    )
+    val textColor = remember(isSelectionMode, isSelected, isRead, primaryColor, onSurfaceVariant, onSurface) {
+        when {
+            isSelectionMode && isSelected -> primaryColor
+            isRead -> onSurfaceVariant.copy(alpha = 0.55f)
+            else -> onSurface
+        }
+    }
 
-    val secondaryTextColor by animateColorAsState(
-        targetValue = when {
-            isSelectionMode && isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-            isRead -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-        },
-        animationSpec = tween(200),
-        label = "secondary_text_color"
-    )
+    val secondaryTextColor = remember(isSelectionMode, isSelected, isRead, primaryColor, onSurfaceVariant) {
+        when {
+            isSelectionMode && isSelected -> primaryColor.copy(alpha = 0.7f)
+            isRead -> onSurfaceVariant.copy(alpha = 0.4f)
+            else -> onSurfaceVariant.copy(alpha = 0.6f)
+        }
+    }
+
+    val border = remember(isLastRead, isSelectionMode, isSelected, tertiaryColor, primaryColor) {
+        when {
+            isLastRead -> BorderStroke(1.dp, tertiaryColor.copy(alpha = 0.5f))
+            isSelectionMode && isSelected -> BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f))
+            else -> null
+        }
+    }
+
+    val elevation = when {
+        isSelectionMode && isSelected -> 4.dp
+        isLastRead -> 2.dp
+        else -> 0.dp
+    }
 
     val itemScale by animateFloatAsState(
         targetValue = if (isSelectionMode && isSelected) 0.98f else 1f,
@@ -163,16 +173,6 @@ fun ChapterItem(
             stiffness = Spring.StiffnessMedium
         ),
         label = "selected_scale"
-    )
-
-    val elevation by animateDpAsState(
-        targetValue = when {
-            isSelectionMode && isSelected -> 4.dp
-            isLastRead -> 2.dp
-            else -> 0.dp
-        },
-        animationSpec = tween(200),
-        label = "elevation"
     )
 
     Box(
@@ -234,11 +234,7 @@ fun ChapterItem(
             shape = AppShape.medium,
             color = backgroundColor,
             shadowElevation = elevation,
-            border = when {
-                isLastRead -> BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f))
-                isSelectionMode && isSelected -> BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                else -> null
-            }
+            border = border
         ) {
             Row(
                 modifier = Modifier
@@ -480,11 +476,7 @@ private fun ChapterInfo(
         // Secondary info row
         val hasSecondaryInfo = chapter.dateOfRelease != null || (isLastRead && !isSelectionMode)
 
-        AnimatedVisibility(
-            visible = hasSecondaryInfo,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
+        if (hasSecondaryInfo) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -543,45 +535,33 @@ private fun ChapterStatusIcons(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Download status indicator
-        AnimatedContent(
-            targetState = isDownloaded,
-            transitionSpec = {
-                (scaleIn() + fadeIn()) togetherWith (scaleOut() + fadeOut())
-            },
-            label = "download_status"
-        ) { downloaded ->
-            if (downloaded) {
-                Surface(
-                    shape = CircleShape,
-                    color = Success.copy(alpha = if (isRead) 0.12f else 0.18f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DownloadDone,
-                        contentDescription = "Downloaded",
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .size(14.dp),
-                        tint = Success.copy(alpha = if (isRead) 0.6f else 1f)
-                    )
-                }
-            } else {
+        if (isDownloaded) {
+            Surface(
+                shape = CircleShape,
+                color = Success.copy(alpha = if (isRead) 0.12f else 0.18f)
+            ) {
                 Icon(
-                    imageVector = Icons.Outlined.CloudDownload,
-                    contentDescription = "Not downloaded",
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                        alpha = if (isRead) 0.3f else 0.4f
-                    )
+                    imageVector = Icons.Default.DownloadDone,
+                    contentDescription = "Downloaded",
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .size(14.dp),
+                    tint = Success.copy(alpha = if (isRead) 0.6f else 1f)
                 )
             }
+        } else {
+            Icon(
+                imageVector = Icons.Outlined.CloudDownload,
+                contentDescription = "Not downloaded",
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                    alpha = if (isRead) 0.3f else 0.4f
+                )
+            )
         }
 
         // Read status (only when not in selection mode)
-        AnimatedVisibility(
-            visible = !isSelectionMode && isRead,
-            enter = scaleIn() + fadeIn(),
-            exit = scaleOut() + fadeOut()
-        ) {
+        if (!isSelectionMode && isRead) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = "Read",

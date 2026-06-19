@@ -21,9 +21,11 @@ import com.kmhmubin.kothagolp.service.DownloadServiceManager
 import com.kmhmubin.kothagolp.service.DownloadState
 import com.kmhmubin.kothagolp.ui.screens.home.shared.DuplicateLibraryWarning
 import com.kmhmubin.kothagolp.util.ImageUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -77,46 +79,43 @@ class DetailsViewModel : ViewModel() {
 
     private fun recomputeFilteredChapters() {
         val state = _uiState.value
-        var chapters = state.novelDetails?.chapters ?: emptyList()
+        viewModelScope.launch(Dispatchers.Default) {
+            var chapters = state.novelDetails?.chapters ?: emptyList()
 
-        // Apply filter
-        chapters = when (state.chapterFilter) {
-            ChapterFilter.ALL -> chapters
-            ChapterFilter.UNREAD -> chapters.filter { !state.readChapters.contains(it.url) }
-            ChapterFilter.DOWNLOADED -> chapters.filter { state.downloadedChapters.contains(it.url) }
-            ChapterFilter.NOT_DOWNLOADED -> chapters.filter { !state.downloadedChapters.contains(it.url) }
-        }
-
-        // Apply search
-        if (state.chapterSearchQuery.isNotBlank()) {
-            val query = state.chapterSearchQuery.lowercase()
-            chapters = chapters.filter {
-                it.name.lowercase().contains(query) ||
-                        // Also search by chapter number if query is numeric
-                        (query.toIntOrNull()?.let { num ->
-                            chapters.indexOf(it) + 1 == num
-                        } ?: false)
+            chapters = when (state.chapterFilter) {
+                ChapterFilter.ALL -> chapters
+                ChapterFilter.UNREAD -> chapters.filter { !state.readChapters.contains(it.url) }
+                ChapterFilter.DOWNLOADED -> chapters.filter { state.downloadedChapters.contains(it.url) }
+                ChapterFilter.NOT_DOWNLOADED -> chapters.filter { !state.downloadedChapters.contains(it.url) }
             }
-        }
 
-        // Apply sort
-        val sortedChapters = if (state.isChapterSortDescending) {
-            chapters.reversed()
-        } else {
-            chapters
-        }
-
-        _uiState.update {
-            it.copy(
-                filteredChapters = sortedChapters,
-                filterVersion = it.filterVersion + 1,
-                // Reset to page 1 when filters change
-                paginationState = if (it.chapterDisplayMode == ChapterDisplayMode.PAGINATED) {
-                    it.paginationState.copy(currentPage = 1)
-                } else {
-                    it.paginationState
+            if (state.chapterSearchQuery.isNotBlank()) {
+                val query = state.chapterSearchQuery.lowercase()
+                chapters = chapters.filter {
+                    it.name.lowercase().contains(query) ||
+                            (query.toIntOrNull()?.let { num ->
+                                chapters.indexOf(it) + 1 == num
+                            } ?: false)
                 }
-            )
+            }
+
+            val sortedChapters = if (state.isChapterSortDescending) {
+                chapters.reversed()
+            } else {
+                chapters
+            }
+
+            _uiState.update {
+                it.copy(
+                    filteredChapters = sortedChapters,
+                    filterVersion = it.filterVersion + 1,
+                    paginationState = if (it.chapterDisplayMode == ChapterDisplayMode.PAGINATED) {
+                        it.paginationState.copy(currentPage = 1)
+                    } else {
+                        it.paginationState
+                    }
+                )
+            }
         }
     }
 
@@ -237,17 +236,21 @@ class DetailsViewModel : ViewModel() {
 
     private fun observeChapterStatus(novelUrl: String) {
         viewModelScope.launch {
-            offlineRepository.observeDownloadedChapters(novelUrl).collect { downloaded ->
-                _uiState.update { it.copy(downloadedChapters = downloaded) }
-                recomputeFilteredChapters()
-            }
+            offlineRepository.observeDownloadedChapters(novelUrl)
+                .distinctUntilChanged()
+                .collect { downloaded ->
+                    _uiState.update { it.copy(downloadedChapters = downloaded) }
+                    recomputeFilteredChapters()
+                }
         }
 
         viewModelScope.launch {
-            historyRepository.observeReadChapters(novelUrl).collect { read ->
-                _uiState.update { it.copy(readChapters = read) }
-                recomputeFilteredChapters()
-            }
+            historyRepository.observeReadChapters(novelUrl)
+                .distinctUntilChanged()
+                .collect { read ->
+                    _uiState.update { it.copy(readChapters = read) }
+                    recomputeFilteredChapters()
+                }
         }
     }
 
