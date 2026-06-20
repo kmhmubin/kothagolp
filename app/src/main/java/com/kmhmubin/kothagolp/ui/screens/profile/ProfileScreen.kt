@@ -13,9 +13,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -489,9 +491,13 @@ private fun StreakTodayCard(
 }
 
 // ============================================================================
-// 3. Activity Heatmap — full 52-week calendar, NO internal scrolling
-//    BoxWithConstraints calculates cell size so all 52 weeks fit on-screen.
+// 3. Activity Heatmap — 52-week calendar
+//    Fixed 10dp cells (clearly visible). Horizontally scrollable; auto-scrolls
+//    to today so the user sees recent activity immediately on open.
+//    Day labels are pinned on the left outside the scroll area.
 // ============================================================================
+
+private val MONTH_SHORT = listOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
 
 @Composable
 private fun ActivityHeatmapSection(
@@ -500,21 +506,42 @@ private fun ActivityHeatmapSection(
 ) {
     val today = remember { LocalDate.now() }
 
-    // Align start to Monday (ISO 1) so week columns are Mon→Sun
     val startDate = remember(today) {
+        // Align to Monday so each column is Mon→Sun
         val daysBack = 51 * 7 + (today.dayOfWeek.value - 1)
         today.minusDays(daysBack.toLong())
     }
 
-    // 52 weeks × 7 days; omit future dates
     val weekData: List<List<Pair<LocalDate, Long>>> = remember(yearlyActivity, startDate, today) {
         (0 until 52).map { w ->
             (0 until 7).mapNotNull { d ->
-                val date = startDate.plusDays((w * 7L + d))
+                val date = startDate.plusDays(w * 7L + d)
                 if (!date.isAfter(today)) date to (yearlyActivity[date.toEpochDay()] ?: 0L) else null
             }
         }
     }
+
+    // Month label: show name at the first week of each month
+    val monthLabels: Map<Int, String> = remember(startDate) {
+        buildMap {
+            var last = -1
+            repeat(52) { w ->
+                val m = startDate.plusDays(w * 7L).monthValue
+                if (m != last) { put(w, MONTH_SHORT[m - 1]); last = m }
+            }
+        }
+    }
+
+    // Auto-scroll to the rightmost column (today)
+    val scrollState = rememberScrollState()
+    LaunchedEffect(scrollState.maxValue) {
+        if (scrollState.maxValue > 0) scrollState.scrollTo(scrollState.maxValue)
+    }
+
+    // Fixed cell dimensions — 10dp is clearly visible without squinting
+    val cellDp   = 10.dp
+    val gapDp    = 2.dp
+    val rowSlot  = cellDp + gapDp   // height of one row + gap
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
@@ -535,75 +562,86 @@ private fun ActivityHeatmapSection(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                    val primaryColor = MaterialTheme.colorScheme.primary
-                    val emptyColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                val primaryColor = MaterialTheme.colorScheme.primary
+                val emptyColor   = MaterialTheme.colorScheme.surfaceContainerHighest
+                val labelColor   = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
 
-                    // Layout constants (all in dp as Float for arithmetic)
-                    val dayLabelWidthF = 14f   // dp — left column for Mon/Wed/Fri
-                    val labelSpacingF  = 3f    // dp — gap between label col and grid
-                    val gapF           = 1f    // dp — gap between cells
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
 
-                    // Available dp for the 52-column grid
-                    val gridWidthF = maxWidth.value - dayLabelWidthF - labelSpacingF
-                    // cellSize = (gridWidth - 51 gaps) / 52 columns
-                    val cellF = ((gridWidthF - gapF * 51f) / 52f).coerceAtLeast(3f)
-                    val rowF  = cellF + gapF   // height of one cell row including gap
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top
+                    // Pinned day-of-week labels (outside scroll)
+                    Column(
+                        modifier = Modifier.width(20.dp).padding(top = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(gapDp)
                     ) {
-                        // Day-of-week labels (M · W · F)
-                        Column(modifier = Modifier.width(dayLabelWidthF.dp)) {
-                            listOf("M", "", "W", "", "F", "", "S").forEach { label ->
-                                Box(
-                                    modifier = Modifier.height(rowF.dp),
-                                    contentAlignment = Alignment.CenterEnd
-                                ) {
-                                    if (label.isNotEmpty()) {
-                                        Text(label, fontSize = 7.sp, color = labelColor)
-                                    }
+                        listOf("M", "", "W", "", "F", "", "S").forEach { label ->
+                            Box(
+                                modifier = Modifier.height(cellDp),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                if (label.isNotEmpty()) {
+                                    Text(label, fontSize = 8.sp, color = labelColor)
                                 }
                             }
                         }
+                    }
 
-                        Spacer(Modifier.width(labelSpacingF.dp))
+                    Spacer(Modifier.width(4.dp))
 
-                        // 52 week columns — eager (non-lazy), fits without scroll
-                        Row(horizontalArrangement = Arrangement.spacedBy(gapF.dp)) {
-                            weekData.forEach { week ->
-                                Column(
-                                    modifier = Modifier.width(cellF.dp),
-                                    verticalArrangement = Arrangement.spacedBy(gapF.dp)
-                                ) {
-                                    week.forEach { (date, minutes) ->
-                                        val isToday = date == today
-                                        val cellColor = when {
-                                            minutes == 0L  -> emptyColor
-                                            minutes < 15L  -> primaryColor.copy(alpha = 0.22f)
-                                            minutes < 30L  -> primaryColor.copy(alpha = 0.45f)
-                                            minutes < 60L  -> primaryColor.copy(alpha = 0.70f)
-                                            else           -> primaryColor
+                    // Scrollable grid (month labels + cell columns)
+                    Box(modifier = Modifier.weight(1f).horizontalScroll(scrollState)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+
+                            // Month label row
+                            Row(
+                                modifier = Modifier.height(20.dp),
+                                horizontalArrangement = Arrangement.spacedBy(gapDp)
+                            ) {
+                                repeat(52) { w ->
+                                    Box(modifier = Modifier.width(cellDp)) {
+                                        monthLabels[w]?.let { name ->
+                                            Text(
+                                                text = name,
+                                                fontSize = 9.sp,
+                                                color = labelColor.copy(alpha = 0.75f)
+                                            )
                                         }
-                                        Box(
-                                            modifier = Modifier
-                                                .size(cellF.dp)
-                                                .clip(RoundedCornerShape(1.dp))
-                                                .background(cellColor)
-                                                .then(
-                                                    if (isToday) Modifier.border(
-                                                        1.dp, primaryColor, RoundedCornerShape(1.dp)
-                                                    ) else Modifier
-                                                )
-                                        )
                                     }
-                                    // Spacers for future days (keep column height uniform)
-                                    repeat(7 - week.size) { Spacer(Modifier.size(cellF.dp)) }
+                                }
+                            }
+
+                            // Week columns
+                            Row(horizontalArrangement = Arrangement.spacedBy(gapDp)) {
+                                weekData.forEach { week ->
+                                    Column(
+                                        modifier = Modifier.width(cellDp),
+                                        verticalArrangement = Arrangement.spacedBy(gapDp)
+                                    ) {
+                                        week.forEach { (date, minutes) ->
+                                            val isToday = date == today
+                                            val cellColor = when {
+                                                minutes == 0L  -> emptyColor
+                                                minutes < 15L  -> primaryColor.copy(alpha = 0.25f)
+                                                minutes < 30L  -> primaryColor.copy(alpha = 0.50f)
+                                                minutes < 60L  -> primaryColor.copy(alpha = 0.75f)
+                                                else           -> primaryColor
+                                            }
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(cellDp)
+                                                    .clip(RoundedCornerShape(2.dp))
+                                                    .background(cellColor)
+                                                    .then(
+                                                        if (isToday) Modifier.border(
+                                                            1.dp, primaryColor, RoundedCornerShape(2.dp)
+                                                        ) else Modifier
+                                                    )
+                                            )
+                                        }
+                                        repeat(7 - week.size) { Spacer(Modifier.size(cellDp)) }
+                                    }
                                 }
                             }
                         }
@@ -616,22 +654,19 @@ private fun ActivityHeatmapSection(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val primary = MaterialTheme.colorScheme.primary
-                    val empty   = MaterialTheme.colorScheme.surfaceContainerHighest
-                    val label   = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    Text("Less", fontSize = 9.sp, color = label)
+                    Text("Less", fontSize = 9.sp, color = labelColor)
                     Spacer(Modifier.width(4.dp))
-                    listOf(0f, 0.22f, 0.45f, 0.70f, 1f).forEach { alpha ->
+                    listOf(0f, 0.25f, 0.50f, 0.75f, 1f).forEach { alpha ->
                         Box(
                             modifier = Modifier
-                                .padding(horizontal = 1.5.dp)
-                                .size(9.dp)
-                                .clip(RoundedCornerShape(1.dp))
-                                .background(if (alpha == 0f) empty else primary.copy(alpha = alpha))
+                                .padding(horizontal = 2.dp)
+                                .size(10.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(if (alpha == 0f) emptyColor else primaryColor.copy(alpha = alpha))
                         )
                     }
                     Spacer(Modifier.width(4.dp))
-                    Text("More", fontSize = 9.sp, color = label)
+                    Text("More", fontSize = 9.sp, color = labelColor)
                 }
             }
         }
