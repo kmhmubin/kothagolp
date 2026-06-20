@@ -59,6 +59,10 @@ import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Schedule
@@ -803,6 +807,27 @@ fun SettingsSourcesScreen(
     val lastChecked = remember { SourceLoader.lastCheckedTime(context) }
     val allProviders = remember { com.kmhmubin.kothagolp.provider.MainProvider.getProviders() }
 
+    // Local APK import
+    var localSources by remember { mutableStateOf(com.kmhmubin.kothagolp.source.LocalSourceLoader.getAll(context)) }
+    val importApkLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            snackbarState.showSnackbar("Scanning APK for providers…")
+            val result = com.kmhmubin.kothagolp.source.LocalSourceLoader.importApk(context, uri)
+            localSources = com.kmhmubin.kothagolp.source.LocalSourceLoader.getAll(context)
+            when (result) {
+                is com.kmhmubin.kothagolp.source.LocalSourceLoader.ImportResult.Success ->
+                    snackbarState.showSnackbar(
+                        "Imported ${result.count} provider(s): ${result.providerNames.joinToString(", ")}"
+                    )
+                is com.kmhmubin.kothagolp.source.LocalSourceLoader.ImportResult.Failure ->
+                    snackbarState.showSnackbar("Import failed: ${result.reason}")
+            }
+        }
+    }
+
     val lastCheckedText = remember(lastChecked) {
         if (lastChecked == 0L) "Never"
         else SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()).format(Date(lastChecked))
@@ -890,6 +915,42 @@ fun SettingsSourcesScreen(
                 )
             }
 
+            item { SectionHeader("Local Testing", Icons.Outlined.Science) }
+            item {
+                SettingsCard {
+                    ClickableItem(
+                        icon = Icons.Outlined.FileUpload,
+                        title = "Import Local APK",
+                        subtitle = "Load a test build from ./gradlew :sources:assembleRelease",
+                        tint = MaterialTheme.colorScheme.primary,
+                        onClick = { importApkLauncher.launch("*/*") }
+                    )
+                }
+            }
+
+            if (localSources.isNotEmpty()) {
+                item { SectionHeader("Imported Local APKs", Icons.Outlined.FolderOpen) }
+                item {
+                    SettingsCard {
+                        localSources.forEachIndexed { idx, meta ->
+                            if (idx > 0) SettingsDivider()
+                            LocalApkItem(
+                                meta = meta,
+                                onRemove = {
+                                    com.kmhmubin.kothagolp.source.LocalSourceLoader.remove(context, meta.id)
+                                    localSources = com.kmhmubin.kothagolp.source.LocalSourceLoader.getAll(context)
+                                    scope.launch {
+                                        snackbarState.showSnackbar(
+                                            "Removed ${meta.providerNames.joinToString(", ")}"
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             item { SectionHeader("Migration", Icons.Outlined.SwapVert) }
             item {
                 SettingsCard {
@@ -904,6 +965,48 @@ fun SettingsSourcesScreen(
             }
 
             item { Spacer(Modifier.height(80.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun LocalApkItem(
+    meta: com.kmhmubin.kothagolp.source.LocalSourceLoader.LocalSourceMeta,
+    onRemove: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Outlined.Extension,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = meta.providerNames.joinToString(", "),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "Local · Imported ${meta.displayDate}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onRemove) {
+            Icon(
+                Icons.Outlined.DeleteOutline,
+                contentDescription = "Remove",
+                tint = MaterialTheme.colorScheme.error
+            )
         }
     }
 }
