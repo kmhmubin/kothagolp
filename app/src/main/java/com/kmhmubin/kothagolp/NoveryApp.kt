@@ -6,17 +6,6 @@ import com.kmhmubin.kothagolp.data.local.PreferencesManager
 import com.kmhmubin.kothagolp.data.remote.CloudflareManager
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.data.sync.SyncWorker
-import com.kmhmubin.kothagolp.provider.AllNovelProvider
-import com.kmhmubin.kothagolp.provider.FreeWebNovelProvider
-import com.kmhmubin.kothagolp.provider.LibReadProvider
-import com.kmhmubin.kothagolp.provider.LnoriProvider
-import com.kmhmubin.kothagolp.provider.MainProvider
-import com.kmhmubin.kothagolp.provider.NovelBinProvider
-import com.kmhmubin.kothagolp.provider.NovelFireProvider
-import com.kmhmubin.kothagolp.provider.NovelsOnlineProvider
-import com.kmhmubin.kothagolp.provider.RoyalRoadProvider
-import com.kmhmubin.kothagolp.provider.WebnovelProvider
-import com.kmhmubin.kothagolp.provider.WtrLabProvider
 import com.kmhmubin.kothagolp.service.NotificationHelper
 import com.kmhmubin.kothagolp.source.SourceLoader
 import com.kmhmubin.kothagolp.source.SourceSyncWorker
@@ -54,10 +43,7 @@ class KothagolpApp : Application() {
             }
         }
 
-        // Register all novel providers (bundled fallbacks)
-        registerProviders()
-
-        // Load downloaded sources APK if available (replaces bundled providers with same name)
+        // Load downloaded sources APK if available
         SourceLoader.loadIfAvailable(this)
 
         // Check for source updates on launch
@@ -88,18 +74,4 @@ class KothagolpApp : Application() {
         TTSManager.shutdown()
     }
 
-    private fun registerProviders() {
-        // Add providers here - order determines display order
-        MainProvider.register(NovelFireProvider())
-        MainProvider.register(WtrLabProvider())
-        MainProvider.register(NovelBinProvider())
-        MainProvider.register(LibReadProvider())
-        MainProvider.register(RoyalRoadProvider())
-        MainProvider.register(NovelsOnlineProvider())
-        MainProvider.register(LnoriProvider())
-        MainProvider.register(WebnovelProvider())
-        MainProvider.register(FreeWebNovelProvider())
-        MainProvider.register(AllNovelProvider())
-        //MainProvider.register(EmpireNovelProvider())
-    }
 }
