@@ -96,7 +96,7 @@ class DatabaseConverters {
         BlockedAuthorEntity::class,
         AuthorPreferenceEntity::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
@@ -137,7 +137,8 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_8_9,
                         MIGRATION_9_10,
                         MIGRATION_10_11,
-                        MIGRATION_11_12
+                        MIGRATION_11_12,
+                        MIGRATION_12_13
                     )
                     .fallbackToDestructiveMigration()
                     .build()
@@ -452,6 +453,48 @@ abstract class NovelDatabase : RoomDatabase() {
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_bookmarks_chapterUrl ON bookmarks(chapterUrl)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_chapters_novelUrl ON offline_chapters(novelUrl)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_read_chapters_novelUrl ON read_chapters(novelUrl)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_reading_stats_novelUrl ON reading_stats(novelUrl)")
+            }
+        }
+
+        /**
+         * Migration 12 -> 13
+         * Adds UNIQUE(novelUrl, date) constraint to reading_stats.
+         * Merges any existing duplicate rows (same novelUrl+date) by summing their values
+         * to ensure data integrity before applying the constraint.
+         */
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS reading_stats_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        novelUrl TEXT NOT NULL,
+                        novelName TEXT NOT NULL,
+                        date INTEGER NOT NULL,
+                        readingTimeSeconds INTEGER NOT NULL DEFAULT 0,
+                        chaptersRead INTEGER NOT NULL DEFAULT 0,
+                        wordsRead INTEGER NOT NULL DEFAULT 0,
+                        sessionsCount INTEGER NOT NULL DEFAULT 0,
+                        longestSessionSeconds INTEGER NOT NULL DEFAULT 0,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        UNIQUE(novelUrl, date)
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO reading_stats_new
+                        (novelUrl, novelName, date, readingTimeSeconds, chaptersRead, wordsRead,
+                         sessionsCount, longestSessionSeconds, createdAt, updatedAt)
+                    SELECT novelUrl, novelName, date,
+                           SUM(readingTimeSeconds), SUM(chaptersRead), SUM(wordsRead),
+                           SUM(sessionsCount), MAX(longestSessionSeconds),
+                           MIN(createdAt), MAX(updatedAt)
+                    FROM reading_stats
+                    GROUP BY novelUrl, date
+                """)
+                database.execSQL("DROP TABLE reading_stats")
+                database.execSQL("ALTER TABLE reading_stats_new RENAME TO reading_stats")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_reading_stats_date ON reading_stats(date)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_reading_stats_novelUrl ON reading_stats(novelUrl)")
             }
         }

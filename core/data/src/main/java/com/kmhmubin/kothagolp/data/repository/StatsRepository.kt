@@ -8,6 +8,8 @@ import com.kmhmubin.kothagolp.data.local.entity.ReadingStatsEntity
 import com.kmhmubin.kothagolp.data.local.entity.ReadingStreakEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
@@ -17,6 +19,9 @@ import java.time.LocalDate
 class StatsRepository(
     private val statsDao: StatsDao
 ) {
+    // Serializes concurrent writes from time tracker and chapter advance events
+    // to prevent duplicate rows per (novelUrl, date).
+    private val writeMutex = Mutex()
 
     // ================================================================
     // READING SESSION TRACKING
@@ -36,25 +41,25 @@ class StatsRepository(
 
         val today = getCurrentEpochDay()
 
-        val existing = statsDao.getStatsForDay(novelUrl, today)
+        writeMutex.withLock {
+            val existing = statsDao.getStatsForDay(novelUrl, today)
 
-        if (existing != null) {
-            val updated = existing.copy(
-                readingTimeSeconds = existing.readingTimeSeconds + durationSeconds,
-                wordsRead = existing.wordsRead + wordsRead,
-                updatedAt = System.currentTimeMillis()
-            )
-            statsDao.insertStats(updated)
-        } else {
-            val newStats = ReadingStatsEntity(
-                novelUrl = novelUrl,
-                novelName = novelName,
-                date = today,
-                readingTimeSeconds = durationSeconds,
-                wordsRead = wordsRead,
-                sessionsCount = 1
-            )
-            statsDao.insertStats(newStats)
+            if (existing != null) {
+                statsDao.insertStats(existing.copy(
+                    readingTimeSeconds = existing.readingTimeSeconds + durationSeconds,
+                    wordsRead = existing.wordsRead + wordsRead,
+                    updatedAt = System.currentTimeMillis()
+                ))
+            } else {
+                statsDao.insertStats(ReadingStatsEntity(
+                    novelUrl = novelUrl,
+                    novelName = novelName,
+                    date = today,
+                    readingTimeSeconds = durationSeconds,
+                    wordsRead = wordsRead,
+                    sessionsCount = 1
+                ))
+            }
         }
 
         // Update streak with accumulated reading time
@@ -71,25 +76,25 @@ class StatsRepository(
     ) = withContext(Dispatchers.IO) {
         val today = getCurrentEpochDay()
 
-        val existing = statsDao.getStatsForDay(novelUrl, today)
+        writeMutex.withLock {
+            val existing = statsDao.getStatsForDay(novelUrl, today)
 
-        if (existing != null) {
-            val updated = existing.copy(
-                chaptersRead = existing.chaptersRead + 1,
-                wordsRead = existing.wordsRead + wordsInChapter,
-                updatedAt = System.currentTimeMillis()
-            )
-            statsDao.insertStats(updated)
-        } else {
-            val newStats = ReadingStatsEntity(
-                novelUrl = novelUrl,
-                novelName = novelName,
-                date = today,
-                chaptersRead = 1,
-                wordsRead = wordsInChapter,
-                sessionsCount = 1
-            )
-            statsDao.insertStats(newStats)
+            if (existing != null) {
+                statsDao.insertStats(existing.copy(
+                    chaptersRead = existing.chaptersRead + 1,
+                    wordsRead = existing.wordsRead + wordsInChapter,
+                    updatedAt = System.currentTimeMillis()
+                ))
+            } else {
+                statsDao.insertStats(ReadingStatsEntity(
+                    novelUrl = novelUrl,
+                    novelName = novelName,
+                    date = today,
+                    chaptersRead = 1,
+                    wordsRead = wordsInChapter,
+                    sessionsCount = 1
+                ))
+            }
         }
 
         // Also update streak for chapter completion (no additional time)

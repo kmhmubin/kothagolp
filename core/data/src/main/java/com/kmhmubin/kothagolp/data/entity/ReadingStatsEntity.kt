@@ -11,7 +11,8 @@ import androidx.room.PrimaryKey
     tableName = "reading_stats",
     indices = [
         Index(value = ["date"]),
-        Index(value = ["novelUrl"])
+        Index(value = ["novelUrl"]),
+        Index(value = ["novelUrl", "date"], unique = true)
     ]
 )
 data class ReadingStatsEntity(
