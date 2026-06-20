@@ -506,6 +506,9 @@ class ReaderViewModel : ViewModel() {
                     )
                 }
 
+                // Record history for the chapter TTS landed on after background playback.
+                addToHistory(ttsState.chapterUrl, ttsState.chapterName)
+
                 rebuildTTSSentenceListSafe()
 
                 // Restore TTS position
@@ -1178,7 +1181,24 @@ class ReaderViewModel : ViewModel() {
         )
 
         if (!isReaderVisible) {
-            Log.d(TAG, "Reader invisible — deferring TTS chapter change handling")
+            Log.d(TAG, "Reader invisible — tracking TTS chapter change in background")
+            // Record history and update library last-chapter even when UI is not on screen.
+            // Without this, chapters listened to in background never appear in history and
+            // the library card still shows the chapter where TTS started.
+            addToHistory(event.chapterUrl, event.chapterName)
+            // Persist position to preferences so an app restart (kill + reopen) resumes
+            // at the chapter TTS reached, not the chapter it started on.
+            val chapter = _uiState.value.allChapters.getOrNull(chapterIndex)
+            if (chapter != null) {
+                preferencesManager.saveReadingPosition(
+                    chapterUrl = chapter.url,
+                    segmentId = "seg-0",
+                    segmentIndex = 0,
+                    progress = 0f,
+                    offset = 0,
+                    chapterIndex = chapterIndex
+                )
+            }
             return
         }
 
