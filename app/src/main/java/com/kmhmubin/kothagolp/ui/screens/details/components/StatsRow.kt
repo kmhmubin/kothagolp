@@ -75,29 +75,28 @@ fun StatsRow(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            if (views != null) {
-                StatDivider()
+            StatDivider()
 
-                StatItem(
-                    icon = Icons.Outlined.RemoveRedEye,
-                    value = formatViewCount(views),
-                    label = "Views",
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
+            StatItem(
+                icon = Icons.Outlined.RemoveRedEye,
+                value = if (views != null) formatViewCount(views) else "N/A",
+                label = "Views",
+                color = if (views != null) MaterialTheme.colorScheme.tertiary
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
 
-            if (rating != null) {
-                StatDivider()
+            StatDivider()
 
-                val formattedRating = RatingUtils.format(rating, ratingFormat, providerName)
+            val formattedRating = if (rating != null)
+                RatingUtils.format(rating, ratingFormat, providerName) else "N/A"
 
-                StatItem(
-                    icon = Icons.Default.Star,
-                    value = formattedRating,
-                    label = if (peopleVoted != null) formatVoteCount(peopleVoted) else "Rating",
-                    color = Warning
-                )
-            }
+            StatItem(
+                icon = Icons.Default.Star,
+                value = formattedRating,
+                label = if (rating != null && peopleVoted != null) formatVoteCount(peopleVoted) else "Rating",
+                color = if (rating != null) Warning
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
         }
     }
 }

@@ -674,12 +674,11 @@ private fun NovelInfoColumn(
     onStatusClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            // Dynamic title — no fixed maxLines param needed
+    Column(modifier = modifier) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             CopiableTitle(title = details.name)
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -696,6 +695,8 @@ private fun NovelInfoColumn(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         LibraryStatusButton(
             isFavorite = isFavorite,
