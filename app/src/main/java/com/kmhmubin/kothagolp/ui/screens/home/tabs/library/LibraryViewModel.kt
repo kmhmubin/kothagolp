@@ -42,6 +42,22 @@ class LibraryViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
+    val filterCounts: StateFlow<Map<LibraryFilter, Int>> = _uiState
+        .map { state ->
+            mapOf(
+                LibraryFilter.ALL to state.items.size,
+                LibraryFilter.SPICY to state.items.count { it.readingStatus == ReadingStatus.SPICY },
+                LibraryFilter.DOWNLOADED to state.items.count { (state.downloadCounts[it.novel.url] ?: 0) > 0 },
+                LibraryFilter.READING to state.items.count { it.readingStatus == ReadingStatus.READING },
+                LibraryFilter.COMPLETED to state.items.count { it.readingStatus == ReadingStatus.COMPLETED },
+                LibraryFilter.ON_HOLD to state.items.count { it.readingStatus == ReadingStatus.ON_HOLD },
+                LibraryFilter.PLAN_TO_READ to state.items.count { it.readingStatus == ReadingStatus.PLAN_TO_READ },
+                LibraryFilter.DROPPED to state.items.count { it.readingStatus == ReadingStatus.DROPPED }
+            )
+        }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyMap())
+
     val precomputedPages: StateFlow<Map<LibraryFilter, List<LibraryItem>>> = _uiState
         .map { state ->
             if (state.isLoading || state.items.isEmpty()) emptyMap()
@@ -69,7 +85,6 @@ class LibraryViewModel : ViewModel() {
                     )
                 }
                 updateVisibleItems()
-                applyFilters()
             }
         }
 
@@ -79,7 +94,6 @@ class LibraryViewModel : ViewModel() {
                     state.applySpicyShelfVisibility(spicyShelfRevealed)
                 }
                 updateVisibleItems()
-                applyFilters()
             }
         }
     }
@@ -104,7 +118,6 @@ class LibraryViewModel : ViewModel() {
                         )
                     }
                     updateVisibleItems(items)
-                    applyFilters()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error initializing library", e)
@@ -139,7 +152,6 @@ class LibraryViewModel : ViewModel() {
         if (filter !in _uiState.value.visibleFilters) return
 
         _uiState.update { it.copy(filter = filter) }
-        applyFilters()
     }
 
     fun onFilterChipPressed(filter: LibraryFilter) {
@@ -155,7 +167,6 @@ class LibraryViewModel : ViewModel() {
 
         if (_uiState.value.filter != LibraryFilter.ALL) {
             _uiState.update { it.copy(filter = LibraryFilter.ALL) }
-            applyFilters()
         }
 
         if (isDoubleTap && _uiState.value.spicyPrivacyEnabled) {
@@ -166,12 +177,10 @@ class LibraryViewModel : ViewModel() {
 
     fun setSortOrder(sortOrder: LibrarySortOrder) {
         _uiState.update { it.copy(sortOrder = sortOrder) }
-        applyFilters()
     }
 
     fun setSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
-        applyFilters()
     }
 
     private fun computePageItemsForFilter(
@@ -206,63 +215,6 @@ class LibraryViewModel : ViewModel() {
             LibrarySortOrder.DATE_ADDED -> filtered.sortedByDescending { it.addedAt }
             LibrarySortOrder.UNREAD_COUNT -> filtered.sortedByDescending { it.unreadChapterCount }
         }
-    }
-
-    private fun applyFilters() {
-        val state = _uiState.value
-        val searchQuery = state.searchQuery.lowercase().trim()
-        val downloadCounts = state.downloadCounts
-
-        // Search filter
-        val searched = if (searchQuery.isBlank()) {
-            state.items
-        } else {
-            state.items.filter { item ->
-                item.novel.name.lowercase().contains(searchQuery) ||
-                        item.novel.apiName.lowercase().contains(searchQuery) ||
-                        item.readingStatus.displayName().lowercase().contains(searchQuery)
-            }
-        }
-
-        // Category filter
-        val filtered = when (state.filter) {
-            LibraryFilter.ALL -> searched
-            LibraryFilter.SPICY -> searched.filter { it.readingStatus == ReadingStatus.SPICY }
-            LibraryFilter.DOWNLOADED -> searched.filter {
-                (downloadCounts[it.novel.url] ?: 0) > 0
-            }
-            LibraryFilter.READING -> searched.filter { it.readingStatus == ReadingStatus.READING }
-            LibraryFilter.COMPLETED -> searched.filter { it.readingStatus == ReadingStatus.COMPLETED }
-            LibraryFilter.ON_HOLD -> searched.filter { it.readingStatus == ReadingStatus.ON_HOLD }
-            LibraryFilter.PLAN_TO_READ -> searched.filter { it.readingStatus == ReadingStatus.PLAN_TO_READ }
-            LibraryFilter.DROPPED -> searched.filter { it.readingStatus == ReadingStatus.DROPPED }
-        }
-
-        // Sort - NO new chapter priority except for NEW_CHAPTERS sort
-        val sorted = when (state.sortOrder) {
-            LibrarySortOrder.NEW_CHAPTERS -> {
-                // Only this sort prioritizes new chapters
-                filtered.sortedByDescending { it.newChapterCount }
-            }
-            LibrarySortOrder.LAST_READ -> {
-                // Pure last read sorting - no new chapter priority
-                filtered.sortedByDescending { it.lastReadPosition?.timestamp ?: it.addedAt }
-            }
-            LibrarySortOrder.TITLE_ASC -> {
-                filtered.sortedBy { it.novel.name.lowercase() }
-            }
-            LibrarySortOrder.TITLE_DESC -> {
-                filtered.sortedByDescending { it.novel.name.lowercase() }
-            }
-            LibrarySortOrder.DATE_ADDED -> {
-                filtered.sortedByDescending { it.addedAt }
-            }
-            LibrarySortOrder.UNREAD_COUNT -> {
-                filtered.sortedByDescending { it.unreadChapterCount }
-            }
-        }
-
-        _uiState.update { it.copy(filteredItems = sorted) }
     }
 
     private fun toggleSpicyFilterVisibility() {
@@ -501,7 +453,6 @@ class LibraryViewModel : ViewModel() {
             try {
                 val counts = offlineRepository.getAllDownloadCounts()
                 _uiState.update { it.copy(downloadCounts = counts) }
-                applyFilters()
             } catch (e: Exception) {
                 Log.e(TAG, "Error refreshing download counts", e)
             }
@@ -640,8 +591,6 @@ class LibraryViewModel : ViewModel() {
                 if (context != null && totalNewChapters > 0) {
                     triggerAutoDownload(context)
                 }
-
-                applyFilters()
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error refreshing library", e)

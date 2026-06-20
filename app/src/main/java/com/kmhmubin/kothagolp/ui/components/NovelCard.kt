@@ -1,22 +1,11 @@
 package com.kmhmubin.kothagolp.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -210,21 +199,12 @@ private fun ComfortableNovelCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) NovelCardTokens.Animation.PressScale else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "card_scale"
-    )
-
-    val elevation by animateDpAsState(
-        targetValue = when {
-            isPressed -> NovelCardTokens.Elevation.Pressed
-            isSelected -> 6.dp
-            else -> NovelCardTokens.Elevation.Resting
-        },
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "card_elevation"
-    )
+    val scale = if (isPressed) NovelCardTokens.Animation.PressScale else 1f
+    val elevation = when {
+        isPressed -> NovelCardTokens.Elevation.Pressed
+        isSelected -> 6.dp
+        else -> NovelCardTokens.Elevation.Resting
+    }
 
     Card(
         modifier = modifier
@@ -344,17 +324,8 @@ private fun CompactNovelCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) NovelCardTokens.Animation.PressScale else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "card_scale"
-    )
-
-    val elevation by animateDpAsState(
-        targetValue = if (isPressed) NovelCardTokens.Elevation.Pressed else NovelCardTokens.Elevation.Resting,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "card_elevation"
-    )
+    val scale = if (isPressed) NovelCardTokens.Animation.PressScale else 1f
+    val elevation = if (isPressed) NovelCardTokens.Elevation.Pressed else NovelCardTokens.Elevation.Resting
 
     Card(
         modifier = modifier
@@ -607,17 +578,10 @@ private fun BadgeRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Top
     ) {
-        AnimatedVisibility(
-            visible = readingStatus != null,
-            enter = fadeIn() + slideInVertically { -it },
-            exit = fadeOut() + slideOutVertically { -it }
-        ) {
-            readingStatus?.let {
-                StatusBadge(
-                    status = it,
-                    compactMode = compactMode
-                )
-            }
+        if (readingStatus != null) {
+            StatusBadge(status = readingStatus, compactMode = compactMode)
+        } else {
+            Spacer(Modifier)
         }
 
         Spacer(Modifier.weight(1f))
@@ -626,30 +590,8 @@ private fun BadgeRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.Top
         ) {
-            AnimatedVisibility(
-                visible = isInLibrary,
-                enter = fadeIn() + scaleIn(
-                    initialScale = 0.5f,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ),
-                exit = fadeOut() + scaleOut()
-            ) {
-                LibraryBookmarkBadge(compactMode = compactMode)
-            }
-
-            AnimatedVisibility(
-                visible = newChapterCount > 0,
-                enter = fadeIn() + scaleIn(
-                    initialScale = 0.5f,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ),
-                exit = fadeOut() + scaleOut()
-            ) {
-                NewChaptersBadge(
-                    count = newChapterCount,
-                    compactMode = compactMode
-                )
-            }
+            if (isInLibrary) LibraryBookmarkBadge(compactMode = compactMode)
+            if (newChapterCount > 0) NewChaptersBadge(count = newChapterCount, compactMode = compactMode)
         }
     }
 }

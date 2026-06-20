@@ -1,21 +1,5 @@
 package com.kmhmubin.kothagolp.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -74,8 +58,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
+import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.request.ImageRequest
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.UiDensity
@@ -156,21 +144,12 @@ fun NovelListItem(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) ListItemTokens.Animation.PressScale else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "list_item_scale"
-    )
-
-    val elevation by animateDpAsState(
-        targetValue = when {
-            isPressed -> ListItemTokens.Elevation.Pressed
-            isSelected -> ListItemTokens.Elevation.Selected
-            else -> ListItemTokens.Elevation.Resting
-        },
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "list_item_elevation"
-    )
+    val scale = if (isPressed) ListItemTokens.Animation.PressScale else 1f
+    val elevation = when {
+        isPressed -> ListItemTokens.Elevation.Pressed
+        isSelected -> ListItemTokens.Elevation.Selected
+        else -> ListItemTokens.Elevation.Resting
+    }
 
     val cardHeight = when (density) {
         UiDensity.COMPACT -> ListItemTokens.Height.Compact
@@ -261,48 +240,27 @@ fun NovelListItem(
                 ListItemVignette(modifier = Modifier.fillMaxSize())
 
                 // Library and new chapter badges on image
-                // FIX: Use fully qualified name to avoid RowScope/BoxScope conflict
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = isInLibrary || newChapterCount > 0,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(ListItemTokens.Padding.Badge),
-                    enter = fadeIn() + scaleIn(
-                        initialScale = 0.5f,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                    ),
-                    exit = fadeOut() + scaleOut()
-                ) {
+                if (isInLibrary || newChapterCount > 0) {
                     Row(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(ListItemTokens.Padding.Badge),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.Top
                     ) {
-                        if (isInLibrary) {
-                            ListLibraryBookmarkBadge(compact = density == UiDensity.COMPACT)
-                        }
-
-                        if (newChapterCount > 0) {
-                            ListNewChaptersBadge(
-                                count = newChapterCount,
-                                compact = density == UiDensity.COMPACT
-                            )
-                        }
+                        if (isInLibrary) ListLibraryBookmarkBadge(compact = density == UiDensity.COMPACT)
+                        if (newChapterCount > 0) ListNewChaptersBadge(count = newChapterCount, compact = density == UiDensity.COMPACT)
                     }
                 }
 
                 // Status indicator at bottom-left of image
-                // FIX: Use fully qualified name to avoid RowScope/BoxScope conflict
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = readingStatus != null && density == UiDensity.COMPACT,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(ListItemTokens.Padding.Badge),
-                    enter = fadeIn() + slideInHorizontally { -it },
-                    exit = fadeOut() + slideOutHorizontally { -it }
-                ) {
-                    readingStatus?.let {
-                        ListStatusDot(status = it)
-                    }
+                if (readingStatus != null && density == UiDensity.COMPACT) {
+                    ListStatusDot(
+                        status = readingStatus,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(ListItemTokens.Padding.Badge)
+                    )
                 }
             }
 
@@ -365,20 +323,9 @@ fun NovelListItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Status badge (not in compact mode - it's shown on image)
-                    AnimatedVisibility(
-                        visible = readingStatus != null && density != UiDensity.COMPACT,
-                        enter = fadeIn() + slideInHorizontally { -it },
-                        exit = fadeOut() + slideOutHorizontally { -it }
-                    ) {
-                        readingStatus?.let {
-                            ListStatusBadge(
-                                status = it,
-                                compact = false
-                            )
-                        }
-                    }
-
-                    if (readingStatus == null || density == UiDensity.COMPACT) {
+                    if (readingStatus != null && density != UiDensity.COMPACT) {
+                        ListStatusBadge(status = readingStatus, compact = false)
+                    } else {
                         Spacer(modifier = Modifier.width(1.dp))
                     }
 
@@ -430,16 +377,22 @@ private fun ListItemCoverImage(
     title: String,
     modifier: Modifier = Modifier
 ) {
-    SubcomposeAsyncImage(
-        model = url,
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = ContentScale.Crop
-    ) {
-        val state = painter.state
+    var imageState by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
+    val context = LocalContext.current
 
+    Box(modifier = modifier) {
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(url)
+                .crossfade(300)
+                .build(),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            onState = { imageState = it }
+        )
         when {
-            state is coil.compose.AsyncImagePainter.State.Loading -> {
+            imageState is AsyncImagePainter.State.Loading || imageState is AsyncImagePainter.State.Empty -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -456,7 +409,7 @@ private fun ListItemCoverImage(
                     )
                 }
             }
-            state is coil.compose.AsyncImagePainter.State.Error || url.isNullOrBlank() -> {
+            imageState is AsyncImagePainter.State.Error || url.isNullOrBlank() -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -490,9 +443,6 @@ private fun ListItemCoverImage(
                         )
                     }
                 }
-            }
-            else -> {
-                SubcomposeAsyncImageContent()
             }
         }
     }
@@ -659,20 +609,8 @@ private fun ListNewChaptersBadge(
         }
     }
 
-    // Subtle pulse animation
-    val infiniteTransition = rememberInfiniteTransition(label = "badge_pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_alpha"
-    )
-
     Surface(
-        modifier = modifier.graphicsLayer { alpha = pulseAlpha },
+        modifier = modifier,
         shape = if (compact) CircleShape else AppShape.extraSmall,
         color = MaterialTheme.colorScheme.primary,
         shadowElevation = ListItemTokens.Elevation.Badge

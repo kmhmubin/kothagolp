@@ -3,27 +3,28 @@ package com.kmhmubin.kothagolp.ui.screens.home
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.SaveableStateHolder
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import com.kmhmubin.kothagolp.domain.model.AppSettings
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer
 import com.kmhmubin.kothagolp.ui.adaptive.isTabletUi
 import com.kmhmubin.kothagolp.ui.components.KothagolpBottomNavBarWithInsets
 import com.kmhmubin.kothagolp.ui.components.KothagolpNavigationRail
 import com.kmhmubin.kothagolp.ui.navigation.HomeTabs
-import com.kmhmubin.kothagolp.ui.navigation.rememberTabNavigationState
 import com.kmhmubin.kothagolp.ui.screens.home.shared.LibraryStateHolder
+import com.kmhmubin.kothagolp.ui.screens.home.shared.RecommendationNavigationHelper
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.browse.BrowseTab
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.history.HistoryTab
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.library.LibraryTab
@@ -48,112 +49,74 @@ fun HomeScreen(
     onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
     onNavigateToNotesHighlights: (() -> Unit)? = null
 ) {
-    // Initialize shared state
     LaunchedEffect(Unit) {
         LibraryStateHolder.initialize()
     }
 
-    val tabNavState = rememberTabNavigationState()
-    val navBackStackEntry by tabNavState.navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    val currentTab = currentRoute?.let { HomeTabs.fromRoute(it) } ?: HomeTabs.LIBRARY
+    // rememberSaveable preserves selected tab across process death/recreation.
+    var currentTabIndex by rememberSaveable { mutableIntStateOf(HomeTabs.LIBRARY.ordinal) }
+    val currentTab = HomeTabs.entries[currentTabIndex]
 
-    // Handle navigation to For You tab with tag filter
-    LaunchedEffect(currentRoute) {
-        if (com.kmhmubin.kothagolp.ui.screens.home.shared.RecommendationNavigationHelper.consumeNavigationRequest()) {
-            // Switch to For You tab
-            tabNavState.navigateToTab(HomeTabs.FOR_YOU)
+    // All tab states are kept alive inside this holder — tab composables never leave composition.
+    val savedStateHolder = rememberSaveableStateHolder()
+
+    // shouldNavigateToForYou is a Compose mutableStateOf, so this LaunchedEffect re-runs
+    // reactively whenever any code calls RecommendationNavigationHelper.navigateWithTag().
+    LaunchedEffect(RecommendationNavigationHelper.shouldNavigateToForYou) {
+        if (RecommendationNavigationHelper.consumeNavigationRequest()) {
+            currentTabIndex = HomeTabs.FOR_YOU.ordinal
         }
     }
 
-    // Handle system back button
     BackHandler(enabled = currentTab != HomeTabs.LIBRARY) {
-        tabNavState.navigateToTab(HomeTabs.LIBRARY)
+        currentTabIndex = HomeTabs.LIBRARY.ordinal
+    }
+
+    fun onTabSelected(route: String) {
+        HomeTabs.fromRoute("tab_$route")?.let { currentTabIndex = it.ordinal }
     }
 
     val isTablet = isTabletUi()
 
-    fun onTabSelected(route: String) {
-        val tabRoute = "tab_$route"
-        HomeTabs.fromRoute(tabRoute)?.let { tab ->
-            tabNavState.navigateToTab(tab)
-        }
-    }
-
     if (isTablet) {
         Row(modifier = Modifier.fillMaxSize()) {
             KothagolpNavigationRail(
-                selectedRoute = currentRoute ?: HomeTabs.LIBRARY.route,
+                selectedRoute = currentTab.route,
                 onItemSelected = ::onTabSelected,
                 modifier = Modifier.fillMaxHeight()
             )
-            NavHost(
-                navController = tabNavState.navController,
-                startDestination = HomeTabs.LIBRARY.route,
-                modifier = Modifier.weight(1f),
-                enterTransition = { EnterTransition.None },
-                exitTransition = { ExitTransition.None },
-                popEnterTransition = { EnterTransition.None },
-                popExitTransition = { ExitTransition.None }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             ) {
-                composable(HomeTabs.LIBRARY.route) {
-                    LibraryTab(
-                        appSettings = appSettings,
-                        onNavigateToDetails = onNavigateToDetails,
-                        onNavigateToReader = onNavigateToReader,
-                        onNavigateToNotifications = onNavigateToNotifications,
-                        onNavigateToGlobalSearch = onNavigateToGlobalSearch
-                    )
-                }
-
-                composable(HomeTabs.BROWSE.route) {
-                    BrowseTab(
-                        appSettings = appSettings,
-                        onNavigateToProvider = onNavigateToProviderBrowse,
-                        onNavigateToDetails = onNavigateToDetails,
-                        onNavigateToReader = onNavigateToReader,
-                        onNavigateToMigration = onNavigateToMigration,
-                        onNavigateToGlobalSearch = onNavigateToGlobalSearch
-                    )
-                }
-
-                composable(HomeTabs.FOR_YOU.route) {
-                    RecommendationTab(
-                        onNavigateToDetails = onNavigateToDetails,
-                        onNavigateToBrowse = {
-                            tabNavState.navigateToTab(HomeTabs.BROWSE)
-                        },
-                        onNavigateToOnboarding = onNavigateToOnboarding,
-                        onNavigateToTagExplorer = onNavigateToTagExplorer
-                    )
-                }
-
-                composable(HomeTabs.HISTORY.route) {
-                    HistoryTab(
-                        appSettings = appSettings,
-                        onNavigateToDetails = onNavigateToDetails,
-                        onNavigateToReader = onNavigateToReader
-                    )
-                }
-
-                composable(HomeTabs.MORE.route) {
-                    MoreTab(
-                        onNavigateToProfile = onNavigateToProfile,
-                        onNavigateToDownloads = onNavigateToDownloads,
-                        onNavigateToAbout = { onNavigateToAbout() },
-                        onNavigateToSettings = onNavigateToSettings,
-                        onNavigateToStorage = onNavigateToStorage,
-                        onNavigateToMigration = onNavigateToMigration,
-                        onNavigateToNotesHighlights = onNavigateToNotesHighlights
-                    )
-                }
+                PersistentTabContent(
+                    currentTab = currentTab,
+                    savedStateHolder = savedStateHolder,
+                    appSettings = appSettings,
+                    onNavigateToDetails = onNavigateToDetails,
+                    onNavigateToReader = onNavigateToReader,
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToProviderBrowse = onNavigateToProviderBrowse,
+                    onNavigateToNotifications = onNavigateToNotifications,
+                    onNavigateToProfile = onNavigateToProfile,
+                    onNavigateToDownloads = onNavigateToDownloads,
+                    onNavigateToAbout = onNavigateToAbout,
+                    onNavigateToStorage = onNavigateToStorage,
+                    onNavigateToOnboarding = onNavigateToOnboarding,
+                    onNavigateToTagExplorer = onNavigateToTagExplorer,
+                    onNavigateToMigration = onNavigateToMigration,
+                    onNavigateToGlobalSearch = onNavigateToGlobalSearch,
+                    onNavigateToNotesHighlights = onNavigateToNotesHighlights,
+                    onSwitchTab = { currentTabIndex = it.ordinal }
+                )
             }
         }
     } else {
         Scaffold(
             bottomBar = {
                 KothagolpBottomNavBarWithInsets(
-                    selectedRoute = currentRoute ?: HomeTabs.LIBRARY.route,
+                    selectedRoute = currentTab.route,
                     onItemSelected = ::onTabSelected
                 )
             }
@@ -163,65 +126,113 @@ fun HomeScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                NavHost(
-                    navController = tabNavState.navController,
-                    startDestination = HomeTabs.LIBRARY.route,
-                    enterTransition = { EnterTransition.None },
-                    exitTransition = { ExitTransition.None },
-                    popEnterTransition = { EnterTransition.None },
-                    popExitTransition = { ExitTransition.None }
-                ) {
-                    composable(HomeTabs.LIBRARY.route) {
-                        LibraryTab(
-                            appSettings = appSettings,
-                            onNavigateToDetails = onNavigateToDetails,
-                            onNavigateToReader = onNavigateToReader,
-                            onNavigateToNotifications = onNavigateToNotifications
-                        )
-                    }
-
-                    composable(HomeTabs.BROWSE.route) {
-                        BrowseTab(
-                            appSettings = appSettings,
-                            onNavigateToProvider = onNavigateToProviderBrowse,
-                            onNavigateToDetails = onNavigateToDetails,
-                            onNavigateToReader = onNavigateToReader,
-                            onNavigateToMigration = onNavigateToMigration
-                        )
-                    }
-
-                    composable(HomeTabs.FOR_YOU.route) {
-                        RecommendationTab(
-                            onNavigateToDetails = onNavigateToDetails,
-                            onNavigateToBrowse = {
-                                tabNavState.navigateToTab(HomeTabs.BROWSE)
-                            },
-                            onNavigateToOnboarding = onNavigateToOnboarding,
-                            onNavigateToTagExplorer = onNavigateToTagExplorer
-                        )
-                    }
-
-                    composable(HomeTabs.HISTORY.route) {
-                        HistoryTab(
-                            appSettings = appSettings,
-                            onNavigateToDetails = onNavigateToDetails,
-                            onNavigateToReader = onNavigateToReader
-                        )
-                    }
-
-                    composable(HomeTabs.MORE.route) {
-                        MoreTab(
-                            onNavigateToProfile = onNavigateToProfile,
-                            onNavigateToDownloads = onNavigateToDownloads,
-                            onNavigateToAbout = { onNavigateToAbout() },
-                            onNavigateToSettings = onNavigateToSettings,
-                            onNavigateToStorage = onNavigateToStorage,
-                            onNavigateToMigration = onNavigateToMigration,
-                            onNavigateToNotesHighlights = onNavigateToNotesHighlights
-                        )
-                    }
-                }
+                PersistentTabContent(
+                    currentTab = currentTab,
+                    savedStateHolder = savedStateHolder,
+                    appSettings = appSettings,
+                    onNavigateToDetails = onNavigateToDetails,
+                    onNavigateToReader = onNavigateToReader,
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToProviderBrowse = onNavigateToProviderBrowse,
+                    onNavigateToNotifications = onNavigateToNotifications,
+                    onNavigateToProfile = onNavigateToProfile,
+                    onNavigateToDownloads = onNavigateToDownloads,
+                    onNavigateToAbout = onNavigateToAbout,
+                    onNavigateToStorage = onNavigateToStorage,
+                    onNavigateToOnboarding = onNavigateToOnboarding,
+                    onNavigateToTagExplorer = onNavigateToTagExplorer,
+                    onNavigateToMigration = onNavigateToMigration,
+                    onNavigateToGlobalSearch = onNavigateToGlobalSearch,
+                    onNavigateToNotesHighlights = onNavigateToNotesHighlights,
+                    onSwitchTab = { currentTabIndex = it.ordinal }
+                )
             }
+        }
+    }
+}
+
+/**
+ * Renders all 5 tabs simultaneously. Inactive tabs are hidden via graphicsLayer alpha
+ * (GPU skips their rendering) and drawn BEFORE the active tab. The active tab is always
+ * the last child in the Box, so it sits on top in z-order and receives all touch events
+ * first — no explicit touch blocking needed. Tab switching is an instant alpha change;
+ * no Compose tree rebuild, no ViewModel re-init, no LazyColumn re-measure.
+ */
+@Composable
+private fun PersistentTabContent(
+    currentTab: HomeTabs,
+    savedStateHolder: SaveableStateHolder,
+    appSettings: AppSettings,
+    onNavigateToDetails: (String, String) -> Unit,
+    onNavigateToReader: (String, String, String) -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToProviderBrowse: (String) -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToDownloads: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    onNavigateToStorage: () -> Unit,
+    onNavigateToOnboarding: () -> Unit,
+    onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit,
+    onNavigateToMigration: (() -> Unit)?,
+    onNavigateToGlobalSearch: ((String) -> Unit)?,
+    onNavigateToNotesHighlights: (() -> Unit)?,
+    onSwitchTab: (HomeTabs) -> Unit
+) {
+    @Composable
+    fun TabItemContent(tab: HomeTabs) {
+        when (tab) {
+            HomeTabs.LIBRARY -> LibraryTab(
+                appSettings = appSettings,
+                onNavigateToDetails = onNavigateToDetails,
+                onNavigateToReader = onNavigateToReader,
+                onNavigateToNotifications = onNavigateToNotifications,
+                onNavigateToGlobalSearch = onNavigateToGlobalSearch
+            )
+            HomeTabs.BROWSE -> BrowseTab(
+                appSettings = appSettings,
+                onNavigateToProvider = onNavigateToProviderBrowse,
+                onNavigateToDetails = onNavigateToDetails,
+                onNavigateToReader = onNavigateToReader,
+                onNavigateToMigration = onNavigateToMigration,
+                onNavigateToGlobalSearch = onNavigateToGlobalSearch
+            )
+            HomeTabs.FOR_YOU -> RecommendationTab(
+                onNavigateToDetails = onNavigateToDetails,
+                onNavigateToBrowse = { onSwitchTab(HomeTabs.BROWSE) },
+                onNavigateToOnboarding = onNavigateToOnboarding,
+                onNavigateToTagExplorer = onNavigateToTagExplorer
+            )
+            HomeTabs.HISTORY -> HistoryTab(
+                appSettings = appSettings,
+                onNavigateToDetails = onNavigateToDetails,
+                onNavigateToReader = onNavigateToReader
+            )
+            HomeTabs.MORE -> MoreTab(
+                onNavigateToProfile = onNavigateToProfile,
+                onNavigateToDownloads = onNavigateToDownloads,
+                onNavigateToAbout = { onNavigateToAbout() },
+                onNavigateToSettings = onNavigateToSettings,
+                onNavigateToStorage = onNavigateToStorage,
+                onNavigateToMigration = onNavigateToMigration,
+                onNavigateToNotesHighlights = onNavigateToNotesHighlights
+            )
+        }
+    }
+
+    // Inactive tabs first — hidden behind the active tab (lower z-order).
+    HomeTabs.entries.filter { it != currentTab }.forEach { tab ->
+        savedStateHolder.SaveableStateProvider(tab.route) {
+            Box(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0f }) {
+                TabItemContent(tab)
+            }
+        }
+    }
+
+    // Active tab last — drawn on top, receives all touch events before hidden tabs.
+    savedStateHolder.SaveableStateProvider(currentTab.route) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            TabItemContent(currentTab)
         }
     }
 }

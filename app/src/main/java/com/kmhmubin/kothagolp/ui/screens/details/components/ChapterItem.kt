@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -417,18 +418,19 @@ private fun SelectionCheckbox(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                AnimatedVisibility(
-                    visible = isSelected,
-                    enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
-                    exit = scaleOut()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .graphicsLayer {
+                            val s = if (isSelected) selectedScale else 0f
+                            scaleX = s
+                            scaleY = s
+                            alpha = s
+                        },
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }
@@ -479,51 +481,53 @@ private fun ChapterInfo(
             overflow = TextOverflow.Ellipsis
         )
 
-        // Secondary info row
+        // Fixed-height secondary row — always reserves 16dp so all items have consistent
+        // height, preventing LazyList from re-measuring items during scroll.
         val hasSecondaryInfo = chapter.dateOfRelease != null || (isLastRead && !isSelectionMode)
+        Box(modifier = Modifier.height(16.dp)) {
+            if (hasSecondaryInfo) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Release date with icon
+                    chapter.dateOfRelease?.let { date ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Schedule,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = secondaryTextColor
+                            )
+                            Text(
+                                text = date,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = secondaryTextColor
+                            )
+                        }
+                    }
 
-        if (hasSecondaryInfo) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Release date with icon
-                chapter.dateOfRelease?.let { date ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                            tint = secondaryTextColor
-                        )
+                    // Separator dot
+                    if (chapter.dateOfRelease != null && isLastRead && !isSelectionMode) {
                         Text(
-                            text = date,
+                            text = "•",
                             style = MaterialTheme.typography.labelSmall,
-                            color = secondaryTextColor
+                            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f)
                         )
                     }
-                }
 
-                // Separator dot
-                if (chapter.dateOfRelease != null && isLastRead && !isSelectionMode) {
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f)
-                    )
-                }
-
-                // Continue reading hint
-                if (isLastRead && !isSelectionMode) {
-                    Text(
-                        text = "Continue reading",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontWeight = FontWeight.Medium
-                    )
+                    // Continue reading hint
+                    if (isLastRead && !isSelectionMode) {
+                        Text(
+                            text = "Continue reading",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }

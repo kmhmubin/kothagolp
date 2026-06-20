@@ -100,6 +100,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -109,7 +111,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.hapticfeedback.HapticFeedback
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.Alignment
@@ -177,6 +178,7 @@ fun LibraryTab(
     val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
     val precomputedPages by viewModel.precomputedPages.collectAsStateWithLifecycle()
+    val filterCounts by viewModel.filterCounts.collectAsStateWithLifecycle()
     val actionSheetState by viewModel.actionSheetState.collectAsState()
     val sheetState = rememberModalBottomSheetState()
 
@@ -185,6 +187,13 @@ fun LibraryTab(
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     val pullToRefreshState = rememberPullToRefreshState()
     var showStatusPicker by remember { mutableStateOf(false) }
+    // Stable lambda — viewModel never changes, so this is created once.
+    val onFilterChange = remember(viewModel) {
+        { filter: LibraryFilter ->
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            viewModel.onFilterChipPressed(filter)
+        }
+    }
     val statusPickerSheetState = rememberModalBottomSheetState()
 
     BackHandler(enabled = uiState.isMultiSelectMode) { viewModel.exitMultiSelect() }
@@ -360,11 +369,8 @@ fun LibraryTab(
             LibraryFilterBar(
                 selectedFilter = uiState.filter,
                 visibleFilters = uiState.visibleFilters,
-                onFilterChange = { filter ->
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    viewModel.onFilterChipPressed(filter)
-                },
-                itemCounts = remember(uiState) { uiState.getFilterCounts() }
+                onFilterChange = onFilterChange,
+                itemCounts = filterCounts
             )
         }
     }
@@ -1467,13 +1473,12 @@ private fun HoldToSelectWrapper(
         modifier = Modifier.pointerInput(novelUrl, isMultiSelectMode) {
             if (isMultiSelectMode) return@pointerInput
             awaitEachGesture {
-                val down = awaitPointerEvent(PointerEventPass.Initial)
-                if (down.changes.none { it.pressed }) return@awaitEachGesture
-                val timedOut = withTimeoutOrNull(5000L) {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Final)
-                        if (event.changes.none { it.pressed }) break
-                    }
+                awaitFirstDown(requireUnconsumed = false)
+                // withTimeoutOrNull returns null ONLY on 500ms timeout; waitForUpOrCancellation
+                // returning null (scroll) makes block return Unit (non-null), so no false trigger.
+                val timedOut = withTimeoutOrNull(500L) {
+                    waitForUpOrCancellation()
+                    Unit
                 } == null
                 if (timedOut) {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1623,15 +1628,3 @@ private fun MultiSelectStatusPicker(
     }
 }
 
-private fun LibraryUiState.getFilterCounts(): Map<LibraryFilter, Int> {
-    return mapOf(
-        LibraryFilter.ALL to items.size,
-        LibraryFilter.SPICY to items.count { it.readingStatus == ReadingStatus.SPICY },
-        LibraryFilter.DOWNLOADED to items.count { (downloadCounts[it.novel.url] ?: 0) > 0 },
-        LibraryFilter.READING to items.count { it.readingStatus == ReadingStatus.READING },
-        LibraryFilter.COMPLETED to items.count { it.readingStatus == ReadingStatus.COMPLETED },
-        LibraryFilter.ON_HOLD to items.count { it.readingStatus == ReadingStatus.ON_HOLD },
-        LibraryFilter.PLAN_TO_READ to items.count { it.readingStatus == ReadingStatus.PLAN_TO_READ },
-        LibraryFilter.DROPPED to items.count { it.readingStatus == ReadingStatus.DROPPED }
-    )
-}
