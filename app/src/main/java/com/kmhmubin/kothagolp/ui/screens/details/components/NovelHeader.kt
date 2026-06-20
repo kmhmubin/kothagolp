@@ -687,18 +687,12 @@ private fun NovelInfoColumn(
                     CopiableAuthorChip(author = author)
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (providerName.isNotBlank()) {
-                        ProviderChip(providerName = providerName)
-                    }
+                if (providerName.isNotBlank()) {
+                    ProviderChip(providerName = providerName)
+                }
 
-                    details.status?.takeIf { it.isNotBlank() }?.let { status ->
-                        NovelStatusBadge(status = status)
-                    }
+                details.status?.takeIf { it.isNotBlank() }?.let { status ->
+                    NovelStatusBadge(status = status)
                 }
             }
         }

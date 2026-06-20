@@ -14,11 +14,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.RemoveRedEye
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,7 +34,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
-import com.kmhmubin.kothagolp.ui.theme.Success
 import com.kmhmubin.kothagolp.ui.theme.Warning
 import com.kmhmubin.kothagolp.util.RatingUtils
 import java.text.DecimalFormat
@@ -78,25 +75,6 @@ fun StatsRow(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            StatDivider()
-
-            StatItem(
-                icon = Icons.Outlined.Visibility,
-                value = readCount.toString(),
-                label = "Read",
-                color = if (readCount > 0) Success else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            StatDivider()
-
-            StatItem(
-                icon = Icons.Default.DownloadDone,
-                value = downloadedCount.toString(),
-                label = "Saved",
-                color = if (downloadedCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            // Show views if available
             if (views != null) {
                 StatDivider()
 
@@ -111,7 +89,6 @@ fun StatsRow(
             if (rating != null) {
                 StatDivider()
 
-                // Format rating using user's preferred format
                 val formattedRating = RatingUtils.format(rating, ratingFormat, providerName)
 
                 StatItem(
