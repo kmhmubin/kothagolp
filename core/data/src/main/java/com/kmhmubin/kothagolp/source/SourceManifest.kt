@@ -18,8 +18,16 @@ data class SourceManifest(
                     className = s.getString("class")
                 )
             }
+            // Version may be an integer (10) or semantic string ("9.1.0") —
+            // normalise to integer by taking the major component.
+            val rawVersion = obj.get("version")
+            val version = when (rawVersion) {
+                is Int -> rawVersion
+                is Long -> rawVersion.toInt()
+                else -> rawVersion.toString().substringBefore(".").toIntOrNull() ?: 0
+            }
             return SourceManifest(
-                version = obj.getInt("version"),
+                version = version,
                 url = obj.getString("url"),
                 sources = sources
             )
