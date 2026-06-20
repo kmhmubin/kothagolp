@@ -351,11 +351,10 @@ fun ReaderScreen(
 
     // Auto-scroll to current segment during TTS (when NOT using bounded scroll)
     // When bounded scroll is active, the ReaderContainer handles keeping the item visible
-    LaunchedEffect(uiState.currentSegmentIndex, uiState.isTTSActive, uiState.ttsSettings.autoScroll, ttsScrollLocked) {
+    LaunchedEffect(uiState.currentSegmentIndex, uiState.isTTSActive, uiState.ttsSettings.autoScroll) {
         if (uiState.isTTSActive &&
             uiState.currentSegmentIndex >= 0 &&
-            uiState.ttsSettings.autoScroll &&
-            !ttsScrollLocked  // Only auto-scroll when NOT locked (bounded scroll handles locked case)
+            uiState.ttsSettings.autoScroll
         ) {
             try {
                 if (uiState.settings.smoothScroll && !uiState.settings.reduceMotion) {
