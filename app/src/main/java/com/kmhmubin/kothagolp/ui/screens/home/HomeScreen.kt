@@ -1,6 +1,9 @@
 package com.kmhmubin.kothagolp.ui.screens.home
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.SaveableStateHolder
+import androidx.compose.ui.zIndex
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
@@ -220,19 +224,24 @@ private fun PersistentTabContent(
         }
     }
 
-    // Inactive tabs first — hidden behind the active tab (lower z-order).
-    HomeTabs.entries.filter { it != currentTab }.forEach { tab ->
+    // All tabs stay in composition (no VM re-init, no LazyColumn re-measure).
+    // Active tab gets zIndex(1f) for correct touch routing during crossfade.
+    HomeTabs.entries.forEachIndexed { index, tab ->
+        val isActive = tab == currentTab
+        val alpha by animateFloatAsState(
+            targetValue = if (isActive) 1f else 0f,
+            animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+            label = "tab_alpha_$index"
+        )
         savedStateHolder.SaveableStateProvider(tab.route) {
-            Box(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0f }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(if (isActive) 1f else 0f)
+                    .graphicsLayer { this.alpha = alpha }
+            ) {
                 TabItemContent(tab)
             }
-        }
-    }
-
-    // Active tab last — drawn on top, receives all touch events before hidden tabs.
-    savedStateHolder.SaveableStateProvider(currentTab.route) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            TabItemContent(currentTab)
         }
     }
 }

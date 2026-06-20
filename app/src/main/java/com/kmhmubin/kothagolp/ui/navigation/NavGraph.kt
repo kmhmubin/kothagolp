@@ -1,8 +1,12 @@
 package com.kmhmubin.kothagolp.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
@@ -66,10 +70,22 @@ fun KothagolpNavGraph(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None },
-        popEnterTransition = { EnterTransition.None },
-        popExitTransition = { ExitTransition.None }
+        enterTransition = {
+            fadeIn(tween(260, easing = FastOutSlowInEasing)) +
+            slideInHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / 6 }
+        },
+        exitTransition = {
+            fadeOut(tween(160, easing = FastOutSlowInEasing)) +
+            slideOutHorizontally(tween(160, easing = FastOutSlowInEasing)) { -it / 8 }
+        },
+        popEnterTransition = {
+            fadeIn(tween(260, easing = FastOutSlowInEasing)) +
+            slideInHorizontally(tween(260, easing = FastOutSlowInEasing)) { -it / 6 }
+        },
+        popExitTransition = {
+            fadeOut(tween(160, easing = FastOutSlowInEasing)) +
+            slideOutHorizontally(tween(160, easing = FastOutSlowInEasing)) { it / 8 }
+        }
     ) {
         // ================================================================
         // ONBOARDING

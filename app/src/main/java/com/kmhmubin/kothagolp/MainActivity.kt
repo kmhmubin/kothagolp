@@ -111,6 +111,9 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     // Show custom splash OR main content
+                    val navController = rememberNavController()
+                    val context = LocalContext.current
+
                     AnimatedContent(
                         targetState = showCustomSplash,
                         transitionSpec = {
@@ -119,11 +122,8 @@ class MainActivity : ComponentActivity() {
                         label = "splash-transition"
                     ) { isSplash ->
                         if (isSplash) {
-                            SplashScreen() // Your beautiful custom splash!
+                            SplashScreen()
                         } else {
-                            val navController = rememberNavController()
-                            val context = LocalContext.current
-
                             var showNotificationDialog by remember {
                                 mutableStateOf(
                                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
