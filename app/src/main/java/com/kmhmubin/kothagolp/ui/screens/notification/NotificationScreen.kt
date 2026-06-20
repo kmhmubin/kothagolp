@@ -371,7 +371,8 @@ private fun NotificationContent(
         // Notification Items with swipe to delete
         itemsIndexed(
             items = uiState.displayItems,
-            key = { _, item -> item.libraryItem.novel.url }
+            key = { _, item -> item.libraryItem.novel.url },
+            contentType = { _, _ -> "notification" }
         ) { index, displayItem ->
             TwoStageSwipeToDelete(
                 onDelete = { onRemoveFromNotifications(displayItem.libraryItem) },

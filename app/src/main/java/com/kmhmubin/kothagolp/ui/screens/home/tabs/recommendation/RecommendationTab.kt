@@ -238,7 +238,8 @@ fun RecommendationTab(
 
                         itemsIndexed(
                             items = regularGroups,
-                            key = { index, group -> "group_${group.type.name}_$index" }
+                            key = { index, group -> "group_${group.type.name}_$index" },
+                            contentType = { _, _ -> "recommendation_group" }
                         ) { _, group ->
                             RecommendationSection(
                                 group = group,

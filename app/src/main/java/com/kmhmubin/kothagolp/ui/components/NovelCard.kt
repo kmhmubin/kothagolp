@@ -1,22 +1,11 @@
 package com.kmhmubin.kothagolp.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -53,10 +42,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -66,7 +55,6 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -76,11 +64,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.request.ImageRequest
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.UiDensity
@@ -210,21 +199,12 @@ private fun ComfortableNovelCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) NovelCardTokens.Animation.PressScale else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "card_scale"
-    )
-
-    val elevation by animateDpAsState(
-        targetValue = when {
-            isPressed -> NovelCardTokens.Elevation.Pressed
-            isSelected -> 6.dp
-            else -> NovelCardTokens.Elevation.Resting
-        },
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "card_elevation"
-    )
+    val scale = if (isPressed) NovelCardTokens.Animation.PressScale else 1f
+    val elevation = when {
+        isPressed -> NovelCardTokens.Elevation.Pressed
+        isSelected -> 6.dp
+        else -> NovelCardTokens.Elevation.Resting
+    }
 
     Card(
         modifier = modifier
@@ -344,17 +324,8 @@ private fun CompactNovelCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) NovelCardTokens.Animation.PressScale else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "card_scale"
-    )
-
-    val elevation by animateDpAsState(
-        targetValue = if (isPressed) NovelCardTokens.Elevation.Pressed else NovelCardTokens.Elevation.Resting,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "card_elevation"
-    )
+    val scale = if (isPressed) NovelCardTokens.Animation.PressScale else 1f
+    val elevation = if (isPressed) NovelCardTokens.Elevation.Pressed else NovelCardTokens.Elevation.Resting
 
     Card(
         modifier = modifier
@@ -467,23 +438,26 @@ private fun NovelCoverImage(
     title: String,
     modifier: Modifier = Modifier
 ) {
-    SubcomposeAsyncImage(
-        model = url,
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = ContentScale.Crop
-    ) {
-        val state = painter.state
+    var imageState by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
+    val context = LocalContext.current
 
+    Box(modifier = modifier) {
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(url)
+                .crossfade(300)
+                .build(),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            onState = { imageState = it }
+        )
         when {
-            state is coil.compose.AsyncImagePainter.State.Loading -> {
+            imageState is AsyncImagePainter.State.Loading || imageState is AsyncImagePainter.State.Empty -> {
                 CoverPlaceholder(title = title)
             }
-            state is coil.compose.AsyncImagePainter.State.Error || url.isNullOrBlank() -> {
+            imageState is AsyncImagePainter.State.Error || url.isNullOrBlank() -> {
                 CoverFallback(title = title)
-            }
-            else -> {
-                SubcomposeAsyncImageContent()
             }
         }
     }
@@ -604,17 +578,10 @@ private fun BadgeRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Top
     ) {
-        AnimatedVisibility(
-            visible = readingStatus != null,
-            enter = fadeIn() + slideInVertically { -it },
-            exit = fadeOut() + slideOutVertically { -it }
-        ) {
-            readingStatus?.let {
-                StatusBadge(
-                    status = it,
-                    compactMode = compactMode
-                )
-            }
+        if (readingStatus != null) {
+            StatusBadge(status = readingStatus, compactMode = compactMode)
+        } else {
+            Spacer(Modifier)
         }
 
         Spacer(Modifier.weight(1f))
@@ -623,30 +590,8 @@ private fun BadgeRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.Top
         ) {
-            AnimatedVisibility(
-                visible = isInLibrary,
-                enter = fadeIn() + scaleIn(
-                    initialScale = 0.5f,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ),
-                exit = fadeOut() + scaleOut()
-            ) {
-                LibraryBookmarkBadge(compactMode = compactMode)
-            }
-
-            AnimatedVisibility(
-                visible = newChapterCount > 0,
-                enter = fadeIn() + scaleIn(
-                    initialScale = 0.5f,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ),
-                exit = fadeOut() + scaleOut()
-            ) {
-                NewChaptersBadge(
-                    count = newChapterCount,
-                    compactMode = compactMode
-                )
-            }
+            if (isInLibrary) LibraryBookmarkBadge(compactMode = compactMode)
+            if (newChapterCount > 0) NewChaptersBadge(count = newChapterCount, compactMode = compactMode)
         }
     }
 }
@@ -933,9 +878,13 @@ private fun CompactSkeleton(modifier: Modifier = Modifier) {
 // Shimmer Effect
 // ══════════════════════════════════════════════════════════════════════════════
 
-fun Modifier.shimmerEffect(): Modifier = composed {
-    var size by remember { mutableStateOf(IntSize.Zero) }
-
+@Composable
+fun Modifier.shimmerEffect(): Modifier {
+    val surfaceHigh = MaterialTheme.colorScheme.surfaceContainerHighest
+    val surfaceMid = MaterialTheme.colorScheme.surfaceContainerHigh
+    val shimmerColors = remember(surfaceHigh, surfaceMid) {
+        listOf(surfaceHigh, surfaceMid.copy(alpha = 0.7f), surfaceHigh)
+    }
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim by transition.animateFloat(
         initialValue = 0f,
@@ -949,31 +898,16 @@ fun Modifier.shimmerEffect(): Modifier = composed {
         ),
         label = "shimmer_translate"
     )
-
-    val shimmerColors = listOf(
-        MaterialTheme.colorScheme.surfaceContainerHighest,
-        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f),
-        MaterialTheme.colorScheme.surfaceContainerHighest
-    )
-
-    this
-        .onGloballyPositioned { size = it.size }
-        .drawWithCache {
-            val width = size.width.toFloat()
-            val height = size.height.toFloat()
-            val shimmerWidth = width * 0.4f
-            val startX = -shimmerWidth + (width + shimmerWidth * 2) * translateAnim
-
-            val brush = Brush.linearGradient(
-                colors = shimmerColors,
-                start = Offset(startX, 0f),
-                end = Offset(startX + shimmerWidth, height)
-            )
-
-            onDrawBehind {
-                drawRect(brush)
-            }
-        }
+    return this.drawBehind {
+        val shimmerWidth = size.width * 0.4f
+        val startX = -shimmerWidth + (size.width + shimmerWidth * 2) * translateAnim
+        val brush = Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset(startX, 0f),
+            end = Offset(startX + shimmerWidth, size.height)
+        )
+        drawRect(brush)
+    }
 }
 
 @Composable

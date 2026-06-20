@@ -96,7 +96,7 @@ class DatabaseConverters {
         BlockedAuthorEntity::class,
         AuthorPreferenceEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
@@ -136,7 +136,8 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_7_8,
                         MIGRATION_8_9,
                         MIGRATION_9_10,
-                        MIGRATION_10_11
+                        MIGRATION_10_11,
+                        MIGRATION_11_12
                     )
                     .fallbackToDestructiveMigration()
                     .build()
@@ -442,6 +443,16 @@ abstract class NovelDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 safeAddColumn(database, "bookmarks", "userNote", "TEXT")
                 safeAddColumn(database, "bookmarks", "providerName", "TEXT")
+            }
+        }
+
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_bookmarks_novelUrl ON bookmarks(novelUrl)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_bookmarks_chapterUrl ON bookmarks(chapterUrl)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_chapters_novelUrl ON offline_chapters(novelUrl)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_read_chapters_novelUrl ON read_chapters(novelUrl)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_reading_stats_novelUrl ON reading_stats(novelUrl)")
             }
         }
 

@@ -829,9 +829,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.chaptersTabContent(
     } else {
         itemsIndexed(
             items = displayedChapters,
-            key = { _, chapter -> "chapter_${chapter.url}" }
+            key = { _, chapter -> "chapter_${chapter.url}" },
+            contentType = { _, _ -> "chapter" }
         ) { displayIndex, chapter ->
-            // Calculate the actual index in the full filtered list
             val actualIndex = when (uiState.chapterDisplayMode) {
                 ChapterDisplayMode.SCROLL -> displayIndex
                 ChapterDisplayMode.PAGINATED -> {
@@ -842,6 +842,39 @@ private fun androidx.compose.foundation.lazy.LazyListScope.chaptersTabContent(
             val isRead = uiState.readChapters.contains(chapter.url)
             val isDownloaded = uiState.downloadedChapters.contains(chapter.url)
 
+            // Memoize callbacks so ChapterItem receives stable references.
+            // Without this, ChapterItem recomposes on every uiState change because
+            // new lambda instances are always seen as "changed" params.
+            val onTap = remember(chapter.url, uiState.isSelectionMode, actualIndex) {
+                {
+                    if (uiState.isSelectionMode) {
+                        onHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.toggleChapterSelection(actualIndex, chapter.url)
+                    } else {
+                        onChapterClick(chapter.url, novelUrl, providerName)
+                    }
+                }
+            }
+            val onLongPress = remember(chapter.url, uiState.isSelectionMode, actualIndex) {
+                {
+                    onHapticFeedback(HapticFeedbackType.LongPress)
+                    if (uiState.isSelectionMode) {
+                        viewModel.selectRange(actualIndex)
+                    } else {
+                        viewModel.enableSelectionMode(chapter.url)
+                    }
+                }
+            }
+            val onSwipeToRead = remember(chapter.url, isRead) {
+                { viewModel.toggleChapterReadStatus(chapter.url, isRead) }
+            }
+            val onSwipeToDownload = remember(chapter.url, isDownloaded) {
+                {
+                    if (isDownloaded) viewModel.deleteChapterDownload(chapter.url)
+                    else viewModel.downloadSingleChapter(context, chapter)
+                }
+            }
+
             ChapterItem(
                 chapter = chapter,
                 index = actualIndex,
@@ -850,32 +883,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.chaptersTabContent(
                 isLastRead = chapter.url == uiState.lastReadChapterUrl,
                 isSelectionMode = uiState.isSelectionMode,
                 isSelected = uiState.selectedChapters.contains(chapter.url),
-                onTap = {
-                    if (uiState.isSelectionMode) {
-                        onHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        viewModel.toggleChapterSelection(actualIndex, chapter.url)
-                    } else {
-                        onChapterClick(chapter.url, novelUrl, providerName)
-                    }
-                },
-                onLongPress = {
-                    onHapticFeedback(HapticFeedbackType.LongPress)
-                    if (uiState.isSelectionMode) {
-                        viewModel.selectRange(actualIndex)
-                    } else {
-                        viewModel.enableSelectionMode(chapter.url)
-                    }
-                },
-                onSwipeToRead = {
-                    viewModel.toggleChapterReadStatus(chapter.url, isRead)
-                },
-                onSwipeToDownload = {
-                    if (isDownloaded) {
-                        viewModel.deleteChapterDownload(chapter.url)
-                    } else {
-                        viewModel.downloadSingleChapter(context, chapter)
-                    }
-                }
+                onTap = onTap,
+                onLongPress = onLongPress,
+                onSwipeToRead = onSwipeToRead,
+                onSwipeToDownload = onSwipeToDownload
             )
         }
     }
@@ -908,7 +919,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.relatedTabContent(
         val rows = novels.chunked(2)
         itemsIndexed(
             items = rows,
-            key = { index, _ -> "related_row_$index" }
+            key = { index, _ -> "related_row_$index" },
+            contentType = { _, _ -> "related_row" }
         ) { _, rowNovels ->
             RelatedNovelRow(
                 novels = rowNovels,
@@ -945,7 +957,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.reviewsTabContent(
     } else {
         itemsIndexed(
             items = reviews,
-            key = { index, review -> "review_${index}_${review.username}_${review.time}" }
+            key = { index, review -> "review_${index}_${review.username}_${review.time}" },
+            contentType = { _, _ -> "review" }
         ) { _, review ->
             ReviewCard(
                 review = review,

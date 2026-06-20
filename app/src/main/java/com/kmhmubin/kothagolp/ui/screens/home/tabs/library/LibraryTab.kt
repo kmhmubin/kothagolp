@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.library
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutCubic
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.LinearEasing
@@ -99,16 +100,17 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.hapticfeedback.HapticFeedback
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.Alignment
@@ -175,6 +177,8 @@ fun LibraryTab(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
+    val precomputedPages by viewModel.precomputedPages.collectAsStateWithLifecycle()
+    val filterCounts by viewModel.filterCounts.collectAsStateWithLifecycle()
     val actionSheetState by viewModel.actionSheetState.collectAsState()
     val sheetState = rememberModalBottomSheetState()
 
@@ -183,6 +187,13 @@ fun LibraryTab(
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     val pullToRefreshState = rememberPullToRefreshState()
     var showStatusPicker by remember { mutableStateOf(false) }
+    // Stable lambda — viewModel never changes, so this is created once.
+    val onFilterChange = remember(viewModel) {
+        { filter: LibraryFilter ->
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            viewModel.onFilterChipPressed(filter)
+        }
+    }
     val statusPickerSheetState = rememberModalBottomSheetState()
 
     BackHandler(enabled = uiState.isMultiSelectMode) { viewModel.exitMultiSelect() }
@@ -292,9 +303,7 @@ fun LibraryTab(
                         )
                     ) { page ->
                         val pageFilter = uiState.visibleFilters.getOrElse(page) { LibraryFilter.ALL }
-                        val pageItems by remember(pageFilter) {
-                            derivedStateOf { computePageItems(uiState, pageFilter) }
-                        }
+                        val pageItems = precomputedPages[pageFilter] ?: emptyList()
                         val pageState = uiState.copy(filteredItems = pageItems, filter = pageFilter)
 
                         if (pageItems.isEmpty()) {
@@ -360,11 +369,8 @@ fun LibraryTab(
             LibraryFilterBar(
                 selectedFilter = uiState.filter,
                 visibleFilters = uiState.visibleFilters,
-                onFilterChange = { filter ->
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    viewModel.onFilterChipPressed(filter)
-                },
-                itemCounts = uiState.getFilterCounts()
+                onFilterChange = onFilterChange,
+                itemCounts = filterCounts
             )
         }
     }
@@ -523,16 +529,17 @@ private fun NotificationButton(
 ) {
     val hasNotifications = count > 0
 
-    val infiniteTransition = rememberInfiniteTransition(label = "notification_pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (hasNotifications) 1.1f else 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = EaseInOutCubic),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
-    )
+    val pulseScale = remember { Animatable(1f) }
+    LaunchedEffect(hasNotifications) {
+        if (hasNotifications) {
+            while (true) {
+                pulseScale.animateTo(1.1f, tween(800, easing = EaseInOutCubic))
+                pulseScale.animateTo(1f, tween(800, easing = EaseInOutCubic))
+            }
+        } else {
+            pulseScale.snapTo(1f)
+        }
+    }
 
     Surface(
         onClick = onClick,
@@ -556,7 +563,7 @@ private fun NotificationButton(
                             containerColor = NewChapters,
                             contentColor = Color.White,
                             modifier = Modifier
-                                .scale(pulseScale)
+                                .scale(pulseScale.value)
                                 .offset(x = (-2).dp, y = 2.dp)
                         ) {
                             Text(
@@ -765,7 +772,7 @@ private fun LibraryContent(
     val dimensions = KothagolpTheme.dimensions
     val haptic = LocalHapticFeedback.current
     val showRefreshProgress = uiState.refreshProgress != null
-    val novelsWithNewChapters = uiState.items.count { it.hasNewChapters }
+    val novelsWithNewChapters = remember(uiState.items) { uiState.items.count { it.hasNewChapters } }
     val displayMode = appSettings.libraryDisplayMode
 
     // Deduplicate items by URL to prevent key collisions
@@ -817,7 +824,8 @@ private fun LibraryContent(
                 // Use itemsIndexed with composite key to guarantee uniqueness
                 itemsIndexed(
                     items = uniqueItems,
-                    key = { index, item -> "novel_${item.novel.url}_$index" }
+                    key = { _, item -> item.novel.url },
+                    contentType = { _, _ -> "novel_card" }
                 ) { _, item ->
                     HoldToSelectWrapper(
                         novelUrl = item.novel.url,
@@ -880,7 +888,8 @@ private fun LibraryContent(
                 // Use itemsIndexed with composite key to guarantee uniqueness
                 itemsIndexed(
                     items = uniqueItems,
-                    key = { index, item -> "novel_${item.novel.url}_$index" }
+                    key = { _, item -> item.novel.url },
+                    contentType = { _, _ -> "novel_list" }
                 ) { _, item ->
                     HoldToSelectWrapper(
                         novelUrl = item.novel.url,
@@ -919,7 +928,7 @@ private fun LibraryEmptyContent(
     onNavigateToGlobalSearch: ((query: String) -> Unit)? = null
 ) {
     val dimensions = KothagolpTheme.dimensions
-    val novelsWithNewChapters = uiState.items.count { it.hasNewChapters }
+    val novelsWithNewChapters = remember(uiState.items) { uiState.items.count { it.hasNewChapters } }
 
     Column(
         modifier = modifier.padding(
@@ -1464,13 +1473,12 @@ private fun HoldToSelectWrapper(
         modifier = Modifier.pointerInput(novelUrl, isMultiSelectMode) {
             if (isMultiSelectMode) return@pointerInput
             awaitEachGesture {
-                val down = awaitPointerEvent(PointerEventPass.Initial)
-                if (down.changes.none { it.pressed }) return@awaitEachGesture
-                val timedOut = withTimeoutOrNull(5000L) {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Final)
-                        if (event.changes.none { it.pressed }) break
-                    }
+                awaitFirstDown(requireUnconsumed = false)
+                // withTimeoutOrNull returns null ONLY on 500ms timeout; waitForUpOrCancellation
+                // returning null (scroll) makes block return Unit (non-null), so no false trigger.
+                val timedOut = withTimeoutOrNull(500L) {
+                    waitForUpOrCancellation()
+                    Unit
                 } == null
                 if (timedOut) {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1620,49 +1628,3 @@ private fun MultiSelectStatusPicker(
     }
 }
 
-private fun computePageItems(
-    uiState: LibraryUiState,
-    filter: LibraryFilter
-): List<LibraryItem> {
-    val query = uiState.searchQuery.lowercase().trim()
-    val counts = uiState.downloadCounts
-
-    val searched = if (query.isBlank()) uiState.items else uiState.items.filter { item ->
-        item.novel.name.lowercase().contains(query) ||
-                item.novel.apiName.lowercase().contains(query) ||
-                item.readingStatus.displayName().lowercase().contains(query)
-    }
-
-    val filtered = when (filter) {
-        LibraryFilter.ALL -> searched
-        LibraryFilter.SPICY -> searched.filter { it.readingStatus == ReadingStatus.SPICY }
-        LibraryFilter.DOWNLOADED -> searched.filter { (counts[it.novel.url] ?: 0) > 0 }
-        LibraryFilter.READING -> searched.filter { it.readingStatus == ReadingStatus.READING }
-        LibraryFilter.COMPLETED -> searched.filter { it.readingStatus == ReadingStatus.COMPLETED }
-        LibraryFilter.ON_HOLD -> searched.filter { it.readingStatus == ReadingStatus.ON_HOLD }
-        LibraryFilter.PLAN_TO_READ -> searched.filter { it.readingStatus == ReadingStatus.PLAN_TO_READ }
-        LibraryFilter.DROPPED -> searched.filter { it.readingStatus == ReadingStatus.DROPPED }
-    }
-
-    return when (uiState.sortOrder) {
-        LibrarySortOrder.NEW_CHAPTERS -> filtered.sortedByDescending { it.newChapterCount }
-        LibrarySortOrder.LAST_READ -> filtered.sortedByDescending { it.lastReadPosition?.timestamp ?: it.addedAt }
-        LibrarySortOrder.TITLE_ASC -> filtered.sortedBy { it.novel.name.lowercase() }
-        LibrarySortOrder.TITLE_DESC -> filtered.sortedByDescending { it.novel.name.lowercase() }
-        LibrarySortOrder.DATE_ADDED -> filtered.sortedByDescending { it.addedAt }
-        LibrarySortOrder.UNREAD_COUNT -> filtered.sortedByDescending { it.unreadChapterCount }
-    }
-}
-
-private fun LibraryUiState.getFilterCounts(): Map<LibraryFilter, Int> {
-    return mapOf(
-        LibraryFilter.ALL to items.size,
-        LibraryFilter.SPICY to items.count { it.readingStatus == ReadingStatus.SPICY },
-        LibraryFilter.DOWNLOADED to items.count { (downloadCounts[it.novel.url] ?: 0) > 0 },
-        LibraryFilter.READING to items.count { it.readingStatus == ReadingStatus.READING },
-        LibraryFilter.COMPLETED to items.count { it.readingStatus == ReadingStatus.COMPLETED },
-        LibraryFilter.ON_HOLD to items.count { it.readingStatus == ReadingStatus.ON_HOLD },
-        LibraryFilter.PLAN_TO_READ to items.count { it.readingStatus == ReadingStatus.PLAN_TO_READ },
-        LibraryFilter.DROPPED to items.count { it.readingStatus == ReadingStatus.DROPPED }
-    )
-}

@@ -44,9 +44,6 @@ class KothagolpApp : Application() {
         // Initialize TTS engine
         TTSManager.initialize(this)
 
-        // Initialize TTS Manager
-        TTSManager.initialize(this)
-
         // Initialize Voice Manager
         VoiceManager.initialize(this) {
             // Restore saved voice preference

@@ -1,20 +1,13 @@
 package com.kmhmubin.kothagolp.ui.screens.details.components
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,7 +16,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -34,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -51,7 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,7 +81,13 @@ fun ChapterItem(
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
+
+    // Stable callback refs — pointerInput only restarts when isSelectionMode changes,
+    // not on every recompose (lambdas from parent are new instances each time).
+    val currentOnTap = rememberUpdatedState(onTap)
+    val currentOnLongPress = rememberUpdatedState(onLongPress)
+    val currentOnSwipeToRead = rememberUpdatedState(onSwipeToRead)
+    val currentOnSwipeToDownload = rememberUpdatedState(onSwipeToDownload)
 
     // Swipe state
     var offsetX by remember { mutableFloatStateOf(0f) }
@@ -107,36 +104,53 @@ fun ChapterItem(
         label = "swipe_offset"
     )
 
-    val backgroundColor by animateColorAsState(
-        targetValue = when {
-            isSelectionMode && isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
-            isLastRead -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
-            isRead -> MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.3f)
+    // Colors computed once per state change — no per-frame animator overhead during scrolling
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val tertiaryContainer = MaterialTheme.colorScheme.tertiaryContainer
+    val surfaceContainer = MaterialTheme.colorScheme.surfaceContainer
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+
+    val backgroundColor = remember(isSelectionMode, isSelected, isLastRead, isRead, primaryContainer, tertiaryContainer, surfaceContainer) {
+        when {
+            isSelectionMode && isSelected -> primaryContainer.copy(alpha = 0.6f)
+            isLastRead -> tertiaryContainer.copy(alpha = 0.4f)
+            isRead -> surfaceContainer.copy(alpha = 0.3f)
             else -> Color.Transparent
-        },
-        animationSpec = tween(200),
-        label = "bg_color"
-    )
+        }
+    }
 
-    val textColor by animateColorAsState(
-        targetValue = when {
-            isSelectionMode && isSelected -> MaterialTheme.colorScheme.primary
-            isRead -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
-            else -> MaterialTheme.colorScheme.onSurface
-        },
-        animationSpec = tween(200),
-        label = "text_color"
-    )
+    val textColor = remember(isSelectionMode, isSelected, isRead, primaryColor, onSurfaceVariant, onSurface) {
+        when {
+            isSelectionMode && isSelected -> primaryColor
+            isRead -> onSurfaceVariant.copy(alpha = 0.55f)
+            else -> onSurface
+        }
+    }
 
-    val secondaryTextColor by animateColorAsState(
-        targetValue = when {
-            isSelectionMode && isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-            isRead -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-        },
-        animationSpec = tween(200),
-        label = "secondary_text_color"
-    )
+    val secondaryTextColor = remember(isSelectionMode, isSelected, isRead, primaryColor, onSurfaceVariant) {
+        when {
+            isSelectionMode && isSelected -> primaryColor.copy(alpha = 0.7f)
+            isRead -> onSurfaceVariant.copy(alpha = 0.4f)
+            else -> onSurfaceVariant.copy(alpha = 0.6f)
+        }
+    }
+
+    val border = remember(isLastRead, isSelectionMode, isSelected, tertiaryColor, primaryColor) {
+        when {
+            isLastRead -> BorderStroke(1.dp, tertiaryColor.copy(alpha = 0.5f))
+            isSelectionMode && isSelected -> BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f))
+            else -> null
+        }
+    }
+
+    val elevation = when {
+        isSelectionMode && isSelected -> 4.dp
+        isLastRead -> 2.dp
+        else -> 0.dp
+    }
 
     val itemScale by animateFloatAsState(
         targetValue = if (isSelectionMode && isSelected) 0.98f else 1f,
@@ -165,24 +179,15 @@ fun ChapterItem(
         label = "selected_scale"
     )
 
-    val elevation by animateDpAsState(
-        targetValue = when {
-            isSelectionMode && isSelected -> 4.dp
-            isLastRead -> 2.dp
-            else -> 0.dp
-        },
-        animationSpec = tween(200),
-        label = "elevation"
-    )
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 3.dp)
     ) {
-        // Swipe action backgrounds
+        // Swipe action backgrounds — matchParentSize() avoids IntrinsicSize.Max double-measure
         if (!isSelectionMode && (onSwipeToRead != null || onSwipeToDownload != null)) {
             SwipeActionBackground(
+                modifier = Modifier.matchParentSize(),
                 offsetX = animatedOffset,
                 swipeThreshold = swipeThreshold,
                 isRead = isRead,
@@ -195,18 +200,22 @@ fun ChapterItem(
                 .fillMaxWidth()
                 .offset { IntOffset(animatedOffset.roundToInt(), 0) }
                 .scale(itemScale)
-                .pointerInput(isSelectionMode, onSwipeToRead, onSwipeToDownload) {
-                    if (!isSelectionMode && (onSwipeToRead != null || onSwipeToDownload != null)) {
+                // Key only on isSelectionMode — rememberUpdatedState keeps callbacks fresh
+                // without restarting the gesture coroutine on every recompose.
+                .pointerInput(isSelectionMode) {
+                    if (!isSelectionMode) {
                         detectHorizontalDragGestures(
                             onDragEnd = {
+                                val swipeRead = currentOnSwipeToRead.value
+                                val swipeDownload = currentOnSwipeToDownload.value
                                 when {
-                                    offsetX > swipeThreshold && onSwipeToRead != null -> {
+                                    offsetX > swipeThreshold && swipeRead != null -> {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onSwipeToRead()
+                                        swipeRead()
                                     }
-                                    offsetX < -swipeThreshold && onSwipeToDownload != null -> {
+                                    offsetX < -swipeThreshold && swipeDownload != null -> {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onSwipeToDownload()
+                                        swipeDownload()
                                     }
                                 }
                                 offsetX = 0f
@@ -227,18 +236,14 @@ fun ChapterItem(
                 }
                 .pointerInput(isSelectionMode) {
                     detectTapGestures(
-                        onTap = { onTap() },
-                        onLongPress = { onLongPress() }
+                        onTap = { currentOnTap.value() },
+                        onLongPress = { currentOnLongPress.value() }
                     )
                 },
             shape = AppShape.medium,
             color = backgroundColor,
             shadowElevation = elevation,
-            border = when {
-                isLastRead -> BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f))
-                isSelectionMode && isSelected -> BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                else -> null
-            }
+            border = border
         ) {
             Row(
                 modifier = Modifier
@@ -289,6 +294,7 @@ fun ChapterItem(
 
 @Composable
 private fun SwipeActionBackground(
+    modifier: Modifier = Modifier,
     offsetX: Float,
     swipeThreshold: Float,
     isRead: Boolean,
@@ -298,10 +304,7 @@ private fun SwipeActionBackground(
     val rightProgress = (-offsetX / swipeThreshold).coerceIn(0f, 1f)
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Max)
-            .clip(AppShape.medium),
+        modifier = modifier.clip(AppShape.medium),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         // Left action (mark as read/unread)
@@ -415,18 +418,19 @@ private fun SelectionCheckbox(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                AnimatedVisibility(
-                    visible = isSelected,
-                    enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
-                    exit = scaleOut()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .graphicsLayer {
+                            val s = if (isSelected) selectedScale else 0f
+                            scaleX = s
+                            scaleY = s
+                            alpha = s
+                        },
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }
@@ -477,55 +481,53 @@ private fun ChapterInfo(
             overflow = TextOverflow.Ellipsis
         )
 
-        // Secondary info row
+        // Fixed-height secondary row — always reserves 16dp so all items have consistent
+        // height, preventing LazyList from re-measuring items during scroll.
         val hasSecondaryInfo = chapter.dateOfRelease != null || (isLastRead && !isSelectionMode)
+        Box(modifier = Modifier.height(16.dp)) {
+            if (hasSecondaryInfo) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Release date with icon
+                    chapter.dateOfRelease?.let { date ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Schedule,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = secondaryTextColor
+                            )
+                            Text(
+                                text = date,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = secondaryTextColor
+                            )
+                        }
+                    }
 
-        AnimatedVisibility(
-            visible = hasSecondaryInfo,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Release date with icon
-                chapter.dateOfRelease?.let { date ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(12.dp),
-                            tint = secondaryTextColor
-                        )
+                    // Separator dot
+                    if (chapter.dateOfRelease != null && isLastRead && !isSelectionMode) {
                         Text(
-                            text = date,
+                            text = "•",
                             style = MaterialTheme.typography.labelSmall,
-                            color = secondaryTextColor
+                            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f)
                         )
                     }
-                }
 
-                // Separator dot
-                if (chapter.dateOfRelease != null && isLastRead && !isSelectionMode) {
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f)
-                    )
-                }
-
-                // Continue reading hint
-                if (isLastRead && !isSelectionMode) {
-                    Text(
-                        text = "Continue reading",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontWeight = FontWeight.Medium
-                    )
+                    // Continue reading hint
+                    if (isLastRead && !isSelectionMode) {
+                        Text(
+                            text = "Continue reading",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
@@ -543,45 +545,33 @@ private fun ChapterStatusIcons(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Download status indicator
-        AnimatedContent(
-            targetState = isDownloaded,
-            transitionSpec = {
-                (scaleIn() + fadeIn()) togetherWith (scaleOut() + fadeOut())
-            },
-            label = "download_status"
-        ) { downloaded ->
-            if (downloaded) {
-                Surface(
-                    shape = CircleShape,
-                    color = Success.copy(alpha = if (isRead) 0.12f else 0.18f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DownloadDone,
-                        contentDescription = "Downloaded",
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .size(14.dp),
-                        tint = Success.copy(alpha = if (isRead) 0.6f else 1f)
-                    )
-                }
-            } else {
+        if (isDownloaded) {
+            Surface(
+                shape = CircleShape,
+                color = Success.copy(alpha = if (isRead) 0.12f else 0.18f)
+            ) {
                 Icon(
-                    imageVector = Icons.Outlined.CloudDownload,
-                    contentDescription = "Not downloaded",
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                        alpha = if (isRead) 0.3f else 0.4f
-                    )
+                    imageVector = Icons.Default.DownloadDone,
+                    contentDescription = "Downloaded",
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .size(14.dp),
+                    tint = Success.copy(alpha = if (isRead) 0.6f else 1f)
                 )
             }
+        } else {
+            Icon(
+                imageVector = Icons.Outlined.CloudDownload,
+                contentDescription = "Not downloaded",
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                    alpha = if (isRead) 0.3f else 0.4f
+                )
+            )
         }
 
         // Read status (only when not in selection mode)
-        AnimatedVisibility(
-            visible = !isSelectionMode && isRead,
-            enter = scaleIn() + fadeIn(),
-            exit = scaleOut() + fadeOut()
-        ) {
+        if (!isSelectionMode && isRead) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = "Read",

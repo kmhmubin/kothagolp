@@ -284,7 +284,8 @@ private fun ChapterListContent(
         } else {
             itemsIndexed(
                 items = displayedChapters,
-                key = { _, chapter -> chapter.url }
+                key = { _, chapter -> chapter.url },
+                contentType = { _, _ -> "chapter" }
             ) { displayIndex, chapter ->
                 // Calculate the actual index in the full list
                 val actualIndex = when (displayMode) {
