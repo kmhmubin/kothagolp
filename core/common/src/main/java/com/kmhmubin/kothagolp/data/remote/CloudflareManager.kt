@@ -40,16 +40,20 @@ object CloudflareManager {
                 "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
 
     private var prefs: SharedPreferences? = null
+    private var appContext: Context? = null
 
     private val _cookieStateChanged = MutableStateFlow(0L)
     val cookieStateChanged: StateFlow<Long> = _cookieStateChanged.asStateFlow()
 
     fun init(context: Context) {
         if (prefs == null) {
+            appContext = context.applicationContext
             prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             cleanupExpiredCookies()
         }
     }
+
+    fun getAppContext(): Context? = appContext
 
     // ========================================================================
     // Domain Normalisation

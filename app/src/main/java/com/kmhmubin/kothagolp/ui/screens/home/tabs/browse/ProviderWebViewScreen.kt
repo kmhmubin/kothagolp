@@ -187,6 +187,32 @@ data class ExtractedPageData(
     val confidence: Int = 0
 )
 
+// Auto-clicks Cloudflare Turnstile submit button once the token is ready.
+// Retries up to 15 times (1s apart) to handle async token generation.
+private const val TURNSTILE_AUTO_CLICK_SCRIPT = """
+(function() {
+    if (window._cfAutoClickDone) return;
+    function trySubmit() {
+        var form = document.querySelector('#challenge-form') ||
+                   document.querySelector('#challenge-running') ||
+                   document.querySelector('#cf-challenge-running');
+        if (!form) return;
+        var token = document.querySelector('[name="cf-turnstile-response"]')?.value
+                    || document.querySelector('#cf-chl-widget-multi-token')?.value;
+        var btn = document.querySelector('#challenge-form button[type="submit"]')
+                  || document.querySelector('#challenge-form input[type="submit"]');
+        if (token && btn) {
+            window._cfAutoClickDone = true;
+            btn.click();
+        } else {
+            if (!window._cfRetries) window._cfRetries = 0;
+            if (window._cfRetries++ < 15) setTimeout(trySubmit, 1000);
+        }
+    }
+    trySubmit();
+})();
+"""
+
 /**
  * Comprehensive JavaScript extraction script
  * Handles multiple novel site formats with site-specific and generic extractors
@@ -2929,6 +2955,10 @@ private fun EnhancedProviderWebView(
 
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
+                        // Auto-solve Cloudflare Turnstile managed challenge
+                        if (url != null && !url.contains("cdn-cgi") && !url.contains("recaptcha")) {
+                            view?.evaluateJavascript(TURNSTILE_AUTO_CLICK_SCRIPT, null)
+                        }
                         url?.let { onPageFinished(it) }
                     }
 

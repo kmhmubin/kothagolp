@@ -169,10 +169,23 @@ object NetworkClient {
                 val request = Request.Builder().url(url).get()
                     .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                     .build()
-                httpClient.newCall(request).execute().use { response ->
-                    val body = response.body?.string() ?: ""
-                    buildResponse(response.code, body, url, response.headers)
+                val response = httpClient.newCall(request).execute()
+                val body = response.body?.string() ?: ""
+                val responseHeaders = response.headers
+                val code = response.code
+                response.close()
+
+                if (isCloudflareChallenge(code, body)) {
+                    val solved = CloudflareWebViewSolver.solve(url)
+                    if (solved) {
+                        return@withContext httpClient.newCall(request).execute().use { retry ->
+                            val retryBody = retry.body?.string() ?: ""
+                            buildResponse(retry.code, retryBody, url, retry.headers)
+                        }
+                    }
                 }
+
+                buildResponse(code, body, url, responseHeaders)
             } catch (e: Exception) {
                 android.util.Log.e("NetworkClient", "GET failed: $url", e)
                 throw NetworkException("GET request failed: ${e.message}", e)
@@ -190,10 +203,23 @@ object NetworkClient {
                 .header("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
                 .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                 .build()
-            httpClient.newCall(request).execute().use { response ->
-                val body = response.body?.string() ?: ""
-                buildResponse(response.code, body, url, response.headers)
+            val response = httpClient.newCall(request).execute()
+            val body = response.body?.string() ?: ""
+            val responseHeaders = response.headers
+            val code = response.code
+            response.close()
+
+            if (isCloudflareChallenge(code, body)) {
+                val solved = CloudflareWebViewSolver.solve(url)
+                if (solved) {
+                    return@withContext httpClient.newCall(request).execute().use { retry ->
+                        val retryBody = retry.body?.string() ?: ""
+                        buildResponse(retry.code, retryBody, url, retry.headers)
+                    }
+                }
             }
+
+            buildResponse(code, body, url, responseHeaders)
         } catch (e: Exception) {
             android.util.Log.e("NetworkClient", "POST failed: $url", e)
             throw NetworkException("POST request failed: ${e.message}", e)
@@ -210,10 +236,23 @@ object NetworkClient {
             val request = Request.Builder().url(url).post(jsonBody.toRequestBody(mediaType))
                 .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                 .build()
-            httpClient.newCall(request).execute().use { response ->
-                val body = response.body?.string() ?: ""
-                buildResponse(response.code, body, url, response.headers)
+            val response = httpClient.newCall(request).execute()
+            val body = response.body?.string() ?: ""
+            val responseHeaders = response.headers
+            val code = response.code
+            response.close()
+
+            if (isCloudflareChallenge(code, body)) {
+                val solved = CloudflareWebViewSolver.solve(url)
+                if (solved) {
+                    return@withContext httpClient.newCall(request).execute().use { retry ->
+                        val retryBody = retry.body?.string() ?: ""
+                        buildResponse(retry.code, retryBody, url, retry.headers)
+                    }
+                }
             }
+
+            buildResponse(code, body, url, responseHeaders)
         } catch (e: Exception) {
             android.util.Log.e("NetworkClient", "POST JSON failed: $url", e)
             throw NetworkException("POST JSON request failed: ${e.message}", e)
