@@ -22,6 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,8 +60,10 @@ fun ReaderTopBar(
     estimatedTimeLeft: String?,
     progressStyle: ProgressStyle = ProgressStyle.BAR,
     largerTouchTargets: Boolean = false,
+    isAutoScrollActive: Boolean = false,
     onBack: () -> Unit,
     onBookmarkClick: () -> Unit,
+    onAutoScrollClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
@@ -131,6 +135,18 @@ fun ReaderTopBar(
                             Icons.Default.BookmarkBorder,
                         contentDescription = if (isBookmarked) "Remove bookmark" else "Add bookmark",
                         tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                IconButton(
+                    onClick = onAutoScrollClick,
+                    modifier = Modifier.size(buttonSize)
+                ) {
+                    Icon(
+                        imageVector = if (isAutoScrollActive) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isAutoScrollActive) "Stop auto-scroll" else "Start auto-scroll",
+                        tint = if (isAutoScrollActive) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
