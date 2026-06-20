@@ -7,6 +7,7 @@ import com.kmhmubin.kothagolp.data.remote.CloudflareManager
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.data.sync.SyncWorker
 import com.kmhmubin.kothagolp.service.NotificationHelper
+import com.kmhmubin.kothagolp.source.LocalSourceLoader
 import com.kmhmubin.kothagolp.source.SourceLoader
 import com.kmhmubin.kothagolp.source.SourceSyncWorker
 import com.kmhmubin.kothagolp.tts.TTSManager
@@ -45,6 +46,9 @@ class KothagolpApp : Application() {
 
         // Load downloaded sources APK if available
         SourceLoader.loadIfAvailable(this)
+
+        // Load any locally-imported test APKs (shadow official sources with same name)
+        LocalSourceLoader.loadAll(this)
 
         // Check for source updates on launch
         SourceSyncWorker.syncOnce(this)
