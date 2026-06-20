@@ -16,18 +16,15 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -44,7 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,7 +80,13 @@ fun ChapterItem(
 ) {
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
+
+    // Stable callback refs — pointerInput only restarts when isSelectionMode changes,
+    // not on every recompose (lambdas from parent are new instances each time).
+    val currentOnTap = rememberUpdatedState(onTap)
+    val currentOnLongPress = rememberUpdatedState(onLongPress)
+    val currentOnSwipeToRead = rememberUpdatedState(onSwipeToRead)
+    val currentOnSwipeToDownload = rememberUpdatedState(onSwipeToDownload)
 
     // Swipe state
     var offsetX by remember { mutableFloatStateOf(0f) }
@@ -180,9 +183,10 @@ fun ChapterItem(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 3.dp)
     ) {
-        // Swipe action backgrounds
+        // Swipe action backgrounds — matchParentSize() avoids IntrinsicSize.Max double-measure
         if (!isSelectionMode && (onSwipeToRead != null || onSwipeToDownload != null)) {
             SwipeActionBackground(
+                modifier = Modifier.matchParentSize(),
                 offsetX = animatedOffset,
                 swipeThreshold = swipeThreshold,
                 isRead = isRead,
@@ -195,18 +199,22 @@ fun ChapterItem(
                 .fillMaxWidth()
                 .offset { IntOffset(animatedOffset.roundToInt(), 0) }
                 .scale(itemScale)
-                .pointerInput(isSelectionMode, onSwipeToRead, onSwipeToDownload) {
-                    if (!isSelectionMode && (onSwipeToRead != null || onSwipeToDownload != null)) {
+                // Key only on isSelectionMode — rememberUpdatedState keeps callbacks fresh
+                // without restarting the gesture coroutine on every recompose.
+                .pointerInput(isSelectionMode) {
+                    if (!isSelectionMode) {
                         detectHorizontalDragGestures(
                             onDragEnd = {
+                                val swipeRead = currentOnSwipeToRead.value
+                                val swipeDownload = currentOnSwipeToDownload.value
                                 when {
-                                    offsetX > swipeThreshold && onSwipeToRead != null -> {
+                                    offsetX > swipeThreshold && swipeRead != null -> {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onSwipeToRead()
+                                        swipeRead()
                                     }
-                                    offsetX < -swipeThreshold && onSwipeToDownload != null -> {
+                                    offsetX < -swipeThreshold && swipeDownload != null -> {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onSwipeToDownload()
+                                        swipeDownload()
                                     }
                                 }
                                 offsetX = 0f
@@ -227,8 +235,8 @@ fun ChapterItem(
                 }
                 .pointerInput(isSelectionMode) {
                     detectTapGestures(
-                        onTap = { onTap() },
-                        onLongPress = { onLongPress() }
+                        onTap = { currentOnTap.value() },
+                        onLongPress = { currentOnLongPress.value() }
                     )
                 },
             shape = AppShape.medium,
@@ -285,6 +293,7 @@ fun ChapterItem(
 
 @Composable
 private fun SwipeActionBackground(
+    modifier: Modifier = Modifier,
     offsetX: Float,
     swipeThreshold: Float,
     isRead: Boolean,
@@ -294,10 +303,7 @@ private fun SwipeActionBackground(
     val rightProgress = (-offsetX / swipeThreshold).coerceIn(0f, 1f)
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Max)
-            .clip(AppShape.medium),
+        modifier = modifier.clip(AppShape.medium),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         // Left action (mark as read/unread)

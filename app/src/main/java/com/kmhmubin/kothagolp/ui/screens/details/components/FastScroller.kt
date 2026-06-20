@@ -43,7 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -69,30 +69,25 @@ fun FastScrollerContainer(
     var containerHeight by remember { mutableFloatStateOf(0f) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
     var lastHapticIndex by remember { mutableIntStateOf(-1) }
-    var scrollbarTopOffset by remember { mutableFloatStateOf(0f) }
 
-    // Calculate thumb position from list state
     val thumbPosition by remember {
         derivedStateOf {
             if (totalItems == 0) return@derivedStateOf 0f
-            val firstVisibleIndex = listState.firstVisibleItemIndex
-            val scrollProgress = firstVisibleIndex.toFloat() / totalItems.coerceAtLeast(1)
-            scrollProgress.coerceIn(0f, 1f)
+            (listState.firstVisibleItemIndex.toFloat() / totalItems.coerceAtLeast(1)).coerceIn(0f, 1f)
         }
     }
 
-    // Calculate current visible index
     val currentIndex by remember {
         derivedStateOf {
             if (isDragging) {
-                (dragOffset / containerHeight * totalItems).toInt().coerceIn(0, totalItems - 1)
+                (dragOffset / containerHeight.coerceAtLeast(1f) * totalItems).toInt()
+                    .coerceIn(0, totalItems - 1)
             } else {
                 listState.firstVisibleItemIndex
             }
         }
     }
 
-    // Trigger haptic feedback on significant index changes while dragging
     LaunchedEffect(currentIndex, isDragging) {
         if (isDragging && currentIndex != lastHapticIndex) {
             if (currentIndex % 10 == 0 || currentIndex == 0 || currentIndex == totalItems - 1) {
@@ -102,77 +97,29 @@ fun FastScrollerContainer(
         }
     }
 
-    // Animate visibility
     val scrollbarAlpha by animateFloatAsState(
         targetValue = if (isDragging || showScrollbar) 1f else 0f,
         animationSpec = tween(200),
         label = "scrollbar_alpha"
     )
 
-    // Show scrollbar when scrolling
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) {
             showScrollbar = true
         } else {
             delay(1500)
-            if (!isDragging) {
-                showScrollbar = false
-            }
+            if (!isDragging) showScrollbar = false
         }
     }
 
-    // Calculate thumb Y position
-    val thumbY = if (isDragging) {
-        dragOffset
-    } else {
-        thumbPosition * containerHeight
-    }
+    val thumbY = if (isDragging) dragOffset else thumbPosition * containerHeight
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Main content
         content()
 
-        // Fast scroller
         if (totalItems > 20) {
-            // Position indicator bubble (horizontal) - placed outside the constrained scrollbar box
-            AnimatedVisibility(
-                visible = isDragging,
-                enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
-                exit = scaleOut() + fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset {
-                        IntOffset(
-                            (-36).dp.roundToPx(),
-                            (scrollbarTopOffset + thumbY - with(density) { 14.dp.roundToPx() }).roundToInt()
-                        )
-                    }
-                    .wrapContentSize(unbounded = true, align = Alignment.CenterEnd)
-            ) {
-                Surface(
-                    shape = AppShape.small,
-                    color = MaterialTheme.colorScheme.inverseSurface,
-                    shadowElevation = 6.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Ch. ",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.7f)
-                        )
-                        Text(
-                            text = "${currentIndex + 1}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.inverseOnSurface
-                        )
-                    }
-                }
-            }
-
+            // Single Box for both bubble and scrollbar — eliminates onGloballyPositioned feedback loop.
+            // onSizeChanged fires only when dimensions change, not on every scroll frame.
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -180,11 +127,53 @@ fun FastScrollerContainer(
                     .padding(vertical = 100.dp, horizontal = 2.dp)
                     .width(20.dp)
                     .graphicsLayer { alpha = scrollbarAlpha }
-                    .onGloballyPositioned { coordinates ->
-                        containerHeight = coordinates.size.height.toFloat()
-                        scrollbarTopOffset = coordinates.localToRoot(androidx.compose.ui.geometry.Offset.Zero).y
-                    }
+                    .onSizeChanged { size -> containerHeight = size.height.toFloat() }
             ) {
+                // Position indicator bubble: positioned relative to this Box, no root coords needed
+                AnimatedVisibility(
+                    visible = isDragging,
+                    enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
+                    exit = scaleOut() + fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset {
+                            IntOffset(
+                                x = with(density) { (-56).dp.roundToPx() },
+                                y = (thumbY - with(density) { 14.dp.roundToPx() })
+                                    .roundToInt()
+                                    .coerceIn(
+                                        0,
+                                        (containerHeight - with(density) { 28.dp.roundToPx() })
+                                            .toInt().coerceAtLeast(0)
+                                    )
+                            )
+                        }
+                        .wrapContentSize(unbounded = true, align = Alignment.TopStart)
+                ) {
+                    Surface(
+                        shape = AppShape.small,
+                        color = MaterialTheme.colorScheme.inverseSurface,
+                        shadowElevation = 6.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Ch. ",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.7f)
+                            )
+                            Text(
+                                text = "${currentIndex + 1}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.inverseOnSurface
+                            )
+                        }
+                    }
+                }
+
                 // Track
                 Box(
                     modifier = Modifier
@@ -198,9 +187,7 @@ fun FastScrollerContainer(
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 val progress = (offset.y / containerHeight).coerceIn(0f, 1f)
                                 val targetIndex = (progress * totalItems).toInt().coerceIn(0, totalItems - 1)
-                                scope.launch {
-                                    listState.scrollToItem(targetIndex)
-                                }
+                                scope.launch { listState.scrollToItem(targetIndex) }
                             }
                         }
                 )
@@ -212,10 +199,8 @@ fun FastScrollerContainer(
                         .size(20.dp, 40.dp)
                         .clip(AppShape.medium)
                         .background(
-                            if (isDragging)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            if (isDragging) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                         )
                         .pointerInput(Unit) {
                             detectDragGestures(
@@ -229,9 +214,7 @@ fun FastScrollerContainer(
                                     lastHapticIndex = -1
                                     scope.launch {
                                         delay(1500)
-                                        if (!listState.isScrollInProgress) {
-                                            showScrollbar = false
-                                        }
+                                        if (!listState.isScrollInProgress) showScrollbar = false
                                     }
                                 },
                                 onDragCancel = {
@@ -243,9 +226,7 @@ fun FastScrollerContainer(
                                     dragOffset = (dragOffset + dragAmount.y).coerceIn(0f, containerHeight)
                                     val progress = dragOffset / containerHeight
                                     val targetIndex = (progress * totalItems).toInt().coerceIn(0, totalItems - 1)
-                                    scope.launch {
-                                        listState.scrollToItem(targetIndex)
-                                    }
+                                    scope.launch { listState.scrollToItem(targetIndex) }
                                 }
                             )
                         }
