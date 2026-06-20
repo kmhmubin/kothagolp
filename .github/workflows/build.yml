@@ -28,8 +28,8 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
-      - name: Upload APK
+      - name: Upload debug APKs
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
+          name: debug-apks
           path: app/build/outputs/apk/debug/*.apk
