@@ -159,6 +159,7 @@ import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.AppSpacing
 import com.kmhmubin.kothagolp.util.calculateGridColumns
+import com.kmhmubin.kothagolp.util.gridCellsFor
 
 // ============================================================================
 // Main Library Tab
@@ -184,6 +185,7 @@ fun LibraryTab(
 
     val dimensions = KothagolpTheme.dimensions
     val gridColumns = calculateGridColumns(appSettings.libraryGridColumns)
+    val gridCells = gridCellsFor(appSettings.libraryGridColumns)
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
     val pullToRefreshState = rememberPullToRefreshState()
     var showStatusPicker by remember { mutableStateOf(false) }
@@ -319,6 +321,7 @@ fun LibraryTab(
                             LibraryContent(
                                 uiState = pageState,
                                 gridColumns = gridColumns,
+                                gridCells = gridCells,
                                 statusBarPadding = statusBarPadding,
                                 onQueryChange = viewModel::setSearchQuery,
                                 onNotificationClick = onNavigateToNotifications,
@@ -760,6 +763,7 @@ private fun RefreshProgressCard(
 private fun LibraryContent(
     uiState: LibraryUiState,
     gridColumns: Int,
+    gridCells: GridCells,
     statusBarPadding: PaddingValues,
     onQueryChange: (String) -> Unit,
     onNotificationClick: () -> Unit,
@@ -783,7 +787,7 @@ private fun LibraryContent(
     when (displayMode) {
         DisplayMode.GRID -> {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(gridColumns),
+                columns = gridCells,
                 modifier = modifier,
                 contentPadding = PaddingValues(
                     start = dimensions.gridPadding,

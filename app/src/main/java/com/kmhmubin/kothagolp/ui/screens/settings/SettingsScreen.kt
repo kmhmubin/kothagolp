@@ -140,6 +140,7 @@ import com.kmhmubin.kothagolp.domain.model.ChapterUpdateInterval
 import com.kmhmubin.kothagolp.domain.model.CustomThemeColors
 import com.kmhmubin.kothagolp.domain.model.DisplayMode
 import com.kmhmubin.kothagolp.domain.model.GridColumns
+import com.kmhmubin.kothagolp.util.calculateGridColumns
 import com.kmhmubin.kothagolp.domain.model.LibraryFilter
 import com.kmhmubin.kothagolp.domain.model.LibrarySortOrder
 import com.kmhmubin.kothagolp.domain.model.RatingFormat
@@ -1599,8 +1600,9 @@ private fun GridColumnsRow(
     onSelect: (GridColumns) -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
+    val autoColumns = calculateGridColumns(GridColumns.Auto)
     val options = listOf(
-        GridColumns.Auto to "Auto",
+        GridColumns.Auto to "Auto\n($autoColumns)",
         GridColumns.Fixed(2) to "2",
         GridColumns.Fixed(3) to "3",
         GridColumns.Fixed(4) to "4",

@@ -131,6 +131,7 @@ import com.kmhmubin.kothagolp.ui.components.SearchSuggestionsDropdown
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
+import com.kmhmubin.kothagolp.util.gridCellsFor
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -220,6 +221,7 @@ fun BrowseTab(
 
     val dimensions = KothagolpTheme.dimensions
     val gridColumns = calculateGridColumns(appSettings.searchGridColumns)
+    val gridCells = gridCellsFor(appSettings.searchGridColumns)
     val resultsPerProvider = appSettings.searchResultsPerProvider
 
     // Action Sheet
@@ -365,6 +367,7 @@ fun BrowseTab(
                             isLoading = providerState is ProviderSearchState.Loading,
                             error = (providerState as? ProviderSearchState.Error)?.message,
                             gridColumns = gridColumns,
+                            gridCells = gridCells,
                             onNovelClick = { novel ->
                                 onNavigateToDetails(novel.url, novel.apiName)
                             },
@@ -1442,6 +1445,7 @@ private fun ExpandedSearchResults(
     isLoading: Boolean,
     error: String?,
     gridColumns: Int,
+    gridCells: GridCells,
     onNovelClick: (Novel) -> Unit,
     onNovelLongClick: (Novel) -> Unit,
     onBack: () -> Unit,
@@ -1628,7 +1632,7 @@ private fun ExpandedSearchResults(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(gridColumns),
+                    columns = gridCells,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         start = dimensions.gridPadding,

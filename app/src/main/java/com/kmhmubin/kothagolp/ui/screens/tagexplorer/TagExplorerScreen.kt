@@ -126,6 +126,7 @@ import com.kmhmubin.kothagolp.ui.screens.tagexplorer.components.TagSelectorSheet
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
+import com.kmhmubin.kothagolp.util.gridCellsFor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -241,6 +242,7 @@ fun TagExplorerScreen(
     var isRefreshing by remember { mutableStateOf(false) }
 
     val gridColumns = calculateGridColumns(appSettings.browseGridColumns)
+    val gridCells = gridCellsFor(appSettings.browseGridColumns)
 
     val (primaryColor, secondaryColor) = remember(uiState.tag) {
         TagColors.getColors(uiState.tag)
@@ -451,6 +453,7 @@ fun TagExplorerScreen(
                                 MainContent(
                                     uiState = uiState,
                                     gridColumns = gridColumns,
+                                    gridCells = gridCells,
                                     primaryColor = primaryColor,
                                     appSettings = appSettings,
                                     onNovelClick = { novel ->
@@ -1246,6 +1249,7 @@ private fun DismissibleChip(
 private fun MainContent(
     uiState: TagExplorerUiState,
     gridColumns: Int,
+    gridCells: GridCells,
     primaryColor: Color,
     appSettings: AppSettings,
     onNovelClick: (com.kmhmubin.kothagolp.domain.model.Novel) -> Unit
@@ -1269,7 +1273,7 @@ private fun MainContent(
         when (appSettings.browseDisplayMode) {
             com.kmhmubin.kothagolp.domain.model.DisplayMode.GRID -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(gridColumns),
+                    columns = gridCells,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 100.dp),
                     horizontalArrangement = Arrangement.spacedBy(dimensions.cardSpacing),

@@ -135,6 +135,7 @@ import com.kmhmubin.kothagolp.ui.components.NovelGridSkeleton
 import com.kmhmubin.kothagolp.ui.components.KothagolpPullToRefreshBox
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.util.calculateGridColumns
+import com.kmhmubin.kothagolp.util.gridCellsFor
 import androidx.compose.material.icons.rounded.BookmarkAdd
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
@@ -188,6 +189,7 @@ fun ProviderBrowseScreen(
     val haptics = LocalHapticFeedback.current
 
     val gridColumns = calculateGridColumns(appSettings.browseGridColumns)
+    val gridCells = gridCellsFor(appSettings.browseGridColumns)
 
     var isFilterOverlayOpen by remember { mutableStateOf(false) }
 
@@ -299,6 +301,7 @@ fun ProviderBrowseScreen(
                                 MainContent(
                                     uiState = uiState,
                                     gridColumns = gridColumns,
+                                    gridCells = gridCells,
                                     onNovelClick = { novel ->
                                         onNavigateToDetails(novel.url, providerName)
                                     },
@@ -1674,6 +1677,7 @@ private const val LOAD_MORE_THRESHOLD = 6
 private fun MainContent(
     uiState: ProviderBrowseUiState,
     gridColumns: Int,
+    gridCells: GridCells,
     onNovelClick: (Novel) -> Unit,
     onNovelLongClick: (Novel) -> Unit,
     onLoadMore: () -> Unit,
@@ -1698,7 +1702,7 @@ private fun MainContent(
 
             LazyVerticalGrid(
                 state = gridState,
-                columns = GridCells.Fixed(gridColumns),
+                columns = gridCells,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 100.dp),
                 horizontalArrangement = Arrangement.spacedBy(dimensions.cardSpacing),
