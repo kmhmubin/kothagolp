@@ -508,6 +508,7 @@ class ReaderViewModel : ViewModel() {
 
                 // Record history for the chapter TTS landed on after background playback.
                 addToHistory(ttsState.chapterUrl, ttsState.chapterName)
+                recordChapterCompleted()
 
                 rebuildTTSSentenceListSafe()
 
@@ -1186,6 +1187,7 @@ class ReaderViewModel : ViewModel() {
             // Without this, chapters listened to in background never appear in history and
             // the library card still shows the chapter where TTS started.
             addToHistory(event.chapterUrl, event.chapterName)
+            recordChapterCompleted()
             // Persist position to preferences so an app restart (kill + reopen) resumes
             // at the chapter TTS reached, not the chapter it started on.
             val chapter = _uiState.value.allChapters.getOrNull(chapterIndex)
@@ -1240,6 +1242,7 @@ class ReaderViewModel : ViewModel() {
                 }
 
                 addToHistory(event.chapterUrl, event.chapterName)
+                recordChapterCompleted()
 
                 // Rebuild TTS list (this will pick up the new chapter)
                 rebuildTTSSentenceListSafe()
@@ -2192,6 +2195,7 @@ class ReaderViewModel : ViewModel() {
             }
 
             addToHistory(chapterUrl, chapterName)
+            recordChapterCompleted()
         }
     }
 
@@ -2632,6 +2636,16 @@ class ReaderViewModel : ViewModel() {
                 val chapter = Chapter(name = chapterTitle, url = chapterUrl)
                 historyRepository.addToHistory(novel, chapter)
                 libraryRepository.updateLastChapter(novelUrl, chapter)
+            }
+        }
+    }
+
+    private fun recordChapterCompleted() {
+        val novelUrl = currentNovelUrl ?: return
+        viewModelScope.launch {
+            val details = offlineRepository.getNovelDetails(novelUrl)
+            if (details != null) {
+                statsRepository.recordChapterRead(novelUrl, details.name)
             }
         }
     }
