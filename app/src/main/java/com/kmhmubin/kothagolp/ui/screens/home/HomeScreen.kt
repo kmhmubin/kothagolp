@@ -198,8 +198,7 @@ private fun PersistentTabContent(
                 onNavigateToProvider = onNavigateToProviderBrowse,
                 onNavigateToDetails = onNavigateToDetails,
                 onNavigateToReader = onNavigateToReader,
-                onNavigateToMigration = onNavigateToMigration,
-                onNavigateToGlobalSearch = onNavigateToGlobalSearch
+                onNavigateToMigration = onNavigateToMigration
             )
             HomeTabs.FOR_YOU -> RecommendationTab(
                 onNavigateToDetails = onNavigateToDetails,
