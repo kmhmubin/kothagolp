@@ -171,9 +171,10 @@ object NetworkClient {
                 val request = Request.Builder().url(url).get()
                     .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                     .build()
-                val response = httpClient.newCall(request).execute()
-                val body = response.body?.string() ?: ""
-                buildResponse(response.code, body, url, response.headers)
+                httpClient.newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: ""
+                    buildResponse(response.code, body, url, response.headers)
+                }
             } catch (e: Exception) {
                 android.util.Log.e("NetworkClient", "GET failed: $url", e)
                 throw NetworkException("GET request failed: ${e.message}", e)
@@ -191,9 +192,10 @@ object NetworkClient {
                 .header("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
                 .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                 .build()
-            val response = httpClient.newCall(request).execute()
-            val body = response.body?.string() ?: ""
-            buildResponse(response.code, body, url, response.headers)
+            httpClient.newCall(request).execute().use { response ->
+                val body = response.body?.string() ?: ""
+                buildResponse(response.code, body, url, response.headers)
+            }
         } catch (e: Exception) {
             android.util.Log.e("NetworkClient", "POST failed: $url", e)
             throw NetworkException("POST request failed: ${e.message}", e)
@@ -210,9 +212,10 @@ object NetworkClient {
             val request = Request.Builder().url(url).post(jsonBody.toRequestBody(mediaType))
                 .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                 .build()
-            val response = httpClient.newCall(request).execute()
-            val body = response.body?.string() ?: ""
-            buildResponse(response.code, body, url, response.headers)
+            httpClient.newCall(request).execute().use { response ->
+                val body = response.body?.string() ?: ""
+                buildResponse(response.code, body, url, response.headers)
+            }
         } catch (e: Exception) {
             android.util.Log.e("NetworkClient", "POST JSON failed: $url", e)
             throw NetworkException("POST JSON request failed: ${e.message}", e)
@@ -225,9 +228,10 @@ object NetworkClient {
                 val request = Request.Builder().url(url).get()
                     .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                     .build()
-                val response = httpClient.newCall(request).execute()
-                if (!response.isSuccessful) throw NetworkException("Download failed: HTTP ${response.code}")
-                response.body?.bytes() ?: throw NetworkException("Empty response body")
+                httpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw NetworkException("Download failed: HTTP ${response.code}")
+                    response.body?.bytes() ?: throw NetworkException("Empty response body")
+                }
             } catch (e: NetworkException) {
                 throw e
             } catch (e: Exception) {
@@ -242,7 +246,7 @@ object NetworkClient {
                 val request = Request.Builder().url(url).head()
                     .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                     .build()
-                httpClient.newCall(request).execute().isSuccessful
+                httpClient.newCall(request).execute().use { it.isSuccessful }
             } catch (e: Exception) {
                 false
             }
@@ -254,9 +258,10 @@ object NetworkClient {
                 val request = Request.Builder().url(url).get()
                     .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                     .build()
-                val response = httpClient.newCall(request).execute()
-                if (!response.isSuccessful) throw NetworkException("HTTP ${response.code}")
-                response.body?.string() ?: ""
+                httpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw NetworkException("HTTP ${response.code}")
+                    response.body?.string() ?: ""
+                }
             } catch (e: NetworkException) {
                 throw e
             } catch (e: Exception) {

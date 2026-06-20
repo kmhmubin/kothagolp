@@ -78,6 +78,11 @@ fun ChapterListSheet(
 
     val listState = rememberLazyListState()
 
+    // O(1) index lookup — avoids O(n²) indexOf() inside itemsIndexed lambda
+    val urlToOriginalIndex = remember(chapters) {
+        chapters.mapIndexed { i, ch -> ch.url to i }.toMap()
+    }
+
     // Filter and sort chapters
     val displayedChapters = remember(chapters, searchQuery, sortDescending) {
         val filtered = if (searchQuery.isBlank()) {
@@ -151,11 +156,7 @@ fun ChapterListSheet(
                         items = displayedChapters,
                         key = { _, chapter -> chapter.url }
                     ) { index, chapter ->
-                        val originalIndex = if (sortDescending) {
-                            chapters.size - 1 - chapters.indexOf(chapter)
-                        } else {
-                            chapters.indexOf(chapter)
-                        }
+                        val originalIndex = urlToOriginalIndex[chapter.url] ?: chapters.indexOf(chapter)
 
                         val isCurrentChapter = originalIndex == currentChapterIndex
                         val isRead = readChapterUrls.contains(chapter.url)

@@ -6,6 +6,7 @@ import android.speech.tts.Voice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -441,6 +442,7 @@ object VoiceManager {
      * Full shutdown - call on app exit
      */
     fun shutdown() {
+        scope.cancel()
         tts?.stop()
         tts?.shutdown()
         tts = null

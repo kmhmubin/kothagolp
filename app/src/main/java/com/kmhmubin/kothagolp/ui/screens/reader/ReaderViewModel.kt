@@ -71,7 +71,7 @@ private suspend fun loadCoverBitmap(coverUrl: String?): Bitmap? {
             val connection = url.openConnection()
             connection.connectTimeout = 5000
             connection.readTimeout = 5000
-            BitmapFactory.decodeStream(connection.getInputStream())
+            connection.getInputStream().use { BitmapFactory.decodeStream(it) }
         } catch (e: Exception) {
             null
         }

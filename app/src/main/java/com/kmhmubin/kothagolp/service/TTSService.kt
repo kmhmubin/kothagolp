@@ -34,6 +34,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -1281,7 +1282,7 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
         sleepTimerJob = serviceScope.launch {
             var remainingMinutes = minutes
 
-            while (remainingMinutes > 0) {
+            while (isActive && remainingMinutes > 0) {
                 delay(TimeUnit.MINUTES.toMillis(1))
                 remainingMinutes--
                 _serviceState.value = ServiceState.SleepTimerActive(remainingMinutes)
@@ -1290,7 +1291,7 @@ class TTSService : Service(), TextToSpeech.OnInitListener {
                 updateNotification()
             }
 
-            stop()
+            if (isActive) stop()
         }
     }
 
