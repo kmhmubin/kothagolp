@@ -3,7 +3,7 @@
 
     <style name="Theme.Kothagolp" parent="android:Theme.Material.Light.NoActionBar" />
     <style name="Theme.Kothagolp.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_icon_transparent</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_icon</item>
         <item name="windowSplashScreenBackground">@color/brand_background</item>
         <item name="android:windowBackground">@color/brand_background</item>
         <item name="windowSplashScreenAnimationDuration">700</item>
