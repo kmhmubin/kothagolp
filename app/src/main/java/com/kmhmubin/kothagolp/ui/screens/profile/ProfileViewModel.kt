@@ -137,6 +137,9 @@ class ProfileViewModel : ViewModel() {
                 // Load weekly activity (last 7 days)
                 val weeklyActivity = loadWeeklyActivity()
 
+                // Load yearly activity for heatmap (last 52 weeks)
+                val yearlyActivity = loadYearlyActivity()
+
                 // Load most read novels
                 val mostReadNovels = loadMostReadNovels()
 
@@ -172,6 +175,7 @@ class ProfileViewModel : ViewModel() {
                         totalReadingTime = totalReadingTime,
 
                         weeklyActivity = weeklyActivity,
+                        yearlyActivity = yearlyActivity,
                         mostReadNovels = mostReadNovels,
 
                         dailyGoalMinutes = dailyGoal,
@@ -190,6 +194,17 @@ class ProfileViewModel : ViewModel() {
                 _events.send(ProfileEvent.ShowError("Failed to load stats: ${e.message}"))
             }
         }
+    }
+
+    private suspend fun loadYearlyActivity(): Map<Long, Long> {
+        val today = LocalDate.now()
+        val yearStart = today.minusDays(363)
+        val stats = statsRepository.getDailyStats(
+            startDate = yearStart.toEpochDay(),
+            endDate = today.toEpochDay()
+        )
+        return stats.groupBy { it.date }
+            .mapValues { (_, dayStats) -> dayStats.sumOf { it.readingTimeSeconds } / 60 }
     }
 
     private suspend fun loadWeeklyActivity(): List<Long> {

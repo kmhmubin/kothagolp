@@ -37,6 +37,9 @@ data class ProfileUiState(
     // Achievements
     val achievements: List<Achievement> = emptyList(),
 
+    // Yearly activity heatmap (epochDay -> minutes)
+    val yearlyActivity: Map<Long, Long> = emptyMap(),
+
     // Reader level info
     val readerLevelName: String = "Novice",
     val readerLevel: Int = 1,
