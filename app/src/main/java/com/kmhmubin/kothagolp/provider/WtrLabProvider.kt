@@ -1,6 +1,7 @@
 package com.kmhmubin.kothagolp.provider
 
 import android.webkit.CookieManager
+import com.kmhmubin.kothagolp.BuildConfig
 import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
@@ -173,8 +174,10 @@ class WtrLabProvider : MainProvider() {
             val cookieManager = CookieManager.getInstance()
             val cookies = cookieManager.getCookie(mainUrl) ?: ""
 
-            android.util.Log.d("WtrLabProvider", "WebView cookies: ${cookies.take(100)}...")
-            android.util.Log.d("WtrLabProvider", "Has cf_clearance: ${cookies.contains("cf_clearance")}")
+            if (BuildConfig.DEBUG) {
+                android.util.Log.d("WtrLabProvider", "WebView cookies: ${cookies.take(100)}...")
+                android.util.Log.d("WtrLabProvider", "Has cf_clearance: ${cookies.contains("cf_clearance")}")
+            }
 
             cookies
         } catch (e: Exception) {
@@ -190,7 +193,9 @@ class WtrLabProvider : MainProvider() {
         val cookies = getCookiesFromWebView()
         val hasCfClearance = cookies.contains("cf_clearance")
 
-        android.util.Log.d("WtrLabProvider", "hasCloudflareCookies: $hasCfClearance")
+        if (BuildConfig.DEBUG) {
+            android.util.Log.d("WtrLabProvider", "hasCloudflareCookies: $hasCfClearance")
+        }
         return hasCfClearance
     }
 
