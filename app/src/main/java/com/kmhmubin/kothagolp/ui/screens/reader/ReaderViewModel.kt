@@ -1664,6 +1664,7 @@ class ReaderViewModel : ViewModel() {
 
             chapter?.let {
                 addToHistory(it.url, it.name)
+                recordChapterCompleted()
                 startReadingTimeTracking()
             }
 
@@ -2372,20 +2373,10 @@ class ReaderViewModel : ViewModel() {
 
     fun navigateToNext() {
         saveCurrentPosition()
-
-        val novelUrl = currentNovelUrl
-        if (novelUrl != null) {
-            viewModelScope.launch {
-                val novelDetails = offlineRepository.getNovelDetails(novelUrl)
-                if (novelDetails != null) {
-                    statsRepository.recordChapterRead(novelUrl, novelDetails.name)
-                }
-            }
-        }
-
         val next = _uiState.value.nextChapter ?: return
         val provider = currentProvider ?: return
-        loadChapterInternal(next.url, novelUrl ?: return, provider.name, NavigationSource.NAVIGATION)
+        val novelUrl = currentNovelUrl ?: return
+        loadChapterInternal(next.url, novelUrl, provider.name, NavigationSource.NAVIGATION)
     }
 
     fun navigateToChapter(chapterIndex: Int) {

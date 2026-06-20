@@ -552,8 +552,8 @@ private fun ActivityHeatmapSection(
     }
 
     // Fixed cell dimensions — 10dp is clearly visible without squinting
-    val cellDp   = 10.dp
-    val gapDp    = 2.dp
+    val cellDp   = 13.dp
+    val gapDp    = 3.dp
     val rowSlot  = cellDp + gapDp   // height of one row + gap
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
