@@ -208,15 +208,27 @@ private fun ProfileContent(
         }
 
         item(key = "streak_today") {
-            StreakTodayCard(
-                currentStreak   = uiState.currentStreak,
-                longestStreak   = uiState.longestStreak,
-                isStreakActive  = uiState.isStreakActive,
-                todayChapters   = uiState.todayChaptersRead,
-                todayMinutes    = uiState.todayMinutes,
-                dailyGoalMinutes = uiState.dailyGoalMinutes,
-                modifier = Modifier.padding(horizontal = dimensions.gridPadding)
-            )
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = dimensions.gridPadding)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StreakCard(
+                    currentStreak  = uiState.currentStreak,
+                    longestStreak  = uiState.longestStreak,
+                    isStreakActive = uiState.isStreakActive,
+                    modifier       = Modifier.weight(1f)
+                )
+                TodayCard(
+                    todayChapters    = uiState.todayChaptersRead,
+                    todayMinutes     = uiState.todayMinutes,
+                    dailyGoalMinutes = uiState.dailyGoalMinutes,
+                    isStreakActive   = uiState.isStreakActive,
+                    currentStreak    = uiState.currentStreak,
+                    modifier         = Modifier.weight(1f)
+                )
+            }
         }
 
         item(key = "heatmap") {
@@ -320,17 +332,85 @@ private fun ProfileHeroSection(uiState: ProfileUiState) {
 }
 
 // ============================================================================
-// 2. Streak + Today — combined card (the daily dopamine hook)
+// 2a. Streak card
 // ============================================================================
 
 @Composable
-private fun StreakTodayCard(
+private fun StreakCard(
     currentStreak: Int,
     longestStreak: Int,
     isStreakActive: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val streakMsg = when {
+        currentStreak == 0  -> "Start today!"
+        currentStreak < 3   -> "Great start!"
+        currentStreak < 7   -> "Building momentum!"
+        currentStreak < 30  -> "On fire!"
+        currentStreak < 100 -> "Legendary!"
+        else                -> "Unstoppable!"
+    }
+
+    Card(
+        shape = AppShape.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isStreakActive) ProfileColors.StreakOrange.copy(alpha = 0.1f)
+            else MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "Streak",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "$currentStreak",
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (isStreakActive) ProfileColors.StreakOrange else MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "days",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
+            Text(
+                text = streakMsg,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isStreakActive) ProfileColors.StreakOrange.copy(alpha = 0.85f)
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (longestStreak > 0) {
+                Text(
+                    text = "Best: $longestStreak days",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                )
+            }
+        }
+    }
+}
+
+// ============================================================================
+// 2b. Today card
+// ============================================================================
+
+@Composable
+private fun TodayCard(
     todayChapters: Int,
     todayMinutes: Long,
     dailyGoalMinutes: Int,
+    isStreakActive: Boolean,
+    currentStreak: Int,
     modifier: Modifier = Modifier
 ) {
     val dailyProgress = if (dailyGoalMinutes > 0)
@@ -344,147 +424,80 @@ private fun StreakTodayCard(
         label = "fire_scale"
     )
 
-    val streakMsg = when {
-        currentStreak == 0  -> "Start reading today!"
-        currentStreak < 3   -> "Great start!"
-        currentStreak < 7   -> "Building momentum!"
-        currentStreak < 30  -> "On fire!"
-        currentStreak < 100 -> "Legendary!"
-        else -> "Unstoppable!"
-    }
-
     val timeStr = remember(todayMinutes) {
         when {
             todayMinutes < 60 -> "${todayMinutes}m"
-            else -> "${todayMinutes / 60}h ${todayMinutes % 60}m"
+            else              -> "${todayMinutes / 60}h ${todayMinutes % 60}m"
         }
     }
 
     Card(
         shape = AppShape.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isStreakActive) ProfileColors.StreakOrange.copy(alpha = 0.1f)
-            else MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        modifier = modifier.fillMaxWidth()
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = modifier
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // LEFT — streak number
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                Icon(
+                    Icons.Rounded.LocalFireDepartment,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp).then(
+                        if (isStreakActive && currentStreak > 0)
+                            Modifier.graphicsLayer { scaleX = fireScale; scaleY = fireScale }
+                        else Modifier
+                    ),
+                    tint = if (isStreakActive && currentStreak > 0) ProfileColors.StreakOrange
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                )
                 Text(
-                    text = "Streak",
+                    text = "Today",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(
-                        text = "$currentStreak",
-                        style = MaterialTheme.typography.displayMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = if (isStreakActive) ProfileColors.StreakOrange else MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "days",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 6.dp)
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Icon(Icons.AutoMirrored.Rounded.MenuBook, null, Modifier.size(13.dp), tint = ProfileColors.ChapterBlue)
+                Text(
+                    text = "$todayChapters chapters",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ProfileColors.ChapterBlue
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Icon(Icons.Rounded.Schedule, null, Modifier.size(13.dp), tint = ProfileColors.TimeGreen)
+                Text(
+                    text = timeStr,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ProfileColors.TimeGreen
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(4.dp)
+                        .clip(AppShape.extraSmall)
+                        .background(ProfileColors.GoalPrimary.copy(alpha = 0.18f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(animDailyProg).height(4.dp)
+                            .clip(AppShape.extraSmall)
+                            .background(ProfileColors.GoalPrimary)
                     )
                 }
                 Text(
-                    text = streakMsg,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isStreakActive) ProfileColors.StreakOrange.copy(alpha = 0.85f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "${(dailyProgress * 100).toInt()}% daily goal",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
-                if (longestStreak > 0) {
-                    Text(
-                        text = "Best: $longestStreak days",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
-                    )
-                }
-            }
-
-            // Divider
-            Box(modifier = Modifier.width(1.dp).height(88.dp)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)))
-
-            // RIGHT — today stats + fire
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        Icons.Rounded.LocalFireDepartment,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp).then(
-                            if (isStreakActive && currentStreak > 0)
-                                Modifier.graphicsLayer { scaleX = fireScale; scaleY = fireScale }
-                            else Modifier
-                        ),
-                        tint = if (isStreakActive && currentStreak > 0) ProfileColors.StreakOrange
-                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                    )
-                    Text(
-                        text = "Today",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // Chapter count
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.AutoMirrored.Rounded.MenuBook, null, Modifier.size(13.dp), tint = ProfileColors.ChapterBlue)
-                    Text(
-                        text = "$todayChapters ch",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = ProfileColors.ChapterBlue
-                    )
-                }
-
-                // Time read
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.Rounded.Schedule, null, Modifier.size(13.dp), tint = ProfileColors.TimeGreen)
-                    Text(
-                        text = timeStr,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = ProfileColors.TimeGreen
-                    )
-                }
-
-                // Daily goal bar
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(4.dp)
-                            .clip(AppShape.extraSmall)
-                            .background(ProfileColors.GoalPrimary.copy(alpha = 0.18f))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(animDailyProg).height(4.dp)
-                                .clip(AppShape.extraSmall)
-                                .background(ProfileColors.GoalPrimary)
-                        )
-                    }
-                    Text(
-                        text = "${(dailyProgress * 100).toInt()}% daily goal",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
-                }
             }
         }
     }
