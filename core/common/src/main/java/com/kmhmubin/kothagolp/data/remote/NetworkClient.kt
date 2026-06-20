@@ -56,7 +56,6 @@ object NetworkClient {
                     if (cfCookies.isNotBlank()) {
                         val existing = original.header("Cookie") ?: ""
                         requestBuilder.header("Cookie", mergeCookies(existing, cfCookies))
-                        android.util.Log.d("NetworkClient", "Injected CF cookies for $domain")
                     }
                 }.onFailure {
                     android.util.Log.e("NetworkClient", "CF cookie injection failed", it)
@@ -77,7 +76,6 @@ object NetworkClient {
                 }
 
                 val response = chain.proceed(requestBuilder.build())
-                android.util.Log.d("NetworkClient", "${response.code} ← $url")
                 response
             }
             .build()
@@ -272,7 +270,6 @@ object NetworkClient {
 
     fun clearSessionCookies() {
         cookieJar.clear()
-        android.util.Log.d("NetworkClient", "Session cookies cleared")
     }
 
     fun getClient(): OkHttpClient = httpClient

@@ -2,6 +2,7 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.browse
 
 import android.R.attr.name
 import android.annotation.SuppressLint
+import com.kmhmubin.kothagolp.BuildConfig
 import android.graphics.Bitmap
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -1327,7 +1328,9 @@ fun ProviderWebViewScreen(
                         cookies = cookies,
                         userAgent = CloudflareManager.WEBVIEW_USER_AGENT
                     )
-                    android.util.Log.d("CookieSave", "✓ Saved cookies on exit")
+                    if (BuildConfig.DEBUG) {
+                        android.util.Log.d("CookieSave", "✓ Saved cookies on exit")
+                    }
                 }
             }
 
@@ -1483,7 +1486,9 @@ fun ProviderWebViewScreen(
                                         extractedData = data
                                     }
                                 } catch (e: Exception) {
-                                    android.util.Log.d("WebView", "Auto-extract failed: ${e.message}")
+                                    if (BuildConfig.DEBUG) {
+                                        android.util.Log.d("WebView", "Auto-extract failed: ${e.message}")
+                                    }
                                 }
                             }
                         }, 1000)
@@ -3001,7 +3006,9 @@ private fun EnhancedProviderWebView(
                             // Wait 1 second after page fully loads before flushing
                             view.postDelayed({
                                 CloudflareManager.flushWebViewCookies()
-                                android.util.Log.d("WebView", "Cookies flushed at 100% progress")
+                                if (BuildConfig.DEBUG) {
+                                    android.util.Log.d("WebView", "Cookies flushed at 100% progress")
+                                }
                             }, 1000)
                         }
                     }
@@ -3055,7 +3062,9 @@ private fun checkAndSaveCookies(
                 // Re-inject into WebView immediately
                 CloudflareManager.injectCookiesIntoWebView(url)
 
-                android.util.Log.d("CookieSave", "✓ Saved cf_clearance for $domain")
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.d("CookieSave", "✓ Saved cf_clearance for $domain")
+                }
 
                 if (isNewOrUpdated) {
                     onCookiesSaved()
@@ -3072,7 +3081,9 @@ private fun checkAndSaveCookies(
                         CloudflareManager.CookieStatus.NONE -> CookieDisplayStatus.NONE
                     }
                 )
-                android.util.Log.d("CookieSave", "✗ No valid cf_clearance found for $domain")
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.d("CookieSave", "✗ No valid cf_clearance found for $domain")
+                }
             }
         )
     }
@@ -3117,13 +3128,17 @@ private suspend fun extractCookiesWithRetry(
         if (!cookies.isNullOrBlank() && cookies.contains("cf_clearance")) {
             // Validate cookie format
             if (CloudflareManager.isValidCloudflareCookie(cookies)) {
-                android.util.Log.d("CookieExtract", "✓ Success on attempt ${attempt + 1}")
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.d("CookieExtract", "✓ Success on attempt ${attempt + 1}")
+                }
                 onSuccess(cookies)
                 return
             }
         }
 
-        android.util.Log.d("CookieExtract", "✗ Attempt ${attempt + 1}/$maxAttempts failed")
+        if (BuildConfig.DEBUG) {
+            android.util.Log.d("CookieExtract", "✗ Attempt ${attempt + 1}/$maxAttempts failed")
+        }
     }
 
     android.util.Log.w("CookieExtract", "All $maxAttempts attempts failed")

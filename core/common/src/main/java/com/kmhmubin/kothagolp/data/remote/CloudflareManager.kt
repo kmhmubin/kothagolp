@@ -117,12 +117,10 @@ object CloudflareManager {
 
     fun saveCookiesForDomain(domain: String, cookies: String, userAgent: String) {
         if (!cookies.contains("cf_clearance")) {
-            android.util.Log.d("CloudflareManager", "No cf_clearance — skipping save for $domain")
             return
         }
 
         val key = getDomain(domain)
-        android.util.Log.d("CloudflareManager", "Saving CF cookies for $key")
 
         val now = System.currentTimeMillis()
         prefs?.edit()
@@ -138,7 +136,6 @@ object CloudflareManager {
                 ?.putString("ua_$parent", userAgent)
                 ?.putLong("time_$parent", now)
                 ?.apply()
-            android.util.Log.d("CloudflareManager", "Mirrored CF cookies to parent $parent")
         }
 
         _cookieStateChanged.value = now
@@ -177,10 +174,6 @@ object CloudflareManager {
         val cookies = getCookiesForDomain(domain)
         val hasCookie = cookies.contains("cf_clearance=")
         val valid = !areCookiesExpired(domain)
-        android.util.Log.d(
-            "CloudflareManager",
-            "hasClearanceCookie($domain): present=$hasCookie valid=$valid"
-        )
         return hasCookie && valid
     }
 
@@ -272,12 +265,6 @@ object CloudflareManager {
             candidates
                 .mapNotNull { cm.getCookie(it) }
                 .firstOrNull { it.contains("cf_clearance") }
-                .also { cookies ->
-                    android.util.Log.d(
-                        "CloudflareManager",
-                        "Extracted WebView cookies for $url: ${cookies?.take(80)}…"
-                    )
-                }
         } catch (e: Exception) {
             android.util.Log.e("CloudflareManager", "Failed to extract WebView cookies", e)
             null
@@ -309,11 +296,9 @@ object CloudflareManager {
             val cookies = getCookiesForDomain(domain)
 
             if (cookies.isBlank()) {
-                android.util.Log.d("CloudflareManager", "No stored cookies to inject for $domain")
                 return
             }
             if (areCookiesExpired(domain)) {
-                android.util.Log.d("CloudflareManager", "Stored cookies for $domain are expired, skipping inject")
                 return
             }
 
@@ -341,10 +326,6 @@ object CloudflareManager {
                 }
 
             cm.flush()
-            android.util.Log.d(
-                "CloudflareManager",
-                "Injected CF cookies for ${domainsToSet.size} domain variants of $domain"
-            )
         } catch (e: Exception) {
             android.util.Log.e("CloudflareManager", "Failed to inject cookies", e)
         }
