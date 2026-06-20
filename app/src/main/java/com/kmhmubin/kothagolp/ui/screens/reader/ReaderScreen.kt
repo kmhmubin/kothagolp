@@ -14,6 +14,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -140,6 +142,31 @@ fun ReaderScreen(
         viewModel.onReaderEnter()
         onDispose {
             viewModel.onReaderExit()
+        }
+    }
+
+    // Auto-scroll loop — runs while autoScrollEnabled, cancels on user drag
+    val density = LocalDensity.current
+    LaunchedEffect(uiState.settings.autoScrollEnabled, uiState.settings.autoScrollSpeed) {
+        if (!uiState.settings.autoScrollEnabled) return@LaunchedEffect
+        // 1 speed unit ≈ 24dp/s; captured once per launch so density stays stable
+        val pixelsPerMs = with(density) { (uiState.settings.autoScrollSpeed * 24f).dp.toPx() / 1000f }
+        var lastTick = System.nanoTime()
+        while (true) {
+            delay(16L)
+            val now = System.nanoTime()
+            val deltaMs = (now - lastTick) / 1_000_000f
+            lastTick = now
+            listState.scroll { scrollBy(pixelsPerMs * deltaMs) }
+        }
+    }
+    // Stop auto-scroll the moment user touches/drags the list
+    LaunchedEffect(listState, uiState.settings.autoScrollEnabled) {
+        if (!uiState.settings.autoScrollEnabled) return@LaunchedEffect
+        listState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) {
+                viewModel.toggleAutoScroll()
+            }
         }
     }
 
@@ -532,7 +559,8 @@ fun ReaderScreen(
         onAddHighlight = viewModel::addHighlightForSelectedText,
         onRemoveHighlight = viewModel::removeTextHighlight,
         onUpdateNote = viewModel::updateHighlightNote,
-        onChangeHighlightColor = viewModel::updateHighlightColor
+        onChangeHighlightColor = viewModel::updateHighlightColor,
+        onAutoScrollClick = { viewModel.toggleAutoScroll() }
     )
 }
 
@@ -714,7 +742,8 @@ private fun ReaderScreenContent(
     onAddHighlight: (text: String, color: String) -> Unit = { _, _ -> },
     onRemoveHighlight: (id: Long) -> Unit = {},
     onUpdateNote: (id: Long, note: String?) -> Unit = { _, _ -> },
-    onChangeHighlightColor: (id: Long, color: String) -> Unit = { _, _ -> }
+    onChangeHighlightColor: (id: Long, color: String) -> Unit = { _, _ -> },
+    onAutoScrollClick: () -> Unit = {}
 ) {
     val tapZones = uiState.settings.tapZones
 
@@ -866,7 +895,8 @@ private fun ReaderScreenContent(
                         onTTSNext = onTTSNext,
                         onTTSPrevious = onTTSPrevious,
                         onToggleTTSSettings = onToggleTTSSettings,
-                        onBottomBarSettingsExpandedChange = onBottomBarSettingsExpandedChange
+                        onBottomBarSettingsExpandedChange = onBottomBarSettingsExpandedChange,
+                        onAutoScrollClick = onAutoScrollClick
                     )
 
                     // TTS Settings Panel
@@ -966,7 +996,8 @@ private fun ControlsOverlay(
     onTTSNext: () -> Unit,
     onTTSPrevious: () -> Unit,
     onToggleTTSSettings: () -> Unit,
-    onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {}
+    onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {},
+    onAutoScrollClick: () -> Unit = {}
 ) {
     val animationDuration = if (uiState.settings.reduceMotion) 0 else ReaderDefaults.ControlsAnimationDuration
 
@@ -992,8 +1023,10 @@ private fun ControlsOverlay(
                 estimatedTimeLeft = estimatedTimeLeft,
                 progressStyle = if (uiState.settings.showProgress) uiState.settings.progressStyle else ProgressStyle.NONE,
                 largerTouchTargets = uiState.settings.largerTouchTargets,
+                isAutoScrollActive = uiState.settings.autoScrollEnabled,
                 onBack = onBack,
-                onBookmarkClick = onToggleBookmark
+                onBookmarkClick = onToggleBookmark,
+                onAutoScrollClick = onAutoScrollClick
             )
         }
 

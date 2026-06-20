@@ -2468,6 +2468,11 @@ class ReaderViewModel : ViewModel() {
         preferencesManager.updateReaderSettings(settings)
     }
 
+    fun toggleAutoScroll() {
+        val current = _uiState.value.settings
+        updateReaderSettings(current.copy(autoScrollEnabled = !current.autoScrollEnabled))
+    }
+
     // =========================================================================
     // TEXT HIGHLIGHTS
     // =========================================================================
