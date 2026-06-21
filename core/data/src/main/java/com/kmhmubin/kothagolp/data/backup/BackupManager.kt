@@ -331,6 +331,25 @@ class BackupManager(
                         libraryCount++
                     }
                 }
+
+                // Bridge synced scroll positions into scrollPrefs so the reader
+                // resumes at the exact segment on Device B. Only overwrite if the
+                // synced position is newer — Device B ahead means keep local.
+                backup.library.forEach { item ->
+                    val chapterUrl = item.lastChapterUrl ?: return@forEach
+                    val lastReadAt = item.lastReadAt ?: return@forEach
+                    val local = preferencesManager.getReadingPosition(chapterUrl)
+                    if (local == null || lastReadAt > local.timestamp) {
+                        preferencesManager.saveReadingPosition(
+                            chapterUrl = chapterUrl,
+                            segmentId = "seg-${item.lastScrollIndex}",
+                            segmentIndex = item.lastScrollIndex,
+                            progress = 0f,
+                            offset = item.lastScrollOffset,
+                            chapterIndex = item.lastReadChapterIndex.coerceAtLeast(0)
+                        )
+                    }
+                }
             }
 
             // Restore bookmarks
@@ -381,9 +400,22 @@ class BackupManager(
                 }
                 backup.readingStreak?.let { streak ->
                     val existing = statsDao.getStreak()
-                    // Keep the better streak
-                    if (existing == null || streak.longestStreak > existing.longestStreak) {
+                    if (existing == null) {
                         statsDao.updateStreak(streak.toEntity())
+                    } else {
+                        // Merge: take best of both devices for every counter
+                        val merged = streak.toEntity().copy(
+                            currentStreak = maxOf(streak.currentStreak, existing.currentStreak),
+                            longestStreak = maxOf(streak.longestStreak, existing.longestStreak),
+                            lastReadDate = maxOf(streak.lastReadDate, existing.lastReadDate),
+                            totalDaysRead = maxOf(streak.totalDaysRead, existing.totalDaysRead),
+                            totalReadingTimeSeconds = maxOf(
+                                streak.totalReadingTimeSeconds,
+                                existing.totalReadingTimeSeconds
+                            ),
+                            updatedAt = maxOf(streak.updatedAt, existing.updatedAt)
+                        )
+                        statsDao.updateStreak(merged)
                     }
                 }
             }
