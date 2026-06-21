@@ -22,8 +22,20 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Make gradlew executable       
-        run: chmod +x gradlew              
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Write Google OAuth credentials
+        run: |
+          mkdir -p app/src/main/assets
+          if [ -n "$GOOGLE_CLIENT_SECRETS_BASE64" ]; then
+            echo "$GOOGLE_CLIENT_SECRETS_BASE64" | base64 -d > app/src/main/assets/client_secrets.json
+            echo "Google Drive sync credentials written."
+          else
+            echo "No GOOGLE_CLIENT_SECRETS_BASE64 secret — sync will be disabled in this build."
+          fi
+        env:
+          GOOGLE_CLIENT_SECRETS_BASE64: ${{ secrets.GOOGLE_CLIENT_SECRETS_BASE64 }}
 
       - name: Build debug APK
         run: ./gradlew assembleDebug
