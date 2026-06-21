@@ -484,17 +484,15 @@ private fun CoverPlaceholder(title: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun CoverFallback(title: String, modifier: Modifier = Modifier) {
+    val colorHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val colorHighest = MaterialTheme.colorScheme.surfaceContainerHighest
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                        MaterialTheme.colorScheme.surfaceContainerHighest
-                    )
-                )
-            ),
+            .drawWithCache {
+                val gradient = Brush.verticalGradient(colors = listOf(colorHigh, colorHighest))
+                onDrawBehind { drawRect(gradient) }
+            },
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -530,14 +528,15 @@ private fun VignetteOverlay(
     bottomAlpha: Float = 0.6f
 ) {
     Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(
+        modifier = modifier.drawWithCache {
+            val gradient = Brush.verticalGradient(
                 0f to Color.Black.copy(alpha = topAlpha),
                 0.3f to Color.Transparent,
                 0.65f to Color.Transparent,
                 1f to Color.Black.copy(alpha = bottomAlpha)
             )
-        )
+            onDrawBehind { drawRect(gradient) }
+        }
     )
 }
 

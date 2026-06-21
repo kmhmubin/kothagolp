@@ -473,7 +473,8 @@ private fun GroupedHistoryList(
 
                 items(
                     items = items,
-                    key = { "${it.novel.url}_${it.timestamp}" }
+                    key = { "${it.novel.url}_${it.timestamp}" },
+                    contentType = { "history_item" }
                 ) { item ->
                     val isSelected = item.novel.url in selectedItems
 

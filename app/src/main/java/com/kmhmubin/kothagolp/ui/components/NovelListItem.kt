@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -379,6 +379,11 @@ private fun ListItemCoverImage(
 ) {
     var imageState by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
     val context = LocalContext.current
+    val colorHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+    val colorHighest = MaterialTheme.colorScheme.surfaceContainerHighest
+    val errorGradient = remember(colorHigh, colorHighest) {
+        Brush.verticalGradient(colors = listOf(colorHigh, colorHighest))
+    }
 
     Box(modifier = modifier) {
         AsyncImage(
@@ -413,14 +418,7 @@ private fun ListItemCoverImage(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    MaterialTheme.colorScheme.surfaceContainerHighest
-                                )
-                            )
-                        ),
+                        .background(errorGradient),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -428,7 +426,7 @@ private fun ListItemCoverImage(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.MenuBook,
+                            imageVector = Icons.AutoMirrored.Outlined.MenuBook,
                             contentDescription = null,
                             modifier = Modifier.size(24.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -455,8 +453,8 @@ private fun ListItemCoverImage(
 @Composable
 private fun ListItemVignette(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(
+        modifier = modifier.drawWithCache {
+            val gradient = Brush.verticalGradient(
                 colorStops = arrayOf(
                     0f to Color.Black.copy(alpha = 0.15f),
                     0.3f to Color.Transparent,
@@ -464,7 +462,8 @@ private fun ListItemVignette(modifier: Modifier = Modifier) {
                     1f to Color.Black.copy(alpha = 0.2f)
                 )
             )
-        )
+            onDrawBehind { drawRect(gradient) }
+        }
     )
 }
 
