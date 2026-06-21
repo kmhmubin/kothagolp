@@ -1332,7 +1332,7 @@ private fun ProviderSearchResultsSection(
                     contentPadding = PaddingValues(horizontal = dimensions.gridPadding),
                     horizontalArrangement = Arrangement.spacedBy(dimensions.cardSpacing)
                 ) {
-                    items(displayNovels, key = { it.url }) { novel ->
+                    items(displayNovels, key = { it.url }, contentType = { "novel_card" }) { novel ->
                         NovelCard(
                             novel = novel,
                             onClick = { onNovelClick(novel) },
@@ -1643,7 +1643,7 @@ private fun ExpandedSearchResults(
                     horizontalArrangement = Arrangement.spacedBy(dimensions.cardSpacing),
                     verticalArrangement = Arrangement.spacedBy(dimensions.cardSpacing)
                 ) {
-                    items(novels, key = { it.url }) { novel ->
+                    items(novels, key = { it.url }, contentType = { "novel_card" }) { novel ->
                         NovelCard(
                             novel = novel,
                             onClick = { onNovelClick(novel) },
@@ -1676,6 +1676,7 @@ private fun ProviderGrid(
 ) {
     val sortedProviders = remember(providers) { providers.sortedBy { it.name.lowercase() } }
     val gridCells = gridCellsFor(appSettings.browseGridColumns, minSize = 150.dp)
+    val cookieStateVersion by CloudflareManager.cookieStateChanged.collectAsStateWithLifecycle()
 
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -1773,6 +1774,9 @@ private fun ProviderGrid(
                 ProviderCard(
                     provider = provider,
                     isFavorite = provider.name in favoriteProviders,
+                    cookieStatus = remember(cookieStateVersion, provider.mainUrl) {
+                        CloudflareManager.getCookieStatus(provider.mainUrl)
+                    },
                     onClick = { onProviderClick(provider.name) },
                     onFavoriteClick = { onToggleFavorite(provider.name) },
                     modifier = Modifier.graphicsLayer {
@@ -1898,6 +1902,7 @@ private fun StatBadge(
 private fun ProviderCard(
     provider: MainProvider,
     isFavorite: Boolean,
+    cookieStatus: CloudflareManager.CookieStatus,
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -1905,13 +1910,18 @@ private fun ProviderCard(
     val (primaryColor, secondaryColor) = remember(provider.name) {
         ProviderColors.getColors(provider.name)
     }
+    val headerGradient = remember(primaryColor, secondaryColor) {
+        Brush.verticalGradient(colors = listOf(
+            primaryColor.copy(alpha = 0.12f),
+            secondaryColor.copy(alpha = 0.04f),
+            Color.Transparent
+        ))
+    }
+    val orbGradient = remember(primaryColor) {
+        Brush.radialGradient(colors = listOf(primaryColor.copy(alpha = 0.06f), Color.Transparent))
+    }
 
     val haptic = LocalHapticFeedback.current
-
-    val cookieStateVersion by CloudflareManager.cookieStateChanged.collectAsStateWithLifecycle()
-    val cookieStatus = remember(cookieStateVersion, provider.mainUrl) {
-        CloudflareManager.getCookieStatus(provider.mainUrl)
-    }
 
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -1958,30 +1968,14 @@ private fun ProviderCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(90.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                primaryColor.copy(alpha = 0.12f),
-                                secondaryColor.copy(alpha = 0.04f),
-                                Color.Transparent
-                            )
-                        )
-                    )
+                    .background(headerGradient)
             )
 
             Box(
                 modifier = Modifier
                     .size(100.dp)
                     .offset(x = 70.dp, y = (-25).dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                primaryColor.copy(alpha = 0.06f),
-                                Color.Transparent
-                            )
-                        ),
-                        shape = CircleShape
-                    )
+                    .background(brush = orbGradient, shape = CircleShape)
             )
 
             Column(
