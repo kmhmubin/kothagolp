@@ -136,7 +136,7 @@ fun KothagolpNavGraph(
                     navController.navigate(NavRoutes.About.route)
                 },
                 onNavigateToNotesHighlights = {
-                    navController.navigate(NavRoutes.NotesHighlights.route)
+                    navController.navigate(NavRoutes.NotesHighlights.createRoute())
                 },
                 onNavigateToStorage = {
                     navController.navigate(NavRoutes.Storage.route)
