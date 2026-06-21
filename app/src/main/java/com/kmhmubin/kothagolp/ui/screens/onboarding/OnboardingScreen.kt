@@ -120,6 +120,7 @@ fun OnboardingScreen(
                     OnboardingStep.PROVIDERS -> ProvidersStep(
                         providers = state.availableProviders,
                         selectedProviders = state.selectedProviders,
+                        isLoadingProviders = state.isLoadingProviders,
                         onToggleProvider = { viewModel.toggleProvider(it) },
                         onSelectAll = { viewModel.selectAllProviders() },
                         onDeselectAll = { viewModel.deselectAllProviders() },
@@ -245,6 +246,7 @@ private fun WelcomeStep(
 private fun ProvidersStep(
     providers: List<ProviderInfo>,
     selectedProviders: Set<String>,
+    isLoadingProviders: Boolean,
     onToggleProvider: (String) -> Unit,
     onSelectAll: () -> Unit,
     onDeselectAll: () -> Unit,
@@ -261,41 +263,66 @@ private fun ProvidersStep(
             onBack = onBack
         )
 
-        // Selection controls
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.End
-        ) {
-            TextButton(onClick = onSelectAll) {
-                Text("Select All")
+        if (isLoadingProviders) {
+            // Sources still downloading — show non-alarming loading state
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        strokeWidth = 4.dp
+                    )
+                    Text(
+                        text = "Loading sources…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            TextButton(onClick = onDeselectAll) {
-                Text("Clear")
+        } else {
+            // Selection controls
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onSelectAll) {
+                    Text("Select All")
+                }
+                TextButton(onClick = onDeselectAll) {
+                    Text("Clear")
+                }
+            }
+
+            // Provider list
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(providers, key = { it.name }) { provider ->
+                    ProviderCard(
+                        provider = provider,
+                        isSelected = provider.name in selectedProviders,
+                        onToggle = { onToggleProvider(provider.name) }
+                    )
+                }
             }
         }
 
-        // Provider list
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(providers, key = { it.name }) { provider ->
-                ProviderCard(
-                    provider = provider,
-                    isSelected = provider.name in selectedProviders,
-                    onToggle = { onToggleProvider(provider.name) }
-                )
-            }
-        }
-
-        // Bottom navigation
+        // Bottom navigation — disabled while loading or nothing selected
         StepNavigation(
-            canProceed = selectedProviders.isNotEmpty(),
+            canProceed = !isLoadingProviders && selectedProviders.isNotEmpty(),
             onNext = onNext,
             nextLabel = "Continue"
         )

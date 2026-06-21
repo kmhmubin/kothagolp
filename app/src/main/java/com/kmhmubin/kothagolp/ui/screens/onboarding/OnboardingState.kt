@@ -13,6 +13,7 @@ data class OnboardingState(
     // Provider selection
     val availableProviders: List<ProviderInfo> = emptyList(),
     val selectedProviders: Set<String> = emptySet(),
+    val isLoadingProviders: Boolean = false,
 
     // Genre selection
     val likedGenres: Set<TagCategory> = emptySet(),
