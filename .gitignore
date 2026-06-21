@@ -35,6 +35,9 @@ local.properties
 *.keystore
 keystore.properties
 
+# Google Drive OAuth credentials (never commit — contains client_secret)
+app/src/main/assets/client_secrets.json
+
 # Release APKs
 release/
 
