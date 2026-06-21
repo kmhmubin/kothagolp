@@ -62,7 +62,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -134,7 +134,7 @@ fun TTSSettingsPanel(
     var previewingVoiceId by remember { mutableStateOf<String?>(null) }
     var showVoiceSelector by remember { mutableStateOf(false) }
 
-    val selectedVoice: VoiceInfo? by VoiceManager.selectedVoice.collectAsState()
+    val selectedVoice: VoiceInfo? by VoiceManager.selectedVoice.collectAsStateWithLifecycle()
     val sleepTimerRemaining = TTSServiceManager.getSleepTimerRemaining()
 
     DisposableEffect(Unit) {

@@ -43,7 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -79,8 +79,8 @@ fun GlobalSearchScreen(
         factory = GlobalSearchViewModel.Factory(initialQuery)
     )
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val actionSheetState by viewModel.actionSheetState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val actionSheetState by viewModel.actionSheetState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current

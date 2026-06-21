@@ -92,7 +92,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -214,8 +214,8 @@ fun BrowseTab(
     onNavigateToMigration: (() -> Unit)? = null,
     viewModel: BrowseViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val actionSheetState by viewModel.actionSheetState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val actionSheetState by viewModel.actionSheetState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
@@ -1908,7 +1908,7 @@ private fun ProviderCard(
 
     val haptic = LocalHapticFeedback.current
 
-    val cookieStateVersion by CloudflareManager.cookieStateChanged.collectAsState()
+    val cookieStateVersion by CloudflareManager.cookieStateChanged.collectAsStateWithLifecycle()
     val cookieStatus = remember(cookieStateVersion, provider.mainUrl) {
         CloudflareManager.getCookieStatus(provider.mainUrl)
     }
