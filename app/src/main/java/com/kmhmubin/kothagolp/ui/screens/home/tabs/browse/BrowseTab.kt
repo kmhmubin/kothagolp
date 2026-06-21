@@ -420,7 +420,8 @@ fun BrowseTab(
                                 onProviderClick = onNavigateToProvider,
                                 onToggleFavorite = { viewModel.toggleFavoriteProvider(it) },
                                 onRefresh = { viewModel.retryLoadProviders() },
-                                onNavigateToMigration = onNavigateToMigration
+                                onNavigateToMigration = onNavigateToMigration,
+                                appSettings = appSettings
                             )
                         }
                     }
@@ -1670,8 +1671,12 @@ private fun ProviderGrid(
     onProviderClick: (String) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onRefresh: () -> Unit,
-    onNavigateToMigration: (() -> Unit)? = null
+    onNavigateToMigration: (() -> Unit)? = null,
+    appSettings: AppSettings
 ) {
+    val sortedProviders = remember(providers) { providers.sortedBy { it.name.lowercase() } }
+    val gridCells = gridCellsFor(appSettings.browseGridColumns, minSize = 150.dp)
+
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
@@ -1695,7 +1700,7 @@ private fun ProviderGrid(
         modifier = Modifier.fillMaxSize()
     ) {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = gridCells,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -1741,7 +1746,7 @@ private fun ProviderGrid(
             }
 
             itemsIndexed(
-                items = providers,
+                items = sortedProviders,
                 key = { _, provider -> provider.name },
                 contentType = { _, _ -> "provider" }
             ) { index, provider ->
@@ -2232,7 +2237,7 @@ private fun ProviderStatChip(
 @Composable
 private fun ProviderGridSkeleton() {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Adaptive(minSize = 150.dp),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
