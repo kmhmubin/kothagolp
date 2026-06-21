@@ -24,8 +24,6 @@ sealed class NavRoutes(val route: String) {
     object SettingsBrowse : NavRoutes("settings/browse")
     object SettingsReader : NavRoutes("settings/reader_prefs")
     object SettingsSources : NavRoutes("settings/sources")
-    object SettingsAbout : NavRoutes("settings/about")
-
     object Storage : NavRoutes("settings/storage")
 
     // ================================================================

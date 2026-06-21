@@ -269,14 +269,6 @@ fun SettingsScreen(
                             subtitle = "Storage, cache and backup",
                             onClick = { onNavigateTo(NavRoutes.Storage.route) }
                         )
-                        RowDivider()
-                        SettingsNavRow(
-                            icon = Icons.Outlined.Info,
-                            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            title = "About",
-                            subtitle = "App information and reset",
-                            onClick = { onNavigateTo(NavRoutes.SettingsAbout.route) }
-                        )
                     }
                 }
             }
@@ -1008,77 +1000,6 @@ private fun LocalApkItem(
                 contentDescription = "Remove",
                 tint = MaterialTheme.colorScheme.error
             )
-        }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ABOUT
-// ═══════════════════════════════════════════════════════════════════════════
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SettingsAboutScreen(onBack: () -> Unit) {
-    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
-    var showResetDialog by remember { mutableStateOf(false) }
-    val haptics = LocalHapticFeedback.current
-
-    if (showResetDialog) {
-        ResetConfirmationDialog(
-            onConfirm = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                preferencesManager.resetToDefaults()
-                showResetDialog = false
-            },
-            onDismiss = { showResetDialog = false }
-        )
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("About", fontWeight = FontWeight.SemiBold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item { SectionHeader("About", Icons.Outlined.Info) }
-            item {
-                SettingsCard {
-                    InfoItem(Icons.Outlined.Apartment, "App", "Kothagolp")
-                    SettingsDivider()
-                    InfoItem(Icons.Outlined.Numbers, "Version", "1.0.0")
-                }
-            }
-
-            item { SectionHeader("Advanced", Icons.Outlined.SettingsSuggest) }
-            item {
-                SettingsCard {
-                    ClickableItem(
-                        icon = Icons.Outlined.RestartAlt,
-                        title = "Reset to Defaults",
-                        subtitle = "Restore all settings to defaults",
-                        tint = MaterialTheme.colorScheme.error,
-                        onClick = { showResetDialog = true }
-                    )
-                }
-            }
-
-            item { Spacer(Modifier.height(80.dp)) }
         }
     }
 }
@@ -2296,40 +2217,3 @@ private fun getLibraryShelfColor(filter: LibraryFilter): Color {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// RESET DIALOG
-// ═══════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun ResetConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                Icons.Outlined.Warning,
-                null,
-                Modifier.size(32.dp),
-                MaterialTheme.colorScheme.error
-            )
-        },
-        title = { Text("Reset All Settings?", fontWeight = FontWeight.SemiBold) },
-        text = {
-            Text(
-                "Resets all settings to defaults. Your library and downloaded chapters won't be affected.",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("Reset", fontWeight = FontWeight.SemiBold)
-            }
-        },
-        dismissButton = { TextButton(onDismiss) { Text("Cancel") } },
-        shape = AppShape.extraLarge
-    )
-}
