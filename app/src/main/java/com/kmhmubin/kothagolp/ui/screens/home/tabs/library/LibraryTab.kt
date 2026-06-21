@@ -366,7 +366,7 @@ fun LibraryTab(
             ) {
                 MultiSelectBar(
                     selectedCount = uiState.selectedNovelUrls.size,
-                    totalCount = uiState.filteredItems.distinctBy { it.novel.url }.size,
+                    totalCount = (precomputedPages[uiState.filter] ?: emptyList()).distinctBy { it.novel.url }.size,
                     onSelectAll = { viewModel.selectAll() },
                     onDeselectAll = { viewModel.deselectAll() },
                     onChangeCategory = { showStatusPicker = true },

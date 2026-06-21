@@ -668,9 +668,12 @@ class LibraryViewModel : ViewModel() {
     }
 
     fun selectAll() {
-        _uiState.update { state ->
-            state.copy(selectedNovelUrls = state.filteredItems.map { it.novel.url }.toSet())
-        }
+        val currentFilter = _uiState.value.filter
+        val visibleUrls = precomputedPages.value[currentFilter]
+            ?.map { it.novel.url }
+            ?.toSet()
+            ?: emptySet()
+        _uiState.update { it.copy(selectedNovelUrls = visibleUrls) }
     }
 
     fun deselectAll() {
