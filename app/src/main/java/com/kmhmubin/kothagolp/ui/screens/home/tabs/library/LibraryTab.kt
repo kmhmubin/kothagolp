@@ -75,7 +75,9 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Label
+import androidx.compose.material.icons.rounded.Deselect
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.Sync
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Badge
@@ -364,6 +366,9 @@ fun LibraryTab(
             ) {
                 MultiSelectBar(
                     selectedCount = uiState.selectedNovelUrls.size,
+                    totalCount = uiState.filteredItems.distinctBy { it.novel.url }.size,
+                    onSelectAll = { viewModel.selectAll() },
+                    onDeselectAll = { viewModel.deselectAll() },
                     onChangeCategory = { showStatusPicker = true },
                     onMarkAllRead = { viewModel.markAllReadForSelected() },
                     onDelete = { viewModel.deleteSelected() },
@@ -1453,12 +1458,16 @@ private fun getFilterIcon(filter: LibraryFilter): ImageVector? {
 @Composable
 private fun MultiSelectBar(
     selectedCount: Int,
+    totalCount: Int,
+    onSelectAll: () -> Unit,
+    onDeselectAll: () -> Unit,
     onChangeCategory: () -> Unit,
     onMarkAllRead: () -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val allSelected = selectedCount == totalCount && totalCount > 0
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -1486,6 +1495,13 @@ private fun MultiSelectBar(
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.weight(1f)
             )
+            IconButton(onClick = if (allSelected) onDeselectAll else onSelectAll) {
+                Icon(
+                    imageVector = if (allSelected) Icons.Rounded.Deselect else Icons.Rounded.SelectAll,
+                    contentDescription = if (allSelected) "Deselect all" else "Select all",
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
             IconButton(onClick = onChangeCategory) {
                 Icon(
                     imageVector = Icons.Rounded.Label,

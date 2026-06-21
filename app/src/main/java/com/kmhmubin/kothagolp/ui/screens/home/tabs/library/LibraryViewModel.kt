@@ -667,6 +667,16 @@ class LibraryViewModel : ViewModel() {
         }
     }
 
+    fun selectAll() {
+        _uiState.update { state ->
+            state.copy(selectedNovelUrls = state.filteredItems.map { it.novel.url }.toSet())
+        }
+    }
+
+    fun deselectAll() {
+        _uiState.update { it.copy(selectedNovelUrls = emptySet()) }
+    }
+
     fun exitMultiSelect() {
         _uiState.update { it.copy(isMultiSelectMode = false, selectedNovelUrls = emptySet()) }
     }
