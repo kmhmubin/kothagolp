@@ -51,6 +51,7 @@ import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.CheckBox
 import androidx.compose.material.icons.rounded.HistoryToggleOff
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.MenuBook
@@ -186,7 +187,8 @@ fun NovelActionSheet(
     onAddToLibrary: ((ReadingStatus) -> Unit)?,
     onRemoveFromLibrary: (() -> Unit)?,
     onStatusChange: ((ReadingStatus) -> Unit)? = null,
-    onRemoveFromHistory: (() -> Unit)? = null
+    onRemoveFromHistory: (() -> Unit)? = null,
+    onStartMultiSelect: (() -> Unit)? = null
 ) {
     var showCoverZoom by remember { mutableStateOf(false) }
     var showSynopsisOverlay by remember { mutableStateOf(false) }
@@ -315,6 +317,15 @@ fun NovelActionSheet(
                 },
                 onOpenStatusPicker = { statusPickerMode = StatusPickerMode.UPDATE },
                 onRemoveFromHistory = onRemoveFromHistory?.let { callback ->
+                    {
+                        scope.launch {
+                            sheetState.hide()
+                            onDismiss()
+                            callback()
+                        }
+                    }
+                },
+                onStartMultiSelect = onStartMultiSelect?.let { callback ->
                     {
                         scope.launch {
                             sheetState.hide()
@@ -744,7 +755,8 @@ private fun CompactActions(
     onViewDetails: () -> Unit,
     onAddToLibrary: () -> Unit,
     onOpenStatusPicker: () -> Unit,
-    onRemoveFromHistory: (() -> Unit)?
+    onRemoveFromHistory: (() -> Unit)?,
+    onStartMultiSelect: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -770,7 +782,6 @@ private fun CompactActions(
             )
 
             if (isInLibrary) {
-                // Status selector button
                 StatusSelectorButton(
                     modifier = Modifier.weight(1f),
                     currentStatus = currentStatus ?: ReadingStatus.READING,
@@ -783,6 +794,15 @@ private fun CompactActions(
                     text = "Add",
                     accentColor = ActionSheetColors.Pink,
                     onClick = onAddToLibrary
+                )
+            }
+
+            if (onStartMultiSelect != null) {
+                CompactSecondaryButton(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Rounded.CheckBox,
+                    text = "Select",
+                    onClick = onStartMultiSelect
                 )
             }
         }

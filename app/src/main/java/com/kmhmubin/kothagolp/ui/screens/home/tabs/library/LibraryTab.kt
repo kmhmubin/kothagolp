@@ -99,9 +99,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -110,9 +108,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.hapticfeedback.HapticFeedback
+
 import androidx.compose.ui.input.pointer.pointerInput
-import kotlinx.coroutines.withTimeoutOrNull
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -246,7 +244,11 @@ fun LibraryTab(
             onAddToLibrary = null,
             onRemoveFromLibrary = { viewModel.removeFromLibrary(data.novel.url) },
             onRemoveFromHistory = null,
-            onStatusChange = { status -> viewModel.updateReadingStatus(status) }
+            onStatusChange = { status -> viewModel.updateReadingStatus(status) },
+            onStartMultiSelect = {
+                viewModel.hideActionSheet()
+                viewModel.enterMultiSelect(data.novel.url)
+            }
         )
     }
 
@@ -345,7 +347,6 @@ fun LibraryTab(
                                         viewModel.showActionSheet(item)
                                     }
                                 },
-                                onEnterMultiSelect = { url -> viewModel.enterMultiSelect(url) },
                                 appSettings = appSettings,
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -769,12 +770,10 @@ private fun LibraryContent(
     onNotificationClick: () -> Unit,
     onNovelClick: (LibraryItem) -> Unit,
     onNovelLongClick: (LibraryItem) -> Unit,
-    onEnterMultiSelect: (String) -> Unit,
     appSettings: AppSettings,
     modifier: Modifier = Modifier
 ) {
     val dimensions = KothagolpTheme.dimensions
-    val haptic = LocalHapticFeedback.current
     val showRefreshProgress = uiState.refreshProgress != null
     val novelsWithNewChapters = remember(uiState.items) { uiState.items.count { it.hasNewChapters } }
     val displayMode = appSettings.libraryDisplayMode
@@ -831,23 +830,16 @@ private fun LibraryContent(
                     key = { _, item -> item.novel.url },
                     contentType = { _, _ -> "novel_card" }
                 ) { _, item ->
-                    HoldToSelectWrapper(
-                        novelUrl = item.novel.url,
-                        isMultiSelectMode = uiState.isMultiSelectMode,
-                        haptic = haptic,
-                        onEnterMultiSelect = { onEnterMultiSelect(item.novel.url) }
-                    ) {
-                        NovelCard(
-                            novel = item.novel,
-                            onClick = { onNovelClick(item) },
-                            onLongClick = { onNovelLongClick(item) },
-                            newChapterCount = if (appSettings.showBadges) item.newChapterCount else 0,
-                            readingStatus = if (appSettings.showBadges) item.readingStatus else null,
-                            lastReadChapter = item.lastReadPosition?.chapterName,
-                            density = appSettings.uiDensity,
-                            isSelected = item.novel.url in uiState.selectedNovelUrls
-                        )
-                    }
+                    NovelCard(
+                        novel = item.novel,
+                        onClick = { onNovelClick(item) },
+                        onLongClick = { onNovelLongClick(item) },
+                        newChapterCount = if (appSettings.showBadges) item.newChapterCount else 0,
+                        readingStatus = if (appSettings.showBadges) item.readingStatus else null,
+                        lastReadChapter = item.lastReadPosition?.chapterName,
+                        density = appSettings.uiDensity,
+                        isSelected = item.novel.url in uiState.selectedNovelUrls
+                    )
                 }
             }
         }
@@ -895,23 +887,16 @@ private fun LibraryContent(
                     key = { _, item -> item.novel.url },
                     contentType = { _, _ -> "novel_list" }
                 ) { _, item ->
-                    HoldToSelectWrapper(
-                        novelUrl = item.novel.url,
-                        isMultiSelectMode = uiState.isMultiSelectMode,
-                        haptic = haptic,
-                        onEnterMultiSelect = { onEnterMultiSelect(item.novel.url) }
-                    ) {
-                        NovelListItem(
-                            novel = item.novel,
-                            onClick = { onNovelClick(item) },
-                            onLongClick = { onNovelLongClick(item) },
-                            newChapterCount = if (appSettings.showBadges) item.newChapterCount else 0,
-                            readingStatus = if (appSettings.showBadges) item.readingStatus else null,
-                            lastReadChapter = item.lastReadPosition?.chapterName,
-                            density = appSettings.uiDensity,
-                            isSelected = item.novel.url in uiState.selectedNovelUrls
-                        )
-                    }
+                    NovelListItem(
+                        novel = item.novel,
+                        onClick = { onNovelClick(item) },
+                        onLongClick = { onNovelLongClick(item) },
+                        newChapterCount = if (appSettings.showBadges) item.newChapterCount else 0,
+                        readingStatus = if (appSettings.showBadges) item.readingStatus else null,
+                        lastReadChapter = item.lastReadPosition?.chapterName,
+                        density = appSettings.uiDensity,
+                        isSelected = item.novel.url in uiState.selectedNovelUrls
+                    )
                 }
             }
         }
@@ -1458,40 +1443,6 @@ private fun getFilterIcon(filter: LibraryFilter): ImageVector? {
         LibraryFilter.ON_HOLD -> Icons.Rounded.PauseCircle
         LibraryFilter.PLAN_TO_READ -> Icons.Rounded.BookmarkAdd
         LibraryFilter.DROPPED -> Icons.Rounded.Cancel
-    }
-}
-
-// ============================================================================
-// Multiselect — hold-to-select wrapper
-// ============================================================================
-
-@Composable
-private fun HoldToSelectWrapper(
-    novelUrl: String,
-    isMultiSelectMode: Boolean,
-    haptic: HapticFeedback,
-    onEnterMultiSelect: () -> Unit,
-    content: @Composable () -> Unit
-) {
-    Box(
-        modifier = Modifier.pointerInput(novelUrl, isMultiSelectMode) {
-            if (isMultiSelectMode) return@pointerInput
-            awaitEachGesture {
-                awaitFirstDown(requireUnconsumed = false)
-                // withTimeoutOrNull returns null ONLY on 500ms timeout; waitForUpOrCancellation
-                // returning null (scroll) makes block return Unit (non-null), so no false trigger.
-                val timedOut = withTimeoutOrNull(500L) {
-                    waitForUpOrCancellation()
-                    Unit
-                } == null
-                if (timedOut) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onEnterMultiSelect()
-                }
-            }
-        }
-    ) {
-        content()
     }
 }
 
