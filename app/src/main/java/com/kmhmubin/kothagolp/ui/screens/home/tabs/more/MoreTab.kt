@@ -16,14 +16,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.rounded.CompareArrows
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -57,8 +55,6 @@ fun MoreTab(
     onNavigateToDownloads: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToAbout: () -> Unit,
-    onNavigateToStorage: () -> Unit,
-    onNavigateToMigration: (() -> Unit)? = null,
     onNavigateToNotesHighlights: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: MoreViewModel = viewModel()
@@ -159,53 +155,14 @@ fun MoreTab(
             }
         }
 
-        item(key = "storage_menu") {
-            MoreMenuItem(
-                icon = Icons.Rounded.Storage,
-                title = "Storage & Backup",
-                subtitle = "Clear cache, export or import backups",
-                iconTint = MaterialTheme.colorScheme.secondary,
-                onClick = onNavigateToStorage,
-                modifier = Modifier.padding(horizontal = dimensions.gridPadding)
-            )
-        }
-
-        if (onNavigateToMigration != null) {
-            item(key = "migration_menu") {
-                MoreMenuItem(
-                    icon = Icons.AutoMirrored.Rounded.CompareArrows,
-                    title = "Migrate Sources",
-                    subtitle = "Move library novels to a different source",
-                    iconTint = MaterialTheme.colorScheme.primary,
-                    onClick = onNavigateToMigration,
-                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
-                )
-            }
-        }
-
         item(key = "settings_menu") {
             MoreMenuItem(
                 icon = Icons.Rounded.Settings,
                 title = "Settings",
-                subtitle = "Appearance, reading and downloads",
+                subtitle = "Appearance, reader, storage & more",
                 iconTint = MaterialTheme.colorScheme.primary,
                 onClick = onNavigateToSettings,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
-            )
-        }
-
-        // Spacer before About section
-        item(key = "about_header") {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "About",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(
-                    horizontal = dimensions.gridPadding,
-                    vertical = 8.dp
-                )
             )
         }
 
