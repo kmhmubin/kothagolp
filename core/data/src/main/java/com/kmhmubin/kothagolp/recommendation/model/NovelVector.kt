@@ -40,7 +40,10 @@ data class NovelVector(
     val posterUrl: String?,
 
     /** Full synopsis text (for deep matching) */
-    val synopsis: String? = null
+    val synopsis: String? = null,
+
+    /** When this novel was first added to discovery pool (epoch ms, 0 for offline cache) */
+    val discoveredAt: Long = 0L
 ) {
 
     /**

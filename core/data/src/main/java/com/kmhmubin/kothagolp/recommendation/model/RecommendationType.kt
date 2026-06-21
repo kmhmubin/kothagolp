@@ -13,6 +13,12 @@ enum class RecommendationType {
     /** Because user read/liked a specific novel */
     BECAUSE_YOU_READ,
 
+    /** What to read after a recently completed series */
+    JUST_FINISHED_SIMILAR,
+
+    /** Genre the user is actively reading right now */
+    ACTIVE_GENRE,
+
     /** Popular in genres the user likes */
     TRENDING_IN_YOUR_GENRES,
 
