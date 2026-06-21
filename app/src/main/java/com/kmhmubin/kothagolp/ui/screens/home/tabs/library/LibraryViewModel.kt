@@ -105,7 +105,8 @@ class LibraryViewModel : ViewModel() {
                 _uiState.update { state ->
                     state.applyLibrarySettings(
                         settings = settings,
-                        spicyShelfRevealed = preferencesManager.isSpicyShelfRevealed.value
+                        spicyShelfRevealed = preferencesManager.isSpicyShelfRevealed.value,
+                        isInitialLoad = true
                     )
                 }
 
@@ -746,19 +747,26 @@ class LibraryViewModel : ViewModel() {
 
     private fun LibraryUiState.applyLibrarySettings(
         settings: com.kmhmubin.kothagolp.domain.model.AppSettings,
-        spicyShelfRevealed: Boolean
+        spicyShelfRevealed: Boolean,
+        isInitialLoad: Boolean = false
     ): LibraryUiState {
         val privacyEnabled = settings.hideSpicyLibraryContent
         val showSpicyFilter = !privacyEnabled || spicyShelfRevealed
         val enabledShelfFilters = settings.enabledLibraryFilters
         val visibleFilters = LibraryFilter.visibleFilters(enabledShelfFilters, showSpicyFilter)
 
+        val resolvedFilter = when {
+            // On initial load, honour the default from settings
+            isInitialLoad -> LibraryFilter.sanitizeDefault(settings.defaultLibraryFilter, enabledShelfFilters)
+            // On live updates, keep the user's current selection unless it's gone from visibleFilters
+            filter in visibleFilters -> filter
+            else -> LibraryFilter.sanitizeDefault(settings.defaultLibraryFilter, enabledShelfFilters)
+        }
+
         return copy(
-            filter = LibraryFilter.sanitizeDefault(
-                settings.defaultLibraryFilter,
-                enabledShelfFilters
-            ),
-            sortOrder = settings.defaultLibrarySort,
+            filter = resolvedFilter,
+            // sortOrder: apply from settings only on initial load; per-session changes survive tab switches
+            sortOrder = if (isInitialLoad) settings.defaultLibrarySort else sortOrder,
             spicyPrivacyEnabled = privacyEnabled,
             enabledShelfFilters = enabledShelfFilters,
             visibleFilters = visibleFilters
