@@ -216,8 +216,6 @@ private fun PersistentTabContent(
                 onNavigateToDownloads = onNavigateToDownloads,
                 onNavigateToAbout = { onNavigateToAbout() },
                 onNavigateToSettings = onNavigateToSettings,
-                onNavigateToStorage = onNavigateToStorage,
-                onNavigateToMigration = onNavigateToMigration,
                 onNavigateToNotesHighlights = onNavigateToNotesHighlights
             )
         }

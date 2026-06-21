@@ -249,19 +249,7 @@ fun SettingsScreen(
                             subtitle = "Manage sources and updates",
                             onClick = { onNavigateTo(NavRoutes.SettingsSources.route) }
                         )
-                    }
-                }
-            }
-
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    ),
-                    shape = AppShape.large
-                ) {
-                    Column {
+                        RowDivider()
                         SettingsNavRow(
                             icon = Icons.Outlined.Storage,
                             iconTint = StatusCompleted,
