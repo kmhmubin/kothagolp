@@ -36,11 +36,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -541,25 +538,26 @@ private fun ListStatusDot(
         modifier = modifier,
         shape = CircleShape,
         color = Color.Black.copy(alpha = 0.5f),
-        shadowElevation = AppElevation.sm
+        shadowElevation = 0.dp
     ) {
         Box(
             modifier = Modifier.padding(5.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Glow effect
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .blur(4.dp, BlurredEdgeTreatment.Unbounded)
-                    .background(statusColor.copy(alpha = 0.5f), CircleShape)
-            )
-            // Solid dot
             Box(
                 modifier = Modifier
                     .size(ListItemTokens.StatusDotSize)
-                    .shadow(2.dp, CircleShape)
-                    .background(statusColor, CircleShape)
+                    .drawWithCache {
+                        val r = size.minDimension / 2
+                        val c1 = statusColor.copy(alpha = 0.15f)
+                        val c2 = statusColor.copy(alpha = 0.35f)
+                        val solid = statusColor
+                        onDrawBehind {
+                            drawCircle(color = c1, radius = r * 2.2f)
+                            drawCircle(color = c2, radius = r * 1.5f)
+                            drawCircle(color = solid, radius = r)
+                        }
+                    }
             )
         }
     }
@@ -579,7 +577,7 @@ private fun ListLibraryBookmarkBadge(
         modifier = modifier.size(if (compact) 20.dp else 22.dp),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
-        shadowElevation = ListItemTokens.Elevation.Badge
+        shadowElevation = 0.dp
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -612,7 +610,7 @@ private fun ListNewChaptersBadge(
         modifier = modifier,
         shape = if (compact) CircleShape else AppShape.extraSmall,
         color = MaterialTheme.colorScheme.primary,
-        shadowElevation = ListItemTokens.Elevation.Badge
+        shadowElevation = 0.dp
     ) {
         if (compact) {
             Box(

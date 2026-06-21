@@ -42,12 +42,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -605,7 +602,7 @@ private fun LibraryBookmarkBadge(
         modifier = modifier.size(if (compactMode) 22.dp else 24.dp),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
-        shadowElevation = NovelCardTokens.Elevation.Badge
+        shadowElevation = 0.dp
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -643,7 +640,7 @@ private fun StatusBadge(
             modifier = modifier,
             shape = CircleShape,
             color = Color.Black.copy(alpha = 0.5f),
-            shadowElevation = 2.dp
+            shadowElevation = 0.dp
         ) {
             Box(
                 modifier = Modifier.padding(6.dp),
@@ -651,15 +648,18 @@ private fun StatusBadge(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(12.dp)
-                        .blur(4.dp, BlurredEdgeTreatment.Unbounded)
-                        .background(statusColor.copy(alpha = 0.5f), CircleShape)
-                )
-                Box(
-                    modifier = Modifier
                         .size(NovelCardTokens.StatusDotSize)
-                        .shadow(2.dp, CircleShape)
-                        .background(statusColor, CircleShape)
+                        .drawWithCache {
+                            val r = size.minDimension / 2
+                            val c1 = statusColor.copy(alpha = 0.15f)
+                            val c2 = statusColor.copy(alpha = 0.35f)
+                            val solid = statusColor
+                            onDrawBehind {
+                                drawCircle(color = c1, radius = r * 2.2f)
+                                drawCircle(color = c2, radius = r * 1.5f)
+                                drawCircle(color = solid, radius = r)
+                            }
+                        }
                 )
             }
         }
@@ -668,8 +668,7 @@ private fun StatusBadge(
             modifier = modifier,
             shape = NovelCardTokens.BadgeShape,
             color = statusColor,
-            shadowElevation = NovelCardTokens.Elevation.Badge,
-            tonalElevation = 2.dp
+            shadowElevation = 0.dp
         ) {
             Text(
                 text = status.displayName(),
@@ -698,7 +697,7 @@ private fun NewChaptersBadge(
         modifier = modifier,
         shape = NovelCardTokens.PillShape,
         color = MaterialTheme.colorScheme.primary,
-        shadowElevation = NovelCardTokens.Elevation.Badge
+        shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier.padding(
