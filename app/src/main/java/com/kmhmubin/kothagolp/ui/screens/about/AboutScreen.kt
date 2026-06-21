@@ -130,6 +130,17 @@ fun AboutScreen(
                 )
             }
 
+            // ═══════════════ ADVANCED ═══════════════
+
+            item(key = "reset_section") {
+                Spacer(Modifier.height(4.dp))
+                SectionLabel("Advanced")
+            }
+
+            item(key = "reset_card") {
+                ResetToDefaultsCard()
+            }
+
             // ═══════════════ DISCLAIMER ═══════════════
 
             item(key = "disclaimer_header") {
@@ -210,17 +221,6 @@ fun AboutScreen(
                         )
                     }
                 }
-            }
-
-            // ═══════════════ RESET TO DEFAULTS ═══════════════
-
-            item(key = "reset_section") {
-                Spacer(Modifier.height(4.dp))
-                SectionLabel("Advanced")
-            }
-
-            item(key = "reset_card") {
-                ResetToDefaultsCard()
             }
 
             // Bottom spacer
@@ -446,7 +446,8 @@ private fun UpdateCard(
 
             AnimatedVisibility(
                 visible = !uiState.isCheckingUpdate &&
-                        uiState.updateResult?.updateAvailable != true
+                        uiState.updateResult?.updateAvailable != true &&
+                        !(uiState.hasChecked && uiState.updateError != null)
             ) {
                 FilledTonalButton(
                     onClick = onCheckUpdate,

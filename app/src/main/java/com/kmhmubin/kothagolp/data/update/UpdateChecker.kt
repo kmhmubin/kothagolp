@@ -77,6 +77,21 @@ class UpdateChecker(private val context: Context) {
 
             val response = client.newCall(request).execute()
 
+            if (response.code == 404) {
+                val currentVersion = getCurrentVersion()
+                return@withContext Result.success(
+                    UpdateResult(
+                        updateAvailable = false,
+                        currentVersion = currentVersion,
+                        latestVersion = currentVersion,
+                        downloadUrl = null,
+                        releaseUrl = "$GITHUB_REPO/releases",
+                        releaseNotes = null,
+                        apkSizeBytes = null
+                    )
+                )
+            }
+
             if (!response.isSuccessful) {
                 return@withContext Result.failure(
                     Exception("GitHub API returned ${response.code}")
