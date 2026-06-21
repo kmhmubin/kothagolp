@@ -91,7 +91,8 @@ class NovelScorer(
     }
 
     /**
-     * Calculate how well novel's tags match user's explicit preferences
+     * Calculate how well novel's tags match user's explicit preferences.
+     * Boosts genres where the user consistently finishes novels (high completion rate = strong signal).
      */
     private fun calculatePreferenceMatch(novel: NovelVector): Float {
         if (novel.tags.isEmpty() || userProfile.preferredTags.isEmpty()) return 0.5f
@@ -103,7 +104,11 @@ class NovelScorer(
             val affinity = userProfile.preferredTags.find { it.tag == tag }
             if (affinity != null) {
                 val weight = affinity.confidence
-                matchScore += affinity.score * weight
+                // Genres where user consistently finishes novels get up to 20% extra weight
+                val completionBoost = if (affinity.completionRate > 0.6f && affinity.novelCount >= 2) {
+                    1f + (affinity.completionRate - 0.6f) * 0.5f
+                } else 1f
+                matchScore += affinity.score * weight * completionBoost
                 weightSum += weight
             }
         }

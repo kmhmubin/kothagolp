@@ -13,6 +13,7 @@ import com.kmhmubin.kothagolp.ui.theme.AppShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.NewReleases
@@ -165,6 +166,8 @@ private fun getSectionIcon(type: RecommendationType): ImageVector {
         RecommendationType.FOR_YOU -> Icons.Rounded.AutoAwesome
         RecommendationType.SIMILAR_TO -> Icons.Rounded.LocalFireDepartment
         RecommendationType.BECAUSE_YOU_READ -> Icons.Rounded.LocalFireDepartment
+        RecommendationType.JUST_FINISHED_SIMILAR -> Icons.Rounded.CheckCircle
+        RecommendationType.ACTIVE_GENRE -> Icons.AutoMirrored.Rounded.TrendingUp
         RecommendationType.TRENDING_IN_YOUR_GENRES -> Icons.AutoMirrored.Rounded.TrendingUp
         RecommendationType.FROM_AUTHORS_YOU_LIKE -> Icons.Rounded.Person
         RecommendationType.TOP_RATED_FOR_YOU -> Icons.Rounded.Star
@@ -179,6 +182,8 @@ private fun getSectionColor(type: RecommendationType): Color {
         RecommendationType.FOR_YOU -> MaterialTheme.colorScheme.primary
         RecommendationType.SIMILAR_TO -> MaterialTheme.colorScheme.secondary
         RecommendationType.BECAUSE_YOU_READ -> MaterialTheme.colorScheme.secondary
+        RecommendationType.JUST_FINISHED_SIMILAR -> Color(0xFF4CAF50) // Green
+        RecommendationType.ACTIVE_GENRE -> MaterialTheme.colorScheme.tertiary
         RecommendationType.TRENDING_IN_YOUR_GENRES -> MaterialTheme.colorScheme.tertiary
         RecommendationType.FROM_AUTHORS_YOU_LIKE -> Color(0xFF9C27B0) // Purple
         RecommendationType.TOP_RATED_FOR_YOU -> Color(0xFFFF9800) // Orange

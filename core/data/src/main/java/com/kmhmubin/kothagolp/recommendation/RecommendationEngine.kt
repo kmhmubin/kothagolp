@@ -8,6 +8,7 @@ import com.kmhmubin.kothagolp.data.local.entity.DiscoveredNovelEntity
 import com.kmhmubin.kothagolp.data.local.entity.NovelDetailsEntity
 import com.kmhmubin.kothagolp.data.repository.LibraryRepository
 import com.kmhmubin.kothagolp.domain.model.Novel
+import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.recommendation.model.NovelVector
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
 import com.kmhmubin.kothagolp.recommendation.model.RecommendationGroup
@@ -74,7 +75,7 @@ class RecommendationEngine(
         Log.d(TAG, "Disabled providers: ${config.disabledProviders.size} (${config.disabledProviders.joinToString()})")
         Log.d(TAG, "Generating recommendations - ${likedAuthors.size} liked authors, ${favoriteAuthors.size} favorites")
 
-        val allCandidates = loadAllCandidates(libraryUrls, filterState, config.disabledProviders)
+        val allCandidates = loadAllCandidates(libraryUrls, filterState, config.disabledProviders, config.preferredProvider)
 
         Log.d(TAG, "Generating recommendations - Profile: ${userProfile.sampleSize} novels, Library: ${libraryUrls.size}")
 
@@ -93,7 +94,7 @@ class RecommendationEngine(
         val usedNovelUrls = mutableSetOf<String>()
         val maxOverlapPerGroup = (config.maxPerGroup * config.allowedOverlapRatio).toInt()
 
-        // 1. FOR YOU - Only if user has preferences AND we have good data novels
+        // 1. FOR YOU — personalized by taste profile
         if (userProfile.sampleSize >= 1 && withGoodData.isNotEmpty()) {
             generateForYouGroup(
                 userProfile, withGoodData, config, usedNovelUrls, maxOverlapPerGroup,
@@ -104,17 +105,16 @@ class RecommendationEngine(
             }
         }
 
-        // 2. FROM AUTHORS YOU LIKE
-        if (favoriteAuthors.isNotEmpty() || likedAuthors.size >= 2) {
-            generateFromAuthorsYouLikeGroup(
-                allCandidates, likedAuthors, config, usedNovelUrls, maxOverlapPerGroup, filterState
-            )?.let {
-                groups.add(it)
-                usedNovelUrls.addAll(it.recommendations.map { r -> r.novel.url })
-            }
+        // 2. JUST FINISHED — what to read after a recently completed series
+        generateJustFinishedSimilarGroup(
+            userProfile, allCandidates, config, usedNovelUrls, maxOverlapPerGroup,
+            authorAffinities, favoriteAuthors, filterState
+        )?.let {
+            groups.add(it)
+            usedNovelUrls.addAll(it.recommendations.map { r -> r.novel.url })
         }
 
-        // 3. BECAUSE YOU READ - Only if user has read something
+        // 3. BECAUSE YOU READ — similar to most recently read novel
         val recentlyRead = libraryRepository.getLibrary()
             .filter { it.lastReadPosition != null }
             .sortedByDescending { it.lastReadPosition?.timestamp ?: 0 }
@@ -130,7 +130,26 @@ class RecommendationEngine(
             }
         }
 
-        // 4. TOP RATED - Use different strategies based on data availability
+        // 4. FROM AUTHORS YOU LIKE
+        if (favoriteAuthors.isNotEmpty() || likedAuthors.size >= 2) {
+            generateFromAuthorsYouLikeGroup(
+                allCandidates, likedAuthors, config, usedNovelUrls, maxOverlapPerGroup, filterState
+            )?.let {
+                groups.add(it)
+                usedNovelUrls.addAll(it.recommendations.map { r -> r.novel.url })
+            }
+        }
+
+        // 5. ACTIVE GENRE — genre user is actively reading right now
+        generateActiveGenreGroup(
+            userProfile, allCandidates, config, usedNovelUrls, maxOverlapPerGroup,
+            authorAffinities, favoriteAuthors, filterState
+        )?.let {
+            groups.add(it)
+            usedNovelUrls.addAll(it.recommendations.map { r -> r.novel.url })
+        }
+
+        // 6. HIGHEST RATED
         generateTopRatedGroup(
             userProfile, allCandidates, config, filterState, usedNovelUrls, maxOverlapPerGroup
         )?.let {
@@ -138,7 +157,7 @@ class RecommendationEngine(
             usedNovelUrls.addAll(it.recommendations.map { r -> r.novel.url })
         }
 
-        // 5. BY GENRE - Create genre-specific groups from available tags
+        // 7. BEST IN GENRE — top novels per discovered genre
         if (withGoodData.isNotEmpty()) {
             generateGenreGroups(
                 withGoodData, config, usedNovelUrls, maxOverlapPerGroup
@@ -148,7 +167,7 @@ class RecommendationEngine(
             }
         }
 
-        // 6. DISCOVER NEW SOURCE - Cross-provider discovery
+        // 8. DISCOVER NEW SOURCE — cross-provider
         val preferredProvider = config.preferredProvider
             ?.takeIf { it !in config.disabledProviders }
             ?: allCandidates.groupingBy { it.providerName }.eachCount().maxByOrNull { it.value }?.key
@@ -162,16 +181,8 @@ class RecommendationEngine(
             }
         }
 
-        // 7. TRENDING - Different novels per provider
-        generateProviderTrendingGroups(
-            allCandidates, config, usedNovelUrls, maxOverlapPerGroup
-        ).forEach { group ->
-            groups.add(group)
-            usedNovelUrls.addAll(group.recommendations.map { r -> r.novel.url })
-        }
-
-        // 8. NEW RELEASES - Ongoing novels (not completed)
-        generateNewReleasesGroup(
+        // 9. NEW ARRIVALS — recently discovered + ongoing
+        generateNewArrivalsGroup(
             allCandidates, config, usedNovelUrls, maxOverlapPerGroup
         )?.let {
             groups.add(it)
@@ -182,48 +193,80 @@ class RecommendationEngine(
     }
 
     // ================================================================
-    // CANDIDATE LOADING - Enhanced with better tag extraction
+    // CANDIDATE LOADING - Cross-source title deduplication
     // ================================================================
 
     private suspend fun loadAllCandidates(
         excludeUrls: Set<String>,
         filterState: UserFilterManager.FilterState? = null,
-        disabledProviders: Set<String> = emptySet()
+        disabledProviders: Set<String> = emptySet(),
+        preferredProvider: String? = null
     ): List<NovelVector> {
-        val candidates = mutableListOf<NovelVector>()
-        val seenUrls = mutableSetOf<String>()
+        // url → vector (for fast lookup)
+        val byUrl = mutableMapOf<String, NovelVector>()
+        // normalizedTitle → url of currently-kept entry (cross-source title dedup)
+        val byNormalizedTitle = mutableMapOf<String, String>()
 
-        // Priority 1: NovelDetailsEntity (has full details)
+        fun tryAdd(vector: NovelVector) {
+            if (vector.providerName in disabledProviders) return
+            if (filterState != null && userFilterManager.shouldFilter(vector, filterState)) return
+
+            val normalizedTitle = normalizeTitleForDedup(vector.name)
+            val existingUrl = byNormalizedTitle[normalizedTitle]
+
+            if (existingUrl == null) {
+                byUrl[vector.url] = vector
+                byNormalizedTitle[normalizedTitle] = vector.url
+            } else {
+                val existing = byUrl[existingUrl] ?: return
+                // Keep the version from the preferred provider; otherwise keep higher-rated one
+                val keepNew = when {
+                    preferredProvider != null &&
+                        vector.providerName == preferredProvider &&
+                        existing.providerName != preferredProvider -> true
+                    preferredProvider != null &&
+                        existing.providerName == preferredProvider -> false
+                    (vector.rating ?: 0) > (existing.rating ?: 0) + 50 -> true
+                    else -> false
+                }
+                if (keepNew) {
+                    byUrl.remove(existingUrl)
+                    byUrl[vector.url] = vector
+                    byNormalizedTitle[normalizedTitle] = vector.url
+                }
+            }
+        }
+
+        // Priority 1: NovelDetailsEntity (full details, richer data)
         offlineDao.getAllNovelDetails().forEach { entity ->
-            if (entity.url !in excludeUrls && entity.url !in seenUrls) {
-                entityToVector(entity)?.let { vector ->
-                    if (vector.providerName in disabledProviders) return@let
-
-                    val shouldInclude = filterState == null || !userFilterManager.shouldFilter(vector, filterState)
-                    if (shouldInclude) {
-                        candidates.add(vector)
-                        seenUrls.add(entity.url)
-                    }
-                }
+            if (entity.url !in excludeUrls) {
+                entityToVector(entity)?.let { tryAdd(it) }
             }
         }
 
-        // Priority 2: DiscoveredNovelEntity
+        // Priority 2: DiscoveredNovelEntity (skip if URL already indexed above)
         recommendationDao.getAllDiscoveredNovels().forEach { entity ->
-            if (entity.url !in excludeUrls && entity.url !in seenUrls) {
-                discoveredToVector(entity)?.let { vector ->
-                    if (vector.providerName in disabledProviders) return@let
-
-                    val shouldInclude = filterState == null || !userFilterManager.shouldFilter(vector, filterState)
-                    if (shouldInclude) {
-                        candidates.add(vector)
-                        seenUrls.add(entity.url)
-                    }
-                }
+            if (entity.url !in excludeUrls && entity.url !in byUrl) {
+                discoveredToVector(entity)?.let { tryAdd(it) }
             }
         }
 
-        return candidates
+        return byUrl.values.toList()
+    }
+
+    /** Normalize a novel title for cross-source deduplication.
+     *  "The Legendary Mechanic" == "legendary mechanic" == "Legendary Mechanic, The"
+     */
+    private fun normalizeTitleForDedup(name: String): String {
+        val stopWords = setOf("the", "a", "an", "of", "in", "on", "at", "to", "and", "by")
+        return name
+            .lowercase()
+            .replace(Regex("[^a-z0-9\\s]"), "")
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() && it !in stopWords }
+            .sorted()      // order-insensitive: "Sword Saint" == "Saint Sword" won't match, but normalizes minor word order
+            .joinToString(" ")
+            .trim()
     }
 
 
@@ -260,7 +303,8 @@ class RecommendationEngine(
             synopsisKeywords = synopsisKeywords,
             titleKeywords = titleKeywords,
             posterUrl = entity.posterUrl,
-            synopsis = entity.synopsis
+            synopsis = entity.synopsis,
+            discoveredAt = entity.discoveredAt
         )
     }
 
@@ -665,86 +709,155 @@ class RecommendationEngine(
         )
     }
 
-    private fun generateProviderTrendingGroups(
+    private suspend fun generateJustFinishedSimilarGroup(
+        userProfile: UserTasteProfile,
         candidates: List<NovelVector>,
         config: RecommendationConfig,
         usedUrls: Set<String>,
-        maxOverlap: Int
-    ): List<RecommendationGroup> {
-        val byProvider = candidates.groupBy { it.providerName }
+        maxOverlap: Int,
+        authorAffinities: Map<String, Float>,
+        favoriteAuthors: Set<String>,
+        filterState: UserFilterManager.FilterState
+    ): RecommendationGroup? {
+        val recentlyCompleted = libraryRepository.getLibrary()
+            .filter { it.readingStatus == ReadingStatus.COMPLETED }
+            .sortedByDescending { it.lastReadPosition?.timestamp ?: it.addedAt }
+            .take(1)
 
-        if (byProvider.size < 2) return emptyList()
+        if (recentlyCompleted.isEmpty()) return null
 
-        val groups = mutableListOf<RecommendationGroup>()
-        val providerUsedUrls = usedUrls.toMutableSet()
+        val sourceItem = recentlyCompleted.first()
+        val sourceVector = loadNovelVector(sourceItem.novel.url) ?: return null
 
-        val topProviders = byProvider.entries
-            .sortedByDescending { it.value.size }
-            .take(2)
+        val pool = candidates.filter { it.url !in usedUrls && it.url != sourceVector.url }
+        if (pool.isEmpty()) return null
 
-        for ((provider, providerCandidates) in topProviders) {
-            val available = providerCandidates
-                .filter { it.url !in providerUsedUrls }
-                .sortedWith(
-                    compareByDescending<NovelVector> { it.rating ?: 0 }
-                        .thenBy { it.name }
-                )
-                .take(config.maxPerGroup)
+        val similar = SimilarityCalculator.findSimilarWithQuality(
+            target = sourceVector,
+            candidates = pool,
+            limit = config.maxPerGroup,
+            minSimilarity = 0.15f
+        )
 
-            if (available.size >= 3) {
-                val recommendations = available.map { novel ->
-                    val breakdown = ScoreBreakdown(
-                        ratingScore = (novel.rating ?: 0) / 1000f,
-                        providerBoost = 1f,
-                        popularityScore = 0.7f
-                    )
-                    Recommendation(
-                        novel = Novel(
-                            name = novel.name,
-                            url = novel.url,
-                            posterUrl = novel.posterUrl,
-                            rating = novel.rating,
-                            apiName = novel.providerName
-                        ),
-                        score = breakdown.total,
-                        type = RecommendationType.TRENDING_IN_YOUR_GENRES,
-                        reason = novel.rating?.let { "%.1f★".format(it / 200f) } ?: "Popular",
-                        scoreBreakdown = breakdown,
-                        isCrossProvider = false
-                    )
-                }
+        if (similar.size < 3) return null
 
-                groups.add(
-                    RecommendationGroup(
-                        type = RecommendationType.TRENDING_IN_YOUR_GENRES,
-                        title = "Trending on $provider",
-                        subtitle = "Popular novels from $provider",
-                        recommendations = recommendations
-                    )
-                )
-
-                providerUsedUrls.addAll(available.map { it.url })
-            }
+        val recommendations = similar.map { (novel, _) ->
+            val breakdown = ScoreBreakdown(
+                tagSimilarity = SimilarityCalculator.calculateTagSimilarity(sourceVector.tags, novel.tags),
+                authorMatch = SimilarityCalculator.calculateAuthorSimilarity(sourceVector.authorNormalized, novel.authorNormalized),
+                ratingScore = SimilarityCalculator.calculateRatingSimilarity(sourceVector.rating, novel.rating),
+                synopsisMatch = SimilarityCalculator.calculateSynopsisSimilarity(sourceVector.synopsisKeywords, novel.synopsisKeywords)
+            )
+            createRecommendation(
+                novel = novel,
+                type = RecommendationType.JUST_FINISHED_SIMILAR,
+                breakdown = breakdown,
+                userProfile = userProfile,
+                filterState = filterState,
+                sourceNovelUrl = sourceVector.url,
+                sourceNovelName = sourceVector.name
+            )
         }
 
-        return groups
+        val displayName = if (sourceItem.novel.name.length > 22)
+            sourceItem.novel.name.take(19) + "..."
+        else sourceItem.novel.name
+
+        return RecommendationGroup(
+            type = RecommendationType.JUST_FINISHED_SIMILAR,
+            title = "What to Read After $displayName",
+            subtitle = "Your next great read",
+            recommendations = recommendations,
+            sourceNovel = sourceItem.novel
+        )
     }
 
-    private fun generateNewReleasesGroup(
+    private suspend fun generateActiveGenreGroup(
+        userProfile: UserTasteProfile,
+        candidates: List<NovelVector>,
+        config: RecommendationConfig,
+        usedUrls: Set<String>,
+        maxOverlap: Int,
+        authorAffinities: Map<String, Float>,
+        favoriteAuthors: Set<String>,
+        filterState: UserFilterManager.FilterState
+    ): RecommendationGroup? {
+        val twoWeeksAgo = System.currentTimeMillis() - 14L * 24 * 60 * 60 * 1000
+        val activelyReading = libraryRepository.getLibrary()
+            .filter {
+                it.readingStatus == ReadingStatus.READING &&
+                    (it.lastReadPosition?.timestamp ?: 0L) > twoWeeksAgo
+            }
+            .sortedByDescending { it.lastReadPosition?.timestamp ?: 0 }
+            .take(3)
+
+        if (activelyReading.isEmpty()) return null
+
+        // Collect tags from actively-read novels weighted by recency
+        val tagScores = mutableMapOf<TagNormalizer.TagCategory, Int>()
+        for (item in activelyReading) {
+            val vector = loadNovelVector(item.novel.url) ?: continue
+            vector.tags.forEach { tag -> tagScores[tag] = (tagScores[tag] ?: 0) + 1 }
+        }
+
+        if (tagScores.isEmpty()) return null
+
+        val topActiveTag = tagScores.maxByOrNull { it.value }?.key ?: return null
+
+        val scorer = NovelScorer(userProfile, authorAffinities, favoriteAuthors)
+        val pool = candidates
+            .filter { topActiveTag in it.tags && it.url !in usedUrls }
+
+        if (pool.size < 3) return null
+
+        val scored = scorer.scoreAndRank(pool, config.preferredProvider, config.maxPerGroup * 2)
+            .filter { (_, breakdown) -> breakdown.total >= config.minScore * 0.7f }
+            .take(config.maxPerGroup)
+
+        if (scored.size < 3) return null
+
+        val recommendations = scored.map { (novel, breakdown) ->
+            createRecommendation(
+                novel = novel,
+                type = RecommendationType.ACTIVE_GENRE,
+                breakdown = breakdown,
+                userProfile = userProfile,
+                filterState = filterState,
+                preferredProvider = config.preferredProvider
+            )
+        }
+
+        val genreName = TagNormalizer.getDisplayName(topActiveTag)
+        return RecommendationGroup(
+            type = RecommendationType.ACTIVE_GENRE,
+            title = "More $genreName for You",
+            subtitle = "You're on a ${genreName.lowercase()} kick right now",
+            recommendations = recommendations
+        )
+    }
+
+    private fun generateNewArrivalsGroup(
         candidates: List<NovelVector>,
         config: RecommendationConfig,
         usedUrls: Set<String>,
         maxOverlap: Int
     ): RecommendationGroup? {
-        val newReleases = candidates
-            .filter { !it.isCompleted }
-            .filter { it.url !in usedUrls }
-            .sortedByDescending { it.rating ?: 0 }
+        val thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+
+        // Prefer recently discovered novels; fall back to all ongoing
+        val fresh = candidates
+            .filter { !it.isCompleted && it.url !in usedUrls }
+            .sortedWith(
+                compareByDescending<NovelVector> { if (it.discoveredAt > thirtyDaysAgo) 1 else 0 }
+                    .thenByDescending { it.rating ?: 0 }
+            )
             .take(config.maxPerGroup)
 
-        if (newReleases.size < 3) return null
+        if (fresh.size < 3) return null
 
-        val recommendations = newReleases.map { novel ->
+        val hasTrulyNew = fresh.any { it.discoveredAt > thirtyDaysAgo }
+
+        val recommendations = fresh.map { novel ->
             val breakdown = ScoreBreakdown(
                 ratingScore = (novel.rating ?: 0) / 1000f,
                 popularityScore = 0.6f
@@ -759,7 +872,7 @@ class RecommendationEngine(
                 ),
                 score = breakdown.total,
                 type = RecommendationType.NEW_FOR_YOU,
-                reason = "Ongoing series",
+                reason = if (novel.discoveredAt > thirtyDaysAgo) "Recently added" else "Ongoing series",
                 scoreBreakdown = breakdown,
                 isCrossProvider = false
             )
@@ -767,8 +880,8 @@ class RecommendationEngine(
 
         return RecommendationGroup(
             type = RecommendationType.NEW_FOR_YOU,
-            title = "Ongoing Series",
-            subtitle = "Active stories still being updated",
+            title = if (hasTrulyNew) "New Arrivals" else "Ongoing Series",
+            subtitle = if (hasTrulyNew) "Recently discovered across all sources" else "Active stories still being updated",
             recommendations = recommendations
         )
     }
@@ -791,7 +904,7 @@ class RecommendationEngine(
             libraryRepository.getLibrary().map { it.novel.url }.toSet()
         } else emptySet()
 
-        val allCandidates = loadAllCandidates(libraryUrls + novelUrl, filterState, disabledProviders)
+        val allCandidates = loadAllCandidates(libraryUrls + novelUrl, filterState, disabledProviders, null)
 
         // Use quality-aware similarity
         val similar = SimilarityCalculator.findSimilarWithQuality(
@@ -909,6 +1022,21 @@ class RecommendationEngine(
             }
             RecommendationType.FROM_AUTHORS_YOU_LIKE -> {
                 "From an author you like"
+            }
+            RecommendationType.JUST_FINISHED_SIMILAR -> {
+                when {
+                    breakdown.tagSimilarity > 0.5f && matchingTags.isNotEmpty() -> "Similar ${matchingTags.first()} vibes"
+                    breakdown.authorMatch > 0.5f -> "Same author"
+                    ratingText != null -> "$ratingText · Great follow-up"
+                    else -> "You'll love this next"
+                }
+            }
+            RecommendationType.ACTIVE_GENRE -> {
+                when {
+                    matchingTags.isNotEmpty() -> "More ${matchingTags.first()}"
+                    ratingText != null -> ratingText
+                    else -> "In your current genre"
+                }
             }
         }
     }
