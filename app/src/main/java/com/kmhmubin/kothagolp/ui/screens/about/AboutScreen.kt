@@ -3,6 +3,17 @@ package com.kmhmubin.kothagolp.ui.screens.about
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.material.icons.outlined.RestartAlt
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -119,6 +130,17 @@ fun AboutScreen(
                 )
             }
 
+            // ═══════════════ ADVANCED ═══════════════
+
+            item(key = "reset_section") {
+                Spacer(Modifier.height(4.dp))
+                SectionLabel("Advanced")
+            }
+
+            item(key = "reset_card") {
+                ResetToDefaultsCard()
+            }
+
             // ═══════════════ DISCLAIMER ═══════════════
 
             item(key = "disclaimer_header") {
@@ -141,40 +163,10 @@ fun AboutScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Website
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        IconButton(
-                            onClick = { openUrl("https://kothagolpapp.netlify.app/") },
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                                modifier = Modifier.size(44.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_launcher_icon_transparent),
-                                        contentDescription = "Website",
-                                        tint = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                            }
-                        }
-                        Text(
-                            text = "Website",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Spacer(Modifier.width(24.dp))
-
                     // GitHub Source
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         IconButton(
-                            onClick = { openUrl("https://github.com/1Finn2me/Kothagolp") },
+                            onClick = { openUrl("https://github.com/kmhmubin/kothagolp") },
                             modifier = Modifier.size(48.dp)
                         ) {
                             Surface(
@@ -204,7 +196,7 @@ fun AboutScreen(
                     // GitHub Releases
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         IconButton(
-                            onClick = { openUrl("https://github.com/1Finn2me/Kothagolp/releases") },
+                            onClick = { openUrl("https://github.com/kmhmubin/kothagolp/releases") },
                             modifier = Modifier.size(48.dp)
                         ) {
                             Surface(
@@ -454,7 +446,8 @@ private fun UpdateCard(
 
             AnimatedVisibility(
                 visible = !uiState.isCheckingUpdate &&
-                        uiState.updateResult?.updateAvailable != true
+                        uiState.updateResult?.updateAvailable != true &&
+                        !(uiState.hasChecked && uiState.updateError != null)
             ) {
                 FilledTonalButton(
                     onClick = onCheckUpdate,
@@ -588,6 +581,105 @@ private fun SectionLabel(text: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
     )
+}
+
+// ─── Reset to Defaults Card ─────────────────────────────────────────────────────
+
+@Composable
+private fun ResetToDefaultsCard() {
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+    val haptic = LocalHapticFeedback.current
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            icon = {
+                Icon(
+                    Icons.Outlined.Warning,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text("Reset All Settings?", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Resets all settings to defaults. Your library and downloaded chapters won't be affected.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        preferencesManager.resetToDefaults()
+                        showDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Reset", fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+            },
+            shape = AppShape.extraLarge
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    Icons.Outlined.RestartAlt,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+                Column {
+                    Text(
+                        text = "Reset to Defaults",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "Restore all settings to defaults",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            FilledTonalButton(
+                onClick = { showDialog = true },
+                shape = AppShape.medium,
+                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
+            ) {
+                Text("Reset")
+            }
+        }
+    }
 }
 
 // ─── Disclaimer Card ────────────────────────────────────────────────────────────

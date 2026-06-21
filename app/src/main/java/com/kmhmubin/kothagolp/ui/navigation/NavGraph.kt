@@ -33,7 +33,6 @@ import com.kmhmubin.kothagolp.ui.screens.onboarding.OnboardingScreen
 import com.kmhmubin.kothagolp.ui.screens.profile.ProfileScreen
 import com.kmhmubin.kothagolp.ui.screens.reader.ReaderScreen
 import com.kmhmubin.kothagolp.ui.screens.reader.settings.ReaderSettingsScreen
-import com.kmhmubin.kothagolp.ui.screens.settings.SettingsAboutScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsAppearanceScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsBrowseScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsLibraryScreen
@@ -215,10 +214,6 @@ fun KothagolpNavGraph(
                     navController.navigate(NavRoutes.MigrationSources.route)
                 }
             )
-        }
-
-        composable(route = NavRoutes.SettingsAbout.route) {
-            SettingsAboutScreen(onBack = { navController.popBackStack() })
         }
 
         // ================================================================

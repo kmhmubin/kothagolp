@@ -2,6 +2,7 @@ package com.kmhmubin.kothagolp.data.update
 
 import android.content.Context
 import com.google.gson.Gson
+import com.kmhmubin.kothagolp.BuildConfig
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,8 +24,8 @@ class UpdateChecker(private val context: Context) {
 
     companion object {
         private const val GITHUB_API =
-            "https://api.github.com/repos/1Finn2me/Kothagolp/releases/latest"
-        private const val GITHUB_REPO = "https://github.com/1Finn2me/Kothagolp"
+            "https://api.github.com/repos/kmhmubin/kothagolp/releases/latest"
+        private const val GITHUB_REPO = "https://github.com/kmhmubin/kothagolp"
     }
 
     /**
@@ -76,6 +77,21 @@ class UpdateChecker(private val context: Context) {
 
             val response = client.newCall(request).execute()
 
+            if (response.code == 404) {
+                val currentVersion = getCurrentVersion()
+                return@withContext Result.success(
+                    UpdateResult(
+                        updateAvailable = false,
+                        currentVersion = currentVersion,
+                        latestVersion = currentVersion,
+                        downloadUrl = null,
+                        releaseUrl = "$GITHUB_REPO/releases",
+                        releaseNotes = null,
+                        apkSizeBytes = null
+                    )
+                )
+            }
+
             if (!response.isSuccessful) {
                 return@withContext Result.failure(
                     Exception("GitHub API returned ${response.code}")
@@ -118,9 +134,9 @@ class UpdateChecker(private val context: Context) {
     fun getCurrentVersion(): String {
         return try {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            packageInfo.versionName ?: "1.0.2"
+            packageInfo.versionName ?: BuildConfig.VERSION_NAME
         } catch (e: Exception) {
-            "1.0.2"
+            BuildConfig.VERSION_NAME
         }
     }
 
