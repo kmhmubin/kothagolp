@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 
 class DetailsViewModel : ViewModel() {
 
@@ -180,6 +181,9 @@ class DetailsViewModel : ViewModel() {
                             // Silent fail
                         }
                     }
+
+                    // Fetch related suggestions via keyword search
+                    fetchRelatedSuggestions(details, provider, novelUrl)
 
                     // Load reviews if supported
                     if (hasReviewsSupport) {
@@ -902,6 +906,110 @@ class DetailsViewModel : ViewModel() {
 
     fun hasDownloadedChapters(): Boolean {
         return _uiState.value.downloadedChapters.isNotEmpty()
+    }
+
+    // ================================================================
+    // RELATED SUGGESTIONS
+    // ================================================================
+
+    private fun fetchRelatedSuggestions(
+        details: com.kmhmubin.kothagolp.domain.model.NovelDetails,
+        provider: MainProvider,
+        currentNovelUrl: String
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isRelatedFetching = true, relatedSuggestions = emptyList()) }
+
+            // Emit scraped related immediately (from provider API)
+            val scraped = details.relatedNovels
+                ?.filterNot { it.url == currentNovelUrl }
+                ?: emptyList()
+            if (scraped.isNotEmpty()) {
+                _uiState.update { state ->
+                    state.copy(
+                        relatedSuggestions = listOf(
+                            RelatedSuggestion.Success("From Source", scraped)
+                        )
+                    )
+                }
+            }
+
+            val keywords = extractKeywords(details.name)
+            if (keywords.isEmpty()) {
+                _uiState.update { it.copy(isRelatedFetching = false) }
+                return@launch
+            }
+
+            // Add Loading placeholders for each keyword
+            _uiState.update { state ->
+                state.copy(
+                    relatedSuggestions = state.relatedSuggestions +
+                            keywords.map { RelatedSuggestion.Loading(it) }
+                )
+            }
+
+            // Search all keywords in parallel
+            supervisorScope {
+                keywords.forEach { keyword ->
+                    launch {
+                        try {
+                            val results = provider.search(keyword)
+                                .filterNot { it.url == currentNovelUrl }
+                                .take(8)
+                            _uiState.update { state ->
+                                val without = state.relatedSuggestions
+                                    .filterNot { it is RelatedSuggestion.Loading && it.keyword == keyword }
+                                if (results.isNotEmpty()) {
+                                    state.copy(
+                                        relatedSuggestions = without +
+                                                RelatedSuggestion.Success(keyword, results)
+                                    )
+                                } else {
+                                    state.copy(relatedSuggestions = without)
+                                }
+                            }
+                        } catch (_: Exception) {
+                            _uiState.update { state ->
+                                state.copy(
+                                    relatedSuggestions = state.relatedSuggestions
+                                        .filterNot { it is RelatedSuggestion.Loading && it.keyword == keyword }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Deduplicate across groups
+            _uiState.update { state ->
+                val seen = mutableSetOf<String>()
+                val deduped = state.relatedSuggestions.mapNotNull { s ->
+                    when (s) {
+                        is RelatedSuggestion.Loading -> null
+                        is RelatedSuggestion.Success -> {
+                            val unique = s.novels.filter { seen.add(it.url) }
+                            if (unique.isNotEmpty()) s.copy(novels = unique) else null
+                        }
+                    }
+                }
+                state.copy(relatedSuggestions = deduped, isRelatedFetching = false)
+            }
+        }
+    }
+
+    private fun extractKeywords(title: String): List<String> {
+        val stopWords = setOf(
+            "the", "a", "an", "of", "in", "and", "or", "to", "is", "it", "for",
+            "with", "on", "at", "by", "my", "no", "so", "do", "as", "he", "she",
+            "we", "are", "was", "has", "had", "not", "but", "you", "your", "i",
+            "this", "that", "from", "be", "one", "all", "can", "its", "our",
+            "who", "his", "her", "they", "their", "what", "when", "if", "up",
+            "out", "will"
+        )
+        return title.split(Regex("[\\s\\-:,.!?()\\[\\]{}+*&@#'\"]+"))
+            .filter { it.length > 2 && it.all { c -> c.isLetter() } && it.lowercase() !in stopWords }
+            .distinctBy { it.lowercase() }
+            .take(3)
     }
 
     // ================================================================

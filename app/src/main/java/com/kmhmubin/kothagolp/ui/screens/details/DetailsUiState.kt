@@ -31,6 +31,14 @@ enum class DetailsTab {
 }
 
 /**
+ * Streaming unit for per-keyword related search results
+ */
+sealed class RelatedSuggestion {
+    data class Loading(val keyword: String) : RelatedSuggestion()
+    data class Success(val keyword: String, val novels: List<Novel>) : RelatedSuggestion()
+}
+
+/**
  * UI State for Details Screen
  */
 data class DetailsUiState(
@@ -122,7 +130,9 @@ data class DetailsUiState(
     // ================================================================
     // RELATED NOVELS
     // ================================================================
-    val relatedNovels: List<Novel> = emptyList()
+    val relatedNovels: List<Novel> = emptyList(),
+    val relatedSuggestions: List<RelatedSuggestion> = emptyList(),
+    val isRelatedFetching: Boolean = false
 ) {
     // ================================================================
     // COMPUTED PROPERTIES
@@ -202,7 +212,10 @@ data class DetailsUiState(
         }
 
     val hasRelatedNovels: Boolean
-        get() = relatedNovels.isNotEmpty()
+        get() = relatedNovels.isNotEmpty() ||
+                relatedSuggestions.any { it is RelatedSuggestion.Success && it.novels.isNotEmpty() } ||
+                relatedSuggestions.any { it is RelatedSuggestion.Loading } ||
+                isRelatedFetching
 
     val displayChapters: List<Chapter>
         get() {
@@ -262,7 +275,14 @@ data class DetailsUiState(
         get() = (novelDetails?.chapters?.size ?: chapters.size).takeIf { it > 0 }?.toString()
 
     val relatedTabBadge: String?
-        get() = relatedNovels.size.takeIf { it > 0 }?.toString()
+        get() {
+            val fromScrape = relatedNovels.size
+            val fromSuggestions = relatedSuggestions
+                .filterIsInstance<RelatedSuggestion.Success>()
+                .sumOf { it.novels.size }
+            val total = fromScrape + fromSuggestions
+            return total.takeIf { it > 0 }?.toString()
+        }
 
     val reviewsTabBadge: String?
         get() = reviews.size.takeIf { it > 0 }?.toString()

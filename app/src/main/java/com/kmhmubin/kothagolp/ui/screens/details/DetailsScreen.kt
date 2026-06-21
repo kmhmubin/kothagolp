@@ -13,18 +13,26 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -68,6 +76,8 @@ import com.kmhmubin.kothagolp.ui.screens.details.components.DetailsTabRow
 import com.kmhmubin.kothagolp.ui.screens.details.components.DownloadBottomSheet
 import com.kmhmubin.kothagolp.ui.screens.details.components.EmptyChaptersMessage
 import com.kmhmubin.kothagolp.ui.screens.details.components.EmptyRelatedMessage
+import com.kmhmubin.kothagolp.ui.screens.details.components.RelatedGroupHeader
+import com.kmhmubin.kothagolp.ui.screens.details.components.RelatedNovelCard
 import com.kmhmubin.kothagolp.ui.screens.details.components.EmptyReviewsMessage
 import com.kmhmubin.kothagolp.ui.screens.details.components.ErrorContent
 import com.kmhmubin.kothagolp.ui.screens.details.components.FastScrollerContainer
@@ -689,7 +699,7 @@ private fun DetailsContent(
                 selectedTab = uiState.selectedTab,
                 onTabSelected = onTabSelected,
                 chapterCount = details.chapters.size,
-                relatedCount = uiState.relatedNovels.size,
+                relatedCount = uiState.relatedTabBadge?.toIntOrNull() ?: (if (uiState.isRelatedFetching) -1 else 0),
                 reviewCount = uiState.reviews.size,
                 hasReviewsSupport = uiState.hasReviewsSupport
             )
@@ -718,7 +728,9 @@ private fun DetailsContent(
 
             DetailsTab.RELATED -> {
                 relatedTabContent(
-                    novels = uiState.relatedNovels,
+                    relatedNovels = uiState.relatedNovels,
+                    relatedSuggestions = uiState.relatedSuggestions,
+                    isRelatedFetching = uiState.isRelatedFetching,
                     onNovelClick = onNovelClick
                 )
             }
@@ -907,24 +919,92 @@ private fun androidx.compose.foundation.lazy.LazyListScope.chaptersTabContent(
 // ================================================================
 
 private fun androidx.compose.foundation.lazy.LazyListScope.relatedTabContent(
-    novels: List<Novel>,
+    relatedNovels: List<Novel>,
+    relatedSuggestions: List<RelatedSuggestion>,
+    isRelatedFetching: Boolean,
     onNovelClick: (novelUrl: String, providerName: String) -> Unit
 ) {
-    if (novels.isEmpty()) {
-        item(key = "empty_related") {
-            EmptyRelatedMessage()
+    val hasAnything = relatedNovels.isNotEmpty() || relatedSuggestions.isNotEmpty()
+
+    if (!hasAnything && isRelatedFetching) {
+        item(key = "related_loading") {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(32.dp))
+            }
         }
-    } else {
-        val rows = novels.chunked(2)
+        return
+    }
+
+    if (!hasAnything) {
+        item(key = "empty_related") { EmptyRelatedMessage() }
+        return
+    }
+
+    // Legacy scraped related (from provider API, not keyword search) shown as flat rows
+    if (relatedNovels.isNotEmpty() && relatedSuggestions.none { it is RelatedSuggestion.Success && it.keyword == "From Source" }) {
+        item(key = "related_header_source") {
+            RelatedGroupHeader(keyword = "From Source")
+        }
+        val rows = relatedNovels.chunked(2)
         itemsIndexed(
             items = rows,
-            key = { index, _ -> "related_row_$index" },
+            key = { index, _ -> "related_source_row_$index" },
             contentType = { _, _ -> "related_row" }
         ) { _, rowNovels ->
-            RelatedNovelRow(
-                novels = rowNovels,
-                onNovelClick = onNovelClick
-            )
+            RelatedNovelRow(novels = rowNovels, onNovelClick = onNovelClick)
+        }
+    }
+
+    // Keyword suggestion groups — each as horizontal LazyRow
+    relatedSuggestions.forEachIndexed { groupIndex, suggestion ->
+        when (suggestion) {
+            is RelatedSuggestion.Loading -> {
+                item(key = "related_loading_$groupIndex") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        androidx.compose.material3.Text(
+                            text = "\"${suggestion.keyword}\"",
+                            style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            is RelatedSuggestion.Success -> {
+                item(key = "related_header_$groupIndex") {
+                    RelatedGroupHeader(keyword = suggestion.keyword)
+                }
+                item(key = "related_row_$groupIndex") {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(
+                            items = suggestion.novels,
+                            key = { it.url },
+                            contentType = { "related_card" }
+                        ) { novel ->
+                            Box(modifier = Modifier.width(140.dp)) {
+                                RelatedNovelCard(
+                                    novel = novel,
+                                    onClick = { onNovelClick(novel.url, novel.apiName) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
