@@ -3,7 +3,6 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.library
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutCubic
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.LinearEasing
@@ -535,16 +534,19 @@ private fun NotificationButton(
 ) {
     val hasNotifications = count > 0
 
-    val pulseScale = remember { Animatable(1f) }
-    LaunchedEffect(hasNotifications) {
-        if (hasNotifications) {
-            while (true) {
-                pulseScale.animateTo(1.1f, tween(800, easing = EaseInOutCubic))
-                pulseScale.animateTo(1f, tween(800, easing = EaseInOutCubic))
-            }
-        } else {
-            pulseScale.snapTo(1f)
-        }
+    val infiniteTransition = rememberInfiniteTransition(label = "notification_pulse")
+    val pulseScaleValue by if (hasNotifications) {
+        infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(800, easing = EaseInOutCubic),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulse_scale"
+        )
+    } else {
+        remember { androidx.compose.runtime.mutableStateOf(1f) }
     }
 
     Surface(
@@ -569,7 +571,7 @@ private fun NotificationButton(
                             containerColor = NewChapters,
                             contentColor = Color.White,
                             modifier = Modifier
-                                .scale(pulseScale.value)
+                                .scale(pulseScaleValue)
                                 .offset(x = (-2).dp, y = 2.dp)
                         ) {
                             Text(

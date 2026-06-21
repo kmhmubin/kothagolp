@@ -386,7 +386,7 @@ private fun ListItemCoverImage(
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(url)
-                .crossfade(300)
+                .crossfade(true)
                 .build(),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),

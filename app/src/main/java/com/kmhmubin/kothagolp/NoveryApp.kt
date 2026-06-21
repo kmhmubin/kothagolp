@@ -1,6 +1,10 @@
 package com.kmhmubin.kothagolp
 
 import android.app.Application
+import coil.Coil
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import com.kmhmubin.kothagolp.data.local.NovelDatabase
 import com.kmhmubin.kothagolp.data.local.PreferencesManager
 import com.kmhmubin.kothagolp.data.remote.CloudflareManager
@@ -25,6 +29,25 @@ class KothagolpApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        Coil.setImageLoader(
+            ImageLoader.Builder(this)
+                .allowHardware(true)
+                .crossfade(150)
+                .respectCacheHeaders(false)
+                .memoryCache {
+                    MemoryCache.Builder(this)
+                        .maxSizePercent(0.20)
+                        .build()
+                }
+                .diskCache {
+                    DiskCache.Builder()
+                        .directory(cacheDir.resolve("coil_image_cache"))
+                        .maxSizeBytes(256L * 1024 * 1024)
+                        .build()
+                }
+                .build()
+        )
 
         CloudflareManager.init(this)
 
