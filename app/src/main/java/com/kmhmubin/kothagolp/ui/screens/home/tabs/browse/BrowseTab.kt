@@ -1672,6 +1672,8 @@ private fun ProviderGrid(
     onRefresh: () -> Unit,
     onNavigateToMigration: (() -> Unit)? = null
 ) {
+    val sortedProviders = remember(providers) { providers.sortedBy { it.name.lowercase() } }
+
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
@@ -1695,7 +1697,7 @@ private fun ProviderGrid(
         modifier = Modifier.fillMaxSize()
     ) {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Adaptive(minSize = 160.dp),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -1741,7 +1743,7 @@ private fun ProviderGrid(
             }
 
             itemsIndexed(
-                items = providers,
+                items = sortedProviders,
                 key = { _, provider -> provider.name },
                 contentType = { _, _ -> "provider" }
             ) { index, provider ->
@@ -2232,7 +2234,7 @@ private fun ProviderStatChip(
 @Composable
 private fun ProviderGridSkeleton() {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Adaptive(minSize = 160.dp),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
