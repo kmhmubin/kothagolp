@@ -9,6 +9,7 @@ import com.kmhmubin.kothagolp.provider.MainProvider
 import com.kmhmubin.kothagolp.recommendation.InteractionType  // ADD THIS IMPORT
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer.TagCategory
 import com.kmhmubin.kothagolp.recommendation.model.OnboardingPreferences
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,7 +38,31 @@ class OnboardingViewModel : ViewModel() {
     // ================================================================
 
     private fun loadProviders() {
-        val providers = MainProvider.getProviders().map { provider ->
+        val immediate = MainProvider.getProviders()
+        if (immediate.isNotEmpty()) {
+            applyProviders(immediate)
+            return
+        }
+
+        // First install: sources are downloading in background via SourceSyncWorker.
+        // Poll until they appear (worker typically finishes within a few seconds).
+        _state.update { it.copy(isLoadingProviders = true) }
+        viewModelScope.launch {
+            val timeoutMs = 90_000L
+            val startTime = System.currentTimeMillis()
+            var loaded = emptyList<MainProvider>()
+
+            while (loaded.isEmpty() && System.currentTimeMillis() - startTime < timeoutMs) {
+                delay(750)
+                loaded = MainProvider.getProviders()
+            }
+
+            applyProviders(loaded)
+        }
+    }
+
+    private fun applyProviders(providers: List<MainProvider>) {
+        val infoList = providers.map { provider ->
             ProviderInfo(
                 name = provider.name,
                 description = getProviderDescription(provider.name),
@@ -46,11 +71,11 @@ class OnboardingViewModel : ViewModel() {
                 isEnabled = true
             )
         }
-
         _state.update { state ->
             state.copy(
-                availableProviders = providers,
-                selectedProviders = providers.map { it.name }.toSet() // All selected by default
+                availableProviders = infoList,
+                selectedProviders = infoList.map { it.name }.toSet(),
+                isLoadingProviders = false
             )
         }
     }
