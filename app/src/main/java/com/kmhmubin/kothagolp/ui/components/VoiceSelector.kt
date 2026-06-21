@@ -51,7 +51,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,8 +100,8 @@ fun VoiceSelector(
     showSystemSettings: Boolean = true
 ) {
     val context = LocalContext.current
-    val languageGroups by VoiceManager.languageGroups.collectAsState()
-    val isLoading by VoiceManager.isLoading.collectAsState()
+    val languageGroups by VoiceManager.languageGroups.collectAsStateWithLifecycle()
+    val isLoading by VoiceManager.isLoading.collectAsStateWithLifecycle()
 
     var searchQuery by remember { mutableStateOf("") }
     var expandedLanguage by remember { mutableStateOf<String?>(null) }

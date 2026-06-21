@@ -56,8 +56,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -70,7 +71,6 @@ import androidx.compose.material.icons.rounded.HourglassEmpty
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
-import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Public
@@ -1724,7 +1724,7 @@ private fun GenericSiteActionButton(
             }
 
             Icon(
-                imageVector = Icons.Rounded.ArrowForward,
+                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
                 tint = Color.White
@@ -1847,7 +1847,7 @@ private fun ExtractedDataBottomSheet(
                     ) {
                         if (data.chapterCount > 0) {
                             StatItem(
-                                icon = Icons.Rounded.MenuBook,
+                                icon = Icons.AutoMirrored.Rounded.MenuBook,
                                 value = "${data.chapterCount}",
                                 label = "chapters"
                             )
@@ -2411,7 +2411,7 @@ private fun EnhancedWebViewTopBar(
                 if (isEditingUrl) {
                     IconButton(onClick = { onSubmitUrl(editUrlValue.text) }) {
                         Icon(
-                            imageVector = Icons.Rounded.ArrowForward,
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                             contentDescription = "Go",
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -2875,7 +2875,7 @@ private fun EnhancedOpenInAppButton(
             }
 
             Icon(
-                imageVector = Icons.Rounded.ArrowForward,
+                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
                 tint = Color.White
@@ -2930,7 +2930,6 @@ private fun EnhancedProviderWebView(
                     displayZoomControls = false
                     mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
                     cacheMode = WebSettings.LOAD_DEFAULT
-                    databaseEnabled = true
                     javaScriptCanOpenWindowsAutomatically = true
                     mediaPlaybackRequiresUserGesture = false
                     allowFileAccess = true
@@ -2944,8 +2943,6 @@ private fun EnhancedProviderWebView(
                 val cookieManager = CookieManager.getInstance()
                 cookieManager.setAcceptCookie(true)
                 cookieManager.setAcceptThirdPartyCookies(this, true)
-
-                CookieManager.setAcceptFileSchemeCookies(true)
 
                 webViewClient = object : WebViewClient() {
                     override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {

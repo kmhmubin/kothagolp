@@ -43,7 +43,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -72,7 +72,7 @@ fun HistoryTab(
     onNavigateToReader: (chapterUrl: String, novelUrl: String, providerName: String) -> Unit,
     viewModel: HistoryViewModel = viewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dimensions = KothagolpTheme.dimensions
     val useCompactLayout = appSettings.uiDensity == UiDensity.COMPACT
 

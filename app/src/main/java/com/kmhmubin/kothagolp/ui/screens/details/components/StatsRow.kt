@@ -24,7 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -50,7 +50,7 @@ fun StatsRow(
 ) {
     // Get rating format from preferences
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
-    val appSettings by preferencesManager.appSettings.collectAsState()
+    val appSettings by preferencesManager.appSettings.collectAsStateWithLifecycle()
     val ratingFormat = appSettings.ratingFormat
 
     Card(

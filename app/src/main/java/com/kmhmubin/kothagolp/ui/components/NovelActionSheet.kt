@@ -54,7 +54,7 @@ import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.CheckBox
 import androidx.compose.material.icons.rounded.HistoryToggleOff
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.MenuBook
+// automirrored.rounded.MenuBook imported above
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Visibility
@@ -74,7 +74,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -370,7 +370,7 @@ private fun CompactHeader(
 ) {
     // Get rating format from preferences - use RepositoryProvider for consistency
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
-    val appSettings by preferencesManager.appSettings.collectAsState()
+    val appSettings by preferencesManager.appSettings.collectAsStateWithLifecycle()
     val ratingFormat = appSettings.ratingFormat
 
     Row(
@@ -600,7 +600,7 @@ private fun InlineStats(data: NovelActionSheetData) {
     ) {
         if (data.chapterCount != null) {
             InlineStat(
-                icon = Icons.Rounded.MenuBook,
+                icon = Icons.AutoMirrored.Rounded.MenuBook,
                 value = "${data.chapterCount}",
                 label = "ch",
                 color = MaterialTheme.colorScheme.primary
@@ -776,7 +776,7 @@ private fun CompactActions(
         ) {
             CompactSecondaryButton(
                 modifier = Modifier.weight(1f),
-                icon = Icons.Rounded.MenuBook,
+                icon = Icons.AutoMirrored.Rounded.MenuBook,
                 text = "Details",
                 onClick = onViewDetails
             )

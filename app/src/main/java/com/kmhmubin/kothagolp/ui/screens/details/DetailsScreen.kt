@@ -35,7 +35,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -112,7 +111,7 @@ fun DetailsScreen(
     onNavigateToNotes: ((novelUrl: String) -> Unit)? = null,
     viewModel: DetailsViewModel = viewModel()
 ) {
-    val showCoverOptions by viewModel.showCoverOptions.collectAsState()
+    val showCoverOptions by viewModel.showCoverOptions.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val downloadState by DownloadServiceManager.downloadState.collectAsStateWithLifecycle()
     val epubExportState by viewModel.epubExportState.collectAsStateWithLifecycle()

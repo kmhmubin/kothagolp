@@ -94,7 +94,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -182,8 +182,8 @@ fun ProviderBrowseScreen(
         factory = ProviderBrowseViewModel.Factory(providerName)
     )
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val actionSheetState by viewModel.actionSheetState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val actionSheetState by viewModel.actionSheetState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current

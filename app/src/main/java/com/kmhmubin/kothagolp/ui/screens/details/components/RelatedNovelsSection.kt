@@ -20,9 +20,9 @@ import androidx.compose.foundation.shape.CircleShape
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.BrokenImage
-import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -73,7 +73,7 @@ fun EmptyRelatedMessage(modifier: Modifier = Modifier) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Rounded.MenuBook,
+                        imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.size(40.dp)

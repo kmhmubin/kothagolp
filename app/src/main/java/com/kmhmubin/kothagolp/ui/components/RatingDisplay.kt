@@ -15,7 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -50,7 +50,7 @@ fun StarRating(
     if (rating == null || rating <= 0) return
 
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
-    val appSettings by preferencesManager.appSettings.collectAsState()
+    val appSettings by preferencesManager.appSettings.collectAsStateWithLifecycle()
     val ratingFormat = appSettings.ratingFormat
 
     val starValue = RatingUtils.to5Stars(rating)
@@ -133,7 +133,7 @@ fun CompactRating(
     if (rating == null || rating <= 0) return
 
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
-    val appSettings by preferencesManager.appSettings.collectAsState()
+    val appSettings by preferencesManager.appSettings.collectAsStateWithLifecycle()
 
     val displayStyle = style ?: RatingUtils.getDisplayStyle(appSettings.ratingFormat, providerName)
     val color = getRatingDisplayColor(RatingUtils.getRatingColor(rating))
@@ -180,7 +180,7 @@ fun RatingChip(
     if (rating == null || rating <= 0) return
 
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
-    val appSettings by preferencesManager.appSettings.collectAsState()
+    val appSettings by preferencesManager.appSettings.collectAsStateWithLifecycle()
 
     val color = getRatingDisplayColor(RatingUtils.getRatingColor(rating))
     val formattedRating = RatingUtils.format(rating, appSettings.ratingFormat, providerName)
@@ -225,7 +225,7 @@ fun RatingText(
     if (rating == null || rating <= 0) return
 
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
-    val appSettings by preferencesManager.appSettings.collectAsState()
+    val appSettings by preferencesManager.appSettings.collectAsStateWithLifecycle()
 
     val color = if (showColor) {
         getRatingDisplayColor(RatingUtils.getRatingColor(rating))

@@ -58,6 +58,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ManageSearch
+import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.Label
 import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BookmarkAdd
@@ -66,15 +69,12 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Explore
-import androidx.compose.material.icons.rounded.LibraryBooks
 import androidx.compose.material.icons.rounded.LocalFireDepartment
-import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.Label
 import androidx.compose.material.icons.rounded.Deselect
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SelectAll
@@ -104,14 +104,11 @@ import androidx.compose.foundation.pager.rememberPagerState
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-
-import androidx.compose.ui.input.pointer.pointerInput
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -177,10 +174,10 @@ fun LibraryTab(
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val precomputedPages by viewModel.precomputedPages.collectAsStateWithLifecycle()
     val filterCounts by viewModel.filterCounts.collectAsStateWithLifecycle()
-    val actionSheetState by viewModel.actionSheetState.collectAsState()
+    val actionSheetState by viewModel.actionSheetState.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState()
 
     val dimensions = KothagolpTheme.dimensions
@@ -1076,7 +1073,7 @@ private fun LibraryEmptyState(
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             Icon(
-                                imageVector = Icons.Rounded.LibraryBooks,
+                                imageVector = Icons.AutoMirrored.Rounded.LibraryBooks,
                                 contentDescription = null,
                                 modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.primary
@@ -1155,7 +1152,7 @@ private fun getFilterEmptyContent(filter: LibraryFilter): FilterEmptyContent {
             hint = "Download chapters to read offline"
         )
         LibraryFilter.READING -> FilterEmptyContent(
-            icon = Icons.Rounded.MenuBook,
+            icon = Icons.AutoMirrored.Rounded.MenuBook,
             color = StatusReading,
             message = "Nothing in progress",
             hint = "Start reading a novel to see it here"
@@ -1185,7 +1182,7 @@ private fun getFilterEmptyContent(filter: LibraryFilter): FilterEmptyContent {
             hint = "Novels you've stopped reading appear here"
         )
         else -> FilterEmptyContent(
-            icon = Icons.Rounded.LibraryBooks,
+            icon = Icons.AutoMirrored.Rounded.LibraryBooks,
             color = MaterialTheme.colorScheme.primary,
             message = "No novels",
             hint = ""
@@ -1440,10 +1437,10 @@ private fun getFilterColor(filter: LibraryFilter): Color {
 
 private fun getFilterIcon(filter: LibraryFilter): ImageVector? {
     return when (filter) {
-        LibraryFilter.ALL -> Icons.Rounded.LibraryBooks
+        LibraryFilter.ALL -> Icons.AutoMirrored.Rounded.LibraryBooks
         LibraryFilter.SPICY -> Icons.Rounded.LocalFireDepartment
         LibraryFilter.DOWNLOADED -> Icons.Rounded.CloudDownload
-        LibraryFilter.READING -> Icons.Rounded.MenuBook
+        LibraryFilter.READING -> Icons.AutoMirrored.Rounded.MenuBook
         LibraryFilter.COMPLETED -> Icons.Rounded.CheckCircle
         LibraryFilter.ON_HOLD -> Icons.Rounded.PauseCircle
         LibraryFilter.PLAN_TO_READ -> Icons.Rounded.BookmarkAdd
@@ -1504,7 +1501,7 @@ private fun MultiSelectBar(
             }
             IconButton(onClick = onChangeCategory) {
                 Icon(
-                    imageVector = Icons.Rounded.Label,
+                    imageVector = Icons.AutoMirrored.Rounded.Label,
                     contentDescription = "Change category",
                     tint = MaterialTheme.colorScheme.onSecondaryContainer
                 )
