@@ -420,7 +420,8 @@ fun BrowseTab(
                                 onProviderClick = onNavigateToProvider,
                                 onToggleFavorite = { viewModel.toggleFavoriteProvider(it) },
                                 onRefresh = { viewModel.retryLoadProviders() },
-                                onNavigateToMigration = onNavigateToMigration
+                                onNavigateToMigration = onNavigateToMigration,
+                                appSettings = appSettings
                             )
                         }
                     }
@@ -1670,9 +1671,11 @@ private fun ProviderGrid(
     onProviderClick: (String) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onRefresh: () -> Unit,
-    onNavigateToMigration: (() -> Unit)? = null
+    onNavigateToMigration: (() -> Unit)? = null,
+    appSettings: AppSettings
 ) {
     val sortedProviders = remember(providers) { providers.sortedBy { it.name.lowercase() } }
+    val gridCells = gridCellsFor(appSettings.browseGridColumns, minSize = 150.dp)
 
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -1697,7 +1700,7 @@ private fun ProviderGrid(
         modifier = Modifier.fillMaxSize()
     ) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 160.dp),
+            columns = gridCells,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -2234,7 +2237,7 @@ private fun ProviderStatChip(
 @Composable
 private fun ProviderGridSkeleton() {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 160.dp),
+        columns = GridCells.Adaptive(minSize = 150.dp),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
