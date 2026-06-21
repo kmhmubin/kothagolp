@@ -685,7 +685,7 @@ private fun LibraryEntity.mergeForSync(remote: LibraryEntity): LibraryEntity {
         posterUrl = newestMetadata.posterUrl ?: newestRead.posterUrl,
         latestChapter = newestMetadata.latestChapter ?: newestRead.latestChapter,
         addedAt = minOf(addedAt, remote.addedAt),
-        readingStatus = newestRead.readingStatus,
+        readingStatus = newestMetadata.readingStatus,
         lastChapterUrl = newestRead.lastChapterUrl,
         lastChapterName = newestRead.lastChapterName,
         lastReadAt = newestRead.lastReadAt,

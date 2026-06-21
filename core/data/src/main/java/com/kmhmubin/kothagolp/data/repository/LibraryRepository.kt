@@ -259,7 +259,7 @@ class LibraryRepository(
 
     suspend fun updateStatus(url: String, status: ReadingStatus) =
         withContext(Dispatchers.IO) {
-            libraryDao.updateStatus(url, status.name)
+            libraryDao.updateStatus(url, status.name, System.currentTimeMillis())
         }
 
     suspend fun updateReadingPosition(
