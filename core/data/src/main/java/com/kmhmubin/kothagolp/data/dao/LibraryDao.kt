@@ -40,8 +40,8 @@ interface LibraryDao {
     @Update
     suspend fun update(entity: LibraryEntity)
 
-    @Query("UPDATE library SET readingStatus = :status WHERE url = :url")
-    suspend fun updateStatus(url: String, status: String)
+    @Query("UPDATE library SET readingStatus = :status, lastUpdatedAt = :updatedAt WHERE url = :url")
+    suspend fun updateStatus(url: String, status: String, updatedAt: Long)
 
     // ============ READING POSITION ============
 

@@ -44,6 +44,19 @@ jobs:
           keyPassword=${{ secrets.KEY_PASSWORD }}
           PROPS
 
+      - name: Write Google OAuth credentials
+        run: |
+          mkdir -p app/src/main/assets
+          if [ -n "$GOOGLE_CLIENT_SECRETS_BASE64" ]; then
+            echo "$GOOGLE_CLIENT_SECRETS_BASE64" | base64 -d > app/src/main/assets/client_secrets.json
+            echo "Google Drive sync credentials written."
+          else
+            echo "ERROR: GOOGLE_CLIENT_SECRETS_BASE64 secret is missing — production build cannot have sync disabled."
+            exit 1
+          fi
+        env:
+          GOOGLE_CLIENT_SECRETS_BASE64: ${{ secrets.GOOGLE_CLIENT_SECRETS_BASE64 }}
+
       - name: Build release APKs
         run: ./gradlew assembleRelease
 

@@ -11,6 +11,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
+import com.kmhmubin.kothagolp.data.sync.SyncTrigger
+import com.kmhmubin.kothagolp.data.sync.SyncWorker
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReaderSettings
@@ -1590,6 +1592,7 @@ class ReaderViewModel : ViewModel() {
                     )
                 }
 
+                appContext?.let { SyncWorker.triggerNow(it, SyncTrigger.CHAPTER_OPEN) }
                 startInitialLoad(chapterIndex, thisGeneration, shouldRestorePosition)
 
             }.onFailure { error ->
@@ -2644,6 +2647,7 @@ class ReaderViewModel : ViewModel() {
                 statsRepository.recordChapterRead(novelUrl, details.name)
             }
         }
+        appContext?.let { SyncWorker.triggerNow(it, SyncTrigger.CHAPTER_READ) }
     }
 
     // =========================================================================
