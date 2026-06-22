@@ -4,7 +4,4 @@
     <exclude domain="sharedpref" path="kothagolp_secure_sync_prefs.xml" />
     <!-- Exclude WebView session data -->
     <exclude domain="sharedpref" path="WebViewChromiumPrefs.xml" />
-    <!-- Exclude downloaded chapter cache (large, re-downloadable) -->
-    <exclude domain="cache" path="." />
-    <exclude domain="externalCache" path="." />
 </full-backup-content>

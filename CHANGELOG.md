@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.6.2] — 2026-06-22
+
+### Changed
+
+- Added per-book related novel suggestions using tag-based matching.
+- Improved list scrolling smoothness and reduced unnecessary recomposition work.
+- Fixed a crash caused by the Coil disk cache directory override on new books.
+
 ## [1.0.0] — 2025-02-14
 
 ### Initial Release

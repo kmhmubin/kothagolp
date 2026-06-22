@@ -5,13 +5,9 @@
         <exclude domain="sharedpref" path="kothagolp_secure_sync_prefs.xml" />
         <!-- Exclude cached WebView/Cloudflare session cookies -->
         <exclude domain="sharedpref" path="WebViewChromiumPrefs.xml" />
-        <!-- Exclude downloaded chapter cache (large, re-downloadable) -->
-        <exclude domain="cache" path="." />
-        <exclude domain="external-cache" path="." />
     </cloud-backup>
     <device-transfer>
         <!-- Library, reading progress, settings transfer is fine -->
         <exclude domain="sharedpref" path="kothagolp_secure_sync_prefs.xml" />
-        <exclude domain="cache" path="." />
     </device-transfer>
 </data-extraction-rules>
