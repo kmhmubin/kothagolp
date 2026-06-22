@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.drawWithCache
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import androidx.compose.material.icons.Icons
@@ -37,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -99,6 +99,27 @@ fun EmptyRelatedMessage(modifier: Modifier = Modifier) {
 }
 
 /**
+ * Section header showing the keyword that produced this group
+ */
+@Composable
+fun RelatedGroupHeader(keyword: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = keyword,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/**
  * Row of related novels (2 per row)
  * @param onNovelClick Called with (novelUrl, providerName) for navigation
  */
@@ -148,12 +169,6 @@ fun RelatedNovelCard(
     Card(
         modifier = modifier
             .scale(scale)
-            .shadow(
-                elevation = if (isPressed) 2.dp else 6.dp,
-                shape = AppShape.large,
-                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            )
             .clip(AppShape.large)
             .clickable(
                 interactionSource = interactionSource,
@@ -218,14 +233,12 @@ fun RelatedNovelCard(
                         .fillMaxWidth()
                         .height(60.dp)
                         .align(Alignment.BottomCenter)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.3f)
-                                )
+                        .drawWithCache {
+                            val gradient = Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.3f))
                             )
-                        )
+                            onDrawBehind { drawRect(gradient) }
+                        }
                 )
 
                 // Rating badge (top-right)
