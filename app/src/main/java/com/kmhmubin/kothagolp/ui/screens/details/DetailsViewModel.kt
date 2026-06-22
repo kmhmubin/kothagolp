@@ -934,7 +934,10 @@ class DetailsViewModel : ViewModel() {
                 }
             }
 
-            val keywords = extractKeywords(details.name)
+            val keywords = details.tags
+                ?.filter { it.isNotBlank() }
+                ?.take(3)
+                ?: emptyList()
             if (keywords.isEmpty()) {
                 _uiState.update { it.copy(isRelatedFetching = false) }
                 return@launch
@@ -995,21 +998,6 @@ class DetailsViewModel : ViewModel() {
                 state.copy(relatedSuggestions = deduped, isRelatedFetching = false)
             }
         }
-    }
-
-    private fun extractKeywords(title: String): List<String> {
-        val stopWords = setOf(
-            "the", "a", "an", "of", "in", "and", "or", "to", "is", "it", "for",
-            "with", "on", "at", "by", "my", "no", "so", "do", "as", "he", "she",
-            "we", "are", "was", "has", "had", "not", "but", "you", "your", "i",
-            "this", "that", "from", "be", "one", "all", "can", "its", "our",
-            "who", "his", "her", "they", "their", "what", "when", "if", "up",
-            "out", "will"
-        )
-        return title.split(Regex("[\\s\\-:,.!?()\\[\\]{}+*&@#'\"]+"))
-            .filter { it.length > 2 && it.all { c -> c.isLetter() } && it.lowercase() !in stopWords }
-            .distinctBy { it.lowercase() }
-            .take(3)
     }
 
     // ================================================================
