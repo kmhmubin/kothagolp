@@ -52,7 +52,8 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             applyProviders(immediate)
             return
         }
-        // No sources yet — download directly so user sees progress, not a blind spinner
+        // Set loading state synchronously before coroutine starts to prevent blank flash
+        _state.update { it.copy(isLoadingProviders = true, isDownloadingSource = true) }
         viewModelScope.launch { downloadAndLoadSources() }
     }
 
@@ -121,7 +122,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             _state.update {
                 it.copy(sourceDownloadProgress = 0.88f, sourceDownloadStatus = "Installing providers…")
             }
-            val destApk = ctx.codeCacheDir.resolve("sources.apk")
+            val destApk = SourceLoader.apkFile(ctx)
             tempFile.copyTo(destApk, overwrite = true)
             tempFile.delete()
             destApk.setReadOnly()

@@ -1,21 +1,35 @@
 # Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SOURCE API — classes referenced by dynamically-loaded sources APK
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# The sources APK is compiled against these classes by name. R8 must NOT rename
+# or remove them, or DexClassLoader will throw NoClassDefFoundError at runtime.
+# ──────────────────────────────────────────────────────────────────────────────
+-keep class com.kmhmubin.kothagolp.provider.** { *; }
+-keep interface com.kmhmubin.kothagolp.provider.** { *; }
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Domain model — returned/accepted by provider methods
+-keep class com.kmhmubin.kothagolp.domain.model.** { *; }
+-keep interface com.kmhmubin.kothagolp.domain.model.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# NetworkClient — base class helper methods call this directly
+-keep class com.kmhmubin.kothagolp.data.remote.NetworkClient { *; }
+-keep class com.kmhmubin.kothagolp.data.remote.NetworkClient$** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Kotlin metadata so reflection inside DexClassLoader works
+-keepattributes *Annotation*
+-keep class kotlin.Metadata { *; }
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DYNAMIC CLASS LOADING — keep classes instantiated via reflection
+# ──────────────────────────────────────────────────────────────────────────────
+-keepclassmembers class * extends com.kmhmubin.kothagolp.provider.MainProvider {
+    public <init>();
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DEBUGGING — preserve stack traces in crash logs
+# ──────────────────────────────────────────────────────────────────────────────
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

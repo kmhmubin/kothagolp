@@ -30,7 +30,7 @@ class SourceSyncWorker(
 
             SourceLoader.saveLastCheckedTime(applicationContext)
             val localVersion = SourceLoader.localVersion(applicationContext)
-            val apkExists = applicationContext.codeCacheDir.resolve("sources.apk").exists()
+            val apkExists = SourceLoader.apkFile(applicationContext).exists()
             if (manifest.version <= localVersion && apkExists) {
                 Log.d(TAG, "Sources up to date (v$localVersion)")
                 SourceLoader.loadIfAvailable(applicationContext)
@@ -41,7 +41,7 @@ class SourceSyncWorker(
             val tempApk = downloadApk(manifest.url)
                 ?: return@withContext Result.retry()
 
-            val destApk = applicationContext.codeCacheDir.resolve("sources.apk")
+            val destApk = SourceLoader.apkFile(applicationContext)
             tempApk.copyTo(destApk, overwrite = true)
             tempApk.delete()
             destApk.setReadOnly()

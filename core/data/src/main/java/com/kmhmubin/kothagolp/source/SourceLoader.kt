@@ -13,20 +13,29 @@ object SourceLoader {
     private const val PREFS_NAME = "source_sync_prefs"
     private const val KEY_MANIFEST = "manifest_json"
     private const val KEY_LAST_CHECKED = "sources_last_checked"
+    private const val APK_NAME = "sources.apk"
 
     private val _isApkLoaded = MutableStateFlow(false)
     val isApkLoaded: StateFlow<Boolean> = _isApkLoaded
 
+    /** Canonical storage location for sources APK (filesDir avoids codeCacheDir SELinux scrutiny). */
+    fun apkFile(context: Context) = context.filesDir.resolve(APK_NAME)
+
     /**
      * Called at app startup. If a downloaded sources.apk exists and a
      * cached manifest is stored, reload providers from the APK.
-     * APK providers replace bundled providers with matching names.
      */
     fun loadIfAvailable(context: Context) {
-        val apk = context.codeCacheDir.resolve("sources.apk")
-            .takeIf { it.exists() }
-            ?: context.filesDir.resolve("sources.apk")  // legacy path fallback
-        if (!apk.exists()) return
+        // Migrate legacy APK from codeCacheDir to filesDir on first run after upgrade.
+        val legacy = context.codeCacheDir.resolve(APK_NAME)
+        val canonical = apkFile(context)
+        if (legacy.exists() && !canonical.exists()) {
+            legacy.copyTo(canonical, overwrite = true)
+            legacy.delete()
+            Log.i(TAG, "Migrated sources.apk from codeCacheDir → filesDir")
+        }
+
+        if (!canonical.exists()) return
 
         val manifestJson = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString(KEY_MANIFEST, null) ?: return
@@ -42,29 +51,34 @@ object SourceLoader {
 
     /**
      * Loads all providers from the APK described by [manifest].
-     * Registers each via MainProvider.register() — providers with the same
-     * name as an already-registered provider REPLACE the existing entry.
-     * Returns the number of successfully loaded providers.
+     * Registers each via MainProvider.register().
+     * Throws [IllegalStateException] if the APK exists but zero providers loaded —
+     * callers should surface this as a user-visible error.
      */
     fun reload(context: Context, manifest: SourceManifest): Int {
-        val apk = context.codeCacheDir.resolve("sources.apk")
-            .takeIf { it.exists() }
-            ?: context.filesDir.resolve("sources.apk")
+        val apk = apkFile(context)
         if (!apk.exists()) return 0
 
-        // Android W^X: ART refuses to load a DEX/APK that has write permission.
-        // Strip write bits before handing to DexClassLoader.
+        // W^X policy (Android 10+): ART refuses writable DEX files.
         if (apk.canWrite()) apk.setReadOnly()
 
+        // dex output goes to codeCacheDir (designed for compiled code artifacts)
         val dexOutDir = context.codeCacheDir.resolve("sources_dex").also { it.mkdirs() }
-        val loader = DexClassLoader(
-            apk.absolutePath,
-            dexOutDir.absolutePath,
-            null,
-            context.classLoader
-        )
+
+        val loader = try {
+            DexClassLoader(
+                apk.absolutePath,
+                dexOutDir.absolutePath,
+                null,
+                context.classLoader
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "DexClassLoader init failed: ${e.message}", e)
+            throw IllegalStateException("Failed to initialise source loader: ${e.message}", e)
+        }
 
         var count = 0
+        val errors = mutableListOf<String>()
         for (entry in manifest.sources) {
             try {
                 val clazz = loader.loadClass(entry.className)
@@ -72,12 +86,22 @@ object SourceLoader {
                 MainProvider.register(provider)
                 count++
             } catch (e: Exception) {
-                Log.w(TAG, "Skipping ${entry.id}: ${e.message}")
+                val msg = "${entry.id}: ${e.javaClass.simpleName}: ${e.message}"
+                Log.e(TAG, "Failed to load provider $msg", e)
+                errors.add(msg)
             }
         }
 
         _isApkLoaded.value = count > 0
-        Log.i(TAG, "Loaded $count/${manifest.sources.size} providers from sources.apk (v${manifest.version})")
+        Log.i(TAG, "Loaded $count/${manifest.sources.size} providers (v${manifest.version})")
+
+        if (count == 0 && manifest.sources.isNotEmpty()) {
+            throw IllegalStateException(
+                "Source APK loaded but 0/${manifest.sources.size} providers initialised. " +
+                "First error: ${errors.firstOrNull() ?: "unknown"}"
+            )
+        }
+
         return count
     }
 
