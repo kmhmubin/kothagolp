@@ -122,10 +122,10 @@ sealed class GridColumns {
  * Custom theme colors configuration
  */
 data class CustomThemeColors(
-    val primaryColor: Long = 0xFFA8C7FF,      // Ink Blue dark primary
-    val secondaryColor: Long = 0xFFBCC8E7,    // Ink Blue dark secondary
-    val backgroundColor: Long = 0xFF111318,   // Ink dark background
-    val surfaceColor: Long = 0xFF1D2024       // Ink surface container
+    val primaryColor: Long = 0xFF5B9BFF,      // Ink Blue expressive primary
+    val secondaryColor: Long = 0xFF8CAFD8,    // Ink Blue secondary
+    val backgroundColor: Long = 0xFF0D1117,   // Ink dark background
+    val surfaceColor: Long = 0xFF191D26       // Ink surface container
 ) {
     companion object {
         val DEFAULT = CustomThemeColors()
