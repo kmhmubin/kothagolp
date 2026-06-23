@@ -44,6 +44,7 @@ class SourceSyncWorker(
             val destApk = applicationContext.codeCacheDir.resolve("sources.apk")
             tempApk.copyTo(destApk, overwrite = true)
             tempApk.delete()
+            destApk.setReadOnly()
 
             SourceLoader.saveManifest(applicationContext, manifestJson)
             SourceLoader.saveLocalVersion(applicationContext, manifest.version)
