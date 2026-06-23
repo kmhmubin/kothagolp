@@ -1,24 +1,33 @@
 package com.kmhmubin.kothagolp.ui.screens.onboarding
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kmhmubin.kothagolp.data.local.entity.TagFilterType
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.provider.MainProvider
-import com.kmhmubin.kothagolp.recommendation.InteractionType  // ADD THIS IMPORT
+import com.kmhmubin.kothagolp.recommendation.InteractionType
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer.TagCategory
 import com.kmhmubin.kothagolp.recommendation.model.OnboardingPreferences
-import kotlinx.coroutines.delay
+import com.kmhmubin.kothagolp.source.SourceLoader
+import com.kmhmubin.kothagolp.source.SourceManifest
+import com.kmhmubin.kothagolp.source.SourceSyncWorker
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 private const val TAG = "OnboardingViewModel"
 
-class OnboardingViewModel : ViewModel() {
+class OnboardingViewModel(application: Application) : AndroidViewModel(application) {
 
     private val preferencesManager = RepositoryProvider.getPreferencesManager()
     private val discoveryManager = RepositoryProvider.getDiscoveryManager()
@@ -43,21 +52,102 @@ class OnboardingViewModel : ViewModel() {
             applyProviders(immediate)
             return
         }
+        // No sources yet — download directly so user sees progress, not a blind spinner
+        viewModelScope.launch { downloadAndLoadSources() }
+    }
 
-        // First install: sources are downloading in background via SourceSyncWorker.
-        // Poll until they appear (worker typically finishes within a few seconds).
-        _state.update { it.copy(isLoadingProviders = true) }
-        viewModelScope.launch {
-            val timeoutMs = 90_000L
-            val startTime = System.currentTimeMillis()
-            var loaded = emptyList<MainProvider>()
+    fun retrySourceDownload() {
+        viewModelScope.launch { downloadAndLoadSources() }
+    }
 
-            while (loaded.isEmpty() && System.currentTimeMillis() - startTime < timeoutMs) {
-                delay(750)
-                loaded = MainProvider.getProviders()
+    private suspend fun downloadAndLoadSources() = withContext(Dispatchers.IO) {
+        val ctx = getApplication<Application>()
+        try {
+            _state.update {
+                it.copy(
+                    isLoadingProviders = true,
+                    isDownloadingSource = true,
+                    sourceDownloadProgress = 0f,
+                    sourceDownloadStatus = "Fetching source list…",
+                    sourceDownloadError = null
+                )
             }
 
-            applyProviders(loaded)
+            val client = OkHttpClient.Builder()
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .build()
+
+            // 1. Manifest
+            val manifestBody = client.newCall(
+                Request.Builder().url(SourceSyncWorker.MANIFEST_URL).build()
+            ).execute().body?.string()
+                ?: throw IOException("Could not reach source server. Check your connection.")
+
+            val manifest = SourceManifest.fromJson(manifestBody)
+            _state.update {
+                it.copy(
+                    sourceDownloadProgress = 0.05f,
+                    sourceDownloadStatus = "Downloading ${manifest.sources.size} providers…"
+                )
+            }
+
+            // 2. APK download with byte-level progress
+            val apkResponse = client.newCall(
+                Request.Builder().url(manifest.url).build()
+            ).execute()
+            val apkBody = apkResponse.body
+                ?: throw IOException("Empty APK response from server.")
+            val contentLength = apkBody.contentLength()
+
+            val tempFile = ctx.cacheDir.resolve("sources_dl.apk")
+            var bytesRead = 0L
+            tempFile.outputStream().use { out ->
+                apkBody.byteStream().use { input ->
+                    val buf = ByteArray(8192)
+                    var n: Int
+                    while (input.read(buf).also { n = it } != -1) {
+                        out.write(buf, 0, n)
+                        bytesRead += n
+                        if (contentLength > 0) {
+                            val p = 0.05f + (bytesRead.toFloat() / contentLength) * 0.80f
+                            _state.update { it.copy(sourceDownloadProgress = p) }
+                        }
+                    }
+                }
+            }
+
+            // 3. Install
+            _state.update {
+                it.copy(sourceDownloadProgress = 0.88f, sourceDownloadStatus = "Installing providers…")
+            }
+            val destApk = ctx.codeCacheDir.resolve("sources.apk")
+            tempFile.copyTo(destApk, overwrite = true)
+            tempFile.delete()
+
+            SourceLoader.saveManifest(ctx, manifestBody)
+            SourceLoader.saveLocalVersion(ctx, manifest.version)
+            val count = SourceLoader.reload(ctx, manifest)
+
+            _state.update {
+                it.copy(
+                    sourceDownloadProgress = 1f,
+                    sourceDownloadStatus = "Ready — $count providers loaded",
+                    isDownloadingSource = false
+                )
+            }
+
+            applyProviders(MainProvider.getProviders())
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Source download failed", e)
+            _state.update {
+                it.copy(
+                    isDownloadingSource = false,
+                    isLoadingProviders = false,
+                    sourceDownloadError = e.message ?: "Download failed. Check your connection."
+                )
+            }
         }
     }
 
