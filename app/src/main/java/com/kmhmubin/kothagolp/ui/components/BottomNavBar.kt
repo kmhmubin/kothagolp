@@ -16,6 +16,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -82,6 +83,7 @@ fun KothagolpNavigationRail(
 ) {
     val normalizedRoute = selectedRoute.removePrefix("tab_")
     NavigationRail(modifier = modifier) {
+        Spacer(Modifier.weight(1f))
         bottomNavItems.forEach { item ->
             val selected = item.route == normalizedRoute || selectedRoute.contains(item.route)
             NavigationRailItem(
@@ -96,5 +98,6 @@ fun KothagolpNavigationRail(
                 label = { Text(item.label) }
             )
         }
+        Spacer(Modifier.weight(1f))
     }
 }
