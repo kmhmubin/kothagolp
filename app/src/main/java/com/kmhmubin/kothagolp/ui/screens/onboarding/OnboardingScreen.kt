@@ -6,6 +6,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,45 +38,66 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Battery5Bar
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.InstallMobile
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.Source
 import androidx.compose.material.icons.rounded.ThumbDown
 import androidx.compose.material.icons.rounded.ThumbUp
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
+import androidx.core.content.getSystemService
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer.TagCategory
-import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.recommendation.model.GenreOption
 import com.kmhmubin.kothagolp.recommendation.model.OnboardingGenres
+import com.kmhmubin.kothagolp.ui.theme.AppShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,6 +148,12 @@ fun OnboardingScreen(
                     OnboardingStep.WELCOME -> WelcomeStep(
                         onNext = { viewModel.nextStep() },
                         onSkip = { viewModel.skipOnboarding() }
+                    )
+                    OnboardingStep.PERMISSIONS -> PermissionsStep(
+                        storageFolderUri = state.storageFolderUri,
+                        onFolderSelected = { viewModel.setStorageFolder(it) },
+                        onNext = { viewModel.nextStep() },
+                        onBack = { viewModel.previousStep() }
                     )
                     OnboardingStep.PROVIDERS -> ProvidersStep(
                         providers = state.availableProviders,
@@ -246,7 +282,273 @@ private fun WelcomeStep(
 }
 
 // ================================================================
-// STEP 2: PROVIDERS
+// STEP 2: PERMISSIONS
+// ================================================================
+
+@Composable
+private fun PermissionsStep(
+    storageFolderUri: String?,
+    onFolderSelected: (String) -> Unit,
+    onNext: () -> Unit,
+    onBack: () -> Unit
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    var installAppsGranted by remember { mutableStateOf(false) }
+    var notificationsGranted by remember { mutableStateOf(false) }
+    var batteryGranted by remember { mutableStateOf(false) }
+
+    // Re-check permission states each time user returns from Settings
+    DisposableEffect(lifecycleOwner.lifecycle) {
+        val observer = object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                installAppsGranted = context.packageManager.canRequestPackageInstalls()
+                notificationsGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                } else true
+                batteryGranted = context.getSystemService<PowerManager>()
+                    ?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* state re-checked on resume */ }
+
+    val folderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            onFolderSelected(uri.toString())
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        StepHeader(
+            title = "App Permissions",
+            subtitle = "Grant access for the best experience",
+            onBack = onBack
+        )
+
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            // ── Install unknown apps ──────────────────────────────────
+            item {
+                PermissionItem(
+                    icon = Icons.Rounded.InstallMobile,
+                    title = "Install Source Updates",
+                    subtitle = "Required to download and load novel source plugins. Without this, sources cannot be installed.",
+                    granted = installAppsGranted,
+                    required = true,
+                    onGrant = {
+                        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            }
+
+            // ── Notifications ─────────────────────────────────────────
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                item {
+                    PermissionItem(
+                        icon = Icons.Rounded.NotificationsActive,
+                        title = "Notifications",
+                        subtitle = "Get alerts for new chapters, download progress, and library update results.",
+                        granted = notificationsGranted,
+                        required = false,
+                        onGrant = {
+                            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                }
+            }
+
+            // ── Battery optimisation ──────────────────────────────────
+            item {
+                @Suppress("BatteryLife")
+                PermissionItem(
+                    icon = Icons.Rounded.Battery5Bar,
+                    title = "Unrestricted Battery Usage",
+                    subtitle = "Prevents the OS from killing background library updates, downloads, and backup restores mid-run.",
+                    granted = batteryGranted,
+                    required = false,
+                    onGrant = {
+                        val intent = Intent(
+                            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                        ).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            }
+
+            // ── Storage folder ────────────────────────────────────────
+            item {
+                val folderName = storageFolderUri?.let {
+                    Uri.parse(it).lastPathSegment?.substringAfterLast(':') ?: "Selected"
+                }
+                PermissionItem(
+                    icon = Icons.Rounded.Folder,
+                    title = "Download Folder",
+                    subtitle = if (folderName != null)
+                        "Folder: $folderName"
+                    else
+                        "Choose where to save EPUB exports and backup files. Recommended but optional.",
+                    granted = storageFolderUri != null,
+                    required = false,
+                    grantLabel = if (storageFolderUri != null) "Change" else "Choose",
+                    onGrant = { folderLauncher.launch(null) }
+                )
+            }
+        }
+
+        // Hint: all optional
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            shape = AppShape.medium,
+            color = MaterialTheme.colorScheme.surfaceContainerLow
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Rounded.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "You can change these later in Settings. Install Source Updates is required to load any novel sources.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        StepNavigation(
+            canProceed = true,
+            onNext = onNext,
+            nextLabel = "Continue"
+        )
+    }
+}
+
+@Composable
+private fun PermissionItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    granted: Boolean,
+    required: Boolean,
+    modifier: Modifier = Modifier,
+    grantLabel: String = "Grant",
+    onGrant: () -> Unit
+) {
+    ListItem(
+        modifier = modifier,
+        leadingContent = {
+            Surface(
+                shape = AppShape.medium,
+                color = if (granted)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (granted)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        },
+        headlineContent = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                if (required) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.errorContainer
+                    ) {
+                        Text(
+                            text = "Required",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+        },
+        supportingContent = {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        trailingContent = {
+            if (granted && grantLabel == "Grant") {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            Icons.Rounded.Check,
+                            contentDescription = "Granted",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            } else {
+                OutlinedButton(
+                    onClick = onGrant,
+                    shape = AppShape.small
+                ) {
+                    Text(grantLabel, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+    )
+}
+
+// ================================================================
+// STEP 3: PROVIDERS
 // ================================================================
 
 @Composable
