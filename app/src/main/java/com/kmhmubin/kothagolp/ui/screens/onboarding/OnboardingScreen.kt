@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -755,7 +756,7 @@ private fun ProvidersStep(
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(providers, key = { it.name }) { provider ->
+                    itemsIndexed(providers, key = { index, it -> "${index}_${it.name}" }) { _, provider ->
                         ProviderCard(
                             provider = provider,
                             isSelected = provider.name in selectedProviders,

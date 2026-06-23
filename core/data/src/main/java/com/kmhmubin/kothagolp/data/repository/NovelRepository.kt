@@ -66,7 +66,9 @@ class NovelRepository(
     fun getProviders(): List<MainProvider> {
         val registered = MainProvider.getProviders()
         val prefs = RepositoryProvider.getPreferencesManager().appSettings.value
-        val order = if (prefs.providerOrder.isEmpty()) registered.map { it.name } else prefs.providerOrder
+        // Deduplicate saved order — corrupted prefs can contain repeated names
+        val order = if (prefs.providerOrder.isEmpty()) registered.map { it.name }
+                    else prefs.providerOrder.distinct()
         val disabled = prefs.disabledProviders
 
         val map = registered.associateBy { it.name }
@@ -74,7 +76,8 @@ class NovelRepository(
         // Append any providers missing from the saved order
         val remaining = registered.filter { it.name !in order }
         val combined = ordered + remaining
-        return combined.filter { it.name !in disabled }
+        // Final distinctBy guards against any other source of duplicates
+        return combined.filter { it.name !in disabled }.distinctBy { it.name }
     }
 
     fun getProvider(name: String): MainProvider? = MainProvider.getProvider(name)
