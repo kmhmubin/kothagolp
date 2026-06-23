@@ -1558,6 +1558,12 @@ class PreferencesManager(context: Context) {
         prefs.edit().putInt(KEY_APP_VERSION, version).apply()
     }
 
+    fun getStorageFolderUri(): String? = prefs.getString(KEY_STORAGE_FOLDER_URI, null)
+
+    fun setStorageFolderUri(uri: String) {
+        prefs.edit().putString(KEY_STORAGE_FOLDER_URI, uri).apply()
+    }
+
     // =========================================================================
     // EXPORT ALL SETTINGS
     // =========================================================================
@@ -2051,6 +2057,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_FIRST_RUN = "first_run"
         private const val KEY_ONBOARDING_COMPLETE = "onboarding_complete"
         private const val KEY_APP_VERSION = "app_version"
+        private const val KEY_STORAGE_FOLDER_URI = "storage_folder_uri"
 
         // =====================================================================
         // CUSTOM THEME KEYS

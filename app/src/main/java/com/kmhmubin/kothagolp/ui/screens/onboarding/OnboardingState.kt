@@ -3,9 +3,6 @@ package com.kmhmubin.kothagolp.ui.screens.onboarding
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer.TagCategory
 import com.kmhmubin.kothagolp.recommendation.model.OnboardingPreferences
 
-/**
- * UI state for the onboarding flow
- */
 data class OnboardingState(
     val currentStep: OnboardingStep = OnboardingStep.WELCOME,
     val preferences: OnboardingPreferences = OnboardingPreferences.EMPTY,
@@ -30,6 +27,9 @@ data class OnboardingState(
     val includeBLContent: Boolean = true,
     val includeGLContent: Boolean = true,
 
+    // Storage folder (SAF URI string — persisted to SharedPreferences)
+    val storageFolderUri: String? = null,
+
     // Seeding state
     val isSeeding: Boolean = false,
     val seedingProgress: SeedingProgressInfo? = null,
@@ -40,8 +40,9 @@ data class OnboardingState(
     val canProceed: Boolean
         get() = when (currentStep) {
             OnboardingStep.WELCOME -> true
+            OnboardingStep.PERMISSIONS -> true  // all permissions optional
             OnboardingStep.PROVIDERS -> selectedProviders.isNotEmpty()
-            OnboardingStep.GENRES -> true // Optional
+            OnboardingStep.GENRES -> true
             OnboardingStep.CONTENT -> true
             OnboardingStep.READY -> true
             OnboardingStep.SEEDING -> false
@@ -67,6 +68,7 @@ data class OnboardingState(
 
 enum class OnboardingStep {
     WELCOME,
+    PERMISSIONS,
     PROVIDERS,
     GENRES,
     CONTENT,
@@ -78,8 +80,8 @@ enum class OnboardingStep {
 data class ProviderInfo(
     val name: String,
     val description: String,
-    val novelCount: String, // e.g., "10,000+ novels"
-    val genres: List<String>, // Main genres available
+    val novelCount: String,
+    val genres: List<String>,
     val isEnabled: Boolean = true
 )
 

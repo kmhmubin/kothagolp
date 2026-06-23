@@ -39,6 +39,10 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
 
     init {
+        val savedUri = preferencesManager.getStorageFolderUri()
+        if (savedUri != null) {
+            _state.update { it.copy(storageFolderUri = savedUri) }
+        }
         loadProviders()
     }
 
@@ -215,7 +219,8 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     fun nextStep() {
         val current = _state.value.currentStep
         val next = when (current) {
-            OnboardingStep.WELCOME -> OnboardingStep.PROVIDERS
+            OnboardingStep.WELCOME -> OnboardingStep.PERMISSIONS
+            OnboardingStep.PERMISSIONS -> OnboardingStep.PROVIDERS
             OnboardingStep.PROVIDERS -> OnboardingStep.GENRES
             OnboardingStep.GENRES -> OnboardingStep.CONTENT
             OnboardingStep.CONTENT -> OnboardingStep.READY
@@ -234,15 +239,21 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         val current = _state.value.currentStep
         val previous = when (current) {
             OnboardingStep.WELCOME -> OnboardingStep.WELCOME
-            OnboardingStep.PROVIDERS -> OnboardingStep.WELCOME
+            OnboardingStep.PERMISSIONS -> OnboardingStep.WELCOME
+            OnboardingStep.PROVIDERS -> OnboardingStep.PERMISSIONS
             OnboardingStep.GENRES -> OnboardingStep.PROVIDERS
             OnboardingStep.CONTENT -> OnboardingStep.GENRES
             OnboardingStep.READY -> OnboardingStep.CONTENT
-            OnboardingStep.SEEDING -> OnboardingStep.READY // Can't go back during seeding
+            OnboardingStep.SEEDING -> OnboardingStep.READY
             OnboardingStep.COMPLETE -> OnboardingStep.COMPLETE
         }
 
         _state.update { it.copy(currentStep = previous) }
+    }
+
+    fun setStorageFolder(uriString: String) {
+        _state.update { it.copy(storageFolderUri = uriString) }
+        preferencesManager.setStorageFolderUri(uriString)
     }
 
     fun skipOnboarding() {
