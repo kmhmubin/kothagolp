@@ -124,6 +124,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             val destApk = ctx.codeCacheDir.resolve("sources.apk")
             tempFile.copyTo(destApk, overwrite = true)
             tempFile.delete()
+            destApk.setReadOnly()
 
             SourceLoader.saveManifest(ctx, manifestBody)
             SourceLoader.saveLocalVersion(ctx, manifest.version)

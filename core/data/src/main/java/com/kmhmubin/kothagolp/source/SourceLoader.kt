@@ -52,6 +52,10 @@ object SourceLoader {
             ?: context.filesDir.resolve("sources.apk")
         if (!apk.exists()) return 0
 
+        // Android W^X: ART refuses to load a DEX/APK that has write permission.
+        // Strip write bits before handing to DexClassLoader.
+        if (apk.canWrite()) apk.setReadOnly()
+
         val dexOutDir = context.codeCacheDir.resolve("sources_dex").also { it.mkdirs() }
         val loader = DexClassLoader(
             apk.absolutePath,
