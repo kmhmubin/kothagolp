@@ -15,6 +15,12 @@ data class OnboardingState(
     val selectedProviders: Set<String> = emptySet(),
     val isLoadingProviders: Boolean = false,
 
+    // Source download (first install)
+    val isDownloadingSource: Boolean = false,
+    val sourceDownloadProgress: Float = 0f,
+    val sourceDownloadStatus: String = "",
+    val sourceDownloadError: String? = null,
+
     // Genre selection
     val likedGenres: Set<TagCategory> = emptySet(),
     val dislikedGenres: Set<TagCategory> = emptySet(),
