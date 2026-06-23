@@ -3,28 +3,68 @@ package com.kmhmubin.kothagolp.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ============================================
-// KOTHAGOLP BRAND — DaisyUI Sunset
+// KOTHAGOLP BRAND — Ink Blue Expressive
+// Seed: #3D6FFF — high-chroma M3 expressive palette, WCAG AA
 // ============================================
-val SunsetBase100         = Color(0xFF121C22)  // background / surface
-val SunsetBase200         = Color(0xFF0E171E)  // surfaceContainerLow
-val SunsetBase300         = Color(0xFF091319)  // surfaceContainerLowest
-val SunsetContent         = Color(0xFF9FB9D0)  // onBackground / onSurface
-val SunsetPrimary         = Color(0xFFFF865B)  // coral-orange
-val SunsetPrimaryContent  = Color(0xFF160603)
-val SunsetSecondary       = Color(0xFFFD6F9C)  // pink
-val SunsetSecondaryContent= Color(0xFF160409)
-val SunsetAccent          = Color(0xFFB387FA)  // purple
-val SunsetAccentContent   = Color(0xFF0C0615)
-val SunsetNeutral         = Color(0xFF1B262C)  // surfaceContainer / variant
-val SunsetNeutralContent  = Color(0xFF94A0A9)
-val SunsetInfo            = Color(0xFF89E0EB)
-val SunsetInfoContent     = Color(0xFF071213)
-val SunsetSuccessColor    = Color(0xFFADDFAD)
-val SunsetSuccessContent  = Color(0xFF0B120B)
-val SunsetWarningColor    = Color(0xFFF1C892)
-val SunsetWarningContent  = Color(0xFF140F08)
-val SunsetErrorColor      = Color(0xFFFFBBBD)
-val SunsetErrorContent    = Color(0xFF160D0D)
+
+// ── Dark scheme roles ─────────────────────────
+val InkPrimary                = Color(0xFF5B9BFF)   // vivid cobalt — ~6.9:1 on bg
+val InkOnPrimary              = Color(0xFF001A6E)
+val InkPrimaryContainer       = Color(0xFF1247C0)   // deep vivid blue
+val InkOnPrimaryContainer     = Color(0xFFD6E3FF)
+
+val InkSecondary              = Color(0xFF8CAFD8)   // richer blue-grey
+val InkOnSecondary            = Color(0xFF0D2035)
+val InkSecondaryContainer     = Color(0xFF1E3A56)
+val InkOnSecondaryContainer   = Color(0xFFD0E4F7)
+
+val InkTertiary               = Color(0xFFB99EFF)   // vivid violet
+val InkOnTertiary             = Color(0xFF25006B)
+val InkTertiaryContainer      = Color(0xFF4527A0)   // deep violet
+val InkOnTertiaryContainer    = Color(0xFFE8DDFF)
+
+val InkDarkBackground         = Color(0xFF0D1117)   // true ink — richer than grey
+val InkDarkOnBackground       = Color(0xFFDEE3F0)
+val InkDarkSurfaceVariant     = Color(0xFF2E3542)
+val InkDarkOnSurfaceVariant   = Color(0xFFB0BAC8)
+val InkDarkSurfaceLowest      = Color(0xFF080B10)
+val InkDarkSurfaceLow         = Color(0xFF141820)
+val InkDarkSurface            = Color(0xFF191D26)
+val InkDarkSurfaceHigh        = Color(0xFF222733)
+val InkDarkSurfaceHighest     = Color(0xFF2C3140)
+val InkDarkOutline            = Color(0xFF7A8494)
+val InkDarkOutlineVariant     = Color(0xFF2E3542)
+
+// ── Light scheme roles ────────────────────────
+val InkLightPrimary               = Color(0xFF0B47C5)   // deep expressive blue — 8.1:1 on bg
+val InkLightOnPrimary             = Color(0xFFFFFFFF)
+val InkLightPrimaryContainer      = Color(0xFFC8D9FF)   // vivid blue-tinted
+val InkLightOnPrimaryContainer    = Color(0xFF001551)
+
+val InkLightSecondary             = Color(0xFF3A5A80)   // rich slate-blue
+val InkLightOnSecondary           = Color(0xFFFFFFFF)
+val InkLightSecondaryContainer    = Color(0xFFBDD6F0)
+val InkLightOnSecondaryContainer  = Color(0xFF071929)
+
+val InkLightTertiary              = Color(0xFF5236A0)   // rich violet
+val InkLightOnTertiary            = Color(0xFFFFFFFF)
+val InkLightTertiaryContainer     = Color(0xFFDDD4FF)
+val InkLightOnTertiaryContainer   = Color(0xFF170060)
+
+val InkLightBackground            = Color(0xFFF5F7FF)   // blue-white
+val InkLightOnBackground          = Color(0xFF0E1320)
+val InkLightSurfaceVariant        = Color(0xFFD4DCE8)
+val InkLightOnSurfaceVariant      = Color(0xFF3A4250)
+val InkLightSurfaceLowest         = Color(0xFFFFFFFF)
+val InkLightSurfaceLow            = Color(0xFFEDF1FB)
+val InkLightSurface               = Color(0xFFE7EBF6)
+val InkLightSurfaceHigh           = Color(0xFFDFE4F0)
+val InkLightSurfaceHighest        = Color(0xFFD8DEEC)
+val InkLightOutline               = Color(0xFF5D6778)
+val InkLightOutlineVariant        = Color(0xFFB8C2D0)
+
+// Backward-compat alias — used by TTSSettingsPanel as default accent
+val SunsetPrimary = Color(0xFFFF865B)
 
 // ============================================
 // NEUTRAL — Zinc (kept for reader themes and classic preset)

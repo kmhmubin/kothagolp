@@ -122,15 +122,15 @@ sealed class GridColumns {
  * Custom theme colors configuration
  */
 data class CustomThemeColors(
-    val primaryColor: Long = 0xFFFF865B,      // Sunset coral
-    val secondaryColor: Long = 0xFFFD6F9C,    // Sunset pink
-    val backgroundColor: Long = 0xFF121C22,   // Sunset base-100
-    val surfaceColor: Long = 0xFF1B262C       // Sunset neutral
+    val primaryColor: Long = 0xFF5B9BFF,      // Ink Blue expressive primary
+    val secondaryColor: Long = 0xFF8CAFD8,    // Ink Blue secondary
+    val backgroundColor: Long = 0xFF0D1117,   // Ink dark background
+    val surfaceColor: Long = 0xFF191D26       // Ink surface container
 ) {
     companion object {
         val DEFAULT = CustomThemeColors()
 
-        // Kothagolp brand — DaisyUI Sunset (same as DEFAULT, named for UI)
+        // Kothagolp brand — Ink Blue (same as DEFAULT, named for UI)
         val KOTHAGOLP = DEFAULT
 
         val CLASSIC = CustomThemeColors(

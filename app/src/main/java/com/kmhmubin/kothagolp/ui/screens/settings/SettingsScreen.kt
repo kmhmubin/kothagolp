@@ -10,6 +10,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -1752,74 +1753,106 @@ private fun ThemePresetCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary
-        else Color.Transparent,
-        label = "border"
+    val animBorder by animateColorAsState(
+        targetValue = if (isSelected) Color(colors.primaryColor.toInt())
+                      else Color.Transparent,
+        label = "presetBorder"
     )
+    val bgColor      = Color(colors.backgroundColor.toInt())
+    val primaryColor = Color(colors.primaryColor.toInt())
+    val secondaryColor = Color(colors.secondaryColor.toInt())
+    val surfColor    = Color(colors.surfaceColor.toInt())
 
-    Card(
+    // Infer a legible label color from bg luminance
+    val bgLum = 0.299f * bgColor.red + 0.587f * bgColor.green + 0.114f * bgColor.blue
+    val nameColor = if (bgLum < 0.45f)
+        Color.White.copy(alpha = if (isSelected) 1f else 0.75f)
+    else
+        Color.Black.copy(alpha = if (isSelected) 1f else 0.75f)
+
+    Surface(
+        onClick = onClick,
         modifier = Modifier
-            .width(100.dp)
-            .clip(AppShape.medium)
-            .clickable(onClick = onClick)
-            .then(
-                if (isSelected) Modifier.border(
-                    2.dp,
-                    borderColor,
-                    AppShape.medium
-                ) else Modifier
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(colors.backgroundColor)
-        ),
-        shape = AppShape.medium
+            .width(92.dp)
+            .height(120.dp),
+        shape = AppShape.large,
+        color = bgColor,
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) animBorder
+                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+        )
     ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Column(modifier = Modifier.fillMaxSize()) {
+
+            // ── Colour preview area ──────────────────────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    Modifier
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(Color(colors.primaryColor))
-                )
-                Box(
-                    Modifier
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(Color(colors.secondaryColor))
-                )
-                Box(
-                    Modifier
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(Color(colors.surfaceColor))
-                        .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                )
+                // Overlapping circles: large primary (front-left) + small secondary (back-right)
+                Box(modifier = Modifier.size(60.dp)) {
+                    Box(
+                        Modifier
+                            .size(44.dp)
+                            .align(Alignment.TopStart)
+                            .clip(CircleShape)
+                            .background(primaryColor)
+                    )
+                    Box(
+                        Modifier
+                            .size(32.dp)
+                            .align(Alignment.BottomEnd)
+                            .clip(CircleShape)
+                            .background(secondaryColor)
+                            .border(2.dp, bgColor, CircleShape)
+                    )
+                }
+
+                // Selected checkmark badge in top-end corner
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .background(primaryColor),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = "Selected",
+                            modifier = Modifier.size(12.dp),
+                            tint = bgColor
+                        )
+                    }
+                }
             }
 
-            Text(
-                name,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) Color(colors.primaryColor)
-                else Color.White.copy(alpha = 0.8f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            if (isSelected) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "Selected",
-                    modifier = Modifier.size(16.dp),
-                    tint = Color(colors.primaryColor)
+            // ── Name strip ───────────────────────────────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(34.dp)
+                    .background(
+                        color = surfColor.copy(alpha = 0.85f),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                            bottomStart = 16.dp, bottomEnd = 16.dp
+                        )
+                    )
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) primaryColor else nameColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

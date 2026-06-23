@@ -20,85 +20,93 @@ import com.kmhmubin.kothagolp.domain.model.CustomThemeColors
 import com.kmhmubin.kothagolp.domain.model.ThemeMode
 
 /**
- * Kothagolp brand dark theme — DaisyUI Sunset
+ * Kothagolp brand dark theme — Ink Blue
  */
 private val DarkColorScheme = darkColorScheme(
-    primary = SunsetPrimary,
-    onPrimary = SunsetPrimaryContent,
-    primaryContainer = Color(0xFF4A1C0E),
-    onPrimaryContainer = Color(0xFFFFCDBD),
-    secondary = SunsetSecondary,
-    onSecondary = SunsetSecondaryContent,
-    secondaryContainer = Color(0xFF4A0E26),
-    onSecondaryContainer = Color(0xFFFFD0E4),
-    tertiary = SunsetAccent,
-    onTertiary = SunsetAccentContent,
-    tertiaryContainer = Color(0xFF351472),
-    onTertiaryContainer = Color(0xFFE3D0FF),
-    background = SunsetBase100,
-    onBackground = SunsetContent,
-    surface = SunsetBase100,
-    onSurface = SunsetContent,
-    surfaceVariant = SunsetNeutral,
-    onSurfaceVariant = SunsetNeutralContent,
-    surfaceContainerLowest = SunsetBase300,
-    surfaceContainerLow = SunsetBase200,
-    surfaceContainer = SunsetNeutral,
-    surfaceContainerHigh = Color(0xFF253540),
-    surfaceContainerHighest = Color(0xFF2E4050),
-    inverseSurface = SunsetContent,
-    inverseOnSurface = SunsetBase100,
-    inversePrimary = Color(0xFFC04830),
-    error = SunsetErrorColor,
-    onError = SunsetErrorContent,
-    errorContainer = Color(0xFF4A1518),
-    onErrorContainer = SunsetErrorColor,
-    outline = SunsetNeutral,
-    outlineVariant = Color(0xFF162028),
+    primary = InkPrimary,
+    onPrimary = InkOnPrimary,
+    primaryContainer = InkPrimaryContainer,
+    onPrimaryContainer = InkOnPrimaryContainer,
+    secondary = InkSecondary,
+    onSecondary = InkOnSecondary,
+    secondaryContainer = InkSecondaryContainer,
+    onSecondaryContainer = InkOnSecondaryContainer,
+    tertiary = InkTertiary,
+    onTertiary = InkOnTertiary,
+    tertiaryContainer = InkTertiaryContainer,
+    onTertiaryContainer = InkOnTertiaryContainer,
+    background = InkDarkBackground,
+    onBackground = InkDarkOnBackground,
+    surface = InkDarkBackground,
+    onSurface = InkDarkOnBackground,
+    surfaceVariant = InkDarkSurfaceVariant,
+    onSurfaceVariant = InkDarkOnSurfaceVariant,
+    surfaceContainerLowest = InkDarkSurfaceLowest,
+    surfaceContainerLow = InkDarkSurfaceLow,
+    surfaceContainer = InkDarkSurface,
+    surfaceContainerHigh = InkDarkSurfaceHigh,
+    surfaceContainerHighest = InkDarkSurfaceHighest,
+    inverseSurface = InkDarkOnBackground,
+    inverseOnSurface = InkDarkBackground,
+    inversePrimary = InkLightPrimary,
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    outline = InkDarkOutline,
+    outlineVariant = InkDarkOutlineVariant,
     scrim = Color.Black
 )
 
 /**
- * AMOLED variant — pure black bg + sunset accents
+ * AMOLED variant — pure black bg + Ink Blue accents
  */
 private val AmoledDarkColorScheme = DarkColorScheme.copy(
     background = Color.Black,
-    surface = Color(0xFF050A0D),
+    surface = Color(0xFF05060A),
     surfaceContainerLowest = Color.Black,
-    surfaceContainerLow = SunsetBase300,
-    surfaceContainer = SunsetBase200,
-    surfaceContainerHigh = SunsetBase100,
-    surfaceContainerHighest = SunsetNeutral
+    surfaceContainerLow = InkDarkSurfaceLowest,
+    surfaceContainer = InkDarkSurfaceLow,
+    surfaceContainerHigh = InkDarkSurface,
+    surfaceContainerHighest = InkDarkSurfaceHigh
 )
 
 /**
- * Light theme — sunset primary/secondary on neutral light
+ * Light theme — Ink Blue on neutral-blue-tinted light surfaces
  */
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFFBF4E2A),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFD0BD),
-    onPrimaryContainer = Color(0xFF3A1000),
-    secondary = Color(0xFFB93B6E),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFFD0E4),
-    onSecondaryContainer = Color(0xFF3D0020),
-    tertiary = Color(0xFF7042BE),
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFEBDDFF),
-    onTertiaryContainer = Color(0xFF240060),
-    background = Color(0xFFF8F9FA),
-    onBackground = Color(0xFF1A1C1E),
-    surface = Color.White,
-    onSurface = Color(0xFF1A1C1E),
-    surfaceVariant = Color(0xFFE8ECF0),
-    onSurfaceVariant = Color(0xFF42474E),
+    primary = InkLightPrimary,
+    onPrimary = InkLightOnPrimary,
+    primaryContainer = InkLightPrimaryContainer,
+    onPrimaryContainer = InkLightOnPrimaryContainer,
+    secondary = InkLightSecondary,
+    onSecondary = InkLightOnSecondary,
+    secondaryContainer = InkLightSecondaryContainer,
+    onSecondaryContainer = InkLightOnSecondaryContainer,
+    tertiary = InkLightTertiary,
+    onTertiary = InkLightOnTertiary,
+    tertiaryContainer = InkLightTertiaryContainer,
+    onTertiaryContainer = InkLightOnTertiaryContainer,
+    background = InkLightBackground,
+    onBackground = InkLightOnBackground,
+    surface = InkLightBackground,
+    onSurface = InkLightOnBackground,
+    surfaceVariant = InkLightSurfaceVariant,
+    onSurfaceVariant = InkLightOnSurfaceVariant,
+    surfaceContainerLowest = InkLightSurfaceLowest,
+    surfaceContainerLow = InkLightSurfaceLow,
+    surfaceContainer = InkLightSurface,
+    surfaceContainerHigh = InkLightSurfaceHigh,
+    surfaceContainerHighest = InkLightSurfaceHighest,
+    inverseSurface = InkLightOnBackground,
+    inverseOnSurface = Color(0xFFEFF0F7),
+    inversePrimary = InkPrimary,
     error = Color(0xFFBA1A1A),
     onError = Color.White,
     errorContainer = Color(0xFFFFDAD6),
     onErrorContainer = Color(0xFF410002),
-    outline = Color(0xFF72787E),
-    outlineVariant = Color(0xFFC3C8CE)
+    outline = InkLightOutline,
+    outlineVariant = InkLightOutlineVariant
 )
 
 /**
