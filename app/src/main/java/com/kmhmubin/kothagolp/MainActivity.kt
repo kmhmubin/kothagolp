@@ -75,9 +75,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Request POST_NOTIFICATIONS on Android 13+ if not already granted
+        // Request POST_NOTIFICATIONS on Android 13+ only after onboarding (onboarding handles it)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            !TTSNotifications.hasNotificationPermission(this)
+            !TTSNotifications.hasNotificationPermission(this) &&
+            RepositoryProvider.getPreferencesManager().hasCompletedOnboarding()
         ) {
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -126,8 +127,9 @@ class MainActivity : ComponentActivity() {
                         } else {
                             var showNotificationDialog by remember {
                                 mutableStateOf(
+                                    preferencesManager.hasCompletedOnboarding() &&
                                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                                            !TTSNotifications.hasNotificationPermission(this@MainActivity)
+                                    !TTSNotifications.hasNotificationPermission(this@MainActivity)
                                 )
                             }
 

@@ -25,6 +25,7 @@ sealed class NavRoutes(val route: String) {
     object SettingsReader : NavRoutes("settings/reader_prefs")
     object SettingsSources : NavRoutes("settings/sources")
     object Storage : NavRoutes("settings/storage")
+    object SettingsPermissions : NavRoutes("settings/permissions")
 
     // ================================================================
     // SOURCE MIGRATION

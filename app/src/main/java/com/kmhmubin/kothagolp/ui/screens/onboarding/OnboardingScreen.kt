@@ -62,8 +62,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -295,9 +293,24 @@ private fun PermissionsStep(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    var installAppsGranted by remember { mutableStateOf(false) }
-    var notificationsGranted by remember { mutableStateOf(false) }
-    var batteryGranted by remember { mutableStateOf(false) }
+    var installAppsGranted by remember {
+        mutableStateOf(context.packageManager.canRequestPackageInstalls())
+    }
+    var notificationsGranted by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            } else true
+        )
+    }
+    var batteryGranted by remember {
+        mutableStateOf(
+            context.getSystemService<PowerManager>()
+                ?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+        )
+    }
 
     // Re-check permission states each time user returns from Settings
     DisposableEffect(lifecycleOwner.lifecycle) {
@@ -466,36 +479,45 @@ private fun PermissionItem(
     grantLabel: String = "Grant",
     onGrant: () -> Unit
 ) {
-    ListItem(
-        modifier = modifier,
-        leadingContent = {
-            Surface(
-                shape = AppShape.medium,
-                color = if (granted)
-                    MaterialTheme.colorScheme.primaryContainer
-                else
-                    MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (granted)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Surface(
+            shape = AppShape.medium,
+            color = if (granted)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.size(44.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (granted)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
             }
-        },
-        headlineContent = {
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
                 if (required) {
                     Surface(
                         shape = CircleShape,
@@ -510,41 +532,63 @@ private fun PermissionItem(
                     }
                 }
             }
-        },
-        supportingContent = {
+
+            Spacer(modifier = Modifier.height(4.dp))
+
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        },
-        trailingContent = {
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             if (granted && grantLabel == "Grant") {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(36.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            Icons.Rounded.Check,
-                            contentDescription = "Granted",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                     }
+                    Text(
+                        text = "Granted",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            } else if (grantLabel == "Grant") {
+                Button(
+                    onClick = onGrant,
+                    shape = AppShape.small,
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                ) {
+                    Text(grantLabel, style = MaterialTheme.typography.labelMedium)
                 }
             } else {
                 OutlinedButton(
                     onClick = onGrant,
-                    shape = AppShape.small
+                    shape = AppShape.small,
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
                 ) {
                     Text(grantLabel, style = MaterialTheme.typography.labelMedium)
                 }
             }
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-    )
+        }
+    }
 }
 
 // ================================================================

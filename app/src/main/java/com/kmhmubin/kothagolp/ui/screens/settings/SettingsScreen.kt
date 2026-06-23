@@ -32,8 +32,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.core.content.ContextCompat
+import androidx.core.content.getSystemService
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
@@ -41,6 +53,10 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.rounded.Battery5Bar
+import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.InstallMobile
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.outlined.AllInclusive
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Badge
@@ -88,6 +104,7 @@ import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -110,7 +127,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import android.content.pm.PackageManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -256,6 +275,14 @@ fun SettingsScreen(
                             title = "Data",
                             subtitle = "Storage, cache and backup",
                             onClick = { onNavigateTo(NavRoutes.Storage.route) }
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Notifications,
+                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            title = "Permissions",
+                            subtitle = "App permissions and storage folder",
+                            onClick = { onNavigateTo(NavRoutes.SettingsPermissions.route) }
                         )
                     }
                 }
@@ -2188,6 +2215,289 @@ private fun getLibraryShelfIcon(filter: LibraryFilter): ImageVector {
         LibraryFilter.ON_HOLD -> Icons.Rounded.PauseCircle
         LibraryFilter.PLAN_TO_READ -> Icons.Rounded.BookmarkAdd
         LibraryFilter.DROPPED -> Icons.Rounded.Cancel
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PERMISSIONS SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsPermissionsScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+
+    var installAppsGranted by remember {
+        mutableStateOf(context.packageManager.canRequestPackageInstalls())
+    }
+    var notificationsGranted by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            } else true
+        )
+    }
+    var batteryGranted by remember {
+        mutableStateOf(
+            context.getSystemService<PowerManager>()
+                ?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+        )
+    }
+    var storageFolderUri by remember { mutableStateOf(preferencesManager.getStorageFolderUri()) }
+
+    DisposableEffect(lifecycleOwner.lifecycle) {
+        val observer = object : DefaultLifecycleObserver {
+            override fun onResume(owner: LifecycleOwner) {
+                installAppsGranted = context.packageManager.canRequestPackageInstalls()
+                notificationsGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                } else true
+                batteryGranted = context.getSystemService<PowerManager>()
+                    ?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* state re-checked on resume */ }
+
+    val folderLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            val uriString = uri.toString()
+            preferencesManager.setStorageFolderUri(uriString)
+            storageFolderUri = uriString
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Permissions", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        }
+    ) { padding ->
+        androidx.compose.foundation.lazy.LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            item {
+                SettingsPermissionRow(
+                    icon = Icons.Rounded.InstallMobile,
+                    title = "Install Source Updates",
+                    subtitle = "Required to download and load novel source plugins. Without this, sources cannot be installed.",
+                    granted = installAppsGranted,
+                    required = true,
+                    onGrant = {
+                        val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                item {
+                    SettingsPermissionRow(
+                        icon = Icons.Rounded.NotificationsActive,
+                        title = "Notifications",
+                        subtitle = "Get alerts for new chapters, download progress, and library update results.",
+                        granted = notificationsGranted,
+                        required = false,
+                        onGrant = {
+                            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                }
+            }
+
+            item {
+                @Suppress("BatteryLife")
+                SettingsPermissionRow(
+                    icon = Icons.Rounded.Battery5Bar,
+                    title = "Unrestricted Battery Usage",
+                    subtitle = "Prevents the OS from killing background library updates, downloads, and backup restores mid-run.",
+                    granted = batteryGranted,
+                    required = false,
+                    onGrant = {
+                        val intent = Intent(
+                            android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                        ).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            }
+
+            item {
+                val folderName = storageFolderUri?.let {
+                    Uri.parse(it).lastPathSegment?.substringAfterLast(':') ?: "Selected"
+                }
+                SettingsPermissionRow(
+                    icon = Icons.Rounded.Folder,
+                    title = "Download Folder",
+                    subtitle = if (folderName != null)
+                        "Folder: $folderName"
+                    else
+                        "Choose where to save EPUB exports and backup files. Recommended but optional.",
+                    granted = storageFolderUri != null,
+                    required = false,
+                    grantLabel = if (storageFolderUri != null) "Change" else "Choose",
+                    onGrant = { folderLauncher.launch(null) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsPermissionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    granted: Boolean,
+    required: Boolean,
+    grantLabel: String = "Grant",
+    onGrant: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Surface(
+            shape = AppShape.medium,
+            color = if (granted)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.size(44.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (granted)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (required) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.errorContainer
+                    ) {
+                        Text(
+                            text = "Required",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            if (granted && grantLabel == "Grant") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Granted",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            } else if (grantLabel == "Grant") {
+                Button(
+                    onClick = onGrant,
+                    shape = AppShape.small,
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                ) {
+                    Text(grantLabel, style = MaterialTheme.typography.labelMedium)
+                }
+            } else {
+                OutlinedButton(
+                    onClick = onGrant,
+                    shape = AppShape.small,
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                ) {
+                    Text(grantLabel, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
     }
 }
 
