@@ -9,6 +9,7 @@
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![Min SDK](https://img.shields.io/badge/Min%20SDK-26-blue.svg)](https://developer.android.com/about/versions/oreo)
 [![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-3.8.0-brightgreen.svg)](../../releases/latest)
 
 [Download](#installation) · [Features](#features) · [Screenshots](#screenshots)
 
@@ -18,7 +19,9 @@
 
 ## 📖 About
 
-**Kothagolp** is a free, open-source Android app for reading web novels from multiple sources. Inspired by [Tachiyomi](https://github.com/tachiyomiorg/tachiyomi) and [QuickNovel](https://github.com/LagradOst/QuickNovel), it provides a clean, customizable reading experience with **Text-to-Speech**, **offline reading**, and **personalized recommendations** — all built with **Jetpack Compose** and **Material 3**.
+**Kothagolp** is a free, open-source Android app for reading web novels from multiple sources. It is a heavily extended fork of [Novery](https://github.com/1Finn2me/Novery), which provided the UI foundation and core architecture. On top of that base, Kothagolp expands the source library to **19 built-in providers**, adds a local periodic backup system, a global theme-aware UI across the reader and TTS player, an improved onboarding flow, and a host of bug fixes and quality-of-life improvements.
+
+Built with **Jetpack Compose**, **Material 3**, and a clean multi-module architecture (`core:domain`, `core:data`, `core:ui`, `core:common`, `source-api`).
 
 ---
 
@@ -26,51 +29,72 @@
 
 ## ✨ Features
 
-### 📚 Multi-Source Browse & Search
-- **6 novel sources**: NovelFire, Webnovel, NovelBin, LibRead, RoyalRoad, NovelsOnline  
-- Progressive streaming search with fuzzy matching and history  
-- Enable/disable individual sources  
+### 📚 Multi-Source Browse & Search *(expanded from Novery)*
+- **19 built-in sources**: AllNovel, Cyrisia, FenrirRealm, FreeWebNovel, LibRead, LightNovelTranslations, LightNovelWorld, Lnori, NovelArchive, NovelBin, NovelBuddy, NovelDex, NovelFire, NovelsOnline, PawRead, Ranobes, RoyalRoad, Webnovel, and more
+- All sources are built-in — no plugins or external loading required
+- Progressive streaming search with fuzzy matching and history
+- Enable/disable individual sources per-device
 
-### 📖 Reader
-- Continuous scroll or Chaptered view  
-- Customizable fonts, sizing, spacing, alignment, and colors  
-- Fullscreen mode with auto-hiding controls and volume key navigation  
-- Bookmarks  
-- Stable position tracking across sessions  
+### 📖 Reader *(from Novery, extended)*
+- Continuous scroll or chaptered view
+- Customizable fonts, sizing, spacing, alignment, and colors
+- Independent reader color scheme — 20+ presets including AMOLED, Sepia, Nord, and more
+- Reader chrome (chapter title, nav buttons, dividers, scene breaks) follows the global app accent color
+- Fullscreen mode with auto-hiding controls and volume key navigation
+- Bookmarks and text highlighting with notes
+- Stable position tracking across sessions
 
-### 🎧 Text-to-Speech
-- Background playback with screen off  
-- Real-time sentence highlighting and auto-scroll  
-- Lock screen and Bluetooth media controls  
-- Automatic chapter advancement  
-- Full voice selection from device TTS engines  
+### 🎧 Text-to-Speech *(from Novery, extended)*
+- Background playback with screen off
+- Real-time sentence highlighting — highlight color follows the global app theme
+- Auto-scroll to the active sentence
+- Lock screen and Bluetooth media controls
+- Automatic chapter advancement
+- Full voice selection from device TTS engines
+- TTS player UI follows the global app accent color
 
-### 💾 Offline Reading
-- Background download queue with priority levels  
-- Auto-download new chapters from library novels  
-- Per-novel storage management  
+### 💾 Offline Reading *(from Novery)*
+- Background download queue with priority levels
+- Auto-download new chapters from library novels
+- Per-novel storage management
 
-### 📚 Library
-- Track status: Reading, Completed, On Hold, Plan to Read, Dropped  
-- New chapter detection with badge indicators  
-- Filtering, sorting, and batch operations  
+### 📚 Library *(from Novery, extended)*
+- Track status: Reading, Completed, On Hold, Plan to Read, Dropped, Spicy
+- New chapter detection with badge indicators
+- Filter chips always navigate to the correct page (fixed a blank-screen bug)
+- Sorting, searching, and batch operations (change category, mark all read, delete)
 
-### 🤖 Recommendations
-- Tag-based matching engine that learns from your reading patterns  
-- Categories: *For You*, *Because You Read X*, *From Authors You Like*  
-- Configurable filters to block unwanted tags, authors, or sources  
+### 🤖 Recommendations *(from Novery)*
+- Tag-based matching engine that learns from reading patterns
+- Categories: *For You*, *Because You Read X*, *From Authors You Like*
+- Configurable filters to block, reduce, or boost tags, authors, or sources
 
-### 🎨 Theming
-- Material You dynamic colors (Android 12+)  
-- Light, Dark, and AMOLED black modes  
-- 7 preset themes + full custom color picker  
-- Independent reader color scheme  
+### 🎨 Theming *(from Novery, extended)*
+- Material You dynamic colors (Android 12+)
+- Light, Dark, and AMOLED black modes
+- 7 preset color themes + full custom color picker
+- Global accent color propagates to the reader chrome, TTS player, and bottom bar
 
-### 📊 Statistics & History
-- Automatic reading time tracking  
-- Daily reading streaks  
-- History timeline grouped by date  
-- Chapter completion progress  
+### 💾 Backup & Sync *(added in Kothagolp)*
+- **Local periodic backup** via WorkManager — configurable interval: Off / 6h / 12h / 24h / 48h / Weekly
+- Backup saved to user-chosen storage folder or internal storage; keeps last 5 auto-backups
+- Google Drive cloud backup and sync
+- Storage folder auto-creates `downloads/`, `autobackup/`, `logs/`, `notes/` sub-folders on first pick
+
+### 🚀 Onboarding *(improved in Kothagolp)*
+- Quick-seed discovery across all 19 sources on first launch
+- Sensible content defaults (mature content on, BL/GL off)
+- Genre preference selection (liked / neutral / disliked) seeds the recommendation engine
+- Toast notifications if any source fails during initial discovery
+
+### 📊 Statistics & History *(from Novery)*
+- Automatic reading time tracking
+- Daily reading streaks
+- History timeline grouped by date
+- Chapter completion progress
+
+### 📤 EPUB Export *(from Novery)*
+- Export any novel or selection of chapters as a standard EPUB file
 
 ---
 
@@ -112,14 +136,16 @@ git clone https://github.com/kmhmubin/kothagolp.git
 cd kothagolp
 ./gradlew installDebug
 ```
-Requires **Android Studio Koala+**, **JDK 11+**, **Kotlin 2.0.21**.
+Requires **Android Studio Koala+**, **JDK 17+**, **Kotlin 2.2.10**.
 
 ---
 
 ## 🙏 Acknowledgments
-- [Tachiyomi](https://github.com/tachiyomiorg/tachiyomi) — pioneered the multi-source reader concept  
-- [QuickNovel](https://github.com/LagradOst/QuickNovel) — inspiration for novel-specific reader design  
-- [LNReader](https://github.com/LNReader/lnreader-sources) — extensible source architecture  
+- [Novery](https://github.com/1Finn2me/Novery) — the UI design and base application that Kothagolp is forked from; the reader, TTS, recommendation engine, theming system, and overall architecture originate here
+- [Tachiyomi](https://github.com/tachiyomiorg/tachiyomi) — pioneered the multi-source reader concept
+- [QuickNovel](https://github.com/LagradOst/QuickNovel) — inspiration for novel-specific reader design
+- [LNReader](https://github.com/LNReader/lnreader-sources) — extensible source architecture
+- [Komikku](https://github.com/komikku-app/komikku) — inspiration for storage folder structure and periodic backup system
 
 ---
 
