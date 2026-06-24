@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
 import android.os.Build
 import android.os.PowerManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -86,6 +87,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SettingsSuggest
 import androidx.compose.material.icons.outlined.SpaceDashboard
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.SystemUpdate
@@ -154,7 +156,9 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.domain.model.AppSettings
+import com.kmhmubin.kothagolp.data.backup.LocalBackupWorker
 import com.kmhmubin.kothagolp.domain.model.ChapterUpdateInterval
+import com.kmhmubin.kothagolp.domain.model.LocalBackupInterval
 import com.kmhmubin.kothagolp.domain.model.CustomThemeColors
 import com.kmhmubin.kothagolp.domain.model.DisplayMode
 import com.kmhmubin.kothagolp.domain.model.GridColumns
@@ -586,6 +590,26 @@ fun SettingsLibraryScreen(onBack: () -> Unit) {
                 }
             }
 
+            item { SectionHeader("Local Backup", Icons.Outlined.Backup) }
+            item {
+                SettingsCard {
+                    DropdownItem(
+                        icon = Icons.Outlined.Schedule,
+                        title = "Auto Backup Interval",
+                        selectedValue = settings.localBackupInterval.displayName(),
+                        options = LocalBackupInterval.entries.map { it.displayName() },
+                        selectedIndex = settings.localBackupInterval.ordinal,
+                        onSelect = { idx ->
+                            val interval = LocalBackupInterval.entries[idx]
+                            preferencesManager.updateAppSettings(
+                                settings.copy(localBackupInterval = interval)
+                            )
+                            LocalBackupWorker.schedule(context, interval, forceUpdate = true)
+                        }
+                    )
+                }
+            }
+
             item { Spacer(Modifier.height(80.dp)) }
         }
     }
@@ -826,15 +850,6 @@ fun SettingsSourcesScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item { SectionHeader("Source Info", Icons.Outlined.Extension) }
-            item {
-                SettingsCard {
-                    InfoItem(Icons.Outlined.Extension, "Sources", "Built-in (${allProviders.size} sources)")
-                    SettingsDivider()
-                    InfoItem(Icons.Outlined.Info, "Type", "Built-in · Always up to date with app updates")
-                }
-            }
-
             item { SectionHeader("Provider Management", Icons.Outlined.SwapVert) }
             item {
                 ProviderCard(
@@ -2158,6 +2173,13 @@ fun SettingsPermissionsScreen(onBack: () -> Unit) {
             val uriString = uri.toString()
             preferencesManager.setStorageFolderUri(uriString)
             storageFolderUri = uriString
+            // Create standard sub-folders in the chosen storage root
+            try {
+                val root = DocumentFile.fromTreeUri(context, uri)
+                listOf("downloads", "autobackup", "logs", "notes").forEach { name ->
+                    if (root?.findFile(name) == null) root?.createDirectory(name)
+                }
+            } catch (_: Exception) {}
         }
     }
 

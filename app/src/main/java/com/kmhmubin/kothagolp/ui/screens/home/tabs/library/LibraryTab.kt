@@ -210,11 +210,11 @@ fun LibraryTab(
         }
     }
 
-    // Filter chip tap → jump pager to correct page instantly
+    // Filter chip tap → jump pager to correct page (no isScrollInProgress guard — that was blocking chip taps)
     LaunchedEffect(uiState.filter) {
         val targetPage = uiState.visibleFilters.indexOf(uiState.filter)
-        if (targetPage >= 0 && targetPage != pagerState.currentPage && !pagerState.isScrollInProgress) {
-            pagerState.scrollToPage(targetPage)
+        if (targetPage >= 0 && targetPage != pagerState.currentPage) {
+            pagerState.animateScrollToPage(targetPage)
         }
     }
 

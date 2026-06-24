@@ -169,7 +169,7 @@ fun LoadingIndicatorItem(colors: ReaderColors) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(
-                color = colors.accent,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))

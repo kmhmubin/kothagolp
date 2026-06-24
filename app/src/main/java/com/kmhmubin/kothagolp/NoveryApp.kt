@@ -8,6 +8,7 @@ import com.kmhmubin.kothagolp.data.local.NovelDatabase
 import com.kmhmubin.kothagolp.data.local.PreferencesManager
 import com.kmhmubin.kothagolp.data.remote.CloudflareManager
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
+import com.kmhmubin.kothagolp.data.backup.LocalBackupWorker
 import com.kmhmubin.kothagolp.data.sync.SyncWorker
 import com.kmhmubin.kothagolp.service.NotificationHelper
 import com.kmhmubin.kothagolp.provider.AllNovelProvider
@@ -104,11 +105,17 @@ class KothagolpApp : Application() {
         SyncWorker.schedule(this)
 
         // Schedule periodic chapter update checker
-        val chapterUpdateSettings = RepositoryProvider.getPreferencesManager().appSettings.value
+        val appSettings = RepositoryProvider.getPreferencesManager().appSettings.value
         ChapterUpdateScheduler.schedule(
             context = this,
-            interval = chapterUpdateSettings.chapterUpdateInterval,
-            wifiOnly = chapterUpdateSettings.chapterUpdateOnWifiOnly
+            interval = appSettings.chapterUpdateInterval,
+            wifiOnly = appSettings.chapterUpdateOnWifiOnly
+        )
+
+        // Schedule local auto-backup
+        LocalBackupWorker.schedule(
+            context = this,
+            interval = appSettings.localBackupInterval
         )
     }
 

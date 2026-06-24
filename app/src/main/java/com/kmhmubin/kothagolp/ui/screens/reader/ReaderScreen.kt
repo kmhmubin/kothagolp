@@ -953,7 +953,7 @@ private fun ReaderScreenContent(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    CircularProgressIndicator(color = colors.accent)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "Loading chapter...",

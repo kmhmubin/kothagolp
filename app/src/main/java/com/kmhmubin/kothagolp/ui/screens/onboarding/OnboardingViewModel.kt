@@ -1,7 +1,10 @@
 package com.kmhmubin.kothagolp.ui.screens.onboarding
 
 import android.app.Application
+import android.net.Uri
 import android.util.Log
+import android.widget.Toast
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kmhmubin.kothagolp.data.local.entity.TagFilterType
@@ -143,6 +146,19 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     fun setStorageFolder(uriString: String) {
         _state.update { it.copy(storageFolderUri = uriString) }
         preferencesManager.setStorageFolderUri(uriString)
+        ensureStorageSubfolders(uriString)
+    }
+
+    private fun ensureStorageSubfolders(treeUriString: String) {
+        try {
+            val treeUri = Uri.parse(treeUriString)
+            val root = DocumentFile.fromTreeUri(getApplication<Application>(), treeUri) ?: return
+            listOf("downloads", "autobackup", "logs", "notes").forEach { name ->
+                if (root.findFile(name) == null) root.createDirectory(name)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not create storage sub-folders", e)
+        }
     }
 
     fun skipOnboarding() {
@@ -320,6 +336,18 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
                 }
 
                 Log.d(TAG, "Seeding complete: ${result.totalDiscovered} novels discovered")
+
+                // Show toast for each failed source
+                if (result.errors.isNotEmpty()) {
+                    _state.update { it.copy(seedingErrors = result.errors) }
+                    result.errors.forEach { error ->
+                        Toast.makeText(
+                            getApplication<Application>(),
+                            "Source failed: $error",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
 
                 // 5. Enhance tags
                 val enhancementResult = tagEnhancementManager.enhanceNovelsWithSynopsis()

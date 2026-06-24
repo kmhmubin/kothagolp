@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -113,7 +114,7 @@ fun ChapterImageItem(
         if (imageState is AsyncImagePainter.State.Loading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(32.dp),
-                color = colors.accent,
+                color = MaterialTheme.colorScheme.primary,
                 strokeWidth = 2.dp
             )
         }

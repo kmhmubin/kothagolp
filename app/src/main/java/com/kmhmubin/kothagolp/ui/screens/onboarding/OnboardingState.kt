@@ -17,9 +17,12 @@ data class OnboardingState(
     val dislikedGenres: Set<TagCategory> = emptySet(),
 
     // Content settings
-    val includeMatureContent: Boolean = false,
-    val includeBLContent: Boolean = true,
-    val includeGLContent: Boolean = true,
+    val includeMatureContent: Boolean = true,
+    val includeBLContent: Boolean = false,
+    val includeGLContent: Boolean = false,
+
+    // Seeding errors (populated after seeding completes)
+    val seedingErrors: List<String> = emptyList(),
 
     // Storage folder (SAF URI string — persisted to SharedPreferences)
     val storageFolderUri: String? = null,

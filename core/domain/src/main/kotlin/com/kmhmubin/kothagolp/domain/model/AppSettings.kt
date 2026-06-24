@@ -285,7 +285,10 @@ data class AppSettings(
     // Chapter update checker
     val chapterUpdateInterval: ChapterUpdateInterval = ChapterUpdateInterval.EVERY_12H,
     val chapterUpdateOnWifiOnly: Boolean = true,
-    val chapterUpdateNotify: Boolean = true
+    val chapterUpdateNotify: Boolean = true,
+
+    // Local backup scheduler
+    val localBackupInterval: LocalBackupInterval = LocalBackupInterval.OFF
 )
 
 /**
@@ -312,6 +315,36 @@ enum class ChapterUpdateInterval {
         EVERY_12H -> 12L
         EVERY_24H -> 24L
         EVERY_48H -> 48L
+    }
+}
+
+/**
+ * How often to auto-save a local backup.
+ */
+enum class LocalBackupInterval {
+    OFF,
+    EVERY_6H,
+    EVERY_12H,
+    EVERY_24H,
+    EVERY_48H,
+    EVERY_WEEK;
+
+    fun displayName(): String = when (this) {
+        OFF -> "Off"
+        EVERY_6H -> "Every 6 hours"
+        EVERY_12H -> "Every 12 hours"
+        EVERY_24H -> "Every 24 hours"
+        EVERY_48H -> "Every 48 hours"
+        EVERY_WEEK -> "Weekly"
+    }
+
+    fun hours(): Long = when (this) {
+        OFF -> 0L
+        EVERY_6H -> 6L
+        EVERY_12H -> 12L
+        EVERY_24H -> 24L
+        EVERY_48H -> 48L
+        EVERY_WEEK -> 168L
     }
 }
 

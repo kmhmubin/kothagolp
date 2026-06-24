@@ -113,7 +113,7 @@ fun ChapterHeaderItem(
             )
             Text(
                 text = " ✦ ",
-                color = colors.accent,
+                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.titleMedium
             )
             HorizontalDivider(
@@ -127,7 +127,7 @@ fun ChapterHeaderItem(
         Text(
             text = "Chapter ${item.chapterNumber}",
             style = MaterialTheme.typography.labelMedium,
-            color = colors.accent,
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold
         )
 
@@ -791,13 +791,13 @@ fun ChapterDividerItem(
 
             Surface(
                 shape = AppShape.medium,
-                color = colors.accent.copy(alpha = 0.1f)
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             ) {
                 Text(
                     text = "🎉 You've reached the end!",
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
                     style = MaterialTheme.typography.titleSmall,
-                    color = colors.accent,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -826,7 +826,7 @@ fun ChapterNavButton(
 ) {
     val backgroundColor = when {
         !enabled -> Zinc800.copy(alpha = 0.5f)
-        isPrimary -> colors.accent
+        isPrimary -> MaterialTheme.colorScheme.primary
         else -> Zinc800
     }
 
@@ -978,7 +978,7 @@ fun SceneBreakItem(
                         Text(
                             text = "✦",
                             style = MaterialTheme.typography.titleMedium,
-                            color = colors.accent.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -994,7 +994,7 @@ fun SceneBreakItem(
                 Text(
                     text = item.sceneBreak.symbol,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = colors.accent.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                 )
             }
             SceneBreakStyle.CUSTOM -> {
@@ -1036,7 +1036,7 @@ fun BlockquoteSegmentItem(
                 .width(4.dp)
                 .height(IntrinsicSize.Min)
                 .background(
-                    colors.accent.copy(alpha = 0.5f),
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                     AppShape.extraSmall
                 )
         )
@@ -1281,7 +1281,7 @@ private fun TableRowItem(
     isLastRow: Boolean
 ) {
     val backgroundColor = if (row.isHeaderRow) {
-        colors.accent.copy(alpha = 0.1f)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
     } else {
         Color.Transparent
     }

@@ -168,6 +168,9 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.3")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
+    // SAF tree navigation
+    implementation("androidx.documentfile:documentfile:1.0.1")
+
     // Google Drive sync
     implementation("com.google.apis:google-api-services-drive:v3-rev20251210-2.0.0")
 

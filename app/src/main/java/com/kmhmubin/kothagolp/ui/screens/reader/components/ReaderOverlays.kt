@@ -294,19 +294,19 @@ fun TTSActiveIndicator(
     Surface(
         modifier = modifier,
         shape = AppShape.large,
-        color = colors.accent.copy(alpha = 0.15f)
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            AudioWaveIndicator(color = colors.accent)
+            AudioWaveIndicator(color = MaterialTheme.colorScheme.primary)
             Text(
                 text = "Playing",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Medium,
-                color = colors.accent
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }

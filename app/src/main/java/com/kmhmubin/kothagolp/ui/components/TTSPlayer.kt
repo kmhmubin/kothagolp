@@ -78,8 +78,6 @@ import com.kmhmubin.kothagolp.ui.theme.AppShape
 // DESIGN TOKENS
 // =============================================================================
 
-private val TtsAccent = Color(0xFFFF6B35)
-
 private object PlayerSizes {
     val playButtonSize = 64.dp
     val navButtonSize = 48.dp
@@ -224,6 +222,7 @@ private fun PlayingGlow(
         animationSpec = tween(600),
         label = "glow"
     )
+    val primary = MaterialTheme.colorScheme.primary
 
     if (alpha > 0f) {
         Box(
@@ -232,7 +231,7 @@ private fun PlayingGlow(
                 .drawBehind {
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(TtsAccent.copy(alpha = 0.2f), Color.Transparent),
+                            colors = listOf(primary.copy(alpha = 0.2f), Color.Transparent),
                             center = Offset(size.width / 2, size.height * 0.8f),
                             radius = size.width * 0.5f
                         )
@@ -325,7 +324,7 @@ private fun ChapterTTSProgressSection(
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = TtsAccent
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -363,7 +362,7 @@ private fun PlayingIndicator(isPlaying: Boolean) {
 
             val h = if (isPlaying) height else 6f
             val color by animateColorAsState(
-                targetValue = if (isPlaying) TtsAccent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                targetValue = if (isPlaying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 label = "color"
             )
 
@@ -422,8 +421,8 @@ private fun ProgressBar(progress: Float, isPlaying: Boolean) {
                 .background(
                     Brush.horizontalGradient(
                         listOf(
-                            TtsAccent.copy(alpha = 0.8f),
-                            TtsAccent
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                            MaterialTheme.colorScheme.primary
                         )
                     )
                 )
@@ -457,7 +456,7 @@ private fun ProgressBar(progress: Float, isPlaying: Boolean) {
                         .size(PlayerSizes.progressHeight + 4.dp)
                         .offset(x = (PlayerSizes.progressHeight + 4.dp) / 2)
                         .shadow(if (isPlaying) 4.dp else 2.dp, CircleShape)
-                        .background(TtsAccent, CircleShape)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
                 )
             }
         }
@@ -534,14 +533,14 @@ private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(PlayerSizes.playButtonSize + 16.dp)
                     .blur(16.dp)
-                    .background(TtsAccent.copy(alpha = 0.2f), CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape)
             )
         }
 
         Surface(
             onClick = onClick,
             shape = CircleShape,
-            color = TtsAccent,
+            color = MaterialTheme.colorScheme.primary,
             shadowElevation = shadow,
             modifier = Modifier.size(PlayerSizes.playButtonSize)
         ) {
@@ -558,7 +557,7 @@ private fun PlayPauseButton(isPlaying: Boolean, onClick: () -> Unit) {
                         imageVector = if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         contentDescription = if (playing) "Pause" else "Play",
                         modifier = Modifier.size(32.dp),
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }

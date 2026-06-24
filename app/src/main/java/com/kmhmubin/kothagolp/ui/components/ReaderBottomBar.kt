@@ -105,12 +105,6 @@ import com.kmhmubin.kothagolp.domain.model.TextAlign as ReaderTextAlign
 // =============================================================================
 
 private object BarTheme {
-    // Intentional accent — not replaced by colorScheme
-    val primary = Color(0xFFFF6B35)
-    val primaryMuted = Color(0xFFFF6B35).copy(alpha = 0.15f)
-    val primarySubtle = Color(0xFFFF6B35).copy(alpha = 0.08f)
-
-    // Semantic — resolved from named theme constants
     val success = Success
     val successMuted = Success.copy(alpha = 0.15f)
     val warning = Warning
@@ -257,11 +251,11 @@ private fun BottomBarButton(
     isActive: Boolean = false
 ) {
     val iconColor by animateColorAsState(
-        targetValue = if (isActive) BarTheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        targetValue = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "iconColor"
     )
     val bgColor by animateColorAsState(
-        targetValue = if (isActive) BarTheme.primaryMuted else Color.Transparent,
+        targetValue = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent,
         label = "bgColor"
     )
     val scale by animateFloatAsState(
@@ -293,7 +287,7 @@ private fun BottomBarButton(
                     fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
                     fontSize = 11.sp
                 ),
-                color = if (isActive) BarTheme.primary else MaterialTheme.colorScheme.outline
+                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
             )
         }
     }
@@ -311,7 +305,7 @@ private fun ListenButton(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = AppShape.extraLarge,
-        color = BarTheme.primary,
+        color = MaterialTheme.colorScheme.primary,
         shadowElevation = AppElevation.lg,
         modifier = Modifier
             .height(54.dp)
@@ -480,7 +474,7 @@ private fun MoreSettingsButton(onClick: () -> Unit) {
             .padding(bottom = 16.dp),
         shape = AppShape.large,
         color = Color.Transparent,
-        border = BorderStroke(1.dp, BarTheme.primary.copy(alpha = 0.3f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
     ) {
         Box(
             modifier = Modifier
@@ -488,9 +482,9 @@ private fun MoreSettingsButton(onClick: () -> Unit) {
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
-                            BarTheme.primary.copy(alpha = 0.06f),
-                            BarTheme.primary.copy(alpha = 0.12f),
-                            BarTheme.primary.copy(alpha = 0.06f)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.06f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
                         )
                     )
                 )
@@ -505,14 +499,14 @@ private fun MoreSettingsButton(onClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Outlined.Settings,
                     contentDescription = null,
-                    tint = BarTheme.primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "All Reader Settings",
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = BarTheme.primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -538,14 +532,14 @@ private fun SettingsHeader(
         ) {
             Surface(
                 shape = CircleShape,
-                color = BarTheme.primaryMuted,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                 modifier = Modifier.size(38.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         imageVector = Icons.Rounded.Tune,
                         contentDescription = null,
-                        tint = BarTheme.primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -628,7 +622,7 @@ private fun SettingsTabBar(
         items(SettingsTab.entries) { tab ->
             val isSelected = tab == selectedTab
             val bgColor by animateColorAsState(
-                targetValue = if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
+                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
                 label = "tabBg"
             )
             val textColor by animateColorAsState(
@@ -722,8 +716,8 @@ private fun PresetsSettingsContent(
         // Info text
         Surface(
             shape = AppShape.medium,
-            color = BarTheme.primarySubtle,
-            border = BorderStroke(1.dp, BarTheme.primary.copy(alpha = 0.2f))
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
@@ -733,7 +727,7 @@ private fun PresetsSettingsContent(
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = BarTheme.primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
@@ -769,11 +763,11 @@ private fun PresetCard(
     onClick: () -> Unit
 ) {
     val borderColor by animateColorAsState(
-        targetValue = if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.outlineVariant,
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
         label = "presetBorder"
     )
     val bgColor by animateColorAsState(
-        targetValue = if (isSelected) BarTheme.primarySubtle else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
         label = "presetBg"
     )
 
@@ -801,12 +795,12 @@ private fun PresetCard(
                     Text(
                         text = name,
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.onSurface
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
                     if (isSelected) {
                         Surface(
                             shape = AppShape.extraSmall,
-                            color = BarTheme.primary
+                            color = MaterialTheme.colorScheme.primary
                         ) {
                             Text(
                                 text = "Active",
@@ -828,7 +822,7 @@ private fun PresetCard(
             if (isSelected) {
                 Surface(
                     shape = CircleShape,
-                    color = BarTheme.primary,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -1200,7 +1194,7 @@ private fun BehaviorSettingsContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(text = "Scroll Speed", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                        Text(text = String.format("%.1fx", settings.scrollSensitivity), style = MaterialTheme.typography.labelMedium, color = BarTheme.primary)
+                        Text(text = String.format("%.1fx", settings.scrollSensitivity), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     }
                     Slider(
                         value = settings.scrollSensitivity,
@@ -1228,7 +1222,7 @@ private fun BehaviorSettingsContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(text = "Scroll Speed", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(text = String.format("%.1f lines/sec", settings.autoScrollSpeed), style = MaterialTheme.typography.labelMedium, color = BarTheme.primary)
+                            Text(text = String.format("%.1f lines/sec", settings.autoScrollSpeed), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                         }
                         Slider(
                             value = settings.autoScrollSpeed,
@@ -1293,7 +1287,7 @@ private fun SettingSectionCard(
             ) {
                 Text(text = title, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (trailing != null) {
-                    Text(text = trailing, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = BarTheme.primary)
+                    Text(text = trailing, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                 }
             }
             content()
@@ -1319,8 +1313,8 @@ private fun SliderWithLabels(
 
 @Composable
 private fun sliderColors() = SliderDefaults.colors(
-    thumbColor = BarTheme.primary,
-    activeTrackColor = BarTheme.primary,
+    thumbColor = MaterialTheme.colorScheme.primary,
+    activeTrackColor = MaterialTheme.colorScheme.primary,
     inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainer
 )
 
@@ -1338,14 +1332,14 @@ private fun ToggleSetting(
                 if (subtitle != null) { Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Switch(checked = checked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = BarTheme.primary, uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant, uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer))
+            Switch(checked = checked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = MaterialTheme.colorScheme.primary, uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant, uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer))
         }
     }
 }
 
 @Composable
 private fun QuickOptionChip(text: String, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val backgroundColor by animateColorAsState(targetValue = if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.surfaceContainer, label = "chipBg")
+    val backgroundColor by animateColorAsState(targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer, label = "chipBg")
     val textColor by animateColorAsState(targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, label = "chipText")
 
     Surface(onClick = onClick, modifier = modifier.height(38.dp), shape = AppShape.medium, color = backgroundColor, border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null) {
@@ -1365,7 +1359,7 @@ private fun FontFamilySelector(currentFont: FontFamily, onFontChange: (FontFamil
             val popularFonts = listOf(FontFamily.SYSTEM_SERIF, FontFamily.LITERATA, FontFamily.ROBOTO, FontFamily.MERRIWEATHER, FontFamily.ATKINSON)
             items(popularFonts) { font ->
                 val isSelected = font == currentFont
-                Surface(onClick = { onFontChange(font) }, shape = AppShape.medium, color = if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.surfaceContainer, border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null) {
+                Surface(onClick = { onFontChange(font) }, shape = AppShape.medium, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer, border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null) {
                     Text(text = font.displayName, style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal), color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp), maxLines = 1)
                 }
             }
@@ -1375,12 +1369,12 @@ private fun FontFamilySelector(currentFont: FontFamily, onFontChange: (FontFamil
             val isExpanded = expandedCategory == category
             val hasSelectedFont = fonts.any { it == currentFont }
 
-            Surface(onClick = { expandedCategory = if (isExpanded) null else category }, shape = AppShape.medium, color = if (hasSelectedFont) BarTheme.primarySubtle else MaterialTheme.colorScheme.surfaceContainer) {
+            Surface(onClick = { expandedCategory = if (isExpanded) null else category }, shape = AppShape.medium, color = if (hasSelectedFont) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceContainer) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = category.displayName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = if (hasSelectedFont) BarTheme.primary else MaterialTheme.colorScheme.onSurface)
-                            if (hasSelectedFont) { Surface(shape = CircleShape, color = BarTheme.primary, modifier = Modifier.size(8.dp)) {} }
+                            Text(text = category.displayName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), color = if (hasSelectedFont) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                            if (hasSelectedFont) { Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(8.dp)) {} }
                         }
                         Icon(imageVector = if (isExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
@@ -1389,7 +1383,7 @@ private fun FontFamilySelector(currentFont: FontFamily, onFontChange: (FontFamil
                         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             fonts.forEach { font ->
                                 val isSelected = font == currentFont
-                                Surface(onClick = { onFontChange(font) }, shape = AppShape.small, color = if (isSelected) BarTheme.primary else Color.Transparent) {
+                                Surface(onClick = { onFontChange(font) }, shape = AppShape.small, color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent) {
                                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(text = font.displayName, style = MaterialTheme.typography.bodyMedium, color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface)
@@ -1412,7 +1406,7 @@ private fun FontWeightSelector(currentWeight: ReaderFontWeight, onWeightChange: 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         ReaderFontWeight.COMMON.forEach { weight ->
             val isSelected = weight == currentWeight
-            val bgColor by animateColorAsState(targetValue = if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.surface, label = "weightBg")
+            val bgColor by animateColorAsState(targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, label = "weightBg")
 
             Surface(onClick = { onWeightChange(weight) }, modifier = Modifier.weight(1f), shape = AppShape.medium, color = bgColor, border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null) {
                 Column(modifier = Modifier.padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1436,7 +1430,7 @@ private fun TextAlignmentSelector(currentAlign: ReaderTextAlign, onAlignChange: 
                 ReaderTextAlign.JUSTIFY -> Icons.Default.FormatAlignJustify
             }
 
-            Surface(onClick = { onAlignChange(align) }, modifier = Modifier.weight(1f), shape = AppShape.medium, color = if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.surface, border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null) {
+            Surface(onClick = { onAlignChange(align) }, modifier = Modifier.weight(1f), shape = AppShape.medium, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null) {
                 Column(modifier = Modifier.padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(imageVector = icon, contentDescription = null, tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.height(4.dp))
@@ -1452,16 +1446,16 @@ private fun MaxWidthSelector(currentMaxWidth: MaxWidth, onMaxWidthChange: (MaxWi
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         MaxWidth.entries.forEach { maxWidth ->
             val isSelected = maxWidth == currentMaxWidth
-            Surface(onClick = { onMaxWidthChange(maxWidth) }, shape = AppShape.medium, color = if (isSelected) BarTheme.primarySubtle else Color.Transparent, border = BorderStroke(1.dp, if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.outline)) {
+            Surface(onClick = { onMaxWidthChange(maxWidth) }, shape = AppShape.medium, color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent, border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)) {
                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.width(when (maxWidth) { MaxWidth.NARROW -> 24.dp; MaxWidth.MEDIUM -> 32.dp; MaxWidth.LARGE -> 40.dp; MaxWidth.EXTRA_LARGE -> 48.dp; MaxWidth.FULL -> 56.dp }).height(4.dp).clip(AppShape.extraSmall).background(if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)))
+                        Box(modifier = Modifier.width(when (maxWidth) { MaxWidth.NARROW -> 24.dp; MaxWidth.MEDIUM -> 32.dp; MaxWidth.LARGE -> 40.dp; MaxWidth.EXTRA_LARGE -> 48.dp; MaxWidth.FULL -> 56.dp }).height(4.dp).clip(AppShape.extraSmall).background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)))
                         Column {
-                            Text(text = maxWidth.displayName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal), color = if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.onSurface)
+                            Text(text = maxWidth.displayName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal), color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                             Text(text = maxWidth.description, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                         }
                     }
-                    if (isSelected) { Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = BarTheme.primary, modifier = Modifier.size(20.dp)) }
+                    if (isSelected) { Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
                 }
             }
         }
@@ -1476,11 +1470,11 @@ private fun ThemeGrid(currentTheme: ReaderTheme, onThemeChange: (ReaderTheme) ->
             val isSelected = theme == currentTheme
             val scale by animateFloatAsState(targetValue = if (isSelected) 1.05f else 1f, label = "themeScale")
 
-            Surface(onClick = { onThemeChange(theme) }, modifier = Modifier.weight(1f).height(56.dp).scale(scale), shape = AppShape.medium, color = themeColors.background, border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.outline)) {
+            Surface(onClick = { onThemeChange(theme) }, modifier = Modifier.weight(1f).height(56.dp).scale(scale), shape = AppShape.medium, color = themeColors.background, border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(text = "Aa", style = MaterialTheme.typography.labelMedium, color = themeColors.text)
-                        if (isSelected) { Spacer(modifier = Modifier.height(2.dp)); Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(BarTheme.primary)) }
+                        if (isSelected) { Spacer(modifier = Modifier.height(2.dp)); Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary)) }
                     }
                 }
             }
@@ -1496,13 +1490,13 @@ private fun BrightnessControl(brightness: Float, onBrightnessChange: (Float) -> 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(text = if (isSystemBrightness) "Using system brightness" else "${(localBrightness * 100).toInt()}%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
-            Surface(onClick = { if (isSystemBrightness) onBrightnessChange(0.5f) else onResetToSystem() }, shape = AppShape.small, color = if (isSystemBrightness) BarTheme.primary else MaterialTheme.colorScheme.surfaceVariant) {
+            Surface(onClick = { if (isSystemBrightness) onBrightnessChange(0.5f) else onResetToSystem() }, shape = AppShape.small, color = if (isSystemBrightness) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant) {
                 Text(text = if (isSystemBrightness) "Manual" else "Auto", style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isSystemBrightness) FontWeight.SemiBold else FontWeight.Normal), color = if (isSystemBrightness) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(imageVector = Icons.Default.BrightnessLow, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
-            Slider(value = localBrightness, onValueChange = { localBrightness = it }, onValueChangeFinished = { onBrightnessChange(localBrightness) }, enabled = !isSystemBrightness, modifier = Modifier.weight(1f), colors = SliderDefaults.colors(thumbColor = if (isSystemBrightness) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else BarTheme.primary, activeTrackColor = if (isSystemBrightness) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else BarTheme.primary, inactiveTrackColor = MaterialTheme.colorScheme.surface, disabledThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f), disabledActiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)))
+            Slider(value = localBrightness, onValueChange = { localBrightness = it }, onValueChangeFinished = { onBrightnessChange(localBrightness) }, enabled = !isSystemBrightness, modifier = Modifier.weight(1f), colors = SliderDefaults.colors(thumbColor = if (isSystemBrightness) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.primary, activeTrackColor = if (isSystemBrightness) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.primary, inactiveTrackColor = MaterialTheme.colorScheme.surface, disabledThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f), disabledActiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)))
             Icon(imageVector = Icons.Default.BrightnessHigh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
         }
     }
@@ -1513,7 +1507,7 @@ private fun VolumeKeyDirectionSelector(currentDirection: VolumeKeyDirection, onD
     Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         VolumeKeyDirection.entries.forEach { direction ->
             val isSelected = direction == currentDirection
-            Surface(onClick = { onDirectionChange(direction) }, modifier = Modifier.weight(1f), shape = AppShape.medium, color = if (isSelected) BarTheme.primary else MaterialTheme.colorScheme.surface, border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null) {
+            Surface(onClick = { onDirectionChange(direction) }, modifier = Modifier.weight(1f), shape = AppShape.medium, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface, border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null) {
                 Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = direction.displayName, style = MaterialTheme.typography.bodySmall.copy(fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal), color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                     Text(text = direction.description, style = MaterialTheme.typography.labelSmall, color = if (isSelected) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f), textAlign = TextAlign.Center)

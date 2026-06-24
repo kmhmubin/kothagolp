@@ -35,6 +35,8 @@ import com.kmhmubin.kothagolp.provider.MainProvider
 import com.kmhmubin.kothagolp.domain.model.ChapterDisplayMode
 import com.kmhmubin.kothagolp.domain.model.ChaptersPerPage
 import com.kmhmubin.kothagolp.domain.model.AuthorNoteDisplayMode
+import com.kmhmubin.kothagolp.domain.model.ChapterUpdateInterval
+import com.kmhmubin.kothagolp.domain.model.LocalBackupInterval
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -449,7 +451,27 @@ class PreferencesManager(context: Context) {
             autoDownloadLimit = prefs.getInt(KEY_AUTO_DOWNLOAD_LIMIT, 10),
             autoDownloadForStatuses = autoDownloadStatuses,
             providerOrder = providerOrder,
-            disabledProviders = disabledSet
+            disabledProviders = disabledSet,
+            quickSaveStatus = try {
+                ReadingStatus.valueOf(
+                    prefs.getString(KEY_QUICK_SAVE_STATUS, ReadingStatus.PLAN_TO_READ.name)
+                        ?: ReadingStatus.PLAN_TO_READ.name
+                )
+            } catch (_: Exception) { ReadingStatus.PLAN_TO_READ },
+            chapterUpdateInterval = try {
+                ChapterUpdateInterval.valueOf(
+                    prefs.getString(KEY_CHAPTER_UPDATE_INTERVAL, ChapterUpdateInterval.EVERY_12H.name)
+                        ?: ChapterUpdateInterval.EVERY_12H.name
+                )
+            } catch (_: Exception) { ChapterUpdateInterval.EVERY_12H },
+            chapterUpdateOnWifiOnly = prefs.getBoolean(KEY_CHAPTER_UPDATE_WIFI_ONLY, true),
+            chapterUpdateNotify = prefs.getBoolean(KEY_CHAPTER_UPDATE_NOTIFY, true),
+            localBackupInterval = try {
+                LocalBackupInterval.valueOf(
+                    prefs.getString(KEY_LOCAL_BACKUP_INTERVAL, LocalBackupInterval.OFF.name)
+                        ?: LocalBackupInterval.OFF.name
+                )
+            } catch (_: Exception) { LocalBackupInterval.OFF }
         )
     }
 
@@ -507,6 +529,11 @@ class PreferencesManager(context: Context) {
             putString(KEY_LIBRARY_DISPLAY_MODE, sanitizedSettings.libraryDisplayMode.name)
             putString(KEY_BROWSE_DISPLAY_MODE, sanitizedSettings.browseDisplayMode.name)
             putString(KEY_SEARCH_DISPLAY_MODE, sanitizedSettings.searchDisplayMode.name)
+            putString(KEY_QUICK_SAVE_STATUS, sanitizedSettings.quickSaveStatus.name)
+            putString(KEY_CHAPTER_UPDATE_INTERVAL, sanitizedSettings.chapterUpdateInterval.name)
+            putBoolean(KEY_CHAPTER_UPDATE_WIFI_ONLY, sanitizedSettings.chapterUpdateOnWifiOnly)
+            putBoolean(KEY_CHAPTER_UPDATE_NOTIFY, sanitizedSettings.chapterUpdateNotify)
+            putString(KEY_LOCAL_BACKUP_INTERVAL, sanitizedSettings.localBackupInterval.name)
             putLong(KEY_APP_SETTINGS_UPDATED_AT, System.currentTimeMillis())
 
             apply()
@@ -1998,6 +2025,11 @@ class PreferencesManager(context: Context) {
         private const val KEY_PROVIDER_ORDER = "provider_order"
         private const val KEY_DISABLED_PROVIDERS = "disabled_providers"
         private const val KEY_RATING_FORMAT = "rating_format"
+        private const val KEY_QUICK_SAVE_STATUS = "quick_save_status"
+        private const val KEY_CHAPTER_UPDATE_INTERVAL = "chapter_update_interval"
+        private const val KEY_CHAPTER_UPDATE_WIFI_ONLY = "chapter_update_wifi_only"
+        private const val KEY_CHAPTER_UPDATE_NOTIFY = "chapter_update_notify"
+        private const val KEY_LOCAL_BACKUP_INTERVAL = "local_backup_interval"
 
         // =====================================================================
         // NOTIFICATIONS
