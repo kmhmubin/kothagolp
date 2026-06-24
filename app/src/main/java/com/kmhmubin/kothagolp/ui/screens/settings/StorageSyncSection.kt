@@ -191,7 +191,7 @@ fun StorageSyncSection(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(
-                    text = "Sync your library, reading progress, bookmarks, stats, and settings with Google Drive.",
+                    text = "Sync your library, reading progress, bookmarks, notes, highlights, stats, and settings with Google Drive.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -416,8 +416,8 @@ fun StorageSyncSection(
                                 }
                             )
                             ToggleRow(
-                                title = "Bookmarks",
-                                subtitle = "Saved passages and notes",
+                                title = "Bookmarks & Highlights",
+                                subtitle = "Bookmarks, notes, and highlighted passages",
                                 checked = syncSelection.syncBookmarks,
                                 onCheckedChange = {
                                     preferencesManager.updateSyncDataSelection(

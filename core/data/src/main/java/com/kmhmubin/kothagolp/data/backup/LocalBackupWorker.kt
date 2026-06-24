@@ -12,6 +12,9 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.kmhmubin.kothagolp.data.local.PreferencesManager
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
+import com.kmhmubin.kothagolp.data.sync.SyncServiceType
+import com.kmhmubin.kothagolp.data.sync.SyncTrigger
+import com.kmhmubin.kothagolp.data.sync.SyncWorker
 import com.kmhmubin.kothagolp.domain.model.LocalBackupInterval
 import kotlinx.coroutines.CancellationException
 import java.text.SimpleDateFormat
@@ -49,6 +52,13 @@ class LocalBackupWorker(
             }
 
             Log.d(TAG, "Local backup completed")
+
+            // Chain to Drive sync in background after local backup succeeds
+            val syncSettings = prefs.getSyncSettings()
+            if (syncSettings.service != SyncServiceType.NONE && syncSettings.googleDriveSignedIn) {
+                SyncWorker.triggerNow(applicationContext, SyncTrigger.AUTO)
+            }
+
             Result.success()
         } catch (e: CancellationException) {
             throw e

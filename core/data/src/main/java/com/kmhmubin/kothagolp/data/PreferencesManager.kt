@@ -1359,7 +1359,7 @@ class PreferencesManager(context: Context) {
             service = SyncServiceType.fromName(
                 prefs.getString(KEY_SYNC_SERVICE, SyncServiceType.NONE.name)
             ),
-            intervalMinutes = prefs.getInt(KEY_SYNC_INTERVAL_MINUTES, 0),
+            intervalMinutes = prefs.getInt(KEY_SYNC_INTERVAL_MINUTES, 1440),
             lastSyncTimestamp = prefs.getLong(KEY_LAST_SYNC_TIME, 0L),
             showProgressNotifications = prefs.getBoolean(KEY_SYNC_SHOW_PROGRESS_NOTIFICATIONS, true),
             googleDriveSignedIn = hasGoogleDriveTokens()
