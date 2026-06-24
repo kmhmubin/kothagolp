@@ -362,7 +362,7 @@ fun ReaderContainer(
                                             highlightEnabled = uiState.ttsSettings.highlightSentence,
                                             settings = settings,
                                             textColor = effectiveColors.text,
-                                            highlightColor = effectiveColors.sentenceHighlight,
+                                            highlightColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                                             horizontalPadding = horizontalPadding,
                                             paragraphSpacing = paragraphSpacing
                                         )
@@ -376,7 +376,7 @@ fun ReaderContainer(
                                             highlightEnabled = uiState.ttsSettings.highlightSentence,
                                             settings = settings,
                                             textColor = effectiveColors.text,
-                                            highlightColor = effectiveColors.sentenceHighlight,
+                                            highlightColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                                             horizontalPadding = horizontalPadding,
                                             paragraphSpacing = paragraphSpacing
                                         )
@@ -393,7 +393,7 @@ fun ReaderContainer(
                                             fontWeight = fontWeight,
                                             textAlign = textAlign,
                                             textColor = effectiveColors.text,
-                                            highlightColor = effectiveColors.sentenceHighlight,
+                                            highlightColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                                             horizontalPadding = horizontalPadding,
                                             paragraphSpacing = paragraphSpacing,
                                             linkColor = effectiveColors.linkColor,
