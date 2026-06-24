@@ -32,7 +32,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -41,12 +40,9 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Battery5Bar
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.CloudDownload
-import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.InstallMobile
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.RocketLaunch
@@ -158,14 +154,9 @@ fun OnboardingScreen(
                         providers = state.availableProviders,
                         selectedProviders = state.selectedProviders,
                         isLoadingProviders = state.isLoadingProviders,
-                        isDownloadingSource = state.isDownloadingSource,
-                        sourceDownloadProgress = state.sourceDownloadProgress,
-                        sourceDownloadStatus = state.sourceDownloadStatus,
-                        sourceDownloadError = state.sourceDownloadError,
                         onToggleProvider = { viewModel.toggleProvider(it) },
                         onSelectAll = { viewModel.selectAllProviders() },
                         onDeselectAll = { viewModel.deselectAllProviders() },
-                        onRetryDownload = { viewModel.retrySourceDownload() },
                         onNext = { viewModel.nextStep() },
                         onBack = { viewModel.previousStep() }
                     )
@@ -294,9 +285,6 @@ private fun PermissionsStep(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    var installAppsGranted by remember {
-        mutableStateOf(context.packageManager.canRequestPackageInstalls())
-    }
     var notificationsGranted by remember {
         mutableStateOf(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -317,7 +305,6 @@ private fun PermissionsStep(
     DisposableEffect(lifecycleOwner.lifecycle) {
         val observer = object : DefaultLifecycleObserver {
             override fun onResume(owner: LifecycleOwner) {
-                installAppsGranted = context.packageManager.canRequestPackageInstalls()
                 notificationsGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     ContextCompat.checkSelfPermission(
                         context, Manifest.permission.POST_NOTIFICATIONS
@@ -362,24 +349,6 @@ private fun PermissionsStep(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            // ── Install unknown apps ──────────────────────────────────
-            item {
-                PermissionItem(
-                    icon = Icons.Rounded.InstallMobile,
-                    title = "Install Source Updates",
-                    subtitle = "Required to download and load novel source plugins. Without this, sources cannot be installed.",
-                    granted = installAppsGranted,
-                    required = true,
-                    onGrant = {
-                        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                            data = Uri.parse("package:${context.packageName}")
-                        }
-                        context.startActivity(intent)
-                    }
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            }
-
             // ── Notifications ─────────────────────────────────────────
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 item {
@@ -458,7 +427,7 @@ private fun PermissionsStep(
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "You can change these later in Settings. Install Source Updates is required to load any novel sources.",
+                    text = "You can change these later in Settings.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -605,14 +574,9 @@ private fun ProvidersStep(
     providers: List<ProviderInfo>,
     selectedProviders: Set<String>,
     isLoadingProviders: Boolean,
-    isDownloadingSource: Boolean,
-    sourceDownloadProgress: Float,
-    sourceDownloadStatus: String,
-    sourceDownloadError: String?,
     onToggleProvider: (String) -> Unit,
     onSelectAll: () -> Unit,
     onDeselectAll: () -> Unit,
-    onRetryDownload: () -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -623,156 +587,39 @@ private fun ProvidersStep(
             onBack = onBack
         )
 
-        when {
-            // ── Error state ──────────────────────────────────────────
-            sourceDownloadError != null -> {
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        modifier = Modifier.padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            modifier = Modifier.size(72.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Rounded.ErrorOutline,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = "Download Failed",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = sourceDownloadError,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Button(onClick = onRetryDownload) {
-                            Text("Retry Download")
-                        }
-                    }
-                }
+        if (isLoadingProviders && providers.isEmpty()) {
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onSelectAll) { Text("Select All") }
+                TextButton(onClick = onDeselectAll) { Text("Clear") }
             }
 
-            // ── Downloading ──────────────────────────────────────────
-            isDownloadingSource || (isLoadingProviders && providers.isEmpty()) -> {
-                Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(80.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Rounded.CloudDownload,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = "Setting Up Sources",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Surface(
-                            shape = AppShape.large,
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                LinearProgressIndicator(
-                                    progress = { sourceDownloadProgress },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(8.dp)
-                                        .clip(AppShape.extraSmall),
-                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = sourceDownloadStatus.ifBlank { "Downloading…" },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "${(sourceDownloadProgress * 100).toInt()}%",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-
-                        Text(
-                            text = "This only happens once on first install.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
-
-            // ── Loaded — show provider list ──────────────────────────
-            else -> {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onSelectAll) { Text("Select All") }
-                    TextButton(onClick = onDeselectAll) { Text("Clear") }
-                }
-
-                LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    itemsIndexed(providers, key = { index, it -> "${index}_${it.name}" }) { _, provider ->
-                        ProviderCard(
-                            provider = provider,
-                            isSelected = provider.name in selectedProviders,
-                            onToggle = { onToggleProvider(provider.name) }
-                        )
-                    }
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                itemsIndexed(providers, key = { index, it -> "${index}_${it.name}" }) { _, provider ->
+                    ProviderCard(
+                        provider = provider,
+                        isSelected = provider.name in selectedProviders,
+                        onToggle = { onToggleProvider(provider.name) }
+                    )
                 }
             }
         }
 
         StepNavigation(
-            canProceed = !isLoadingProviders && selectedProviders.isNotEmpty() && sourceDownloadError == null,
+            canProceed = !isLoadingProviders && selectedProviders.isNotEmpty(),
             onNext = onNext,
             nextLabel = "Continue"
         )

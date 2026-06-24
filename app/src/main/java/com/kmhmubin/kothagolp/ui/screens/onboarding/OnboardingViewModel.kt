@@ -46,9 +46,6 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         applyProviders(MainProvider.getProviders())
     }
 
-    /** No-op: sources are now built-in and never need downloading. */
-    fun retrySourceDownload() = Unit
-
     private fun applyProviders(providers: List<MainProvider>) {
         val infoList = providers.map { provider ->
             ProviderInfo(

@@ -279,9 +279,6 @@ data class AppSettings(
     val providerOrder: List<String> = emptyList(),
     val disabledProviders: Set<String> = emptySet(),
 
-    // Sources
-    val autoUpdateSources: Boolean = true,
-
     // Browse quick-save
     val quickSaveStatus: ReadingStatus = ReadingStatus.PLAN_TO_READ,
 

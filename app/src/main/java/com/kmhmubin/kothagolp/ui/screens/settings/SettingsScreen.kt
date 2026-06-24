@@ -56,7 +56,6 @@ import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.rounded.Battery5Bar
 import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.InstallMobile
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.outlined.AllInclusive
 import androidx.compose.material.icons.outlined.Apartment
@@ -260,7 +259,7 @@ fun SettingsScreen(
                             icon = Icons.Outlined.Extension,
                             iconTint = StatusSpicy,
                             title = "Sources",
-                            subtitle = "Manage sources and updates",
+                            subtitle = "Manage and enable providers",
                             onClick = { onNavigateTo(NavRoutes.SettingsSources.route) }
                         )
                         RowDivider()
@@ -2107,9 +2106,6 @@ fun SettingsPermissionsScreen(onBack: () -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
 
-    var installAppsGranted by remember {
-        mutableStateOf(context.packageManager.canRequestPackageInstalls())
-    }
     var notificationsGranted by remember {
         mutableStateOf(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -2130,7 +2126,6 @@ fun SettingsPermissionsScreen(onBack: () -> Unit) {
     DisposableEffect(lifecycleOwner.lifecycle) {
         val observer = object : DefaultLifecycleObserver {
             override fun onResume(owner: LifecycleOwner) {
-                installAppsGranted = context.packageManager.canRequestPackageInstalls()
                 notificationsGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     ContextCompat.checkSelfPermission(
                         context, Manifest.permission.POST_NOTIFICATIONS
@@ -2187,23 +2182,6 @@ fun SettingsPermissionsScreen(onBack: () -> Unit) {
                 .padding(padding),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            item {
-                SettingsPermissionRow(
-                    icon = Icons.Rounded.InstallMobile,
-                    title = "Install Source Updates",
-                    subtitle = "Required to download and load novel source plugins. Without this, sources cannot be installed.",
-                    granted = installAppsGranted,
-                    required = true,
-                    onGrant = {
-                        val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                            data = Uri.parse("package:${context.packageName}")
-                        }
-                        context.startActivity(intent)
-                    }
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            }
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 item {
                     SettingsPermissionRow(
