@@ -95,6 +95,23 @@
 -keep @kotlinx.serialization.Serializable class com.kmhmubin.kothagolp.** { *; }
 
 # ──────────────────────────────────────────────────────────────────────────────
+# GOOGLE API CLIENT + DRIVE + AUTH
+# These libraries use reflection and dynamic JSON deserialization. R8 must not
+# rename or remove them or GoogleClientSecrets.load() will throw at runtime,
+# causing isConfigured() to silently return false.
+# ──────────────────────────────────────────────────────────────────────────────
+-keep class com.google.api.** { *; }
+-keep interface com.google.api.** { *; }
+-keep class com.google.auth.** { *; }
+-keep interface com.google.auth.** { *; }
+-keep class com.google.gson.** { *; }
+-keep class com.google.common.** { *; }
+-dontwarn com.google.api.**
+-dontwarn com.google.auth.**
+-dontwarn com.google.common.**
+-dontwarn javax.annotation.**
+
+# ──────────────────────────────────────────────────────────────────────────────
 # DEBUGGING — preserve stack traces in crash logs
 # ──────────────────────────────────────────────────────────────────────────────
 -keepattributes SourceFile,LineNumberTable

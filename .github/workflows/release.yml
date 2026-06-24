@@ -105,6 +105,9 @@ jobs:
             - Notes and highlights are synced as part of the Bookmarks & Highlights category (were always stored in the same entity, now surfaced clearly in the UI)
             - Google Drive sync Settings screen updated: description now explicitly lists notes and highlights; "Bookmarks" toggle renamed to "Bookmarks & Highlights"
 
+            **Fix**
+            - Added ProGuard keep rules for Google API Client, Drive, and Auth libraries — R8 was stripping these classes in release builds, causing `isConfigured()` to silently return false and show "Google Drive setup is missing for this build"
+
             ---
 
             ### Download the right APK for your device
