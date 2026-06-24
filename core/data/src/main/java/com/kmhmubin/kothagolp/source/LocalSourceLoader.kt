@@ -182,8 +182,8 @@ object LocalSourceLoader {
                 val count = loadApk(context, apk, meta.classNames)
                 total += count
                 Log.i(TAG, "Loaded $count local providers from ${meta.fileName}")
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to load ${jsonFile.name}: ${e.message}")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Failed to load ${jsonFile.name}: ${e.javaClass.simpleName}: ${e.message}")
             }
         }
         if (total > 0) Log.i(TAG, "Total local providers loaded on startup: $total")
@@ -226,8 +226,8 @@ object LocalSourceLoader {
                 val provider = clazz.getDeclaredConstructor().newInstance() as MainProvider
                 MainProvider.register(provider)
                 count++
-            } catch (e: Exception) {
-                Log.w(TAG, "Skipping $className: ${e.message}")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Skipping $className: ${e.javaClass.simpleName}: ${e.message}")
             }
         }
         return count

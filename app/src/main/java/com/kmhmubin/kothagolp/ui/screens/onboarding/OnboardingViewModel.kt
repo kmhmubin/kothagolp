@@ -10,20 +10,11 @@ import com.kmhmubin.kothagolp.provider.MainProvider
 import com.kmhmubin.kothagolp.recommendation.InteractionType
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer.TagCategory
 import com.kmhmubin.kothagolp.recommendation.model.OnboardingPreferences
-import com.kmhmubin.kothagolp.source.SourceLoader
-import com.kmhmubin.kothagolp.source.SourceManifest
-import com.kmhmubin.kothagolp.source.SourceSyncWorker
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 private const val TAG = "OnboardingViewModel"
 
@@ -51,111 +42,12 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     // ================================================================
 
     private fun loadProviders() {
-        val immediate = MainProvider.getProviders()
-        if (immediate.isNotEmpty()) {
-            applyProviders(immediate)
-            return
-        }
-        // Set loading state synchronously before coroutine starts to prevent blank flash
-        _state.update { it.copy(isLoadingProviders = true, isDownloadingSource = true) }
-        viewModelScope.launch { downloadAndLoadSources() }
+        // Providers are built-in and always available — register immediately
+        applyProviders(MainProvider.getProviders())
     }
 
-    fun retrySourceDownload() {
-        viewModelScope.launch { downloadAndLoadSources() }
-    }
-
-    private suspend fun downloadAndLoadSources() = withContext(Dispatchers.IO) {
-        val ctx = getApplication<Application>()
-        try {
-            _state.update {
-                it.copy(
-                    isLoadingProviders = true,
-                    isDownloadingSource = true,
-                    sourceDownloadProgress = 0f,
-                    sourceDownloadStatus = "Fetching source list…",
-                    sourceDownloadError = null
-                )
-            }
-
-            val client = OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(120, TimeUnit.SECONDS)
-                .build()
-
-            // 1. Manifest
-            val manifestBody = client.newCall(
-                Request.Builder().url(SourceSyncWorker.MANIFEST_URL).build()
-            ).execute().body?.string()
-                ?: throw IOException("Could not reach source server. Check your connection.")
-
-            val manifest = SourceManifest.fromJson(manifestBody)
-            _state.update {
-                it.copy(
-                    sourceDownloadProgress = 0.05f,
-                    sourceDownloadStatus = "Downloading ${manifest.sources.size} providers…"
-                )
-            }
-
-            // 2. APK download with byte-level progress
-            val apkResponse = client.newCall(
-                Request.Builder().url(manifest.url).build()
-            ).execute()
-            val apkBody = apkResponse.body
-                ?: throw IOException("Empty APK response from server.")
-            val contentLength = apkBody.contentLength()
-
-            val tempFile = ctx.cacheDir.resolve("sources_dl.apk")
-            var bytesRead = 0L
-            tempFile.outputStream().use { out ->
-                apkBody.byteStream().use { input ->
-                    val buf = ByteArray(8192)
-                    var n: Int
-                    while (input.read(buf).also { n = it } != -1) {
-                        out.write(buf, 0, n)
-                        bytesRead += n
-                        if (contentLength > 0) {
-                            val p = 0.05f + (bytesRead.toFloat() / contentLength) * 0.80f
-                            _state.update { it.copy(sourceDownloadProgress = p) }
-                        }
-                    }
-                }
-            }
-
-            // 3. Install
-            _state.update {
-                it.copy(sourceDownloadProgress = 0.88f, sourceDownloadStatus = "Installing providers…")
-            }
-            val destApk = SourceLoader.apkFile(ctx)
-            tempFile.copyTo(destApk, overwrite = true)
-            tempFile.delete()
-            destApk.setReadOnly()
-
-            SourceLoader.saveManifest(ctx, manifestBody)
-            SourceLoader.saveLocalVersion(ctx, manifest.version)
-            val count = SourceLoader.reload(ctx, manifest)
-
-            _state.update {
-                it.copy(
-                    sourceDownloadProgress = 1f,
-                    sourceDownloadStatus = "Ready — $count providers loaded",
-                    isDownloadingSource = false
-                )
-            }
-
-            applyProviders(MainProvider.getProviders())
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Source download failed", e)
-            _state.update {
-                it.copy(
-                    isDownloadingSource = false,
-                    isLoadingProviders = false,
-                    sourceDownloadError = e.message ?: "Download failed. Check your connection."
-                )
-            }
-        }
-    }
+    /** No-op: sources are now built-in and never need downloading. */
+    fun retrySourceDownload() = Unit
 
     private fun applyProviders(providers: List<MainProvider>) {
         val infoList = providers.map { provider ->
@@ -413,9 +305,10 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
                     currentSettings.copy(disabledProviders = disabledProviders)
                 )
 
-                // Run discovery
+                // Run discovery — quick concurrent seed (1 page/provider, no enrichment)
                 val result = discoveryManager.seedDiscoveryPool(
-                    disabledProviders = disabledProviders
+                    disabledProviders = disabledProviders,
+                    quickSeed = true
                 ) { provider, current, total ->
                     _state.update { state ->
                         state.copy(
@@ -444,7 +337,8 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
                     currentStep = OnboardingStep.COMPLETE
                 )}
 
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 Log.e(TAG, "Error during seeding", e)
                 _state.update { it.copy(
                     isSeeding = false,
@@ -455,14 +349,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private suspend fun savePreferences() {
-        val prefs = _state.value.toOnboardingPreferences()
-
-        // Save to SharedPreferences for persistence
-        val json = kotlinx.serialization.json.Json.encodeToString(
-            kotlinx.serialization.serializer<OnboardingPreferencesData>(),
-            OnboardingPreferencesData.fromPreferences(prefs)
-        )
-        // Could save this JSON to PreferencesManager if needed
+        // Preferences are persisted via preferencesManager calls in startSeeding()
     }
 
     private suspend fun applyContentFilters() {

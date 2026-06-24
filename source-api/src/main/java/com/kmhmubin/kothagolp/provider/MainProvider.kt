@@ -156,8 +156,9 @@ abstract class MainProvider {
 
     companion object {
         private val providers = mutableListOf<MainProvider>()
-        private val providersFlow = kotlinx.coroutines.flow.MutableStateFlow<List<MainProvider>>(providers.toList())
+        private val providersFlow = kotlinx.coroutines.flow.MutableStateFlow<List<MainProvider>>(emptyList())
 
+        @Synchronized
         fun register(provider: MainProvider) {
             val existingIndex = providers.indexOfFirst { it.name == provider.name }
             if (existingIndex >= 0) {
@@ -168,14 +169,15 @@ abstract class MainProvider {
             providersFlow.value = providers.toList()
         }
 
+        @Synchronized
         fun getProviders(): List<MainProvider> = providers.toList()
 
-        fun getProvider(name: String): MainProvider? {
-            return providers.find { it.name == name }
-        }
+        @Synchronized
+        fun getProvider(name: String): MainProvider? = providers.find { it.name == name }
 
         fun providersState(): kotlinx.coroutines.flow.StateFlow<List<MainProvider>> = providersFlow
 
+        @Synchronized
         fun clearAll() {
             providers.clear()
             providersFlow.value = emptyList()

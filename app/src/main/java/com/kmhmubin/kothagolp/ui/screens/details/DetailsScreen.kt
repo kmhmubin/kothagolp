@@ -840,7 +840,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.chaptersTabContent(
     } else {
         itemsIndexed(
             items = displayedChapters,
-            key = { _, chapter -> "chapter_${chapter.url}" },
+            key = { index, chapter -> "chapter_${index}_${chapter.url}" },
             contentType = { _, _ -> "chapter" }
         ) { displayIndex, chapter ->
             val actualIndex = when (uiState.chapterDisplayMode) {

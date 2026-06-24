@@ -238,7 +238,8 @@ class ProviderBrowseViewModel(
                     }
                 }
             )
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             _uiState.update {
                 it.copy(
                     searchError = e.message ?: "Search failed",
@@ -338,7 +339,8 @@ class ProviderBrowseViewModel(
                     handleLoadError(error)
                 }
             )
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             _uiState.update { it.copy(isLoadingMore = false) }
             handleLoadError(e)
         }

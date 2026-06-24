@@ -44,8 +44,8 @@ object SourceLoader {
             val manifest = SourceManifest.fromJson(manifestJson)
             val count = reload(context, manifest)
             Log.i(TAG, "Loaded $count providers from sources.apk (v${manifest.version})")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load sources.apk on startup", e)
+        } catch (e: Throwable) {
+            Log.e(TAG, "Failed to load sources.apk on startup: ${e.javaClass.simpleName}: ${e.message}", e)
         }
     }
 
@@ -72,8 +72,8 @@ object SourceLoader {
                 null,
                 context.classLoader
             )
-        } catch (e: Exception) {
-            Log.e(TAG, "DexClassLoader init failed: ${e.message}", e)
+        } catch (e: Throwable) {
+            Log.e(TAG, "DexClassLoader init failed: ${e.javaClass.simpleName}: ${e.message}", e)
             throw IllegalStateException("Failed to initialise source loader: ${e.message}", e)
         }
 
@@ -85,7 +85,7 @@ object SourceLoader {
                 val provider = clazz.getDeclaredConstructor().newInstance() as MainProvider
                 MainProvider.register(provider)
                 count++
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 val msg = "${entry.id}: ${e.javaClass.simpleName}: ${e.message}"
                 Log.e(TAG, "Failed to load provider $msg", e)
                 errors.add(msg)

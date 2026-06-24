@@ -154,7 +154,7 @@ fun ChapterListSheet(
                 ) {
                     itemsIndexed(
                         items = displayedChapters,
-                        key = { _, chapter -> chapter.url }
+                        key = { index, chapter -> "${index}_${chapter.url}" }
                     ) { index, chapter ->
                         val originalIndex = urlToOriginalIndex[chapter.url] ?: chapters.indexOf(chapter)
 

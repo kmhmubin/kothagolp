@@ -153,7 +153,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.work.WorkManager
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.domain.model.AppSettings
 import com.kmhmubin.kothagolp.domain.model.ChapterUpdateInterval
@@ -168,8 +167,6 @@ import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.ThemeMode
 import com.kmhmubin.kothagolp.domain.model.UiDensity
 import com.kmhmubin.kothagolp.update.ChapterUpdateScheduler
-import com.kmhmubin.kothagolp.source.SourceLoader
-import com.kmhmubin.kothagolp.source.SourceSyncWorker
 import com.kmhmubin.kothagolp.ui.components.ColorPickerDialog
 import com.kmhmubin.kothagolp.ui.navigation.NavRoutes
 import com.kmhmubin.kothagolp.ui.theme.AccentCyan
@@ -185,9 +182,6 @@ import com.kmhmubin.kothagolp.ui.theme.StatusSpicy
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN SETTINGS SCREEN  (navigation hub)
@@ -809,38 +803,7 @@ fun SettingsSourcesScreen(
     val context = LocalContext.current
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
     val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
-    val snackbarState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    val localVersion = remember { SourceLoader.localVersion(context) }
-    val lastChecked = remember { SourceLoader.lastCheckedTime(context) }
     val allProviders = remember { com.kmhmubin.kothagolp.provider.MainProvider.getProviders() }
-
-    // Local APK import
-    var localSources by remember { mutableStateOf(com.kmhmubin.kothagolp.source.LocalSourceLoader.getAll(context)) }
-    val importApkLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        scope.launch {
-            snackbarState.showSnackbar("Scanning APK for providers…")
-            val result = com.kmhmubin.kothagolp.source.LocalSourceLoader.importApk(context, uri)
-            localSources = com.kmhmubin.kothagolp.source.LocalSourceLoader.getAll(context)
-            when (result) {
-                is com.kmhmubin.kothagolp.source.LocalSourceLoader.ImportResult.Success ->
-                    snackbarState.showSnackbar(
-                        "Imported ${result.count} provider(s): ${result.providerNames.joinToString(", ")}"
-                    )
-                is com.kmhmubin.kothagolp.source.LocalSourceLoader.ImportResult.Failure ->
-                    snackbarState.showSnackbar("Import failed: ${result.reason}")
-            }
-        }
-    }
-
-    val lastCheckedText = remember(lastChecked) {
-        if (lastChecked == 0L) "Never"
-        else SimpleDateFormat("MMM d, yyyy HH:mm", Locale.getDefault()).format(Date(lastChecked))
-    }
 
     Scaffold(
         topBar = {
@@ -855,8 +818,7 @@ fun SettingsSourcesScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarState) }
+        }
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -868,48 +830,9 @@ fun SettingsSourcesScreen(
             item { SectionHeader("Source Info", Icons.Outlined.Extension) }
             item {
                 SettingsCard {
-                    InfoItem(Icons.Outlined.Numbers, "Current Version",
-                        if (localVersion == 0) "Not installed" else "v$localVersion")
+                    InfoItem(Icons.Outlined.Extension, "Sources", "Built-in (${allProviders.size} sources)")
                     SettingsDivider()
-                    InfoItem(Icons.Outlined.Extension, "Loaded Sources", "${allProviders.size} sources")
-                    SettingsDivider()
-                    InfoItem(Icons.Outlined.Schedule, "Last Checked", lastCheckedText)
-                }
-            }
-
-            item { SectionHeader("Updates", Icons.Outlined.SystemUpdate) }
-            item {
-                SettingsCard {
-                    ToggleItem(
-                        icon = Icons.Outlined.Refresh,
-                        title = "Auto-Update Sources",
-                        subtitle = "Check for updates daily in the background",
-                        checked = settings.autoUpdateSources,
-                        onCheckedChange = { enabled ->
-                            preferencesManager.updateAppSettings(
-                                settings.copy(autoUpdateSources = enabled)
-                            )
-                            if (enabled) {
-                                SourceSyncWorker.schedulePeriodicSync(context)
-                            } else {
-                                WorkManager.getInstance(context)
-                                    .cancelUniqueWork("source_sync_periodic")
-                            }
-                        }
-                    )
-                    SettingsDivider()
-                    ClickableItem(
-                        icon = Icons.Outlined.Refresh,
-                        title = "Check for Updates",
-                        subtitle = "Check for new source versions now",
-                        tint = MaterialTheme.colorScheme.primary,
-                        onClick = {
-                            SourceSyncWorker.forceSync(context)
-                            scope.launch {
-                                snackbarState.showSnackbar("Checking for source updates…")
-                            }
-                        }
-                    )
+                    InfoItem(Icons.Outlined.Info, "Type", "Built-in · Always up to date with app updates")
                 }
             }
 
@@ -922,42 +845,6 @@ fun SettingsSourcesScreen(
                         preferencesManager.setProviderEnabled(name, enabled)
                     }
                 )
-            }
-
-            item { SectionHeader("Local Testing", Icons.Outlined.Science) }
-            item {
-                SettingsCard {
-                    ClickableItem(
-                        icon = Icons.Outlined.FileUpload,
-                        title = "Import Local APK",
-                        subtitle = "Load a test build from ./gradlew :sources:assembleRelease",
-                        tint = MaterialTheme.colorScheme.primary,
-                        onClick = { importApkLauncher.launch("*/*") }
-                    )
-                }
-            }
-
-            if (localSources.isNotEmpty()) {
-                item { SectionHeader("Imported Local APKs", Icons.Outlined.FolderOpen) }
-                item {
-                    SettingsCard {
-                        localSources.forEachIndexed { idx, meta ->
-                            if (idx > 0) SettingsDivider()
-                            LocalApkItem(
-                                meta = meta,
-                                onRemove = {
-                                    com.kmhmubin.kothagolp.source.LocalSourceLoader.remove(context, meta.id)
-                                    localSources = com.kmhmubin.kothagolp.source.LocalSourceLoader.getAll(context)
-                                    scope.launch {
-                                        snackbarState.showSnackbar(
-                                            "Removed ${meta.providerNames.joinToString(", ")}"
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
             }
 
             item { SectionHeader("Migration", Icons.Outlined.SwapVert) }
@@ -974,48 +861,6 @@ fun SettingsSourcesScreen(
             }
 
             item { Spacer(Modifier.height(80.dp)) }
-        }
-    }
-}
-
-@Composable
-private fun LocalApkItem(
-    meta: com.kmhmubin.kothagolp.source.LocalSourceLoader.LocalSourceMeta,
-    onRemove: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            Icons.Outlined.Extension,
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = meta.providerNames.joinToString(", "),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = "Local · Imported ${meta.displayDate}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        IconButton(onClick = onRemove) {
-            Icon(
-                Icons.Outlined.DeleteOutline,
-                contentDescription = "Remove",
-                tint = MaterialTheme.colorScheme.error
-            )
         }
     }
 }
@@ -2307,10 +2152,14 @@ fun SettingsPermissionsScreen(onBack: () -> Unit) {
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
         if (uri != null) {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: SecurityException) {
+                // URI grant may fail if system revoked it; proceed with the URI anyway
+            }
             val uriString = uri.toString()
             preferencesManager.setStorageFolderUri(uriString)
             storageFolderUri = uriString

@@ -10,7 +10,13 @@ import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.NovelDetails
 import com.kmhmubin.kothagolp.provider.MainProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.Collections
+import java.util.concurrent.atomic.AtomicInteger
 
 private const val TAG = "DiscoveryManager"
 
@@ -60,6 +66,7 @@ class DiscoveryManager(
 
     suspend fun seedDiscoveryPool(
         disabledProviders: Set<String> = emptySet(),
+        quickSeed: Boolean = false,
         onProgress: (provider: String, current: Int, total: Int) -> Unit = { _, _, _ -> }
     ): SeedingResult = withContext(Dispatchers.IO) {
         val allProviders = novelRepository.getProviders()
@@ -74,6 +81,62 @@ class DiscoveryManager(
 
         if (skippedDisabled.isNotEmpty()) {
             Log.d(TAG, "Skipping disabled providers: ${skippedDisabled.joinToString()}")
+        }
+
+        // Quick concurrent seed for onboarding — one page per provider, no enrichment.
+        // supervisorScope: one provider failure cannot cancel siblings.
+        // withTimeoutOrNull(20s): prevents Cloudflare mutex serialization from blocking
+        // indefinitely (6 providers × 30s CF timeout = 3 min worst case without timeout).
+        if (quickSeed) {
+            val completed = AtomicInteger(0)
+            val discovered = AtomicInteger(0)
+            val quickErrors = Collections.synchronizedList(mutableListOf<String>())
+            val quickSkipped = Collections.synchronizedList(mutableListOf<String>())
+            quickSkipped.addAll(skippedDisabled)
+
+            supervisorScope {
+                providers.forEach { provider ->
+                    launch {
+                        withTimeoutOrNull(20_000L) {
+                            try {
+                                onProgress(provider.name, completed.get() + 1, providers.size)
+                                val remaining = networkBudgetManager.getRemainingBudget(
+                                    provider.name, NetworkBudgetManager.RequestType.DISCOVERY
+                                )
+                                if (remaining < 1) {
+                                    quickSkipped.add(provider.name)
+                                    return@withTimeoutOrNull
+                                }
+                                val result = provider.loadMainPage(1, orderBy = null, tag = null)
+                                networkBudgetManager.recordRequest(provider.name)
+                                val entities = result.novels.map {
+                                    DiscoveredNovelEntity.fromNovel(it, source = "seed")
+                                }
+                                recommendationDao.insertDiscoveredNovels(entities)
+                                discovered.addAndGet(entities.size)
+                                val done = completed.incrementAndGet()
+                                onProgress(provider.name, done, providers.size)
+                                Log.d(TAG, "Quick-seeded ${entities.size} novels from ${provider.name}")
+                            } catch (e: Throwable) {
+                                if (e is kotlinx.coroutines.CancellationException) throw e
+                                Log.e(TAG, "Quick seed failed for ${provider.name}", e)
+                                quickErrors.add("${provider.name}: ${e.message}")
+                                networkBudgetManager.recordFailure(provider.name)
+                            }
+                        } ?: run {
+                            Log.w(TAG, "Quick seed timed out for ${provider.name}")
+                            quickErrors.add("${provider.name}: timeout")
+                        }
+                    }
+                }
+            }
+
+            return@withContext SeedingResult(
+                totalDiscovered = discovered.get(),
+                providersSeeded = providers.size - quickErrors.size - (quickSkipped.size - skippedDisabled.size),
+                providersSkipped = quickSkipped,
+                errors = quickErrors
+            )
         }
 
         val sessionId = networkBudgetManager.createSessionId()

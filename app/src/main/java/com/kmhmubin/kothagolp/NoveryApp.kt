@@ -10,9 +10,26 @@ import com.kmhmubin.kothagolp.data.remote.CloudflareManager
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.data.sync.SyncWorker
 import com.kmhmubin.kothagolp.service.NotificationHelper
-import com.kmhmubin.kothagolp.source.LocalSourceLoader
-import com.kmhmubin.kothagolp.source.SourceLoader
-import com.kmhmubin.kothagolp.source.SourceSyncWorker
+import com.kmhmubin.kothagolp.provider.AllNovelProvider
+import com.kmhmubin.kothagolp.provider.CyrisiaProvider
+import com.kmhmubin.kothagolp.provider.FenrirRealmProvider
+import com.kmhmubin.kothagolp.provider.FreeWebNovelProvider
+import com.kmhmubin.kothagolp.provider.FuckNovelPiaProvider
+import com.kmhmubin.kothagolp.provider.LibReadProvider
+import com.kmhmubin.kothagolp.provider.LightNovelTranslationsProvider
+import com.kmhmubin.kothagolp.provider.LightNovelWorldProvider
+import com.kmhmubin.kothagolp.provider.LnoriProvider
+import com.kmhmubin.kothagolp.provider.MainProvider
+import com.kmhmubin.kothagolp.provider.NovelArchiveProvider
+import com.kmhmubin.kothagolp.provider.NovelBinProvider
+import com.kmhmubin.kothagolp.provider.NovelBuddyProvider
+import com.kmhmubin.kothagolp.provider.NovelDexProvider
+import com.kmhmubin.kothagolp.provider.NovelFireProvider
+import com.kmhmubin.kothagolp.provider.NovelsOnlineProvider
+import com.kmhmubin.kothagolp.provider.PawReadProvider
+import com.kmhmubin.kothagolp.provider.RanobesProvider
+import com.kmhmubin.kothagolp.provider.RoyalRoadProvider
+import com.kmhmubin.kothagolp.provider.WebnovelProvider
 import com.kmhmubin.kothagolp.tts.TTSManager
 import com.kmhmubin.kothagolp.tts.VoiceManager
 import com.kmhmubin.kothagolp.update.ChapterUpdateScheduler
@@ -59,19 +76,26 @@ class KothagolpApp : Application() {
             }
         }
 
-        // Load downloaded sources APK if available
-        SourceLoader.loadIfAvailable(this)
-
-        // Load any locally-imported test APKs (shadow official sources with same name)
-        LocalSourceLoader.loadAll(this)
-
-        // Check for source updates on launch
-        SourceSyncWorker.syncOnce(this)
-        // Schedule periodic 24h check only if auto-update is enabled
-        val autoUpdate = RepositoryProvider.getPreferencesManager().appSettings.value.autoUpdateSources
-        if (autoUpdate) {
-            SourceSyncWorker.schedulePeriodicSync(this)
-        }
+        // Register all built-in providers
+        MainProvider.register(AllNovelProvider())
+        MainProvider.register(CyrisiaProvider())
+        MainProvider.register(FenrirRealmProvider())
+        MainProvider.register(FreeWebNovelProvider())
+        MainProvider.register(FuckNovelPiaProvider())
+        MainProvider.register(LibReadProvider())
+        MainProvider.register(LightNovelTranslationsProvider())
+        MainProvider.register(LightNovelWorldProvider())
+        MainProvider.register(LnoriProvider())
+        MainProvider.register(NovelArchiveProvider())
+        MainProvider.register(NovelBinProvider())
+        MainProvider.register(NovelBuddyProvider())
+        MainProvider.register(NovelDexProvider())
+        MainProvider.register(NovelFireProvider())
+        MainProvider.register(NovelsOnlineProvider())
+        MainProvider.register(PawReadProvider())
+        MainProvider.register(RanobesProvider())
+        MainProvider.register(RoyalRoadProvider())
+        MainProvider.register(WebnovelProvider())
 
         // Create notification channels
         NotificationHelper.createNotificationChannels(this)

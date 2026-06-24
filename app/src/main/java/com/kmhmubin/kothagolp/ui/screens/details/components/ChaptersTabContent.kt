@@ -284,7 +284,7 @@ private fun ChapterListContent(
         } else {
             itemsIndexed(
                 items = displayedChapters,
-                key = { _, chapter -> chapter.url },
+                key = { index, chapter -> "${index}_${chapter.url}" },
                 contentType = { _, _ -> "chapter" }
             ) { displayIndex, chapter ->
                 // Calculate the actual index in the full list
