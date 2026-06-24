@@ -95,7 +95,35 @@ jobs:
           body: |
             ## Kothagolp ${{ steps.tag.outputs.tag }}
 
-            ### Pick the right APK for your device
+            ### What's new
+
+            **Bug fixes**
+            - Fixed library category chip taps showing a blank screen — tapping a filter chip now always scrolls to the correct page (removed a guard that silently blocked the pager when a previous scroll was still in progress)
+
+            **Theme & UI**
+            - Reader chrome (chapter title, chapter header ornament, prev/next nav buttons, chapter divider, scene break decorations, blockquote border, loading spinners) now follows the global app accent color instead of the reader-specific accent
+            - Reader bottom bar controls and settings panel active states now follow the global app accent color
+            - TTS player (play button, progress bar, glow, playing indicator bars) now follows the global app accent color
+            - TTS active "Playing" pill in the top bar now follows the global app accent color
+            - TTS sentence highlight band now follows the global app accent color (primary @ 30% opacity)
+
+            **Onboarding**
+            - Mature content is now ON by default; Boys Love and Girls Love are OFF by default
+            - Failed sources during discovery seeding now show a Toast with the provider name and reason
+            - Picking a storage folder now auto-creates `downloads/`, `autobackup/`, `logs/`, `notes/` sub-folders inside it
+
+            **Backup**
+            - New periodic local backup system via WorkManager — configurable interval: Off / 6h / 12h / 24h / 48h / Weekly
+            - Backup pruning: keeps the last 5 auto-backups, saves to SAF storage folder or internal storage
+            - Backup respects battery-not-low constraint
+
+            **Settings**
+            - Chapter update interval, Wi-Fi only, notifications, quick-save status, and local backup interval are now properly persisted across app restarts (were never saved before)
+            - Removed the useless "Source Info" section from the Sources settings screen
+
+            ---
+
+            ### Download the right APK for your device
 
             | APK | Device |
             |-----|--------|
