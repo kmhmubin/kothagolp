@@ -1,5 +1,7 @@
 package com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation
 
+import com.kmhmubin.kothagolp.data.local.entity.DiscoveredNovelEntity
+import com.kmhmubin.kothagolp.recommendation.TagNormalizer
 import com.kmhmubin.kothagolp.recommendation.model.LibrarySourceNovel
 import com.kmhmubin.kothagolp.recommendation.model.ProfileMaturity
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
@@ -53,7 +55,28 @@ data class RecommendationUiState(
     val isLoadingSourceRecommendations: Boolean = false,
 
     /** Whether the library source selector is expanded */
-    val isSourceSelectorExpanded: Boolean = false
+    val isSourceSelectorExpanded: Boolean = false,
+
+    // Tag-curated section
+    val selectedTagCategory: TagNormalizer.TagCategory? = null,
+    val novelsForSelectedTag: List<DiscoveredNovelEntity> = emptyList(),
+    val isLoadingTagNovels: Boolean = false,
+
+    // AI recommendations — history-based
+    val aiRecommendations: List<AiRecommendedNovel> = emptyList(),
+    val isLoadingAiRecs: Boolean = false,
+    val aiRecsError: String? = null,
+    val hasGeminiKey: Boolean = false,
+    val hasReadingHistory: Boolean = false,
+    val aiRecsLastUpdated: Long = 0L,
+    val lastLoadedAiModel: String = "",
+
+    // AI recommendations — trending
+    val aiTrendingRecommendations: List<AiRecommendedNovel> = emptyList(),
+    val isLoadingTrending: Boolean = false,
+    val trendingError: String? = null,
+    val trendingLastUpdated: Long = 0L,
+    val lastLoadedTrendingModel: String = ""
 
 ) {
     val hasRecommendations: Boolean
@@ -92,4 +115,14 @@ data class SeedingProgress(
     val currentIndex: Int,
     val totalProviders: Int,
     val novelsDiscovered: Int = 0
+)
+
+data class AiRecommendedNovel(
+    val title: String,
+    val author: String? = null,
+    val reason: String,
+    val genres: List<String> = emptyList(),
+    val matchedNovelUrl: String? = null,
+    val matchedPosterUrl: String? = null,
+    val matchedApiName: String? = null
 )

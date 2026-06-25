@@ -506,6 +506,20 @@ class DiscoveryManager(
     suspend fun clearAll() = withContext(Dispatchers.IO) {
         recommendationDao.clearAllDiscoveredNovels()
     }
+
+    suspend fun getNovelsForTag(tagCategory: TagNormalizer.TagCategory, limit: Int = 12): List<DiscoveredNovelEntity> = withContext(Dispatchers.IO) {
+        try {
+            val displayName = TagNormalizer.getDisplayName(tagCategory)
+            val tagName = tagCategory.name.lowercase()
+            // Try multiple patterns: enum name, display name
+            val byEnum = recommendationDao.getNovelsByTagPattern(tagName, limit)
+            if (byEnum.size >= 3) return@withContext byEnum
+            val byDisplay = recommendationDao.getNovelsByTagPattern(displayName.lowercase(), limit)
+            (byEnum + byDisplay).distinctBy { it.url }.take(limit)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
 }
 
 data class SeedingResult(

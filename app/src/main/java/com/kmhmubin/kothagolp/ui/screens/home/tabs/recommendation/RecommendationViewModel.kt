@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kmhmubin.kothagolp.ai.OpenRouterService
 import com.kmhmubin.kothagolp.data.local.entity.BlockedAuthorEntity
 import com.kmhmubin.kothagolp.data.local.entity.HiddenNovelEntity
 import com.kmhmubin.kothagolp.data.local.entity.HideReason
@@ -109,6 +110,7 @@ class RecommendationViewModel : ViewModel() {
         }
 
         checkAndSeed()
+        checkGeminiKey()
     }
 
     // ================================================================
@@ -740,6 +742,195 @@ class RecommendationViewModel : ViewModel() {
 
             clearRecommendationCache()
             loadRecommendations(forceRefresh = true)
+        }
+    }
+
+    // ================================================================
+    // TAG-CURATED SECTION
+    // ================================================================
+
+    fun selectTagForSection(tag: TagCategory?) {
+        if (tag == null) {
+            _uiState.update { it.copy(selectedTagCategory = null, novelsForSelectedTag = emptyList()) }
+            return
+        }
+        if (_uiState.value.selectedTagCategory == tag) {
+            // Deselect
+            _uiState.update { it.copy(selectedTagCategory = null, novelsForSelectedTag = emptyList()) }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(selectedTagCategory = tag, isLoadingTagNovels = true, novelsForSelectedTag = emptyList()) }
+            try {
+                val novels = discoveryManager.getNovelsForTag(tag, limit = 12)
+                _uiState.update { it.copy(novelsForSelectedTag = novels, isLoadingTagNovels = false) }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isLoadingTagNovels = false) }
+            }
+        }
+    }
+
+    // ================================================================
+    // AI RECOMMENDATIONS (GEMINI)
+    // ================================================================
+
+    private val openRouterService = OpenRouterService()
+
+    fun loadAiRecommendations() {
+        val apiKey = preferencesManager.getGeminiApiKey()
+        if (apiKey.isNullOrBlank()) {
+            _uiState.update { it.copy(hasGeminiKey = false) }
+            return
+        }
+
+        if (_uiState.value.isLoadingAiRecs) return
+
+        val currentModel = preferencesManager.getSelectedAiModel()
+        val modelChanged = currentModel != _uiState.value.lastLoadedAiModel && _uiState.value.lastLoadedAiModel.isNotBlank()
+
+        val now = System.currentTimeMillis()
+        val cacheAge = now - _uiState.value.aiRecsLastUpdated
+        // 30-min cache when results exist; 60-second cooldown on error — both bypassed when model changes
+        if (!modelChanged && cacheAge < 30 * 60 * 1000L && _uiState.value.aiRecommendations.isNotEmpty()) return
+        if (!modelChanged && cacheAge < 60 * 1000L && _uiState.value.aiRecsLastUpdated > 0) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingAiRecs = true, aiRecsError = null, hasGeminiKey = true) }
+
+            try {
+                // Build reading history
+                val history = historyRepository.getHistory().take(30).map { item ->
+                    val tags = RepositoryProvider.getDatabase().recommendationDao()
+                        .getDiscoveredNovel(item.novel.url)?.tags ?: emptyList()
+                    OpenRouterService.ReadHistoryItem(title = item.novel.name, genres = tags)
+                }
+
+                // Guard: no history → can't make personalized picks
+                if (history.isEmpty()) {
+                    _uiState.update { it.copy(isLoadingAiRecs = false, hasReadingHistory = false) }
+                    return@launch
+                }
+                _uiState.update { it.copy(hasReadingHistory = true) }
+
+                val boostedTags = userFilterManager.getBoostedTags()
+                    .map { TagNormalizer.getDisplayName(it) }
+                val reducedTags = userFilterManager.getFilterState().blockedTags
+                    .filter { it !in listOf(TagCategory.MATURE, TagCategory.ADULT, TagCategory.SMUT, TagCategory.GORE, TagCategory.BL, TagCategory.GL) }
+                    .map { TagNormalizer.getDisplayName(it) }
+
+                val result = openRouterService.getRecommendations(
+                    apiKey = apiKey,
+                    readHistory = history,
+                    likedGenres = boostedTags,
+                    dislikedGenres = reducedTags,
+                    model = currentModel
+                )
+
+                result.fold(
+                    onSuccess = { novels ->
+                        // Try to match against discovery pool
+                        val enriched = novels.map { novel ->
+                            try {
+                                val match = RepositoryProvider.getDatabase().recommendationDao()
+                                    .getAllDiscoveredNovels()
+                                    .firstOrNull { it.name.lowercase().contains(novel.title.lowercase().take(10)) }
+                                novel.copy(
+                                    matchedNovelUrl = match?.url,
+                                    matchedPosterUrl = match?.posterUrl,
+                                    matchedApiName = match?.apiName
+                                )
+                            } catch (_: Exception) { novel }
+                        }
+                        _uiState.update {
+                            it.copy(
+                                aiRecommendations = enriched,
+                                isLoadingAiRecs = false,
+                                aiRecsError = null,
+                                aiRecsLastUpdated = System.currentTimeMillis(),
+                                lastLoadedAiModel = currentModel
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = error.message ?: "Unknown error", aiRecsLastUpdated = System.currentTimeMillis(), lastLoadedAiModel = currentModel) }
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = "Error: ${e.message?.take(80)}", aiRecsLastUpdated = System.currentTimeMillis(), lastLoadedAiModel = currentModel) }
+            }
+        }
+    }
+
+    fun saveGeminiApiKey(key: String) {
+        preferencesManager.setGeminiApiKey(key)
+        _uiState.update { it.copy(hasGeminiKey = key.isNotBlank(), aiRecommendations = emptyList(), aiRecsLastUpdated = 0L) }
+        if (key.isNotBlank()) loadAiRecommendations()
+    }
+
+    fun checkGeminiKey() {
+        val key = preferencesManager.getGeminiApiKey()
+        _uiState.update { it.copy(hasGeminiKey = !key.isNullOrBlank()) }
+    }
+
+    fun clearAiRecsError() {
+        _uiState.update { it.copy(aiRecsError = null) }
+    }
+
+    fun loadAiTrendingRecommendations() {
+        val apiKey = preferencesManager.getGeminiApiKey()
+        if (apiKey.isNullOrBlank()) return
+        if (_uiState.value.isLoadingTrending) return
+
+        val currentModel = preferencesManager.getSelectedAiModel()
+        val modelChanged = currentModel != _uiState.value.lastLoadedTrendingModel && _uiState.value.lastLoadedTrendingModel.isNotBlank()
+
+        val now = System.currentTimeMillis()
+        val cacheAge = now - _uiState.value.trendingLastUpdated
+        if (!modelChanged && cacheAge < 30 * 60 * 1000L && _uiState.value.aiTrendingRecommendations.isNotEmpty()) return
+        if (!modelChanged && cacheAge < 60 * 1000L && _uiState.value.trendingLastUpdated > 0) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingTrending = true, trendingError = null) }
+            try {
+                val likedGenres = userFilterManager.getBoostedTags()
+                    .map { TagNormalizer.getDisplayName(it) }
+
+                val result = openRouterService.getTrendingRecommendations(
+                    apiKey = apiKey,
+                    likedGenres = likedGenres,
+                    model = currentModel
+                )
+                result.fold(
+                    onSuccess = { novels ->
+                        val enriched = novels.map { novel ->
+                            try {
+                                val match = RepositoryProvider.getDatabase().recommendationDao()
+                                    .getAllDiscoveredNovels()
+                                    .firstOrNull { it.name.lowercase().contains(novel.title.lowercase().take(10)) }
+                                novel.copy(
+                                    matchedNovelUrl = match?.url,
+                                    matchedPosterUrl = match?.posterUrl,
+                                    matchedApiName = match?.apiName
+                                )
+                            } catch (_: Exception) { novel }
+                        }
+                        _uiState.update {
+                            it.copy(
+                                aiTrendingRecommendations = enriched,
+                                isLoadingTrending = false,
+                                trendingError = null,
+                                trendingLastUpdated = System.currentTimeMillis(),
+                                lastLoadedTrendingModel = currentModel
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update { it.copy(isLoadingTrending = false, trendingError = error.message ?: "Unknown error", trendingLastUpdated = System.currentTimeMillis(), lastLoadedTrendingModel = currentModel) }
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoadingTrending = false, trendingError = "Error: ${e.message?.take(80)}", trendingLastUpdated = System.currentTimeMillis(), lastLoadedTrendingModel = currentModel) }
+            }
         }
     }
 

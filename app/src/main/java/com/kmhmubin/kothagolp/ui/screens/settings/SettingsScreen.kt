@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import android.Manifest
 import android.content.Intent
@@ -42,6 +43,11 @@ import android.os.PowerManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.shape.CircleShape
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
@@ -98,7 +104,12 @@ import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material.icons.outlined.Wifi
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDownload
@@ -127,6 +138,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import android.content.pm.PackageManager
@@ -281,6 +295,14 @@ fun SettingsScreen(
                             title = "Permissions",
                             subtitle = "App permissions and storage folder",
                             onClick = { onNavigateTo(NavRoutes.SettingsPermissions.route) }
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.Rounded.AutoAwesome,
+                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            title = "For You",
+                            subtitle = "AI recommendations and OpenRouter API key",
+                            onClick = { onNavigateTo(NavRoutes.SettingsForYou.route) }
                         )
                     }
                 }
@@ -2383,6 +2405,473 @@ private fun SettingsPermissionRow(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
                 ) {
                     Text(grantLabel, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FOR YOU SETTINGS  (AI / OpenRouter)
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsForYouScreen(onBack: () -> Unit) {
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    var apiKey by remember { mutableStateOf(preferencesManager.getGeminiApiKey() ?: "") }
+    var showKey by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf(preferencesManager.getGeminiApiKey() != null) }
+
+    var selectedModel by remember { mutableStateOf(preferencesManager.getSelectedAiModel()) }
+    var showModelSheet by remember { mutableStateOf(false) }
+    var models by remember { mutableStateOf(com.kmhmubin.kothagolp.ai.OpenRouterModelsService.FALLBACK_FREE_MODELS) }
+    var isLoadingModels by remember { mutableStateOf(false) }
+    var modelSearchQuery by remember { mutableStateOf("") }
+
+    // Load models when key is present
+    LaunchedEffect(apiKey) {
+        if (apiKey.length > 10) {
+            isLoadingModels = true
+            val result = com.kmhmubin.kothagolp.ai.OpenRouterModelsService.getModels(apiKey)
+            result.onSuccess { models = it }
+            isLoadingModels = false
+        }
+    }
+
+    val filteredModels = remember(models, modelSearchQuery) {
+        if (modelSearchQuery.isBlank()) models
+        else models.filter {
+            it.name.contains(modelSearchQuery, ignoreCase = true) ||
+            it.id.contains(modelSearchQuery, ignoreCase = true) ||
+            it.provider.contains(modelSearchQuery, ignoreCase = true)
+        }
+    }
+
+    if (showModelSheet) {
+        ModalBottomSheet(onDismissRequest = { showModelSheet = false }) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Choose AI Model",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                )
+                Text(
+                    text = "${models.count { it.isFree }} free · ${models.count { !it.isFree }} paid",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = modelSearchQuery,
+                    onValueChange = { modelSearchQuery = it },
+                    placeholder = { Text("Search models...") },
+                    leadingIcon = { Icon(Icons.Outlined.Search, null, modifier = Modifier.size(18.dp)) },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = AppShape.medium
+                )
+                Spacer(Modifier.height(8.dp))
+                if (isLoadingModels) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(80.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Text("Loading live models...", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val recModels  = filteredModels.filter { it.isRecommended }
+                    val freeModels = filteredModels.filter { it.isFree && !it.isRecommended }
+                    val paidModels = filteredModels.filter { !it.isFree && !it.isRecommended }
+
+                    fun onPick(model: com.kmhmubin.kothagolp.ai.AiModel) {
+                        selectedModel = model.id
+                        preferencesManager.setSelectedAiModel(model.id)
+                        showModelSheet = false
+                        scope.launch { snackbarHostState.showSnackbar("Model: ${model.name}") }
+                    }
+
+                    if (recModels.isNotEmpty()) {
+                        item {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Star,
+                                    null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = androidx.compose.ui.graphics.Color(0xFFFFC107)
+                                )
+                                Text(
+                                    "RECOMMENDED FOR NOVEL PICKS",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = androidx.compose.ui.graphics.Color(0xFFFFC107)
+                                )
+                            }
+                        }
+                        items(recModels, key = { "rec_${it.id}" }) { model ->
+                            AiModelRow(model = model, isSelected = model.id == selectedModel, onClick = { onPick(model) })
+                        }
+                    }
+                    if (freeModels.isNotEmpty()) {
+                        item {
+                            Spacer(Modifier.height(if (recModels.isNotEmpty()) 8.dp else 0.dp))
+                            Text(
+                                "OTHER FREE MODELS",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                        items(freeModels, key = { "free_${it.id}" }) { model ->
+                            AiModelRow(model = model, isSelected = model.id == selectedModel, onClick = { onPick(model) })
+                        }
+                    }
+                    if (paidModels.isNotEmpty()) {
+                        item {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "PAID MODELS",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                        items(paidModels, key = { "paid_${it.id}" }) { model ->
+                            AiModelRow(model = model, isSelected = model.id == selectedModel, onClick = { onPick(model) })
+                        }
+                    }
+                    item { Spacer(Modifier.height(32.dp)) }
+                }
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("For You", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // API Key card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shape = AppShape.large
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = AppShape.large,
+                                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(22.dp))
+                                }
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("AI Recommendations", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Via OpenRouter — access Gemini, Llama, DeepSeek and more. Free models available.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                        Text("OpenRouter API Key", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
+
+                        OutlinedTextField(
+                            value = apiKey,
+                            onValueChange = { apiKey = it; saved = false },
+                            placeholder = { Text("sk-or-v1-...") },
+                            singleLine = true,
+                            visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { showKey = !showKey }) {
+                                    Icon(
+                                        if (showKey) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            },
+                            leadingIcon = { Icon(Icons.Rounded.Key, null, modifier = Modifier.size(18.dp)) },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = {
+                                if (apiKey.isNotBlank()) {
+                                    preferencesManager.setGeminiApiKey(apiKey.trim())
+                                    saved = true
+                                    scope.launch { snackbarHostState.showSnackbar("API key saved") }
+                                }
+                            }),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = AppShape.medium
+                        )
+
+                        Text(
+                            "Get your free key at openrouter.ai → Keys. No credit card needed for free models.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    if (apiKey.isNotBlank()) {
+                                        preferencesManager.setGeminiApiKey(apiKey.trim())
+                                        saved = true
+                                        com.kmhmubin.kothagolp.ai.OpenRouterModelsService.invalidateCache()
+                                        scope.launch { snackbarHostState.showSnackbar("API key saved") }
+                                    }
+                                },
+                                enabled = apiKey.length > 10 && !saved,
+                                modifier = Modifier.weight(1f),
+                                shape = AppShape.medium
+                            ) {
+                                Text(if (saved) "Saved" else "Save Key")
+                            }
+                            if (preferencesManager.getGeminiApiKey() != null) {
+                                OutlinedButton(
+                                    onClick = {
+                                        preferencesManager.clearGeminiApiKey()
+                                        apiKey = ""
+                                        saved = false
+                                        scope.launch { snackbarHostState.showSnackbar("API key removed") }
+                                    },
+                                    shape = AppShape.medium,
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                ) { Text("Remove") }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Model picker card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shape = AppShape.large
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("AI Model", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
+
+                        val currentModel = models.find { it.id == selectedModel }
+                        Surface(
+                            onClick = { showModelSheet = true },
+                            shape = AppShape.medium,
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (currentModel?.isRecommended == true) {
+                                            Icon(
+                                                Icons.Rounded.Star,
+                                                null,
+                                                tint = androidx.compose.ui.graphics.Color(0xFFFFC107),
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
+                                        Text(
+                                            text = currentModel?.name ?: selectedModel.substringAfterLast("/"),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        if (currentModel?.isFree == true) {
+                                            Surface(
+                                                shape = AppShape.small,
+                                                color = androidx.compose.ui.graphics.Color(0xFF1B5E20).copy(alpha = 0.15f)
+                                            ) {
+                                                Text(
+                                                    "FREE",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = androidx.compose.ui.graphics.Color(0xFF4CAF50),
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    if (currentModel != null) {
+                                        Text(
+                                            text = "${currentModel.provider} · ${currentModel.contextLength / 1000}K ctx",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                Icon(Icons.Outlined.ChevronRight, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        Text(
+                            "FREE models are rate-limited (typically 20 req/min, 200 req/day) but cost $0. Paid models have higher limits and are billed per token through your OpenRouter account.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(80.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun AiModelRow(
+    model: com.kmhmubin.kothagolp.ai.AiModel,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val amber = androidx.compose.ui.graphics.Color(0xFFFFC107)
+    val green = androidx.compose.ui.graphics.Color(0xFF4CAF50)
+
+    val bgColor = when {
+        isSelected && model.isRecommended -> amber.copy(alpha = 0.12f)
+        isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+        model.isRecommended -> amber.copy(alpha = 0.06f)
+        else -> MaterialTheme.colorScheme.surfaceContainerLow
+    }
+
+    Surface(
+        onClick = onClick,
+        shape = AppShape.medium,
+        color = bgColor,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Star icon for recommended
+            if (model.isRecommended) {
+                Icon(
+                    Icons.Rounded.Star,
+                    null,
+                    tint = amber,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = model.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                    color = when {
+                        isSelected -> MaterialTheme.colorScheme.primary
+                        model.isRecommended -> MaterialTheme.colorScheme.onSurface
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
+                )
+                if (model.isRecommended && model.recommendReason.isNotBlank()) {
+                    Text(
+                        text = model.recommendReason,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight * 1.2f
+                    )
+                } else {
+                    Text(
+                        text = "${model.provider} · ${model.contextLength / 1000}K ctx",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                if (model.isFree) {
+                    Surface(shape = AppShape.small, color = green.copy(alpha = 0.15f)) {
+                        Text(
+                            "FREE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = green,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                } else {
+                    Surface(shape = AppShape.small, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+                        Text(
+                            model.displayPrice,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                if (isSelected) {
+                    Surface(shape = AppShape.small, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)) {
+                        Text(
+                            "ACTIVE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
         }

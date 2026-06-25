@@ -78,6 +78,9 @@ interface RecommendationDao {
     @Query("SELECT * FROM discovered_novels WHERE tagsString IS NOT NULL AND tagsString != '' ORDER BY discoveredAt DESC")
     suspend fun getDiscoveredNovelsWithTags(): List<DiscoveredNovelEntity>
 
+    @Query("SELECT * FROM discovered_novels WHERE tagsString LIKE '%' || :tagPattern || '%' AND tagsString IS NOT NULL AND tagsString != '' ORDER BY discoveredAt DESC LIMIT :limit")
+    suspend fun getNovelsByTagPattern(tagPattern: String, limit: Int): List<DiscoveredNovelEntity>
+
     @Query("SELECT COUNT(*) FROM discovered_novels")
     suspend fun getDiscoveredNovelCount(): Int
 

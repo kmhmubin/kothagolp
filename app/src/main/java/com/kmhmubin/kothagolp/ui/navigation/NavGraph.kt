@@ -37,6 +37,7 @@ import com.kmhmubin.kothagolp.ui.screens.settings.SettingsAppearanceScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsBrowseScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsLibraryScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsReaderPrefsScreen
+import com.kmhmubin.kothagolp.ui.screens.settings.SettingsForYouScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsPermissionsScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsSourcesScreen
@@ -155,6 +156,9 @@ fun KothagolpNavGraph(
                 },
                 onNavigateToGlobalSearch = { query ->
                     navController.navigate(NavRoutes.GlobalSearch.createRoute(query))
+                },
+                onNavigateToForYouSettings = {
+                    navController.navigate(NavRoutes.SettingsForYou.route)
                 }
             )
         }
@@ -239,6 +243,10 @@ fun KothagolpNavGraph(
 
         composable(route = NavRoutes.SettingsPermissions.route) {
             SettingsPermissionsScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(route = NavRoutes.SettingsForYou.route) {
+            SettingsForYouScreen(onBack = { navController.popBackStack() })
         }
 
         // ================================================================

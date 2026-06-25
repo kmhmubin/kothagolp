@@ -56,7 +56,8 @@ fun HomeScreen(
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
     onNavigateToMigration: (() -> Unit)? = null,
     onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
-    onNavigateToNotesHighlights: (() -> Unit)? = null
+    onNavigateToNotesHighlights: (() -> Unit)? = null,
+    onNavigateToForYouSettings: () -> Unit = {}
 ) {
     LaunchedEffect(Unit) {
         LibraryStateHolder.initialize()
@@ -122,6 +123,7 @@ fun HomeScreen(
                     onNavigateToMigration = onNavigateToMigration,
                     onNavigateToGlobalSearch = onNavigateToGlobalSearch,
                     onNavigateToNotesHighlights = onNavigateToNotesHighlights,
+                    onNavigateToForYouSettings = onNavigateToForYouSettings,
                     onSwitchTab = { currentTabIndex = it.ordinal }
                 )
             }
@@ -158,6 +160,7 @@ fun HomeScreen(
                     onNavigateToMigration = onNavigateToMigration,
                     onNavigateToGlobalSearch = onNavigateToGlobalSearch,
                     onNavigateToNotesHighlights = onNavigateToNotesHighlights,
+                    onNavigateToForYouSettings = onNavigateToForYouSettings,
                     onSwitchTab = { currentTabIndex = it.ordinal }
                 )
             }
@@ -191,6 +194,7 @@ private fun PersistentTabContent(
     onNavigateToMigration: (() -> Unit)?,
     onNavigateToGlobalSearch: ((String) -> Unit)?,
     onNavigateToNotesHighlights: (() -> Unit)?,
+    onNavigateToForYouSettings: () -> Unit = {},
     onSwitchTab: (HomeTabs) -> Unit
 ) {
     @Composable
@@ -213,7 +217,8 @@ private fun PersistentTabContent(
             HomeTabs.FOR_YOU -> RecommendationTab(
                 onNavigateToDetails = onNavigateToDetails,
                 onNavigateToBrowse = { onSwitchTab(HomeTabs.BROWSE) },
-                onNavigateToTagExplorer = onNavigateToTagExplorer
+                onNavigateToTagExplorer = onNavigateToTagExplorer,
+                onNavigateToSettings = onNavigateToForYouSettings
             )
             HomeTabs.HISTORY -> HistoryTab(
                 appSettings = appSettings,

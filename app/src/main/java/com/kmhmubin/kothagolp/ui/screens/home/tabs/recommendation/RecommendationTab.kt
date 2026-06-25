@@ -34,7 +34,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +55,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
 import com.kmhmubin.kothagolp.recommendation.model.RecommendationType
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.AiRecommendationSection
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.EmptyRecommendations
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.GenrePreferencesSheet
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.NovelActionMenu
@@ -59,6 +64,7 @@ import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.Rec
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.RecommendationSettingsSheet
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.SourceRecommendationsSection
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.TagFilterSheet
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.TagNovelsSection
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import kotlinx.coroutines.launch
 
@@ -67,7 +73,8 @@ import kotlinx.coroutines.launch
 fun RecommendationTab(
     onNavigateToDetails: (novelUrl: String, providerName: String) -> Unit = { _, _ -> },
     onNavigateToBrowse: () -> Unit = {},
-    onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {}
+    onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val viewModel: RecommendationViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -85,6 +92,25 @@ fun RecommendationTab(
     var showGenrePrefsSheet by remember { mutableStateOf(false) }
     var selectedRecommendation by remember { mutableStateOf<Recommendation?>(null) }
     var lastHiddenNovel by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    LaunchedEffect("init") {
+        viewModel.checkGeminiKey()
+        viewModel.loadAiRecommendations()
+        viewModel.loadAiTrendingRecommendations()
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.checkGeminiKey()
+                viewModel.loadAiRecommendations()
+                viewModel.loadAiTrendingRecommendations()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // Check for pending tag filter from navigation
     LaunchedEffect(Unit) {
@@ -214,6 +240,21 @@ fun RecommendationTab(
                             }
                         }
 
+                        // Tag-curated section
+                        item(key = "tag_novels") {
+                            TagNovelsSection(
+                                topPreferences = uiState.topPreferences,
+                                selectedTag = uiState.selectedTagCategory,
+                                tagNovels = uiState.novelsForSelectedTag,
+                                isLoadingTagNovels = uiState.isLoadingTagNovels,
+                                onTagClick = { tag -> viewModel.selectTagForSection(tag) },
+                                onNovelClick = { novelUrl, providerName ->
+                                    viewModel.onRecommendationClicked(novelUrl)
+                                    onNavigateToDetails(novelUrl, providerName)
+                                }
+                            )
+                        }
+
                         // === Library-Based "Because You Read" Section ===
                         if (uiState.hasLibrarySources) {
                             item(key = "source_recommendations") {
@@ -289,6 +330,44 @@ fun RecommendationTab(
                                 },
                                 onSeeAllClick = { tagCategory ->
                                     onNavigateToTagExplorer(tagCategory)
+                                }
+                            )
+                        }
+
+                        // AI: Based on Your Reading
+                        item(key = "ai_history_recommendations") {
+                            AiRecommendationSection(
+                                title = "Based on Your Reading",
+                                subtitle = "Personalized AI picks",
+                                hasApiKey = uiState.hasGeminiKey,
+                                isLoading = uiState.isLoadingAiRecs,
+                                recommendations = uiState.aiRecommendations,
+                                error = uiState.aiRecsError,
+                                emptyMessage = if (!uiState.hasReadingHistory) "Read some novels first to get personalized picks" else null,
+                                onNavigateToSettings = onNavigateToSettings,
+                                onRefresh = { viewModel.loadAiRecommendations() },
+                                onNovelClick = { novelUrl, providerName ->
+                                    viewModel.onRecommendationClicked(novelUrl)
+                                    onNavigateToDetails(novelUrl, providerName)
+                                }
+                            )
+                        }
+
+                        // AI: Trending Now
+                        item(key = "ai_trending_recommendations") {
+                            AiRecommendationSection(
+                                title = "Trending AI Picks",
+                                subtitle = "What readers love right now",
+                                hasApiKey = uiState.hasGeminiKey,
+                                isLoading = uiState.isLoadingTrending,
+                                recommendations = uiState.aiTrendingRecommendations,
+                                error = uiState.trendingError,
+                                emptyMessage = null,
+                                onNavigateToSettings = onNavigateToSettings,
+                                onRefresh = { viewModel.loadAiTrendingRecommendations() },
+                                onNovelClick = { novelUrl, providerName ->
+                                    viewModel.onRecommendationClicked(novelUrl)
+                                    onNavigateToDetails(novelUrl, providerName)
                                 }
                             )
                         }
