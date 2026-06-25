@@ -40,11 +40,18 @@ import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.rounded.AutoStories
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.WorkspacePremium
+import androidx.compose.ui.draw.alpha
+import coil.compose.AsyncImage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -207,6 +214,13 @@ private fun ProfileContent(
             ProfileHeroSection(uiState)
         }
 
+        item(key = "quick_stats") {
+            QuickStatsSection(
+                uiState = uiState,
+                modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+            )
+        }
+
         item(key = "streak_today") {
             Row(
                 modifier = Modifier
@@ -231,11 +245,31 @@ private fun ProfileContent(
             }
         }
 
+        item(key = "weekly_chart") {
+            WeeklyBarChartSection(
+                weeklyActivity   = uiState.weeklyActivity,
+                weekMinutes      = uiState.weekMinutes,
+                weeklyGoalMinutes = uiState.weeklyGoalMinutes,
+                weekChapters     = uiState.weekChaptersRead,
+                modifier         = Modifier.padding(horizontal = dimensions.gridPadding)
+            )
+        }
+
         item(key = "heatmap") {
             ActivityHeatmapSection(
                 yearlyActivity = uiState.yearlyActivity,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
+        }
+
+        if (uiState.mostReadNovels.isNotEmpty()) {
+            item(key = "top_novels") {
+                TopNovelsSection(
+                    novels   = uiState.mostReadNovels,
+                    onNovelClick = onNovelClick,
+                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+                )
+            }
         }
 
         if (uiState.achievements.isNotEmpty()) {
@@ -498,6 +532,343 @@ private fun TodayCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
+            }
+        }
+    }
+}
+
+// ============================================================================
+// 2c. Quick Stats — 3-tile summary row (chapters / hours / days)
+// ============================================================================
+
+@Composable
+private fun QuickStatsSection(
+    uiState: ProfileUiState,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        QuickStatTile(
+            value = formatCompact(uiState.totalChaptersRead.toLong()),
+            label = "Chapters",
+            icon = Icons.Rounded.MenuBook,
+            color = ProfileColors.ChapterBlue,
+            modifier = Modifier.weight(1f)
+        )
+        QuickStatTile(
+            value = "${uiState.totalHours}h",
+            label = "Total time",
+            icon = Icons.Rounded.Schedule,
+            color = ProfileColors.TimeGreen,
+            modifier = Modifier.weight(1f)
+        )
+        QuickStatTile(
+            value = "${uiState.totalDaysRead}",
+            label = "Days read",
+            icon = Icons.Rounded.CalendarMonth,
+            color = ProfileColors.GoalPrimary,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun QuickStatTile(
+    value: String,
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        shape = AppShape.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(icon, null, Modifier.size(18.dp), tint = color)
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = color
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+private fun formatCompact(n: Long): String = when {
+    n >= 1_000_000 -> "${n / 1_000_000}M"
+    n >= 1_000     -> "${n / 1_000}K"
+    else           -> n.toString()
+}
+
+// ============================================================================
+// 2d. Weekly Bar Chart — 7-day reading bars + weekly goal
+// ============================================================================
+
+@Composable
+private fun WeeklyBarChartSection(
+    weeklyActivity: List<Long>,
+    weekMinutes: Long,
+    weeklyGoalMinutes: Int,
+    weekChapters: Int,
+    modifier: Modifier = Modifier
+) {
+    val today = remember { java.time.LocalDate.now() }
+    val dayLabels = remember(today) {
+        (0..6).map { i ->
+            val d = today.minusDays((6 - i).toLong())
+            when (d.dayOfWeek) {
+                java.time.DayOfWeek.MONDAY    -> "M"
+                java.time.DayOfWeek.TUESDAY   -> "T"
+                java.time.DayOfWeek.WEDNESDAY -> "W"
+                java.time.DayOfWeek.THURSDAY  -> "T"
+                java.time.DayOfWeek.FRIDAY    -> "F"
+                java.time.DayOfWeek.SATURDAY  -> "S"
+                java.time.DayOfWeek.SUNDAY    -> "S"
+                else -> "?"
+            }
+        }
+    }
+
+    val maxMinutes = remember(weeklyActivity) { weeklyActivity.maxOrNull()?.coerceAtLeast(1L) ?: 1L }
+    val weeklyGoalProgress = if (weeklyGoalMinutes > 0)
+        (weekMinutes.toFloat() / weeklyGoalMinutes).coerceIn(0f, 1f) else 0f
+    val animProg by animateFloatAsState(weeklyGoalProgress, spring(stiffness = Spring.StiffnessLow), label = "wgoal")
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val surfaceHigh  = MaterialTheme.colorScheme.surfaceContainerHighest
+    val onSurface    = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionHeader("This Week", Icons.Rounded.BarChart)
+            Text(
+                text = "$weekChapters chapters · ${formatMinutes(weekMinutes)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        }
+
+        Card(
+            shape = AppShape.extraLarge,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Bar chart
+                val maxBarHeight = 80.dp
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(maxBarHeight),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    weeklyActivity.forEachIndexed { index, minutes ->
+                        val isToday = index == 6
+                        val fraction = (minutes.toFloat() / maxMinutes).coerceIn(0f, 1f)
+                        val animFrac by animateFloatAsState(fraction, spring(stiffness = Spring.StiffnessLow), label = "bar_$index")
+                        val barHeight = (maxBarHeight * animFrac.coerceAtLeast(0.04f))
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(barHeight)
+                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                .background(
+                                    if (isToday) primaryColor
+                                    else if (minutes > 0) primaryColor.copy(alpha = 0.45f)
+                                    else surfaceHigh
+                                )
+                        )
+                    }
+                }
+
+                // Day labels
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    dayLabels.forEachIndexed { index, label ->
+                        val isToday = index == 6
+                        Text(
+                            text = label,
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isToday) primaryColor else onSurface.copy(alpha = 0.55f)
+                        )
+                    }
+                }
+
+                // Weekly goal bar
+                if (weeklyGoalMinutes > 0) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Weekly goal",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurface.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                text = "${formatMinutes(weekMinutes)} / ${formatMinutes(weeklyGoalMinutes.toLong())}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(6.dp)
+                                .clip(AppShape.extraSmall)
+                                .background(primaryColor.copy(alpha = 0.15f))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(animProg).height(6.dp)
+                                    .clip(AppShape.extraSmall)
+                                    .background(Brush.horizontalGradient(listOf(primaryColor, primaryColor.copy(alpha = 0.7f))))
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatMinutes(minutes: Long): String = when {
+    minutes <= 0   -> "0m"
+    minutes < 60   -> "${minutes}m"
+    else           -> "${minutes / 60}h ${minutes % 60}m"
+}
+
+// ============================================================================
+// 2e. Top Novels — most-read novels horizontal scroll
+// ============================================================================
+
+@Composable
+private fun TopNovelsSection(
+    novels: List<NovelReadingStats>,
+    onNovelClick: (NovelReadingStats) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader("Your Top Novels", Icons.Rounded.Star)
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 0.dp)
+        ) {
+            items(novels) { novel ->
+                TopNovelCard(
+                    novel = novel,
+                    onClick = { onNovelClick(novel) },
+                    modifier = Modifier.width(130.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopNovelCard(
+    novel: NovelReadingStats,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = AppShape.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Cover
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .clip(AppShape.medium)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!novel.coverUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = novel.coverUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().clip(AppShape.medium),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.MenuBook,
+                        null,
+                        Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                    )
+                }
+            }
+
+            // Title
+            Text(
+                text = novel.novelName,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            // Stats
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    Icon(Icons.Rounded.Schedule, null, Modifier.size(10.dp), tint = ProfileColors.TimeGreen)
+                    Text(
+                        text = formatMinutes(novel.readingTimeMinutes),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ProfileColors.TimeGreen,
+                        fontSize = 10.sp
+                    )
+                }
+                if (novel.chaptersRead > 0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.MenuBook, null, Modifier.size(10.dp), tint = ProfileColors.ChapterBlue)
+                        Text(
+                            text = "${novel.chaptersRead} ch",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ProfileColors.ChapterBlue,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
             }
         }
     }
@@ -845,5 +1216,8 @@ private fun getAchievementIcon(iconName: String): ImageVector = when (iconName) 
     "fire"      -> Icons.Rounded.LocalFireDepartment
     "menu_book" -> Icons.AutoMirrored.Rounded.MenuBook
     "trending"  -> Icons.AutoMirrored.Rounded.TrendingUp
+    "crown"     -> Icons.Rounded.WorkspacePremium
+    "trophy"    -> Icons.Rounded.EmojiEvents
+    "calendar"  -> Icons.Rounded.CalendarMonth
     else        -> Icons.Rounded.AutoStories
 }

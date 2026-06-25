@@ -24,7 +24,7 @@ data class ProfileUiState(
     val monthChaptersRead: Int = 0,
     val totalChaptersRead: Int = 0,
 
-    // Weekly activity (7 days, minutes per day)
+    // Weekly activity (7 days, minutes per day; index 0 = 6 days ago, index 6 = today)
     val weeklyActivity: List<Long> = List(7) { 0L },
 
     // Most read novels
@@ -44,7 +44,11 @@ data class ProfileUiState(
     val readerLevelName: String = "Novice",
     val readerLevel: Int = 1,
     val levelProgress: Float = 0f,
-    val hoursToNextLevel: Int = 0
+    val hoursToNextLevel: Int = 0,
+
+    // Library counts for achievements
+    val libraryNovelsCount: Int = 0,
+    val completedNovelsCount: Int = 0
 ) {
     // Computed properties
     val todayMinutes: Long get() = todayReadingTime / 60
@@ -70,13 +74,16 @@ data class ProfileUiState(
 
     val chaptersPerDay: Float
         get() = if (totalDaysRead > 0) totalChaptersRead.toFloat() / totalDaysRead else 0f
+
+    val totalReadingDays: Float
+        get() = totalReadingTime / 86400f
 }
 
 data class NovelReadingStats(
     val novelUrl: String,
     val novelName: String,
     val coverUrl: String? = null,
-    val sourceName: String = "",  // Added for navigation
+    val sourceName: String = "",
     val readingTimeMinutes: Long,
     val chaptersRead: Int
 )
@@ -100,6 +107,7 @@ sealed interface ProfileEvent {
 
 // Predefined achievements
 object Achievements {
+    // ── Tier 1: First milestones ─────────────────────────────────────────────
     val FIRST_CHAPTER = Achievement(
         id = "first_chapter",
         title = "First Steps",
@@ -116,6 +124,15 @@ object Achievements {
         isUnlocked = false
     )
 
+    val HUNDRED_CHAPTERS = Achievement(
+        id = "hundred_chapters",
+        title = "Century",
+        description = "Read 100 chapters",
+        iconName = "menu_book",
+        isUnlocked = false
+    )
+
+    // ── Tier 2: Streak mastery ────────────────────────────────────────────────
     val STREAK_7 = Achievement(
         id = "streak_7",
         title = "Week Warrior",
@@ -132,11 +149,95 @@ object Achievements {
         isUnlocked = false
     )
 
-    val HUNDRED_CHAPTERS = Achievement(
-        id = "hundred_chapters",
-        title = "Century",
-        description = "Read 100 chapters",
+    val STREAK_100 = Achievement(
+        id = "streak_100",
+        title = "Centurion Streak",
+        description = "Maintain a 100-day streak",
+        iconName = "fire",
+        isUnlocked = false
+    )
+
+    // ── Tier 3: Volume readers ────────────────────────────────────────────────
+    val SPEED_READER = Achievement(
+        id = "speed_reader",
+        title = "Speed Reader",
+        description = "Read 500 chapters",
+        iconName = "trending",
+        isUnlocked = false
+    )
+
+    val THOUSAND_CHAPTERS = Achievement(
+        id = "thousand_chapters",
+        title = "Unstoppable",
+        description = "Read 1,000 chapters",
         iconName = "menu_book",
+        isUnlocked = false
+    )
+
+    val FIVE_K_CHAPTERS = Achievement(
+        id = "five_k_chapters",
+        title = "Chapter God",
+        description = "Read 5,000 chapters",
+        iconName = "crown",
+        isUnlocked = false
+    )
+
+    // ── Tier 4: Time invested ─────────────────────────────────────────────────
+    val BIBLIOPHILE = Achievement(
+        id = "bibliophile",
+        title = "Bibliophile",
+        description = "Read for 50 hours total",
+        iconName = "schedule",
+        isUnlocked = false
+    )
+
+    val MASTER_READER = Achievement(
+        id = "master_reader",
+        title = "Master Reader",
+        description = "Read for 200 hours total",
+        iconName = "schedule",
+        isUnlocked = false
+    )
+
+    val LEGENDARY_TIME = Achievement(
+        id = "legendary_time",
+        title = "Legend",
+        description = "Read for 500 hours total",
+        iconName = "crown",
+        isUnlocked = false
+    )
+
+    // ── Tier 5: Consistency ────────────────────────────────────────────────────
+    val DEVOTED = Achievement(
+        id = "devoted",
+        title = "Devoted",
+        description = "Read on 100 different days",
+        iconName = "calendar",
+        isUnlocked = false
+    )
+
+    // ── Tier 6: Library & completion ──────────────────────────────────────────
+    val COLLECTOR = Achievement(
+        id = "collector",
+        title = "Collector",
+        description = "Add 10 novels to your library",
+        iconName = "book",
+        isUnlocked = false
+    )
+
+    val COMPLETIONIST = Achievement(
+        id = "completionist",
+        title = "Completionist",
+        description = "Complete 5 novels",
+        iconName = "trophy",
+        isUnlocked = false
+    )
+
+    val GRAND_LIBRARY = Achievement(
+        id = "grand_library",
+        title = "Grand Library",
+        description = "Add 50 novels to your library",
+        iconName = "book",
         isUnlocked = false
     )
 }

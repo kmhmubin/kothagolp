@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp.ui.screens.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
+import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -147,8 +148,13 @@ class ProfileViewModel : ViewModel() {
                 val dailyGoal = preferencesManager.getDailyReadingGoal()
                 val weeklyGoal = preferencesManager.getWeeklyReadingGoal()
 
+                // Load library counts for achievements
+                val library = libraryRepository.getLibrary()
+                val libraryCount = library.size
+                val completedCount = library.count { it.readingStatus == ReadingStatus.COMPLETED }
+
                 // Calculate achievements
-                val achievements = calculateAchievements()
+                val achievements = calculateAchievements(libraryCount, completedCount)
 
                 // Calculate total chapters
                 val totalChapters = calculateTotalChapters()
@@ -181,7 +187,9 @@ class ProfileViewModel : ViewModel() {
                         dailyGoalMinutes = dailyGoal,
                         weeklyGoalMinutes = weeklyGoal,
 
-                        achievements = achievements
+                        achievements = achievements,
+                        libraryNovelsCount = libraryCount,
+                        completedNovelsCount = completedCount
                     )
                 }
 
@@ -295,22 +303,32 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
-    private suspend fun calculateAchievements(): List<Achievement> {
+    private suspend fun calculateAchievements(
+        libraryCount: Int = 0,
+        completedCount: Int = 0
+    ): List<Achievement> {
         val totalChapters = calculateTotalChapters()
         val allTimeStats = statsRepository.getAllTimeStats()
         val totalHours = (allTimeStats?.totalTime ?: 0) / 3600
         val streak = statsRepository.getStreak()
         val longestStreak = streak?.longestStreak ?: 0
+        val totalDays = streak?.totalDaysRead ?: 0
 
         return listOf(
+            // Tier 1 — first milestones
             Achievements.FIRST_CHAPTER.copy(
                 isUnlocked = totalChapters >= 1,
                 progress = if (totalChapters >= 1) 1f else 0f
+            ),
+            Achievements.HUNDRED_CHAPTERS.copy(
+                isUnlocked = totalChapters >= 100,
+                progress = (totalChapters.toFloat() / 100).coerceIn(0f, 1f)
             ),
             Achievements.BOOKWORM.copy(
                 isUnlocked = totalHours >= 10,
                 progress = (totalHours.toFloat() / 10).coerceIn(0f, 1f)
             ),
+            // Tier 2 — streak mastery
             Achievements.STREAK_7.copy(
                 isUnlocked = longestStreak >= 7,
                 progress = (longestStreak.toFloat() / 7).coerceIn(0f, 1f)
@@ -319,10 +337,54 @@ class ProfileViewModel : ViewModel() {
                 isUnlocked = longestStreak >= 30,
                 progress = (longestStreak.toFloat() / 30).coerceIn(0f, 1f)
             ),
-            Achievements.HUNDRED_CHAPTERS.copy(
-                isUnlocked = totalChapters >= 100,
-                progress = (totalChapters.toFloat() / 100).coerceIn(0f, 1f)
-            )
+            Achievements.STREAK_100.copy(
+                isUnlocked = longestStreak >= 100,
+                progress = (longestStreak.toFloat() / 100).coerceIn(0f, 1f)
+            ),
+            // Tier 3 — volume readers
+            Achievements.SPEED_READER.copy(
+                isUnlocked = totalChapters >= 500,
+                progress = (totalChapters.toFloat() / 500).coerceIn(0f, 1f)
+            ),
+            Achievements.THOUSAND_CHAPTERS.copy(
+                isUnlocked = totalChapters >= 1000,
+                progress = (totalChapters.toFloat() / 1000).coerceIn(0f, 1f)
+            ),
+            Achievements.FIVE_K_CHAPTERS.copy(
+                isUnlocked = totalChapters >= 5000,
+                progress = (totalChapters.toFloat() / 5000).coerceIn(0f, 1f)
+            ),
+            // Tier 4 — time invested
+            Achievements.BIBLIOPHILE.copy(
+                isUnlocked = totalHours >= 50,
+                progress = (totalHours.toFloat() / 50).coerceIn(0f, 1f)
+            ),
+            Achievements.MASTER_READER.copy(
+                isUnlocked = totalHours >= 200,
+                progress = (totalHours.toFloat() / 200).coerceIn(0f, 1f)
+            ),
+            Achievements.LEGENDARY_TIME.copy(
+                isUnlocked = totalHours >= 500,
+                progress = (totalHours.toFloat() / 500).coerceIn(0f, 1f)
+            ),
+            // Tier 5 — consistency
+            Achievements.DEVOTED.copy(
+                isUnlocked = totalDays >= 100,
+                progress = (totalDays.toFloat() / 100).coerceIn(0f, 1f)
+            ),
+            // Tier 6 — library & completion
+            Achievements.COLLECTOR.copy(
+                isUnlocked = libraryCount >= 10,
+                progress = (libraryCount.toFloat() / 10).coerceIn(0f, 1f)
+            ),
+            Achievements.COMPLETIONIST.copy(
+                isUnlocked = completedCount >= 5,
+                progress = (completedCount.toFloat() / 5).coerceIn(0f, 1f)
+            ),
+            Achievements.GRAND_LIBRARY.copy(
+                isUnlocked = libraryCount >= 50,
+                progress = (libraryCount.toFloat() / 50).coerceIn(0f, 1f)
+            ),
         )
     }
 
