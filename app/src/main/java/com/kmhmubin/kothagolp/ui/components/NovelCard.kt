@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -354,7 +355,13 @@ private fun CompactNovelCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val badgeMode = when {
+                maxWidth < 80.dp -> BadgeDisplayMode.MINIMAL
+                maxWidth < 110.dp -> BadgeDisplayMode.COMPACT
+                else -> BadgeDisplayMode.FULL
+            }
+
             NovelCoverImage(
                 url = novel.posterUrl,
                 title = novel.name,
@@ -363,15 +370,30 @@ private fun CompactNovelCard(
 
             CinematicOverlay(modifier = Modifier.fillMaxSize())
 
-            BadgeRow(
-                readingStatus = readingStatus,
-                newChapterCount = newChapterCount,
-                isInLibrary = isInLibrary,
-                compactMode = isCompact,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(NovelCardTokens.Padding.Badge)
-            )
+            when (badgeMode) {
+                BadgeDisplayMode.MINIMAL -> MinimalBadgeOverlay(
+                    readingStatus = readingStatus,
+                    newChapterCount = newChapterCount
+                )
+                BadgeDisplayMode.COMPACT -> BadgeRow(
+                    readingStatus = readingStatus,
+                    newChapterCount = newChapterCount,
+                    isInLibrary = isInLibrary,
+                    compactMode = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(NovelCardTokens.Padding.Badge)
+                )
+                BadgeDisplayMode.FULL -> BadgeRow(
+                    readingStatus = readingStatus,
+                    newChapterCount = newChapterCount,
+                    isInLibrary = isInLibrary,
+                    compactMode = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(NovelCardTokens.Padding.Badge)
+                )
+            }
 
             Column(
                 modifier = Modifier
@@ -560,6 +582,64 @@ private fun CinematicOverlay(modifier: Modifier = Modifier) {
 // ══════════════════════════════════════════════════════════════════════════════
 // Badges
 // ══════════════════════════════════════════════════════════════════════════════
+
+private enum class BadgeDisplayMode { FULL, COMPACT, MINIMAL }
+
+@Composable
+private fun MinimalBadgeOverlay(
+    readingStatus: ReadingStatus?,
+    newChapterCount: Int,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+        if (readingStatus != null) {
+            val statusColor = when (readingStatus) {
+                ReadingStatus.READING -> StatusReading
+                ReadingStatus.SPICY -> StatusSpicy
+                ReadingStatus.COMPLETED -> StatusCompleted
+                ReadingStatus.ON_HOLD -> StatusOnHold
+                ReadingStatus.PLAN_TO_READ -> StatusPlanToRead
+                ReadingStatus.DROPPED -> StatusDROPPED
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(4.dp)
+                    .size(10.dp)
+                    .drawWithCache {
+                        val r = size.minDimension / 2
+                        onDrawBehind {
+                            drawCircle(color = statusColor.copy(alpha = 0.25f), radius = r * 2f)
+                            drawCircle(color = statusColor.copy(alpha = 0.5f), radius = r * 1.4f)
+                            drawCircle(color = statusColor, radius = r)
+                        }
+                    }
+            )
+        }
+
+        if (newChapterCount > 0) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                shadowElevation = 0.dp
+            ) {
+                Text(
+                    text = if (newChapterCount > 99) "99" else "$newChapterCount",
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = 8.sp,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun BadgeRow(
