@@ -49,6 +49,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,6 +57,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -268,7 +270,8 @@ fun BrowseTab(
                 onNavigateToDetails(duplicate.novel.url, duplicate.novel.apiName)
             },
             onAddAnyway = { viewModel.addDuplicateAnyway() },
-            onDismiss = { viewModel.dismissDuplicateWarning() }
+            onDismiss = { viewModel.dismissDuplicateWarning() },
+            onMigrate = { from -> viewModel.migrateToSource(warning.target, from) }
         )
     }
 
@@ -1675,8 +1678,9 @@ private fun ProviderGrid(
     appSettings: AppSettings
 ) {
     val sortedProviders = remember(providers) { providers.sortedBy { it.name.lowercase() } }
-    val gridCells = gridCellsFor(appSettings.browseGridColumns, minSize = 150.dp)
+    val gridCells = gridCellsFor(appSettings.sourceListGridColumns, minSize = 150.dp)
     val cookieStateVersion by CloudflareManager.cookieStateChanged.collectAsStateWithLifecycle()
+    val isList = appSettings.sourceListDisplayMode == com.kmhmubin.kothagolp.domain.model.DisplayMode.LIST
 
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -1685,6 +1689,37 @@ private fun ProviderGrid(
     var animationStarted by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         animationStarted = true
+    }
+
+    @Composable
+    fun Header() {
+        BrowseHeader(
+            providerCount = providers.size,
+            favoriteCount = favoriteProviders.size
+        )
+    }
+
+    @Composable
+    fun SectionLabel() {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Source,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "All Sources",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 
     PullToRefreshBox(
@@ -1700,90 +1735,109 @@ private fun ProviderGrid(
         state = pullToRefreshState,
         modifier = Modifier.fillMaxSize()
     ) {
-        LazyVerticalGrid(
-            columns = gridCells,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                bottom = 100.dp
-            ),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                BrowseHeader(
-                    providerCount = providers.size,
-                    favoriteCount = favoriteProviders.size
-                )
-            }
-
-            if (onNavigateToMigration != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    MigrationBannerCard(onClick = onNavigateToMigration)
+        if (isList) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = 100.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item { Header() }
+                if (onNavigateToMigration != null) {
+                    item { MigrationBannerCard(onClick = onNavigateToMigration) }
                 }
-            }
+                item { SectionLabel() }
 
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Source,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                itemsIndexed(
+                    items = sortedProviders,
+                    key = { index, provider -> "${index}_${provider.name}" },
+                    contentType = { _, _ -> "provider" }
+                ) { index, provider ->
+                    val animatedAlpha by animateFloatAsState(
+                        targetValue = if (animationStarted) 1f else 0f,
+                        animationSpec = tween(
+                            durationMillis = 300,
+                            delayMillis = index * 30,
+                            easing = EaseOutCubic
+                        ),
+                        label = "card_alpha"
                     )
-                    Text(
-                        text = "All Sources",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                    ProviderListItem(
+                        provider = provider,
+                        isFavorite = provider.name in favoriteProviders,
+                        cookieStatus = remember(cookieStateVersion, provider.mainUrl) {
+                            CloudflareManager.getCookieStatus(provider.mainUrl)
+                        },
+                        onClick = { onProviderClick(provider.name) },
+                        onFavoriteClick = { onToggleFavorite(provider.name) },
+                        modifier = Modifier.graphicsLayer { alpha = animatedAlpha }
                     )
                 }
             }
+        } else {
+            LazyVerticalGrid(
+                columns = gridCells,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = 100.dp
+                ),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }) { Header() }
 
-            itemsIndexed(
-                items = sortedProviders,
-                key = { index, provider -> "${index}_${provider.name}" },
-                contentType = { _, _ -> "provider" }
-            ) { index, provider ->
-                val animatedAlpha by animateFloatAsState(
-                    targetValue = if (animationStarted) 1f else 0f,
-                    animationSpec = tween(
-                        durationMillis = 400,
-                        delayMillis = index * 40,
-                        easing = EaseOutCubic
-                    ),
-                    label = "card_alpha"
-                )
-
-                val animatedOffset by animateFloatAsState(
-                    targetValue = if (animationStarted) 0f else 24f,
-                    animationSpec = tween(
-                        durationMillis = 400,
-                        delayMillis = index * 40,
-                        easing = EaseOutCubic
-                    ),
-                    label = "card_offset"
-                )
-
-                ProviderCard(
-                    provider = provider,
-                    isFavorite = provider.name in favoriteProviders,
-                    cookieStatus = remember(cookieStateVersion, provider.mainUrl) {
-                        CloudflareManager.getCookieStatus(provider.mainUrl)
-                    },
-                    onClick = { onProviderClick(provider.name) },
-                    onFavoriteClick = { onToggleFavorite(provider.name) },
-                    modifier = Modifier.graphicsLayer {
-                        alpha = animatedAlpha
-                        translationY = animatedOffset
+                if (onNavigateToMigration != null) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        MigrationBannerCard(onClick = onNavigateToMigration)
                     }
-                )
+                }
+
+                item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel() }
+
+                itemsIndexed(
+                    items = sortedProviders,
+                    key = { index, provider -> "${index}_${provider.name}" },
+                    contentType = { _, _ -> "provider" }
+                ) { index, provider ->
+                    val animatedAlpha by animateFloatAsState(
+                        targetValue = if (animationStarted) 1f else 0f,
+                        animationSpec = tween(
+                            durationMillis = 400,
+                            delayMillis = index * 40,
+                            easing = EaseOutCubic
+                        ),
+                        label = "card_alpha"
+                    )
+
+                    val animatedOffset by animateFloatAsState(
+                        targetValue = if (animationStarted) 0f else 24f,
+                        animationSpec = tween(
+                            durationMillis = 400,
+                            delayMillis = index * 40,
+                            easing = EaseOutCubic
+                        ),
+                        label = "card_offset"
+                    )
+
+                    ProviderCard(
+                        provider = provider,
+                        isFavorite = provider.name in favoriteProviders,
+                        cookieStatus = remember(cookieStateVersion, provider.mainUrl) {
+                            CloudflareManager.getCookieStatus(provider.mainUrl)
+                        },
+                        onClick = { onProviderClick(provider.name) },
+                        onFavoriteClick = { onToggleFavorite(provider.name) },
+                        modifier = Modifier.graphicsLayer {
+                            alpha = animatedAlpha
+                            translationY = animatedOffset
+                        }
+                    )
+                }
             }
         }
     }
@@ -1893,6 +1947,93 @@ private fun StatBadge(
                 style = MaterialTheme.typography.labelSmall,
                 color = textColor.copy(alpha = 0.8f)
             )
+        }
+    }
+}
+
+@Composable
+private fun ProviderListItem(
+    provider: MainProvider,
+    isFavorite: Boolean,
+    cookieStatus: CloudflareManager.CookieStatus,
+    onClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val (primaryColor, _) = remember(provider.name) { ProviderColors.getColors(provider.name) }
+    val haptic = LocalHapticFeedback.current
+
+    Card(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+        },
+        modifier = modifier.fillMaxWidth(),
+        shape = AppShape.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = primaryColor.copy(alpha = 0.15f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = provider.name.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = primaryColor
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = provider.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = provider.mainUrl,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            if (cookieStatus == CloudflareManager.CookieStatus.VALID) {
+                Icon(
+                    imageVector = Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                )
+            }
+
+            IconButton(onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onFavoriteClick()
+            }) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                    modifier = Modifier.size(20.dp),
+                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

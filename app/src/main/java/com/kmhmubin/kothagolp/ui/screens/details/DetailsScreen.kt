@@ -139,7 +139,8 @@ fun DetailsScreen(
                 onNovelClick(duplicate.novel.url, duplicate.novel.apiName)
             },
             onAddAnyway = { viewModel.addDuplicateAnyway() },
-            onDismiss = { viewModel.dismissDuplicateWarning() }
+            onDismiss = { viewModel.dismissDuplicateWarning() },
+            onMigrate = { from -> viewModel.migrateToSource(from) }
         )
     }
 

@@ -849,7 +849,7 @@ fun ChapterNavButton(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = if (isPrimary) Arrangement.End else Arrangement.Start
+            horizontalArrangement = Arrangement.Center
         ) {
             if (!isPrimary) {
                 Icon(

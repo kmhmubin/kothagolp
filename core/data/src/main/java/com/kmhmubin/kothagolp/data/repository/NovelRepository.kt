@@ -172,7 +172,9 @@ class NovelRepository(
                 async {
                     val result = try {
                         Result.success(provider.search(query))
-                    } catch (e: Exception) {
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (e: Throwable) {
                         Result.failure<List<Novel>>(e)
                     }
                     provider.name to result

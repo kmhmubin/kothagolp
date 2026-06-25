@@ -407,6 +407,7 @@ class PreferencesManager(context: Context) {
             libraryGridColumns = GridColumns.fromInt(prefs.getInt(KEY_LIBRARY_GRID_COLUMNS, 0)),
             browseGridColumns = GridColumns.fromInt(prefs.getInt(KEY_BROWSE_GRID_COLUMNS, 0)),
             searchGridColumns = GridColumns.fromInt(prefs.getInt(KEY_SEARCH_GRID_COLUMNS, 0)),
+            sourceListGridColumns = GridColumns.fromInt(prefs.getInt(KEY_SOURCE_LIST_GRID_COLUMNS, 0)),
             searchResultsPerProvider = prefs.getInt(KEY_SEARCH_RESULTS_PER_PROVIDER, 6),
             showBadges = prefs.getBoolean(KEY_SHOW_BADGES, true),
             defaultLibrarySort = LibrarySortOrder.valueOf(
@@ -419,6 +420,10 @@ class PreferencesManager(context: Context) {
             ),
             browseDisplayMode = DisplayMode.valueOf(
                 prefs.getString(KEY_BROWSE_DISPLAY_MODE, DisplayMode.GRID.name)
+                    ?: DisplayMode.GRID.name
+            ),
+            sourceListDisplayMode = DisplayMode.valueOf(
+                prefs.getString(KEY_SOURCE_LIST_DISPLAY_MODE, DisplayMode.GRID.name)
                     ?: DisplayMode.GRID.name
             ),
             searchDisplayMode = DisplayMode.valueOf(
@@ -503,6 +508,7 @@ class PreferencesManager(context: Context) {
             putInt(KEY_LIBRARY_GRID_COLUMNS, GridColumns.toInt(sanitizedSettings.libraryGridColumns))
             putInt(KEY_BROWSE_GRID_COLUMNS, GridColumns.toInt(sanitizedSettings.browseGridColumns))
             putInt(KEY_SEARCH_GRID_COLUMNS, GridColumns.toInt(sanitizedSettings.searchGridColumns))
+            putInt(KEY_SOURCE_LIST_GRID_COLUMNS, GridColumns.toInt(sanitizedSettings.sourceListGridColumns))
             putInt(KEY_SEARCH_RESULTS_PER_PROVIDER, sanitizedSettings.searchResultsPerProvider)
             putBoolean(KEY_SHOW_BADGES, sanitizedSettings.showBadges)
             putString(KEY_DEFAULT_LIBRARY_SORT, sanitizedSettings.defaultLibrarySort.name)
@@ -529,6 +535,7 @@ class PreferencesManager(context: Context) {
             putString(KEY_LIBRARY_DISPLAY_MODE, sanitizedSettings.libraryDisplayMode.name)
             putString(KEY_BROWSE_DISPLAY_MODE, sanitizedSettings.browseDisplayMode.name)
             putString(KEY_SEARCH_DISPLAY_MODE, sanitizedSettings.searchDisplayMode.name)
+            putString(KEY_SOURCE_LIST_DISPLAY_MODE, sanitizedSettings.sourceListDisplayMode.name)
             putString(KEY_QUICK_SAVE_STATUS, sanitizedSettings.quickSaveStatus.name)
             putString(KEY_CHAPTER_UPDATE_INTERVAL, sanitizedSettings.chapterUpdateInterval.name)
             putBoolean(KEY_CHAPTER_UPDATE_WIFI_ONLY, sanitizedSettings.chapterUpdateOnWifiOnly)
@@ -580,6 +587,14 @@ class PreferencesManager(context: Context) {
 
     fun updateSearchGridColumns(columns: GridColumns) {
         updateAppSettings(_appSettings.value.copy(searchGridColumns = columns))
+    }
+
+    fun updateSourceListDisplayMode(mode: DisplayMode) {
+        updateAppSettings(_appSettings.value.copy(sourceListDisplayMode = mode))
+    }
+
+    fun updateSourceListGridColumns(columns: GridColumns) {
+        updateAppSettings(_appSettings.value.copy(sourceListGridColumns = columns))
     }
 
     fun updateAutoDownloadEnabled(enabled: Boolean) {
@@ -1903,6 +1918,8 @@ class PreferencesManager(context: Context) {
         private const val KEY_LIBRARY_DISPLAY_MODE = "library_display_mode"
         private const val KEY_BROWSE_DISPLAY_MODE = "browse_display_mode"
         private const val KEY_SEARCH_DISPLAY_MODE = "search_display_mode"
+        private const val KEY_SOURCE_LIST_DISPLAY_MODE = "source_list_display_mode"
+        private const val KEY_SOURCE_LIST_GRID_COLUMNS = "source_list_grid_columns"
 
         // Appearance
         private const val KEY_READER_THEME = "reader_theme"

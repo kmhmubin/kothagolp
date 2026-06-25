@@ -212,7 +212,8 @@ fun ProviderBrowseScreen(
                 onNavigateToDetails(duplicate.novel.url, duplicate.novel.apiName)
             },
             onAddAnyway = { viewModel.addDuplicateAnyway() },
-            onDismiss = { viewModel.dismissDuplicateWarning() }
+            onDismiss = { viewModel.dismissDuplicateWarning() },
+            onMigrate = { from -> viewModel.migrateToSource(warning.target, from) }
         )
     }
 

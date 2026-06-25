@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp.ui.screens.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.kmhmubin.kothagolp.data.repository.LibraryItem
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
@@ -101,7 +102,9 @@ class GlobalSearchViewModel(
                         )
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Throwable) {
                 _uiState.update { it.copy(isSearching = false) }
             }
 
@@ -171,6 +174,13 @@ class GlobalSearchViewModel(
 
     fun addDuplicateAnyway() {
         viewModelScope.launch { actionSheetManager.addDuplicateAnyway() }
+    }
+
+    fun migrateToSource(target: Novel, from: LibraryItem) {
+        viewModelScope.launch {
+            actionSheetManager.migrateToSource(target, from)
+            actionSheetManager.dismissDuplicateWarning()
+        }
     }
 
     fun dismissDuplicateWarning() {

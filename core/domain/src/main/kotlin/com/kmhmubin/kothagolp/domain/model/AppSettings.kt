@@ -246,12 +246,14 @@ data class AppSettings(
     val libraryGridColumns: GridColumns = GridColumns.Auto,
     val browseGridColumns: GridColumns = GridColumns.Auto,
     val searchGridColumns: GridColumns = GridColumns.Auto,
+    val sourceListGridColumns: GridColumns = GridColumns.Auto,
     val showBadges: Boolean = true,
 
     // Display mode settings
     val libraryDisplayMode: DisplayMode = DisplayMode.GRID,
     val browseDisplayMode: DisplayMode = DisplayMode.GRID,
     val searchDisplayMode: DisplayMode = DisplayMode.GRID,
+    val sourceListDisplayMode: DisplayMode = DisplayMode.GRID,
 
     // Rating display
     val ratingFormat: RatingFormat = RatingFormat.TEN_POINT,

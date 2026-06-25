@@ -7,6 +7,7 @@ import android.content.ServiceConnection
 import android.graphics.Bitmap
 import android.os.IBinder
 import com.kmhmubin.kothagolp.domain.model.Chapter
+import com.kmhmubin.kothagolp.tts.TTSManager
 import com.kmhmubin.kothagolp.tts.VoiceManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -104,8 +105,8 @@ object TTSServiceManager {
             service?.setUseSystemVoice(_useSystemVoice)
 
             // Apply cached playback settings (speech rate / pitch / auto-advance)
-            service?.setSpeechRate(_cachedSpeechRate)
-            service?.setPitch(_cachedPitch)
+            service?.setSpeechRate(TTSManager.getRate())
+            service?.setPitch(TTSManager.getPitch())
             service?.setAutoAdvanceEnabled(_cachedAutoAdvance)
 
             scope.launch {
@@ -299,6 +300,7 @@ object TTSServiceManager {
 
     fun setSpeechRate(rate: Float) {
         _cachedSpeechRate = rate
+        TTSManager.setRate(rate)
         service?.setSpeechRate(rate)
     }
 
@@ -306,6 +308,7 @@ object TTSServiceManager {
 
     fun setPitch(pitch: Float) {
         _cachedPitch = pitch
+        TTSManager.setPitch(pitch)
         service?.setPitch(pitch)
     }
 

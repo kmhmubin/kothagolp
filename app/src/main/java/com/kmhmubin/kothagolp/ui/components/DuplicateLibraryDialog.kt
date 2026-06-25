@@ -39,7 +39,8 @@ fun DuplicateLibraryDialog(
     duplicates: List<LibraryItem>,
     onViewExisting: (LibraryItem) -> Unit,
     onAddAnyway: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onMigrate: ((LibraryItem) -> Unit)? = null
 ) {
     val primaryDuplicate = duplicates.firstOrNull()
 
@@ -98,6 +99,15 @@ fun DuplicateLibraryDialog(
                     duplicate = duplicate,
                     onClick = { onViewExisting(duplicate) }
                 )
+            }
+
+            if (onMigrate != null && primaryDuplicate != null) {
+                Button(
+                    onClick = { onMigrate(primaryDuplicate) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Migrate to this source")
+                }
             }
 
             Button(

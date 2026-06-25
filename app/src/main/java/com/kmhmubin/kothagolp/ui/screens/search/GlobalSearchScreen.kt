@@ -132,7 +132,11 @@ fun GlobalSearchScreen(
                 onNavigateToDetails(duplicate.novel.url, duplicate.novel.apiName)
             },
             onAddAnyway = { viewModel.addDuplicateAnyway() },
-            onDismiss = { viewModel.dismissDuplicateWarning() }
+            onDismiss = { viewModel.dismissDuplicateWarning() },
+            onMigrate = { from ->
+                viewModel.migrateToSource(warning.target, from)
+                viewModel.dismissDuplicateWarning()
+            }
         )
     }
 
@@ -417,7 +421,7 @@ private fun ProviderResultsSection(
     onNovelLongClick: (Novel) -> Unit
 ) {
     val dimensions = KothagolpTheme.dimensions
-    val displayNovels = novels.take(maxResults)
+    val displayNovels = novels.distinctBy { it.url }.take(maxResults)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         // Provider header
@@ -446,7 +450,7 @@ private fun ProviderResultsSection(
             contentPadding = PaddingValues(horizontal = dimensions.gridPadding),
             horizontalArrangement = Arrangement.spacedBy(dimensions.cardSpacing)
         ) {
-            items(displayNovels, key = { it.url }) { novel ->
+            items(displayNovels, key = { "${it.apiName}_${it.url}" }) { novel ->
                 NovelCard(
                     novel = novel,
                     onClick = { onNovelClick(novel) },

@@ -247,6 +247,12 @@ class ActionSheetManager {
         _state.update { it.copy(duplicateWarning = null) }
     }
 
+    suspend fun migrateToSource(target: Novel, from: LibraryItem) {
+        val existingEntry = libraryRepository.getLibraryItem(from.novel.url) ?: return
+        libraryRepository.removeFromLibrary(from.novel.url)
+        libraryRepository.addToLibrary(target, existingEntry.readingStatus)
+    }
+
     suspend fun addDuplicateAnyway(): Boolean {
         val target = _state.value.duplicateWarning?.target ?: return false
         return addToLibrary(target, allowDuplicate = true)

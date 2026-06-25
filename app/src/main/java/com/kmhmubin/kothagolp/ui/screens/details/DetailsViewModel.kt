@@ -8,6 +8,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kmhmubin.kothagolp.data.repository.LibraryItem
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.Novel
@@ -345,6 +346,21 @@ class DetailsViewModel : ViewModel() {
 
                 addToLibraryWithDetails(novel, details)
             }
+        }
+    }
+
+    fun migrateToSource(from: LibraryItem) {
+        val details = _uiState.value.novelDetails ?: return
+        val provider = currentProvider ?: return
+        val target = createNovel(details, provider)
+
+        viewModelScope.launch {
+            val existingEntry = libraryRepository.getLibraryItem(from.novel.url)
+            val migratedStatus = existingEntry?.readingStatus ?: _uiState.value.readingStatus
+            libraryRepository.removeFromLibrary(from.novel.url)
+            offlineRepository.deleteNovelDownloads(from.novel.url)
+            libraryRepository.addToLibraryWithDetails(target, details, migratedStatus)
+            _uiState.update { it.copy(isFavorite = true, duplicateWarning = null) }
         }
     }
 

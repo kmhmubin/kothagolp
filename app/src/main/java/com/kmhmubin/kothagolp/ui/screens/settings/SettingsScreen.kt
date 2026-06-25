@@ -392,8 +392,11 @@ fun SettingsAppearanceScreen(onBack: () -> Unit) {
                     DisplayModeRow("Library", settings.libraryDisplayMode) {
                         preferencesManager.updateLibraryDisplayMode(it)
                     }
-                    DisplayModeRow("Browse", settings.browseDisplayMode) {
+                    DisplayModeRow("Browse (Books)", settings.browseDisplayMode) {
                         preferencesManager.updateBrowseDisplayMode(it)
+                    }
+                    DisplayModeRow("Sources List", settings.sourceListDisplayMode) {
+                        preferencesManager.updateSourceListDisplayMode(it)
                     }
                     DisplayModeRow("Search", settings.searchDisplayMode) {
                         preferencesManager.updateSearchDisplayMode(it)
@@ -404,8 +407,11 @@ fun SettingsAppearanceScreen(onBack: () -> Unit) {
                     GridColumnsRow("Library", settings.libraryGridColumns) {
                         preferencesManager.updateLibraryGridColumns(it)
                     }
-                    GridColumnsRow("Browse", settings.browseGridColumns) {
+                    GridColumnsRow("Browse (Books)", settings.browseGridColumns) {
                         preferencesManager.updateBrowseGridColumns(it)
+                    }
+                    GridColumnsRow("Sources List", settings.sourceListGridColumns) {
+                        preferencesManager.updateSourceListGridColumns(it)
                     }
                     GridColumnsRow("Search", settings.searchGridColumns) {
                         preferencesManager.updateSearchGridColumns(it)

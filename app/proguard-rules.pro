@@ -110,6 +110,11 @@
 -dontwarn com.google.auth.**
 -dontwarn com.google.common.**
 -dontwarn javax.annotation.**
+# Apache HTTP Client (pulled in by google-api-services-drive) references
+# JNDI and Kerberos classes that don't exist on Android Runtime
+-dontwarn javax.naming.**
+-dontwarn org.ietf.jgss.**
+-dontwarn org.apache.http.**
 
 # ──────────────────────────────────────────────────────────────────────────────
 # DEBUGGING — preserve stack traces in crash logs

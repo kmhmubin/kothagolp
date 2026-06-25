@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.browse
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
+import com.kmhmubin.kothagolp.data.repository.LibraryItem
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.provider.MainProvider
@@ -337,6 +338,13 @@ class BrowseViewModel : ViewModel() {
 
     fun dismissDuplicateWarning() {
         actionSheetManager.dismissDuplicateWarning()
+    }
+
+    fun migrateToSource(target: Novel, from: LibraryItem) {
+        viewModelScope.launch {
+            actionSheetManager.migrateToSource(target, from)
+            actionSheetManager.dismissDuplicateWarning()
+        }
     }
 
     fun removeFromLibrary(novelUrl: String) {

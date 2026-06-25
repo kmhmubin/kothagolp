@@ -166,13 +166,13 @@ private fun NovelMigrationCard(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(width = 48.dp, height = 64.dp)
+                        .size(width = 80.dp, height = 110.dp)
                         .clip(AppShape.extraSmall)
                 )
             } else {
                 Box(
                     modifier = Modifier
-                        .size(width = 48.dp, height = 64.dp)
+                        .size(width = 80.dp, height = 110.dp)
                         .clip(AppShape.extraSmall),
                     contentAlignment = Alignment.Center
                 ) {
