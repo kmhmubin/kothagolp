@@ -34,7 +34,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,7 +73,8 @@ import kotlinx.coroutines.launch
 fun RecommendationTab(
     onNavigateToDetails: (novelUrl: String, providerName: String) -> Unit = { _, _ -> },
     onNavigateToBrowse: () -> Unit = {},
-    onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {}
+    onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val viewModel: RecommendationViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -90,6 +95,17 @@ fun RecommendationTab(
 
     LaunchedEffect("init") {
         viewModel.checkGeminiKey()
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.checkGeminiKey()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // Check for pending tag filter from navigation
@@ -321,7 +337,7 @@ fun RecommendationTab(
                                 isLoading = uiState.isLoadingAiRecs,
                                 recommendations = uiState.aiRecommendations,
                                 error = uiState.aiRecsError,
-                                onSaveApiKey = { key -> viewModel.saveGeminiApiKey(key) },
+                                onNavigateToSettings = onNavigateToSettings,
                                 onRefresh = { viewModel.loadAiRecommendations() },
                                 onNovelClick = { novelUrl, providerName ->
                                     viewModel.onRecommendationClicked(novelUrl)

@@ -42,6 +42,11 @@ import android.os.PowerManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.shape.CircleShape
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
@@ -98,7 +103,11 @@ import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material.icons.outlined.Wifi
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDownload
@@ -127,6 +136,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import android.content.pm.PackageManager
@@ -281,6 +291,14 @@ fun SettingsScreen(
                             title = "Permissions",
                             subtitle = "App permissions and storage folder",
                             onClick = { onNavigateTo(NavRoutes.SettingsPermissions.route) }
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.Rounded.AutoAwesome,
+                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            title = "For You",
+                            subtitle = "AI recommendations and Gemini API key",
+                            onClick = { onNavigateTo(NavRoutes.SettingsForYou.route) }
                         )
                     }
                 }
@@ -2385,6 +2403,177 @@ private fun SettingsPermissionRow(
                     Text(grantLabel, style = MaterialTheme.typography.labelMedium)
                 }
             }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FOR YOU SETTINGS  (AI / Gemini API Key)
+// ═══════════════════════════════════════════════════════════════════════════
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsForYouScreen(onBack: () -> Unit) {
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+
+    var apiKey by remember { mutableStateOf(preferencesManager.getGeminiApiKey() ?: "") }
+    var showKey by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf(preferencesManager.getGeminiApiKey() != null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("For You", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
+                    shape = AppShape.large
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = AppShape.large,
+                                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    Icon(
+                                        Icons.Rounded.AutoAwesome,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "AI Recommendations",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "Powered by Google Gemini Flash — free tier, 1,500 requests/day",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                        Text(
+                            text = "Gemini API Key",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        OutlinedTextField(
+                            value = apiKey,
+                            onValueChange = {
+                                apiKey = it
+                                saved = false
+                            },
+                            placeholder = { Text("AIza...") },
+                            singleLine = true,
+                            visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { showKey = !showKey }) {
+                                    Icon(
+                                        if (showKey) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                                        contentDescription = if (showKey) "Hide key" else "Show key",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Rounded.Key, null, modifier = Modifier.size(18.dp))
+                            },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = {
+                                if (apiKey.isNotBlank()) {
+                                    preferencesManager.setGeminiApiKey(apiKey.trim())
+                                    saved = true
+                                    scope.launch { snackbarHostState.showSnackbar("API key saved") }
+                                }
+                            }),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = AppShape.medium
+                        )
+
+                        Text(
+                            text = "Get your free key at aistudio.google.com → API Keys",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    if (apiKey.isNotBlank()) {
+                                        preferencesManager.setGeminiApiKey(apiKey.trim())
+                                        saved = true
+                                        scope.launch { snackbarHostState.showSnackbar("API key saved") }
+                                    }
+                                },
+                                enabled = apiKey.length > 10 && !saved,
+                                modifier = Modifier.weight(1f),
+                                shape = AppShape.medium
+                            ) {
+                                Text(if (saved) "Saved" else "Save Key")
+                            }
+
+                            if (preferencesManager.getGeminiApiKey() != null) {
+                                OutlinedButton(
+                                    onClick = {
+                                        preferencesManager.clearGeminiApiKey()
+                                        apiKey = ""
+                                        saved = false
+                                        scope.launch { snackbarHostState.showSnackbar("API key removed") }
+                                    },
+                                    shape = AppShape.medium,
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    )
+                                ) {
+                                    Text("Remove")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(80.dp)) }
         }
     }
 }

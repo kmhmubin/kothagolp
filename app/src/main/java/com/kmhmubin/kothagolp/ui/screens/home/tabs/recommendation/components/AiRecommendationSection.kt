@@ -15,35 +15,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.AiRecommendedNovel
@@ -55,7 +43,7 @@ fun AiRecommendationSection(
     isLoading: Boolean,
     recommendations: List<AiRecommendedNovel>,
     error: String?,
-    onSaveApiKey: (String) -> Unit,
+    onNavigateToSettings: () -> Unit,
     onRefresh: () -> Unit,
     onNovelClick: (novelUrl: String, providerName: String) -> Unit,
     modifier: Modifier = Modifier
@@ -109,7 +97,7 @@ fun AiRecommendationSection(
         }
 
         if (!hasGeminiKey) {
-            GeminiSetupCard(onSaveApiKey = onSaveApiKey)
+            GeminiEnablePromptCard(onNavigateToSettings = onNavigateToSettings)
         } else if (isLoading) {
             Box(
                 modifier = Modifier
@@ -168,10 +156,7 @@ fun AiRecommendationSection(
 }
 
 @Composable
-private fun GeminiSetupCard(onSaveApiKey: (String) -> Unit) {
-    var apiKey by remember { mutableStateOf("") }
-    var showKey by remember { mutableStateOf(false) }
-
+private fun GeminiEnablePromptCard(onNavigateToSettings: () -> Unit) {
     Surface(
         shape = AppShape.extraLarge,
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f),
@@ -180,89 +165,51 @@ private fun GeminiSetupCard(onSaveApiKey: (String) -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top
+            Surface(
+                shape = AppShape.large,
+                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
+                modifier = Modifier.size(40.dp)
             ) {
-                Surface(
-                    shape = AppShape.large,
-                    color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            Icons.Rounded.AutoAwesome,
-                            null,
-                            tint = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "Enable AI Recommendations",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Get personalized picks from Google Gemini Flash — free tier includes 1,500 requests/day. No credit card needed.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.3f
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        Icons.Rounded.AutoAwesome,
+                        null,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
-
-            OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                label = { Text("Gemini API Key") },
-                placeholder = { Text("AIza...") },
-                singleLine = true,
-                visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { showKey = !showKey }) {
-                        Icon(
-                            if (showKey) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                            contentDescription = if (showKey) "Hide" else "Show",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                },
-                leadingIcon = {
-                    Icon(Icons.Rounded.Key, null, modifier = Modifier.size(18.dp))
-                },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = {
-                    if (apiKey.isNotBlank()) onSaveApiKey(apiKey.trim())
-                }),
-                modifier = Modifier.fillMaxWidth(),
-                shape = AppShape.medium
-            )
-
-            Text(
-                text = "Get your free key at aistudio.google.com → API Keys",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.tertiary
-            )
-
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "Enable AI Picks",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Add your free Gemini API key in Settings",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Button(
-                onClick = { if (apiKey.isNotBlank()) onSaveApiKey(apiKey.trim()) },
-                enabled = apiKey.length > 10,
-                modifier = Modifier.fillMaxWidth(),
+                onClick = onNavigateToSettings,
                 shape = AppShape.medium,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary
+                ),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = 14.dp, vertical = 8.dp
                 )
             ) {
-                Icon(Icons.Rounded.AutoAwesome, null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Enable AI Picks")
+                Icon(Icons.Rounded.Settings, null, modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Set Up", style = MaterialTheme.typography.labelMedium)
             }
         }
     }
