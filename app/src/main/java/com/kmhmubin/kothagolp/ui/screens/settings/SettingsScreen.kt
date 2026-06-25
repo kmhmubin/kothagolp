@@ -2740,7 +2740,7 @@ fun SettingsForYouScreen(onBack: () -> Unit) {
                         }
 
                         Text(
-                            "Free models cost $0. Paid models are billed through your OpenRouter account.",
+                            "FREE models are rate-limited (typically 20 req/min, 200 req/day) but cost $0. Paid models have higher limits and are billed per token through your OpenRouter account.",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

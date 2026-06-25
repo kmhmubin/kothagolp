@@ -33,16 +33,18 @@ object OpenRouterModelsService {
     // Session-level cache — fresh on every app start
     @Volatile private var cachedModels: List<AiModel>? = null
 
-    // Curated free models to show even before API loads (reliable fallbacks)
+    // Curated free models shown before API loads. Rate-limited but $0 cost.
     val FALLBACK_FREE_MODELS = listOf(
-        AiModel("meta-llama/llama-3.1-8b-instruct:free",  "Llama 3.1 8B Instruct",       true, 0.0, 0.0, 131072, "Meta"),
-        AiModel("meta-llama/llama-3.3-70b-instruct:free", "Llama 3.3 70B Instruct",       true, 0.0, 0.0, 131072, "Meta"),
-        AiModel("google/gemma-2-9b-it:free",               "Gemma 2 9B",                   true, 0.0, 0.0, 8192,   "Google"),
-        AiModel("google/gemini-2.0-flash-exp:free",        "Gemini 2.0 Flash Exp",         true, 0.0, 0.0, 1048576,"Google"),
-        AiModel("mistralai/mistral-7b-instruct:free",      "Mistral 7B Instruct",          true, 0.0, 0.0, 32768,  "Mistral"),
-        AiModel("deepseek/deepseek-r1:free",               "DeepSeek R1",                  true, 0.0, 0.0, 163840, "DeepSeek"),
-        AiModel("qwen/qwen-2.5-72b-instruct:free",         "Qwen 2.5 72B Instruct",        true, 0.0, 0.0, 131072, "Alibaba"),
-        AiModel("microsoft/phi-3-mini-128k-instruct:free", "Phi-3 Mini 128K",              true, 0.0, 0.0, 128000, "Microsoft"),
+        AiModel("google/gemini-2.0-flash-exp:free",        "Gemini 2.0 Flash Exp",         true, 0.0, 0.0, 1048576, "Google"),
+        AiModel("google/gemini-flash-1.5-8b-exp:free",     "Gemini 1.5 Flash 8B Exp",      true, 0.0, 0.0, 1000000, "Google"),
+        AiModel("google/gemma-2-9b-it:free",               "Gemma 2 9B",                   true, 0.0, 0.0, 8192,    "Google"),
+        AiModel("meta-llama/llama-3.1-8b-instruct:free",   "Llama 3.1 8B Instruct",        true, 0.0, 0.0, 131072,  "Meta"),
+        AiModel("meta-llama/llama-3.3-70b-instruct:free",  "Llama 3.3 70B Instruct",       true, 0.0, 0.0, 131072,  "Meta"),
+        AiModel("deepseek/deepseek-r1:free",               "DeepSeek R1",                  true, 0.0, 0.0, 163840,  "DeepSeek"),
+        AiModel("deepseek/deepseek-chat-v3-0324:free",     "DeepSeek V3 0324",             true, 0.0, 0.0, 131072,  "DeepSeek"),
+        AiModel("mistralai/mistral-7b-instruct:free",      "Mistral 7B Instruct",          true, 0.0, 0.0, 32768,   "Mistral"),
+        AiModel("qwen/qwen-2.5-72b-instruct:free",         "Qwen 2.5 72B Instruct",        true, 0.0, 0.0, 131072,  "Alibaba"),
+        AiModel("microsoft/phi-3-mini-128k-instruct:free", "Phi-3 Mini 128K",              true, 0.0, 0.0, 128000,  "Microsoft"),
     )
 
     suspend fun getModels(apiKey: String?): Result<List<AiModel>> = withContext(Dispatchers.IO) {
@@ -69,14 +71,15 @@ object OpenRouterModelsService {
                     val obj = data.optJSONObject(i) ?: continue
                     val id = obj.optString("id").takeIf { it.isNotBlank() } ?: continue
 
-                    // Only text-to-text models
+                    // Keep models that output text (includes multimodal like Gemini: "text+image->text")
                     val modality = obj.optJSONObject("architecture")?.optString("modality") ?: ""
-                    if (!modality.contains("text->text") && modality.isNotBlank()) continue
+                    if (modality.isNotBlank() && !modality.endsWith("->text")) continue
 
                     val pricing = obj.optJSONObject("pricing")
                     val promptPrice = pricing?.optString("prompt", "0")?.toDoubleOrNull() ?: 0.0
                     val completionPrice = pricing?.optString("completion", "0")?.toDoubleOrNull() ?: 0.0
-                    val isFree = promptPrice == 0.0 && completionPrice == 0.0
+                    // :free suffix = free tier with daily/monthly rate limits; price=0 = always free
+                    val isFree = id.endsWith(":free") || (promptPrice == 0.0 && completionPrice == 0.0)
 
                     val name = obj.optString("name").takeIf { it.isNotBlank() } ?: id
                     val contextLength = obj.optInt("context_length", 4096)
