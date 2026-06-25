@@ -28,7 +28,6 @@ import com.kmhmubin.kothagolp.provider.NovelDexProvider
 import com.kmhmubin.kothagolp.provider.NovelFireProvider
 import com.kmhmubin.kothagolp.provider.NovelsOnlineProvider
 import com.kmhmubin.kothagolp.provider.PawReadProvider
-import com.kmhmubin.kothagolp.provider.RanobesProvider
 import com.kmhmubin.kothagolp.provider.RoyalRoadProvider
 import com.kmhmubin.kothagolp.provider.WebnovelProvider
 import com.kmhmubin.kothagolp.tts.TTSManager
@@ -94,7 +93,6 @@ class KothagolpApp : Application() {
         MainProvider.register(NovelFireProvider())
         MainProvider.register(NovelsOnlineProvider())
         MainProvider.register(PawReadProvider())
-        MainProvider.register(RanobesProvider())
         MainProvider.register(RoyalRoadProvider())
         MainProvider.register(WebnovelProvider())
 
