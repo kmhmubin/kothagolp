@@ -3,7 +3,10 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,8 +17,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -46,6 +52,7 @@ import com.kmhmubin.kothagolp.recommendation.TagNormalizer
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
 import com.kmhmubin.kothagolp.recommendation.model.RecommendationType
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.EmptyRecommendations
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.GenrePreferencesSheet
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.NovelActionMenu
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.ProfileHeader
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.RecommendationSection
@@ -60,7 +67,6 @@ import kotlinx.coroutines.launch
 fun RecommendationTab(
     onNavigateToDetails: (novelUrl: String, providerName: String) -> Unit = { _, _ -> },
     onNavigateToBrowse: () -> Unit = {},
-    onNavigateToOnboarding: () -> Unit = {},
     onNavigateToTagExplorer: (TagNormalizer.TagCategory) -> Unit = {}
 ) {
     val viewModel: RecommendationViewModel = viewModel()
@@ -76,6 +82,7 @@ fun RecommendationTab(
 
     var showFilterSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
+    var showGenrePrefsSheet by remember { mutableStateOf(false) }
     var selectedRecommendation by remember { mutableStateOf<Recommendation?>(null) }
     var lastHiddenNovel by remember { mutableStateOf<Pair<String, String>?>(null) }
 
@@ -192,6 +199,19 @@ fun RecommendationTab(
                                 settingsIndicator = hasSettingsChanges,
                                 favoriteAuthors = favoriteAuthors
                             )
+                        }
+
+                        // Explore Your Taste — genre tag chips
+                        if (uiState.topPreferences.isNotEmpty()) {
+                            item(key = "explore_genres") {
+                                ExploreByGenreSection(
+                                    preferences = uiState.topPreferences,
+                                    onTagClick = { tagName ->
+                                        val category = com.kmhmubin.kothagolp.recommendation.TagNormalizer.normalize(tagName)
+                                        if (category != null) onNavigateToTagExplorer(category)
+                                    }
+                                )
+                            }
                         }
 
                         // === Library-Based "Because You Read" Section ===
@@ -320,7 +340,7 @@ fun RecommendationTab(
             onUnblockAuthor = { viewModel.unblockAuthor(it) },
             onClearAllHidden = { viewModel.clearAllHiddenNovels() },
             onClearAllBlocked = { viewModel.clearAllBlockedAuthors() },
-            onResetPreferences = onNavigateToOnboarding,
+            onEditPreferences = { showGenrePrefsSheet = true },
             onDismiss = { showSettingsSheet = false }
         )
     }
@@ -368,6 +388,66 @@ fun RecommendationTab(
                 onNavigateToDetails(recommendation.novel.url, recommendation.novel.apiName)
             }
         )
+    }
+
+    if (showGenrePrefsSheet) {
+        GenrePreferencesSheet(
+            viewModel = viewModel,
+            onDismiss = { showGenrePrefsSheet = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ExploreByGenreSection(
+    preferences: List<String>,
+    onTagClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            text = "Explore Your Taste",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            preferences.take(8).forEach { pref ->
+                Surface(
+                    onClick = { onTagClick(pref) },
+                    shape = AppShape.extraLarge,
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.TrendingUp,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Text(
+                            text = pref,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

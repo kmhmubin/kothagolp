@@ -12,8 +12,10 @@ import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.recommendation.RecommendationEngine
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer.TagCategory
+import com.kmhmubin.kothagolp.recommendation.model.GenreOption
 import com.kmhmubin.kothagolp.recommendation.model.LibrarySourceNovel
 import com.kmhmubin.kothagolp.recommendation.model.NovelVector
+import com.kmhmubin.kothagolp.recommendation.model.OnboardingGenres
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -690,6 +692,55 @@ class RecommendationViewModel : ViewModel() {
         _uiState.update { it.copy(showCrossProvider = !it.showCrossProvider) }
         clearRecommendationCache()
         loadRecommendations(forceRefresh = true)
+    }
+
+    // ================================================================
+    // GENRE PREFERENCES
+    // ================================================================
+
+    suspend fun getCurrentGenrePrefs(): Triple<Set<TagCategory>, Set<TagCategory>, Triple<Boolean, Boolean, Boolean>> {
+        val boosted = userFilterManager.getBoostedTags()
+        val genreSet = (OnboardingGenres.mainGenres + OnboardingGenres.subGenres).map { it.category }.toSet()
+        val liked = boosted.filter { it in genreSet }.toSet()
+
+        val allFilters = userFilterManager.getFilterState()
+        val disliked = allFilters.blockedTags.filter { it in genreSet }.toSet()
+
+        val matureBlocked = listOf(TagCategory.MATURE, TagCategory.ADULT, TagCategory.SMUT, TagCategory.GORE)
+            .all { it in allFilters.blockedTags }
+        val blBlocked = TagCategory.BL in allFilters.blockedTags
+        val glBlocked = TagCategory.GL in allFilters.blockedTags
+
+        return Triple(liked, disliked, Triple(!matureBlocked, !blBlocked, !glBlocked))
+    }
+
+    fun applyGenrePreferences(
+        liked: Set<TagCategory>,
+        disliked: Set<TagCategory>,
+        includeMature: Boolean,
+        includeBL: Boolean,
+        includeGL: Boolean
+    ) {
+        viewModelScope.launch {
+            val allGenreCategories = (OnboardingGenres.mainGenres + OnboardingGenres.subGenres)
+                .map { it.category }
+            allGenreCategories.forEach { userFilterManager.clearTagFilter(it) }
+            listOf(TagCategory.MATURE, TagCategory.ADULT, TagCategory.SMUT, TagCategory.GORE,
+                TagCategory.BL, TagCategory.GL).forEach { userFilterManager.clearTagFilter(it) }
+
+            liked.forEach { userFilterManager.setTagFilter(it, TagFilterType.BOOSTED) }
+            disliked.forEach { userFilterManager.setTagFilter(it, TagFilterType.BLOCKED) }
+
+            if (!includeMature) {
+                listOf(TagCategory.MATURE, TagCategory.ADULT, TagCategory.SMUT, TagCategory.GORE)
+                    .forEach { userFilterManager.setTagFilter(it, TagFilterType.BLOCKED) }
+            }
+            if (!includeBL) userFilterManager.setTagFilter(TagCategory.BL, TagFilterType.BLOCKED)
+            if (!includeGL) userFilterManager.setTagFilter(TagCategory.GL, TagFilterType.BLOCKED)
+
+            clearRecommendationCache()
+            loadRecommendations(forceRefresh = true)
+        }
     }
 
     // ================================================================

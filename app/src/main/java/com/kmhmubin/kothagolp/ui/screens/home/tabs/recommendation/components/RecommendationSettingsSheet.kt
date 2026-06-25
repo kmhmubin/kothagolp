@@ -56,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kmhmubin.kothagolp.data.local.entity.BlockedAuthorEntity
@@ -72,7 +73,7 @@ fun RecommendationSettingsSheet(
     onUnblockAuthor: (String) -> Unit,
     onClearAllHidden: () -> Unit,
     onClearAllBlocked: () -> Unit,
-    onResetPreferences: (() -> Unit)? = null,
+    onEditPreferences: (() -> Unit)? = null,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -205,8 +206,8 @@ fun RecommendationSettingsSheet(
                     }
                 }
 
-                // Reset Preferences Section
-                onResetPreferences?.let { resetAction ->
+                // Edit Preferences Section
+                onEditPreferences?.let { editAction ->
                     item {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 8.dp),
@@ -221,7 +222,7 @@ fun RecommendationSettingsSheet(
                     item {
                         ResetPreferencesCard(
                             onReset = {
-                                resetAction()
+                                editAction()
                                 onDismiss()
                             }
                         )
@@ -402,7 +403,7 @@ private fun ResetPreferencesCard(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Go through the initial setup again to update your genre preferences and content settings",
+                        text = "Update your liked/disliked genres and content filters to improve recommendations",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -423,7 +424,7 @@ private fun ResetPreferencesCard(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Start Setup", style = MaterialTheme.typography.labelLarge)
+                Text("Edit Genre Preferences", style = MaterialTheme.typography.labelLarge)
             }
         }
     }
@@ -514,7 +515,7 @@ private fun ExpandableSettingCard(
             }
 
             // Expanded content
-            if (isExpanded && count > 0) {
+            if (isExpanded) {
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -535,35 +536,38 @@ private fun HiddenNovelsContent(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        if (hiddenNovels.size > 1) {
-            TextButton(
-                onClick = onClearAll,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                ),
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Icon(
-                    Icons.Rounded.DeleteSweep,
-                    null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Clear All", style = MaterialTheme.typography.labelMedium)
-            }
-        }
-
-        hiddenNovels.take(5).forEach { novel ->
-            HiddenNovelItem(novel = novel, onUnhide = { onUnhide(novel.novelUrl) })
-        }
-
-        if (hiddenNovels.size > 5) {
+        if (hiddenNovels.isEmpty()) {
             Text(
-                text = "+ ${hiddenNovels.size - 5} more hidden",
-                style = MaterialTheme.typography.labelSmall,
+                text = "No hidden novels",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                textAlign = TextAlign.Center
             )
+        } else {
+            if (hiddenNovels.size > 1) {
+                TextButton(
+                    onClick = onClearAll,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Icon(
+                        Icons.Rounded.DeleteSweep,
+                        null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Clear All", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+
+            hiddenNovels.forEach { novel ->
+                HiddenNovelItem(novel = novel, onUnhide = { onUnhide(novel.novelUrl) })
+            }
         }
     }
 }
@@ -623,35 +627,38 @@ private fun BlockedAuthorsContent(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        if (blockedAuthors.size > 1) {
-            TextButton(
-                onClick = onClearAll,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                ),
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Icon(
-                    Icons.Rounded.DeleteSweep,
-                    null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Unblock All", style = MaterialTheme.typography.labelMedium)
-            }
-        }
-
-        blockedAuthors.take(5).forEach { author ->
-            BlockedAuthorItem(author = author, onUnblock = { onUnblock(author.authorNormalized) })
-        }
-
-        if (blockedAuthors.size > 5) {
+        if (blockedAuthors.isEmpty()) {
             Text(
-                text = "+ ${blockedAuthors.size - 5} more blocked",
-                style = MaterialTheme.typography.labelSmall,
+                text = "No blocked authors",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                textAlign = TextAlign.Center
             )
+        } else {
+            if (blockedAuthors.size > 1) {
+                TextButton(
+                    onClick = onClearAll,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Icon(
+                        Icons.Rounded.DeleteSweep,
+                        null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Unblock All", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+
+            blockedAuthors.forEach { author ->
+                BlockedAuthorItem(author = author, onUnblock = { onUnblock(author.authorNormalized) })
+            }
         }
     }
 }

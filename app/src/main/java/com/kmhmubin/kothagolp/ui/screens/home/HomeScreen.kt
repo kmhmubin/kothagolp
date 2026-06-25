@@ -213,7 +213,6 @@ private fun PersistentTabContent(
             HomeTabs.FOR_YOU -> RecommendationTab(
                 onNavigateToDetails = onNavigateToDetails,
                 onNavigateToBrowse = { onSwitchTab(HomeTabs.BROWSE) },
-                onNavigateToOnboarding = onNavigateToOnboarding,
                 onNavigateToTagExplorer = onNavigateToTagExplorer
             )
             HomeTabs.HISTORY -> HistoryTab(
