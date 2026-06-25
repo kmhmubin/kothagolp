@@ -97,16 +97,21 @@ jobs:
 
             ### What's new
 
-            **Google Drive Sync — now fully enabled**
-            - Google Drive cloud sync is now active and working
-            - After every local backup completes, Drive sync is automatically triggered in the background (local → cloud chaining)
-            - Manual "Sync Now" button triggers an immediate Drive sync
-            - Default sync interval is now Daily — periodic Drive sync starts automatically once you sign in (no manual interval setup required)
-            - Notes and highlights are synced as part of the Bookmarks & Highlights category (were always stored in the same entity, now surfaced clearly in the UI)
-            - Google Drive sync Settings screen updated: description now explicitly lists notes and highlights; "Bookmarks" toggle renamed to "Bookmarks & Highlights"
+            **AI Recommendations — OpenRouter powered**
+            - Add your free [OpenRouter](https://openrouter.ai) API key in Settings → Recommendation Engine to unlock AI picks
+            - Two AI sections on the For You tab: **Based on Your Reading** (personalized) and **Trending AI Picks** (globally popular)
+            - Personalized picks are skipped if you haven't read anything yet — no empty recommendations
+            - AI picks auto-load when you open the tab or return from settings — no manual trigger needed
+            - Model picker: choose from 100+ models (free and paid) with live list, FREE badges, and curated "recommended" stars
+            - Recommended models pre-selected for novel recommendation quality (Gemini 2.0 Flash, Llama 3.3 70B, DeepSeek R1, and more)
+            - Actionable rate-limit messages distinguish daily limit vs per-minute throttle
+            - Switching models bypasses the error cooldown — new model always gets an immediate attempt
+            - AI recommendation cards now match the app's existing card style (cover image, same dimensions and layout)
 
-            **Fix**
-            - Added ProGuard keep rules for Google API Client, Drive, and Auth libraries — R8 was stripping these classes in release builds, causing `isConfigured()` to silently return false and show "Google Drive setup is missing for this build"
+            **Settings reorganization**
+            - Settings menu split into three labeled groups: **Personalization**, **Content & Reading**, **System**
+            - For You renamed to **Recommendation Engine** in settings
+            - **Data** renamed to **Backup & Sync** with updated icon and subtitle
 
             ---
 
