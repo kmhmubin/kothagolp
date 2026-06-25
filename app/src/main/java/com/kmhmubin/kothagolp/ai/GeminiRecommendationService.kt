@@ -19,7 +19,7 @@ class GeminiRecommendationService {
         .build()
 
     companion object {
-        private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+        private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
     }
 
     suspend fun getRecommendations(
