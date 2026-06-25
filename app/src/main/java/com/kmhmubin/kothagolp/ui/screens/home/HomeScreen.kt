@@ -228,7 +228,6 @@ private fun PersistentTabContent(
             HomeTabs.MORE -> MoreTab(
                 onNavigateToProfile = onNavigateToProfile,
                 onNavigateToDownloads = onNavigateToDownloads,
-                onNavigateToBackup = onNavigateToStorage,
                 onNavigateToAbout = { onNavigateToAbout() },
                 onNavigateToSettings = onNavigateToSettings,
                 onNavigateToNotesHighlights = onNavigateToNotesHighlights

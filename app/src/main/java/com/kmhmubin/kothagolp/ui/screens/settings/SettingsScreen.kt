@@ -251,7 +251,7 @@ fun SettingsScreen(
                         SettingsNavRow(
                             icon = Icons.Rounded.AutoAwesome,
                             iconTint = MaterialTheme.colorScheme.tertiary,
-                            title = "For You",
+                            title = "Recommendation Engine",
                             subtitle = "AI picks, OpenRouter key and model",
                             onClick = { onNavigateTo(NavRoutes.SettingsForYou.route) }
                         )
