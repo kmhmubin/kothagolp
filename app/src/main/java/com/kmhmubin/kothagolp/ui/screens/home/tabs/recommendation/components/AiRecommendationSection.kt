@@ -78,7 +78,7 @@ fun AiRecommendationSection(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Powered by Google Gemini",
+                        text = "Powered by OpenRouter",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.tertiary
                     )
@@ -192,7 +192,7 @@ private fun GeminiEnablePromptCard(onNavigateToSettings: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Add your free Gemini API key in Settings",
+                    text = "Add your free OpenRouter key in Settings",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -11,7 +11,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-class GeminiRecommendationService {
+class OpenRouterService {
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -19,45 +19,65 @@ class GeminiRecommendationService {
         .build()
 
     companion object {
-        private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        private const val BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+        const val DEFAULT_MODEL = "google/gemini-2.0-flash-exp:free"
     }
 
     suspend fun getRecommendations(
         apiKey: String,
         readHistory: List<ReadHistoryItem>,
         likedGenres: List<String>,
-        dislikedGenres: List<String>
+        dislikedGenres: List<String>,
+        model: String = DEFAULT_MODEL
     ): Result<List<AiRecommendedNovel>> = withContext(Dispatchers.IO) {
         try {
             val prompt = buildPrompt(readHistory, likedGenres, dislikedGenres)
-            val requestJson = buildRequestJson(prompt)
-            val url = "$BASE_URL?key=$apiKey"
+
+            val requestJson = JSONObject().apply {
+                put("model", model)
+                put("messages", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", prompt)
+                    })
+                })
+                put("temperature", 0.8)
+                put("max_tokens", 2048)
+            }.toString()
 
             val body = requestJson.toRequestBody("application/json".toMediaType())
             val request = Request.Builder()
-                .url(url)
+                .url(BASE_URL)
                 .post(body)
+                .addHeader("Authorization", "Bearer $apiKey")
                 .addHeader("Content-Type", "application/json")
+                .addHeader("HTTP-Referer", "https://github.com/kmhmubin/kothagolp")
+                .addHeader("X-Title", "Kothagolp")
                 .build()
 
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     val errorBody = response.body?.string() ?: ""
                     val message = when (response.code) {
-                        429 -> "Rate limit reached. Free tier allows 15 calls/min. Wait a moment and try again."
-                        401, 403 -> "Invalid API key. Check your Gemini key in Settings → For You."
-                        400 -> "Bad request. Try refreshing."
-                        503 -> "Gemini service temporarily unavailable. Try again in a few seconds."
-                        else -> "Gemini error ${response.code}: ${errorBody.take(120)}"
+                        429 -> "Rate limit reached. Wait a moment and try again."
+                        401 -> "Invalid API key. Check your OpenRouter key in Settings → For You."
+                        403 -> "Access denied. Ensure your OpenRouter key has the right permissions."
+                        400 -> "Bad request — the model may be unavailable. Try again."
+                        503 -> "OpenRouter service temporarily unavailable. Try again shortly."
+                        else -> "OpenRouter error ${response.code}: ${errorBody.take(120)}"
                     }
                     return@withContext Result.failure(Exception(message))
                 }
 
                 val responseText = response.body?.string()
-                    ?: return@withContext Result.failure(Exception("Empty response"))
+                    ?: return@withContext Result.failure(Exception("Empty response from OpenRouter"))
 
                 val novels = parseResponse(responseText)
-                Result.success(novels)
+                if (novels.isEmpty()) {
+                    Result.failure(Exception("No recommendations returned. Try again."))
+                } else {
+                    Result.success(novels)
+                }
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -76,7 +96,6 @@ class GeminiRecommendationService {
                 if (it.genres.isNotEmpty()) " (${it.genres.take(3).joinToString(", ")})" else ""
             }
         }
-
         val likedText = if (likedGenres.isEmpty()) "not specified" else likedGenres.joinToString(", ")
         val dislikedText = if (dislikedGenres.isEmpty()) "none" else dislikedGenres.joinToString(", ")
 
@@ -88,44 +107,23 @@ $historyText
 Liked genres: $likedText
 Disliked genres: $dislikedText
 
-Return ONLY a valid JSON array with exactly 8 objects, no other text. Each object must have these fields:
-- "title": string (the novel title)
-- "author": string or null (author name if known)
-- "reason": string (1-2 sentences explaining why this matches their taste)
-- "genres": array of strings (2-4 genre tags)
+Return ONLY a valid JSON array with exactly 8 objects, no other text. Each object must have:
+- "title": string
+- "author": string or null
+- "reason": string (1-2 sentences why it matches their taste)
+- "genres": array of 2-4 genre strings
 
-Example format:
-[{"title":"Novel Title","author":"Author Name","reason":"This matches your love of action and fantasy.","genres":["Action","Fantasy"]},...]"""
-    }
-
-    private fun buildRequestJson(prompt: String): String {
-        return JSONObject().apply {
-            put("contents", JSONArray().apply {
-                put(JSONObject().apply {
-                    put("parts", JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("text", prompt)
-                        })
-                    })
-                })
-            })
-            put("generationConfig", JSONObject().apply {
-                put("temperature", 0.8)
-                put("maxOutputTokens", 2048)
-            })
-        }.toString()
+Example: [{"title":"Novel Title","author":"Author Name","reason":"Matches your love of action.","genres":["Action","Fantasy"]}]"""
     }
 
     private fun parseResponse(responseText: String): List<AiRecommendedNovel> {
         return try {
             val root = JSONObject(responseText)
-            val candidates = root.optJSONArray("candidates") ?: return emptyList()
-            val firstCandidate = candidates.optJSONObject(0) ?: return emptyList()
-            val content = firstCandidate.optJSONObject("content") ?: return emptyList()
-            val parts = content.optJSONArray("parts") ?: return emptyList()
-            val text = parts.optJSONObject(0)?.optString("text") ?: return emptyList()
+            val choices = root.optJSONArray("choices") ?: return emptyList()
+            val firstChoice = choices.optJSONObject(0) ?: return emptyList()
+            val message = firstChoice.optJSONObject("message") ?: return emptyList()
+            val text = message.optString("content").takeIf { it.isNotBlank() } ?: return emptyList()
 
-            // Extract JSON array from text (handle markdown code blocks if present)
             val jsonText = text.trim()
                 .removePrefix("```json").removePrefix("```")
                 .removeSuffix("```").trim()

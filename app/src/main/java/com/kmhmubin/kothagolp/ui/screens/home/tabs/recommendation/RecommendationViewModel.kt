@@ -3,7 +3,7 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kmhmubin.kothagolp.ai.GeminiRecommendationService
+import com.kmhmubin.kothagolp.ai.OpenRouterService
 import com.kmhmubin.kothagolp.data.local.entity.BlockedAuthorEntity
 import com.kmhmubin.kothagolp.data.local.entity.HiddenNovelEntity
 import com.kmhmubin.kothagolp.data.local.entity.HideReason
@@ -774,7 +774,7 @@ class RecommendationViewModel : ViewModel() {
     // AI RECOMMENDATIONS (GEMINI)
     // ================================================================
 
-    private val geminiService = GeminiRecommendationService()
+    private val openRouterService = OpenRouterService()
 
     fun loadAiRecommendations() {
         val apiKey = preferencesManager.getGeminiApiKey()
@@ -799,7 +799,7 @@ class RecommendationViewModel : ViewModel() {
                 val history = historyRepository.getHistory().take(30).map { item ->
                     val tags = RepositoryProvider.getDatabase().recommendationDao()
                         .getDiscoveredNovel(item.novel.url)?.tags ?: emptyList()
-                    GeminiRecommendationService.ReadHistoryItem(title = item.novel.name, genres = tags)
+                    OpenRouterService.ReadHistoryItem(title = item.novel.name, genres = tags)
                 }
 
                 val boostedTags = userFilterManager.getBoostedTags()
@@ -808,7 +808,7 @@ class RecommendationViewModel : ViewModel() {
                     .filter { it !in listOf(TagCategory.MATURE, TagCategory.ADULT, TagCategory.SMUT, TagCategory.GORE, TagCategory.BL, TagCategory.GL) }
                     .map { TagNormalizer.getDisplayName(it) }
 
-                val result = geminiService.getRecommendations(
+                val result = openRouterService.getRecommendations(
                     apiKey = apiKey,
                     readHistory = history,
                     likedGenres = boostedTags,

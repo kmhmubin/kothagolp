@@ -297,7 +297,7 @@ fun SettingsScreen(
                             icon = Icons.Rounded.AutoAwesome,
                             iconTint = MaterialTheme.colorScheme.tertiary,
                             title = "For You",
-                            subtitle = "AI recommendations and Gemini API key",
+                            subtitle = "AI recommendations and OpenRouter API key",
                             onClick = { onNavigateTo(NavRoutes.SettingsForYou.route) }
                         )
                     }
@@ -2408,7 +2408,7 @@ private fun SettingsPermissionRow(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FOR YOU SETTINGS  (AI / Gemini API Key)
+// FOR YOU SETTINGS  (AI / OpenRouter API Key)
 // ═══════════════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -2482,7 +2482,7 @@ fun SettingsForYouScreen(onBack: () -> Unit) {
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = "Powered by Google Gemini Flash — free tier, 1,500 requests/day",
+                                    text = "Via OpenRouter — access Gemini, Llama, DeepSeek and more. Free models available.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -2492,7 +2492,7 @@ fun SettingsForYouScreen(onBack: () -> Unit) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                         Text(
-                            text = "Gemini API Key",
+                            text = "OpenRouter API Key",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Medium
                         )
@@ -2503,7 +2503,7 @@ fun SettingsForYouScreen(onBack: () -> Unit) {
                                 apiKey = it
                                 saved = false
                             },
-                            placeholder = { Text("AIza...") },
+                            placeholder = { Text("sk-or-v1-...") },
                             singleLine = true,
                             visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
@@ -2531,7 +2531,7 @@ fun SettingsForYouScreen(onBack: () -> Unit) {
                         )
 
                         Text(
-                            text = "Get your free key at aistudio.google.com → API Keys",
+                            text = "Get your free key at openrouter.ai → Keys. No credit card needed for free models.",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.tertiary
                         )
