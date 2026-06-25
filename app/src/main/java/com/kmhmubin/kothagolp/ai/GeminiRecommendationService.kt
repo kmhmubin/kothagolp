@@ -19,7 +19,7 @@ class GeminiRecommendationService {
         .build()
 
     companion object {
-        private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     }
 
     suspend fun getRecommendations(
@@ -43,9 +43,13 @@ class GeminiRecommendationService {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     val errorBody = response.body?.string() ?: ""
-                    return@withContext Result.failure(
-                        Exception("Gemini API error ${response.code}: $errorBody")
-                    )
+                    val message = when (response.code) {
+                        429 -> "Rate limit reached. Free tier allows ~10 calls/min. Wait a moment and try again."
+                        401, 403 -> "Invalid API key. Check your Gemini key in Settings → For You."
+                        400 -> "Bad request. Try refreshing."
+                        else -> "Gemini error ${response.code}: ${errorBody.take(120)}"
+                    }
+                    return@withContext Result.failure(Exception(message))
                 }
 
                 val responseText = response.body?.string()

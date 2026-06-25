@@ -787,7 +787,9 @@ class RecommendationViewModel : ViewModel() {
 
         val now = System.currentTimeMillis()
         val cacheAge = now - _uiState.value.aiRecsLastUpdated
+        // 30-min cache when results exist; 60-second cooldown even on error to prevent spam
         if (cacheAge < 30 * 60 * 1000L && _uiState.value.aiRecommendations.isNotEmpty()) return
+        if (cacheAge < 60 * 1000L && _uiState.value.aiRecsLastUpdated > 0) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingAiRecs = true, aiRecsError = null, hasGeminiKey = true) }
@@ -838,16 +840,11 @@ class RecommendationViewModel : ViewModel() {
                         }
                     },
                     onFailure = { error ->
-                        val errorMsg = when {
-                            error.message?.contains("400") == true -> "Invalid API key"
-                            error.message?.contains("429") == true -> "Rate limit reached, try again later"
-                            else -> "AI error: ${error.message?.take(80)}"
-                        }
-                        _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = errorMsg) }
+                        _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = error.message ?: "Unknown error", aiRecsLastUpdated = System.currentTimeMillis()) }
                     }
                 )
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = "Error: ${e.message?.take(80)}") }
+                _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = "Error: ${e.message?.take(80)}", aiRecsLastUpdated = System.currentTimeMillis()) }
             }
         }
     }
