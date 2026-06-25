@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.StickyNote2
+import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Insights
@@ -53,6 +54,7 @@ import java.time.LocalTime
 fun MoreTab(
     onNavigateToProfile: () -> Unit,
     onNavigateToDownloads: () -> Unit,
+    onNavigateToBackup: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToNotesHighlights: (() -> Unit)? = null,
@@ -153,6 +155,17 @@ fun MoreTab(
                     modifier = Modifier.padding(horizontal = dimensions.gridPadding)
                 )
             }
+        }
+
+        item(key = "backup_menu") {
+            MoreMenuItem(
+                icon = Icons.Outlined.Backup,
+                title = "Backup & Sync",
+                subtitle = "Cloud sync, local backup and cache",
+                iconTint = MaterialTheme.colorScheme.secondary,
+                onClick = onNavigateToBackup,
+                modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+            )
         }
 
         item(key = "settings_menu") {

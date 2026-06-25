@@ -232,21 +232,63 @@ fun SettingsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            // ── Personalization ───────────────────────────────────────────
+            item {
+                Text(
+                    text = "PERSONALIZATION",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+            }
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                     shape = AppShape.large
                 ) {
                     Column {
+                        SettingsNavRow(
+                            icon = Icons.Rounded.AutoAwesome,
+                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            title = "For You",
+                            subtitle = "AI picks, OpenRouter key and model",
+                            onClick = { onNavigateTo(NavRoutes.SettingsForYou.route) }
+                        )
+                        RowDivider()
                         SettingsNavRow(
                             icon = Icons.Outlined.Palette,
                             iconTint = MaterialTheme.colorScheme.primary,
                             title = "Appearance",
                             subtitle = "Theme, colors and display layout",
                             onClick = { onNavigateTo(NavRoutes.SettingsAppearance.route) }
+                        )
+                    }
+                }
+            }
+
+            // ── Content & Reading ─────────────────────────────────────────
+            item {
+                Text(
+                    text = "CONTENT & READING",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+            }
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shape = AppShape.large
+                ) {
+                    Column {
+                        SettingsNavRow(
+                            icon = Icons.AutoMirrored.Outlined.MenuBook,
+                            iconTint = StatusPlanToRead,
+                            title = "Reader",
+                            subtitle = "Reading experience and preferences",
+                            onClick = { onNavigateTo(NavRoutes.SettingsReader.route) }
                         )
                         RowDivider()
                         SettingsNavRow(
@@ -258,22 +300,6 @@ fun SettingsScreen(
                         )
                         RowDivider()
                         SettingsNavRow(
-                            icon = Icons.Outlined.Search,
-                            iconTint = AccentCyan,
-                            title = "Browse & Downloads",
-                            subtitle = "Search, ratings and auto-downloads",
-                            onClick = { onNavigateTo(NavRoutes.SettingsBrowse.route) }
-                        )
-                        RowDivider()
-                        SettingsNavRow(
-                            icon = Icons.AutoMirrored.Outlined.MenuBook,
-                            iconTint = StatusPlanToRead,
-                            title = "Reader",
-                            subtitle = "Reading experience and preferences",
-                            onClick = { onNavigateTo(NavRoutes.SettingsReader.route) }
-                        )
-                        RowDivider()
-                        SettingsNavRow(
                             icon = Icons.Outlined.Extension,
                             iconTint = StatusSpicy,
                             title = "Sources",
@@ -282,10 +308,37 @@ fun SettingsScreen(
                         )
                         RowDivider()
                         SettingsNavRow(
-                            icon = Icons.Outlined.Storage,
+                            icon = Icons.Outlined.Search,
+                            iconTint = AccentCyan,
+                            title = "Browse & Downloads",
+                            subtitle = "Search, ratings and auto-downloads",
+                            onClick = { onNavigateTo(NavRoutes.SettingsBrowse.route) }
+                        )
+                    }
+                }
+            }
+
+            // ── System ────────────────────────────────────────────────────
+            item {
+                Text(
+                    text = "SYSTEM",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+            }
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shape = AppShape.large
+                ) {
+                    Column {
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Backup,
                             iconTint = StatusCompleted,
-                            title = "Data",
-                            subtitle = "Storage, cache and backup",
+                            title = "Backup & Sync",
+                            subtitle = "Cloud sync, local backup and cache",
                             onClick = { onNavigateTo(NavRoutes.Storage.route) }
                         )
                         RowDivider()
@@ -295,14 +348,6 @@ fun SettingsScreen(
                             title = "Permissions",
                             subtitle = "App permissions and storage folder",
                             onClick = { onNavigateTo(NavRoutes.SettingsPermissions.route) }
-                        )
-                        RowDivider()
-                        SettingsNavRow(
-                            icon = Icons.Rounded.AutoAwesome,
-                            iconTint = MaterialTheme.colorScheme.tertiary,
-                            title = "For You",
-                            subtitle = "AI recommendations and OpenRouter API key",
-                            onClick = { onNavigateTo(NavRoutes.SettingsForYou.route) }
                         )
                     }
                 }
