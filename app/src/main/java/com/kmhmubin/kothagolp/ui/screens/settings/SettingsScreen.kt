@@ -106,6 +106,7 @@ import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -2497,29 +2498,53 @@ fun SettingsForYouScreen(onBack: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    val freeModels = filteredModels.filter { it.isFree }
-                    val paidModels = filteredModels.filter { !it.isFree }
+                    val recModels  = filteredModels.filter { it.isRecommended }
+                    val freeModels = filteredModels.filter { it.isFree && !it.isRecommended }
+                    val paidModels = filteredModels.filter { !it.isFree && !it.isRecommended }
 
+                    fun onPick(model: com.kmhmubin.kothagolp.ai.AiModel) {
+                        selectedModel = model.id
+                        preferencesManager.setSelectedAiModel(model.id)
+                        showModelSheet = false
+                        scope.launch { snackbarHostState.showSnackbar("Model: ${model.name}") }
+                    }
+
+                    if (recModels.isNotEmpty()) {
+                        item {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Star,
+                                    null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = androidx.compose.ui.graphics.Color(0xFFFFC107)
+                                )
+                                Text(
+                                    "RECOMMENDED FOR NOVEL PICKS",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = androidx.compose.ui.graphics.Color(0xFFFFC107)
+                                )
+                            }
+                        }
+                        items(recModels, key = { "rec_${it.id}" }) { model ->
+                            AiModelRow(model = model, isSelected = model.id == selectedModel, onClick = { onPick(model) })
+                        }
+                    }
                     if (freeModels.isNotEmpty()) {
                         item {
+                            Spacer(Modifier.height(if (recModels.isNotEmpty()) 8.dp else 0.dp))
                             Text(
-                                "FREE MODELS",
+                                "OTHER FREE MODELS",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
-                        items(freeModels, key = { it.id }) { model ->
-                            AiModelRow(
-                                model = model,
-                                isSelected = model.id == selectedModel,
-                                onClick = {
-                                    selectedModel = model.id
-                                    preferencesManager.setSelectedAiModel(model.id)
-                                    showModelSheet = false
-                                    scope.launch { snackbarHostState.showSnackbar("Model set to ${model.name}") }
-                                }
-                            )
+                        items(freeModels, key = { "free_${it.id}" }) { model ->
+                            AiModelRow(model = model, isSelected = model.id == selectedModel, onClick = { onPick(model) })
                         }
                     }
                     if (paidModels.isNotEmpty()) {
@@ -2532,17 +2557,8 @@ fun SettingsForYouScreen(onBack: () -> Unit) {
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
-                        items(paidModels, key = { it.id }) { model ->
-                            AiModelRow(
-                                model = model,
-                                isSelected = model.id == selectedModel,
-                                onClick = {
-                                    selectedModel = model.id
-                                    preferencesManager.setSelectedAiModel(model.id)
-                                    showModelSheet = false
-                                    scope.launch { snackbarHostState.showSnackbar("Model set to ${model.name}") }
-                                }
-                            )
+                        items(paidModels, key = { "paid_${it.id}" }) { model ->
+                            AiModelRow(model = model, isSelected = model.id == selectedModel, onClick = { onPick(model) })
                         }
                     }
                     item { Spacer(Modifier.height(32.dp)) }
@@ -2707,6 +2723,14 @@ fun SettingsForYouScreen(onBack: () -> Unit) {
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        if (currentModel?.isRecommended == true) {
+                                            Icon(
+                                                Icons.Rounded.Star,
+                                                null,
+                                                tint = androidx.compose.ui.graphics.Color(0xFFFFC107),
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
                                         Text(
                                             text = currentModel?.name ?: selectedModel.substringAfterLast("/"),
                                             style = MaterialTheme.typography.bodyMedium,
@@ -2759,8 +2783,16 @@ private fun AiModelRow(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                  else MaterialTheme.colorScheme.surfaceContainerLow
+    val amber = androidx.compose.ui.graphics.Color(0xFFFFC107)
+    val green = androidx.compose.ui.graphics.Color(0xFF4CAF50)
+
+    val bgColor = when {
+        isSelected && model.isRecommended -> amber.copy(alpha = 0.12f)
+        isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+        model.isRecommended -> amber.copy(alpha = 0.06f)
+        else -> MaterialTheme.colorScheme.surfaceContainerLow
+    }
+
     Surface(
         onClick = onClick,
         shape = AppShape.medium,
@@ -2769,47 +2801,77 @@ private fun AiModelRow(
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Star icon for recommended
+            if (model.isRecommended) {
+                Icon(
+                    Icons.Rounded.Star,
+                    null,
+                    tint = amber,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = model.name,
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                    color = when {
+                        isSelected -> MaterialTheme.colorScheme.primary
+                        model.isRecommended -> MaterialTheme.colorScheme.onSurface
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
                 )
-                Text(
-                    text = "${model.provider} · ${model.contextLength / 1000}K ctx",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(Modifier.width(8.dp))
-            if (model.isFree) {
-                Surface(
-                    shape = AppShape.small,
-                    color = androidx.compose.ui.graphics.Color(0xFF1B5E20).copy(alpha = 0.15f)
-                ) {
+                if (model.isRecommended && model.recommendReason.isNotBlank()) {
                     Text(
-                        "FREE",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = androidx.compose.ui.graphics.Color(0xFF4CAF50),
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-            } else {
-                Surface(
-                    shape = AppShape.small,
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest
-                ) {
-                    Text(
-                        model.displayPrice,
+                        text = model.recommendReason,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        lineHeight = MaterialTheme.typography.labelSmall.lineHeight * 1.2f
                     )
+                } else {
+                    Text(
+                        text = "${model.provider} · ${model.contextLength / 1000}K ctx",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                if (model.isFree) {
+                    Surface(shape = AppShape.small, color = green.copy(alpha = 0.15f)) {
+                        Text(
+                            "FREE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = green,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                } else {
+                    Surface(shape = AppShape.small, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+                        Text(
+                            model.displayPrice,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                if (isSelected) {
+                    Surface(shape = AppShape.small, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)) {
+                        Text(
+                            "ACTIVE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
         }
