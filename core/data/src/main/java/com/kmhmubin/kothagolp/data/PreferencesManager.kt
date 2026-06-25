@@ -1282,6 +1282,15 @@ class PreferencesManager(context: Context) {
         prefs.edit().remove(KEY_GEMINI_API_KEY).apply()
     }
 
+    fun getSelectedAiModel(): String =
+        prefs.getString(KEY_SELECTED_AI_MODEL, null)
+            ?.takeIf { it.isNotBlank() }
+            ?: "meta-llama/llama-3.1-8b-instruct:free"
+
+    fun setSelectedAiModel(model: String) {
+        prefs.edit().putString(KEY_SELECTED_AI_MODEL, model).apply()
+    }
+
     fun getTtsPitch(): Float = prefs.getFloat(KEY_TTS_PITCH, 1.0f)
 
     fun setTtsPitch(pitch: Float) {
@@ -1985,6 +1994,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_TTS_SPEED = "tts_speed"
         private const val KEY_TTS_VOICE = "tts_voice"
         private const val KEY_GEMINI_API_KEY = "gemini_api_key"
+        private const val KEY_SELECTED_AI_MODEL = "selected_ai_model"
         private const val KEY_TTS_PITCH = "tts_pitch"
         private const val KEY_TTS_VOLUME = "tts_volume"
         private const val KEY_TTS_AUTO_SCROLL = "tts_auto_scroll"

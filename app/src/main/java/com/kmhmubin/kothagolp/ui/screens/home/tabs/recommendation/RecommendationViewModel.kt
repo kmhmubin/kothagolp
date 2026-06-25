@@ -812,7 +812,8 @@ class RecommendationViewModel : ViewModel() {
                     apiKey = apiKey,
                     readHistory = history,
                     likedGenres = boostedTags,
-                    dislikedGenres = reducedTags
+                    dislikedGenres = reducedTags,
+                    model = preferencesManager.getSelectedAiModel()
                 )
 
                 result.fold(

@@ -20,7 +20,8 @@ class OpenRouterService {
 
     companion object {
         private const val BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
-        const val DEFAULT_MODEL = "google/gemini-2.0-flash-exp:free"
+        // Stable, always-available free model as default
+        const val DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct:free"
     }
 
     suspend fun getRecommendations(
