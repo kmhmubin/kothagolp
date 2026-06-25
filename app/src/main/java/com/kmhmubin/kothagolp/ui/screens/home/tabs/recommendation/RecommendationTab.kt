@@ -95,6 +95,8 @@ fun RecommendationTab(
 
     LaunchedEffect("init") {
         viewModel.checkGeminiKey()
+        viewModel.loadAiRecommendations()
+        viewModel.loadAiTrendingRecommendations()
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -102,6 +104,8 @@ fun RecommendationTab(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.checkGeminiKey()
+                viewModel.loadAiRecommendations()
+                viewModel.loadAiTrendingRecommendations()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -330,15 +334,37 @@ fun RecommendationTab(
                             )
                         }
 
-                        // AI Recommendations section
-                        item(key = "ai_recommendations") {
+                        // AI: Based on Your Reading
+                        item(key = "ai_history_recommendations") {
                             AiRecommendationSection(
-                                hasGeminiKey = uiState.hasGeminiKey,
+                                title = "Based on Your Reading",
+                                subtitle = "Personalized AI picks",
+                                hasApiKey = uiState.hasGeminiKey,
                                 isLoading = uiState.isLoadingAiRecs,
                                 recommendations = uiState.aiRecommendations,
                                 error = uiState.aiRecsError,
+                                emptyMessage = if (!uiState.hasReadingHistory) "Read some novels first to get personalized picks" else null,
                                 onNavigateToSettings = onNavigateToSettings,
                                 onRefresh = { viewModel.loadAiRecommendations() },
+                                onNovelClick = { novelUrl, providerName ->
+                                    viewModel.onRecommendationClicked(novelUrl)
+                                    onNavigateToDetails(novelUrl, providerName)
+                                }
+                            )
+                        }
+
+                        // AI: Trending Now
+                        item(key = "ai_trending_recommendations") {
+                            AiRecommendationSection(
+                                title = "Trending AI Picks",
+                                subtitle = "What readers love right now",
+                                hasApiKey = uiState.hasGeminiKey,
+                                isLoading = uiState.isLoadingTrending,
+                                recommendations = uiState.aiTrendingRecommendations,
+                                error = uiState.trendingError,
+                                emptyMessage = null,
+                                onNavigateToSettings = onNavigateToSettings,
+                                onRefresh = { viewModel.loadAiTrendingRecommendations() },
                                 onNovelClick = { novelUrl, providerName ->
                                     viewModel.onRecommendationClicked(novelUrl)
                                     onNavigateToDetails(novelUrl, providerName)

@@ -62,12 +62,21 @@ data class RecommendationUiState(
     val novelsForSelectedTag: List<DiscoveredNovelEntity> = emptyList(),
     val isLoadingTagNovels: Boolean = false,
 
-    // AI recommendations
+    // AI recommendations — history-based
     val aiRecommendations: List<AiRecommendedNovel> = emptyList(),
     val isLoadingAiRecs: Boolean = false,
     val aiRecsError: String? = null,
     val hasGeminiKey: Boolean = false,
-    val aiRecsLastUpdated: Long = 0L
+    val hasReadingHistory: Boolean = false,
+    val aiRecsLastUpdated: Long = 0L,
+    val lastLoadedAiModel: String = "",
+
+    // AI recommendations — trending
+    val aiTrendingRecommendations: List<AiRecommendedNovel> = emptyList(),
+    val isLoadingTrending: Boolean = false,
+    val trendingError: String? = null,
+    val trendingLastUpdated: Long = 0L,
+    val lastLoadedTrendingModel: String = ""
 
 ) {
     val hasRecommendations: Boolean

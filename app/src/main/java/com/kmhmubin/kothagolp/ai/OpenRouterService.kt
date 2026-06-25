@@ -60,7 +60,21 @@ class OpenRouterService {
                 if (!response.isSuccessful) {
                     val errorBody = response.body?.string() ?: ""
                     val message = when (response.code) {
-                        429 -> "Rate limit reached. Wait a moment and try again."
+                        429 -> {
+                            val detail = try {
+                                JSONObject(errorBody).optJSONObject("error")?.optString("message") ?: ""
+                            } catch (_: Exception) { "" }
+                            when {
+                                detail.contains("daily", ignoreCase = true) ||
+                                detail.contains("day", ignoreCase = true) ->
+                                    "Daily free limit reached for this model. Switch to a different model or try tomorrow."
+                                detail.contains("RPM", ignoreCase = true) ||
+                                detail.contains("per minute", ignoreCase = true) ||
+                                detail.contains("minute", ignoreCase = true) ->
+                                    "Too many requests per minute. Wait 60 seconds and retry."
+                                else -> "Rate limit reached. Switch to a different model or wait a moment."
+                            }
+                        }
                         401 -> "Invalid API key. Check your OpenRouter key in Settings → For You."
                         403 -> "Access denied. Ensure your OpenRouter key has the right permissions."
                         400 -> "Bad request — the model may be unavailable. Try again."
@@ -83,6 +97,82 @@ class OpenRouterService {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    suspend fun getTrendingRecommendations(
+        apiKey: String,
+        likedGenres: List<String>,
+        model: String = DEFAULT_MODEL
+    ): Result<List<AiRecommendedNovel>> = withContext(Dispatchers.IO) {
+        try {
+            val prompt = buildTrendingPrompt(likedGenres)
+            val requestJson = JSONObject().apply {
+                put("model", model)
+                put("messages", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("role", "user")
+                        put("content", prompt)
+                    })
+                })
+                put("temperature", 0.7)
+                put("max_tokens", 2048)
+            }.toString()
+
+            val body = requestJson.toRequestBody("application/json".toMediaType())
+            val request = Request.Builder()
+                .url(BASE_URL)
+                .post(body)
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Content-Type", "application/json")
+                .addHeader("HTTP-Referer", "https://github.com/kmhmubin/kothagolp")
+                .addHeader("X-Title", "Kothagolp")
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    val errorBody = response.body?.string() ?: ""
+                    val message = when (response.code) {
+                        429 -> {
+                            val detail = try {
+                                JSONObject(errorBody).optJSONObject("error")?.optString("message") ?: ""
+                            } catch (_: Exception) { "" }
+                            when {
+                                detail.contains("daily", ignoreCase = true) || detail.contains("day", ignoreCase = true) ->
+                                    "Daily free limit reached. Switch model or try tomorrow."
+                                detail.contains("RPM", ignoreCase = true) || detail.contains("minute", ignoreCase = true) ->
+                                    "Too many requests per minute. Wait 60s and retry."
+                                else -> "Rate limit reached. Switch model or wait a moment."
+                            }
+                        }
+                        401 -> "Invalid API key. Check your OpenRouter key in Settings → For You."
+                        else -> "OpenRouter error ${response.code}"
+                    }
+                    return@withContext Result.failure(Exception(message))
+                }
+                val responseText = response.body?.string()
+                    ?: return@withContext Result.failure(Exception("Empty response from OpenRouter"))
+                val novels = parseResponse(responseText)
+                if (novels.isEmpty()) Result.failure(Exception("No trending results. Try again."))
+                else Result.success(novels)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun buildTrendingPrompt(likedGenres: List<String>): String {
+        val genresText = if (likedGenres.isEmpty()) "any genre" else likedGenres.take(5).joinToString(", ")
+        return """You are a web novel recommendation expert. Recommend 8 currently popular and trending web novels that readers worldwide love right now. Mix subgenres for variety.
+
+User's preferred genres (match some): $genresText
+
+Return ONLY a valid JSON array with exactly 8 objects, no other text. Each object must have:
+- "title": string
+- "author": string or null
+- "reason": string (1-2 sentences why it's popular/trending)
+- "genres": array of 2-4 genre strings
+
+Example: [{"title":"Novel Title","author":"Author Name","reason":"Trending for its unique magic system.","genres":["Fantasy","Adventure"]}]"""
     }
 
     private fun buildPrompt(
