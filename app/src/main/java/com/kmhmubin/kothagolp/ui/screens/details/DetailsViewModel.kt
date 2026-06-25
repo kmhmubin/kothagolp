@@ -183,6 +183,16 @@ class DetailsViewModel : ViewModel() {
                         }
                     }
 
+                    // Refresh chapter URLs in background when serving from cache so stale
+                    // chapter URLs (e.g. after a site restructure) get updated for next session
+                    if (!forceRefresh) {
+                        viewModelScope.launch {
+                            try {
+                                novelRepository.loadNovelDetails(provider, novelUrl, forceRefresh = true)
+                            } catch (_: Exception) {}
+                        }
+                    }
+
                     // Fetch related suggestions via keyword search
                     fetchRelatedSuggestions(details, provider, novelUrl)
 

@@ -223,9 +223,11 @@ class RanobesProvider : MainProvider() {
 
     override suspend fun loadChapterContent(url: String): String? {
         val fullUrl = if (url.startsWith("http")) url else "$mainUrl$url"
-        val document = get(fullUrl).document
+        val response = get(fullUrl)
+        if (!response.isSuccessful) return null
+        val document = response.document
 
-        val title = document.selectFirstOrNull("h1.h4.title")?.ownText()?.trim()
+        val title = document.selectFirstOrNull("h1")?.ownText()?.trim()
         val contentEl = document.selectFirstOrNull("div.text#arrticle") ?: return null
         contentEl.select("script, style, .ads, iframe").remove()
 
