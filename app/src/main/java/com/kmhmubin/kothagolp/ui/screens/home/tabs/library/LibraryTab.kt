@@ -1548,6 +1548,7 @@ private fun MultiSelectStatusPicker(
         ReadingStatus.ON_HOLD to (StatusOnHold to "On Hold"),
         ReadingStatus.PLAN_TO_READ to (StatusPlanToRead to "Plan to Read"),
         ReadingStatus.DROPPED to (StatusDROPPED to "Dropped"),
+        ReadingStatus.SPICY to (StatusSpicy to "Spicy"),
     )
 
     ModalBottomSheet(
