@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
 import com.kmhmubin.kothagolp.recommendation.model.RecommendationType
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.AiRecommendationSection
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.EmptyRecommendations
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.GenrePreferencesSheet
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.NovelActionMenu
@@ -59,6 +60,7 @@ import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.Rec
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.RecommendationSettingsSheet
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.SourceRecommendationsSection
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.TagFilterSheet
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.TagNovelsSection
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import kotlinx.coroutines.launch
 
@@ -85,6 +87,10 @@ fun RecommendationTab(
     var showGenrePrefsSheet by remember { mutableStateOf(false) }
     var selectedRecommendation by remember { mutableStateOf<Recommendation?>(null) }
     var lastHiddenNovel by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    LaunchedEffect("init") {
+        viewModel.checkGeminiKey()
+    }
 
     // Check for pending tag filter from navigation
     LaunchedEffect(Unit) {
@@ -214,6 +220,21 @@ fun RecommendationTab(
                             }
                         }
 
+                        // Tag-curated section
+                        item(key = "tag_novels") {
+                            TagNovelsSection(
+                                topPreferences = uiState.topPreferences,
+                                selectedTag = uiState.selectedTagCategory,
+                                tagNovels = uiState.novelsForSelectedTag,
+                                isLoadingTagNovels = uiState.isLoadingTagNovels,
+                                onTagClick = { tag -> viewModel.selectTagForSection(tag) },
+                                onNovelClick = { novelUrl, providerName ->
+                                    viewModel.onRecommendationClicked(novelUrl)
+                                    onNavigateToDetails(novelUrl, providerName)
+                                }
+                            )
+                        }
+
                         // === Library-Based "Because You Read" Section ===
                         if (uiState.hasLibrarySources) {
                             item(key = "source_recommendations") {
@@ -289,6 +310,22 @@ fun RecommendationTab(
                                 },
                                 onSeeAllClick = { tagCategory ->
                                     onNavigateToTagExplorer(tagCategory)
+                                }
+                            )
+                        }
+
+                        // AI Recommendations section
+                        item(key = "ai_recommendations") {
+                            AiRecommendationSection(
+                                hasGeminiKey = uiState.hasGeminiKey,
+                                isLoading = uiState.isLoadingAiRecs,
+                                recommendations = uiState.aiRecommendations,
+                                error = uiState.aiRecsError,
+                                onSaveApiKey = { key -> viewModel.saveGeminiApiKey(key) },
+                                onRefresh = { viewModel.loadAiRecommendations() },
+                                onNovelClick = { novelUrl, providerName ->
+                                    viewModel.onRecommendationClicked(novelUrl)
+                                    onNavigateToDetails(novelUrl, providerName)
                                 }
                             )
                         }

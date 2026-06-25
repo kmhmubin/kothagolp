@@ -1269,6 +1269,12 @@ class PreferencesManager(context: Context) {
         prefs.edit().putString(KEY_TTS_VOICE, voiceId).apply()
     }
 
+    fun getGeminiApiKey(): String? = prefs.getString(KEY_GEMINI_API_KEY, null)
+
+    fun setGeminiApiKey(key: String) {
+        prefs.edit().putString(KEY_GEMINI_API_KEY, key.trim()).apply()
+    }
+
     fun getTtsPitch(): Float = prefs.getFloat(KEY_TTS_PITCH, 1.0f)
 
     fun setTtsPitch(pitch: Float) {
@@ -1971,6 +1977,7 @@ class PreferencesManager(context: Context) {
 
         private const val KEY_TTS_SPEED = "tts_speed"
         private const val KEY_TTS_VOICE = "tts_voice"
+        private const val KEY_GEMINI_API_KEY = "gemini_api_key"
         private const val KEY_TTS_PITCH = "tts_pitch"
         private const val KEY_TTS_VOLUME = "tts_volume"
         private const val KEY_TTS_AUTO_SCROLL = "tts_auto_scroll"

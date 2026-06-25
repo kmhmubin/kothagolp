@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kmhmubin.kothagolp.ai.GeminiRecommendationService
 import com.kmhmubin.kothagolp.data.local.entity.BlockedAuthorEntity
 import com.kmhmubin.kothagolp.data.local.entity.HiddenNovelEntity
 import com.kmhmubin.kothagolp.data.local.entity.HideReason
@@ -109,6 +110,7 @@ class RecommendationViewModel : ViewModel() {
         }
 
         checkAndSeed()
+        checkGeminiKey()
     }
 
     // ================================================================
@@ -741,6 +743,128 @@ class RecommendationViewModel : ViewModel() {
             clearRecommendationCache()
             loadRecommendations(forceRefresh = true)
         }
+    }
+
+    // ================================================================
+    // TAG-CURATED SECTION
+    // ================================================================
+
+    fun selectTagForSection(tag: TagCategory?) {
+        if (tag == null) {
+            _uiState.update { it.copy(selectedTagCategory = null, novelsForSelectedTag = emptyList()) }
+            return
+        }
+        if (_uiState.value.selectedTagCategory == tag) {
+            // Deselect
+            _uiState.update { it.copy(selectedTagCategory = null, novelsForSelectedTag = emptyList()) }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(selectedTagCategory = tag, isLoadingTagNovels = true, novelsForSelectedTag = emptyList()) }
+            try {
+                val novels = discoveryManager.getNovelsForTag(tag, limit = 12)
+                _uiState.update { it.copy(novelsForSelectedTag = novels, isLoadingTagNovels = false) }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isLoadingTagNovels = false) }
+            }
+        }
+    }
+
+    // ================================================================
+    // AI RECOMMENDATIONS (GEMINI)
+    // ================================================================
+
+    private val geminiService = GeminiRecommendationService()
+
+    fun loadAiRecommendations() {
+        val apiKey = preferencesManager.getGeminiApiKey()
+        if (apiKey.isNullOrBlank()) {
+            _uiState.update { it.copy(hasGeminiKey = false) }
+            return
+        }
+
+        if (_uiState.value.isLoadingAiRecs) return
+
+        val now = System.currentTimeMillis()
+        val cacheAge = now - _uiState.value.aiRecsLastUpdated
+        if (cacheAge < 30 * 60 * 1000L && _uiState.value.aiRecommendations.isNotEmpty()) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingAiRecs = true, aiRecsError = null, hasGeminiKey = true) }
+
+            try {
+                // Build reading history
+                val history = historyRepository.getHistory().take(30).map { item ->
+                    val tags = RepositoryProvider.getDatabase().recommendationDao()
+                        .getDiscoveredNovel(item.novel.url)?.tags ?: emptyList()
+                    GeminiRecommendationService.ReadHistoryItem(title = item.novel.name, genres = tags)
+                }
+
+                val boostedTags = userFilterManager.getBoostedTags()
+                    .map { TagNormalizer.getDisplayName(it) }
+                val reducedTags = userFilterManager.getFilterState().blockedTags
+                    .filter { it !in listOf(TagCategory.MATURE, TagCategory.ADULT, TagCategory.SMUT, TagCategory.GORE, TagCategory.BL, TagCategory.GL) }
+                    .map { TagNormalizer.getDisplayName(it) }
+
+                val result = geminiService.getRecommendations(
+                    apiKey = apiKey,
+                    readHistory = history,
+                    likedGenres = boostedTags,
+                    dislikedGenres = reducedTags
+                )
+
+                result.fold(
+                    onSuccess = { novels ->
+                        // Try to match against discovery pool
+                        val enriched = novels.map { novel ->
+                            try {
+                                val match = RepositoryProvider.getDatabase().recommendationDao()
+                                    .getAllDiscoveredNovels()
+                                    .firstOrNull { it.name.lowercase().contains(novel.title.lowercase().take(10)) }
+                                novel.copy(
+                                    matchedNovelUrl = match?.url,
+                                    matchedPosterUrl = match?.posterUrl,
+                                    matchedApiName = match?.apiName
+                                )
+                            } catch (_: Exception) { novel }
+                        }
+                        _uiState.update {
+                            it.copy(
+                                aiRecommendations = enriched,
+                                isLoadingAiRecs = false,
+                                aiRecsError = null,
+                                aiRecsLastUpdated = System.currentTimeMillis()
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        val errorMsg = when {
+                            error.message?.contains("400") == true -> "Invalid API key"
+                            error.message?.contains("429") == true -> "Rate limit reached, try again later"
+                            else -> "AI error: ${error.message?.take(80)}"
+                        }
+                        _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = errorMsg) }
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = "Error: ${e.message?.take(80)}") }
+            }
+        }
+    }
+
+    fun saveGeminiApiKey(key: String) {
+        preferencesManager.setGeminiApiKey(key)
+        _uiState.update { it.copy(hasGeminiKey = key.isNotBlank(), aiRecommendations = emptyList(), aiRecsLastUpdated = 0L) }
+        if (key.isNotBlank()) loadAiRecommendations()
+    }
+
+    fun checkGeminiKey() {
+        val key = preferencesManager.getGeminiApiKey()
+        _uiState.update { it.copy(hasGeminiKey = !key.isNullOrBlank()) }
+    }
+
+    fun clearAiRecsError() {
+        _uiState.update { it.copy(aiRecsError = null) }
     }
 
     // ================================================================
