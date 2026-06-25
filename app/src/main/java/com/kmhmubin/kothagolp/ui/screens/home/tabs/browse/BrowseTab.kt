@@ -70,6 +70,7 @@ import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SearchOff
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Source
 import androidx.compose.material.icons.rounded.VerifiedUser
 import androidx.compose.material.icons.rounded.Warning
@@ -113,6 +114,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -122,6 +124,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.data.remote.CloudflareManager
+import com.kmhmubin.kothagolp.ui.cloudflare.CloudflareActivity
 import com.kmhmubin.kothagolp.domain.model.AppSettings
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.provider.MainProvider
@@ -1681,6 +1684,7 @@ private fun ProviderGrid(
     val gridCells = gridCellsFor(appSettings.sourceListGridColumns, minSize = 150.dp)
     val cookieStateVersion by CloudflareManager.cookieStateChanged.collectAsStateWithLifecycle()
     val isList = appSettings.sourceListDisplayMode == com.kmhmubin.kothagolp.domain.model.DisplayMode.LIST
+    val context = LocalContext.current
 
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
@@ -1773,6 +1777,11 @@ private fun ProviderGrid(
                         },
                         onClick = { onProviderClick(provider.name) },
                         onFavoriteClick = { onToggleFavorite(provider.name) },
+                        onSolveCloudflare = {
+                            context.startActivity(
+                                CloudflareActivity.createIntent(context, provider.mainUrl, provider.name)
+                            )
+                        },
                         modifier = Modifier.graphicsLayer { alpha = animatedAlpha }
                     )
                 }
@@ -1832,6 +1841,11 @@ private fun ProviderGrid(
                         },
                         onClick = { onProviderClick(provider.name) },
                         onFavoriteClick = { onToggleFavorite(provider.name) },
+                        onSolveCloudflare = {
+                            context.startActivity(
+                                CloudflareActivity.createIntent(context, provider.mainUrl, provider.name)
+                            )
+                        },
                         modifier = Modifier.graphicsLayer {
                             alpha = animatedAlpha
                             translationY = animatedOffset
@@ -1958,6 +1972,7 @@ private fun ProviderListItem(
     cookieStatus: CloudflareManager.CookieStatus,
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onSolveCloudflare: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val (primaryColor, _) = remember(provider.name) { ProviderColors.getColors(provider.name) }
@@ -2021,6 +2036,24 @@ private fun ProviderListItem(
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 )
+            } else if (onSolveCloudflare != null) {
+                IconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onSolveCloudflare()
+                    },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Shield,
+                        contentDescription = "Solve Cloudflare",
+                        modifier = Modifier.size(18.dp),
+                        tint = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                            MaterialTheme.colorScheme.tertiary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
             }
 
             IconButton(onClick = {
@@ -2046,6 +2079,7 @@ private fun ProviderCard(
     cookieStatus: CloudflareManager.CookieStatus,
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onSolveCloudflare: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val (primaryColor, secondaryColor) = remember(provider.name) {
@@ -2163,8 +2197,54 @@ private fun ProviderCard(
                             )
                         }
 
-                        if (cookieStatus != CloudflareManager.CookieStatus.NONE) {
+                        if (cookieStatus == CloudflareManager.CookieStatus.VALID) {
                             CookieStatusBadge(status = cookieStatus)
+                        } else if (onSolveCloudflare != null) {
+                            val haptic2 = LocalHapticFeedback.current
+                            Surface(
+                                onClick = {
+                                    haptic2.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onSolveCloudflare()
+                                },
+                                shape = AppShape.small,
+                                color = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
+                                else
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
+                                    else
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Shield,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(10.dp),
+                                        tint = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                            MaterialTheme.colorScheme.tertiary
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED) "Retry" else "Solve",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 9.sp,
+                                        color = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                            MaterialTheme.colorScheme.tertiary
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
                     }
                 }

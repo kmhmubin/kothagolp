@@ -60,6 +60,12 @@
         </activity>
 
         <activity
+            android:name=".ui.cloudflare.CloudflareActivity"
+            android:exported="false"
+            android:label="Cloudflare Verification"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".ui.sync.GoogleDriveLoginActivity"
             android:exported="true"
             android:label="Google Drive">
