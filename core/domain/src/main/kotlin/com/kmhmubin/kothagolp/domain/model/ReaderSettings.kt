@@ -384,7 +384,7 @@ data class ReaderSettings(
             showProgress = false,
             showReadingTime = false,
             showChapterTitle = false,
-            autoHideControlsDelay = 1500L
+            autoHideControlsDelay = 5000L
         )
 
         /**

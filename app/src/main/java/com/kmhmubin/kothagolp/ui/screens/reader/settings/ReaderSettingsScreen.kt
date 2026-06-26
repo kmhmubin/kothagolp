@@ -2925,10 +2925,10 @@ private fun AutoHideDelaySelector(
 ) {
     val options = listOf(
         "Never" to 0L,
-        "1.5s" to 1500L,
         "3s" to 3000L,
         "5s" to 5000L,
-        "10s" to 10000L
+        "8s" to 8000L,
+        "15s" to 15000L
     )
 
     Row(

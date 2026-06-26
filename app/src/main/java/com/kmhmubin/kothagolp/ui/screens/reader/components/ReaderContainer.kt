@@ -137,11 +137,9 @@ fun ReaderContainer(
 
     val touchTargetPadding = if (settings.largerTouchTargets) 8.dp else 0.dp
 
-    val topPadding = if (uiState.showControls) {
-        100.dp + touchTargetPadding
-    } else {
-        statusBarPadding.calculateTopPadding() + settings.marginVertical.dp
-    }
+    // Keep topPadding constant regardless of showControls — chrome overlays content via Box z-order.
+    // A dynamic topPadding would change LazyColumn contentPadding on every toggle, shifting reading position.
+    val topPadding = statusBarPadding.calculateTopPadding() + settings.marginVertical.dp
 
     val bottomPadding = navBarPadding.calculateBottomPadding() + 100.dp +
             settings.marginVertical.dp + touchTargetPadding
