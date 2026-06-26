@@ -2060,31 +2060,18 @@ private fun ProviderListItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = provider.mainUrl,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        if (provider.tags.isNotEmpty()) {
-                            Surface(
-                                shape = CircleShape,
-                                color = primaryColor.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    text = "${provider.tags.size} genres",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = primaryColor,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
+                    if (provider.tags.isNotEmpty()) {
+                        Surface(
+                            shape = CircleShape,
+                            color = primaryColor.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = "${provider.tags.size} genres",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = primaryColor,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
                         }
                     }
                 }
