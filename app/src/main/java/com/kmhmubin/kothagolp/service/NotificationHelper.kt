@@ -35,6 +35,7 @@ object NotificationHelper {
     private const val NOTIFICATION_ID_ERROR_BASE = 4000
     const val NOTIFICATION_ID_TTS = 5000
     const val NOTIFICATION_ID_SYNC = 6000
+    const val NOTIFICATION_ID_CHAPTER_UPDATE_PROGRESS = 7001
 
     // Keep old constants for backward compatibility, but mark as deprecated
     @Deprecated("Use getProgressNotificationId() instead")

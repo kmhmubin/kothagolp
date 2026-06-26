@@ -77,7 +77,7 @@ class ChapterUpdateWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val notification = NotificationCompat.Builder(applicationContext, NotificationHelper.CHANNEL_SYNC)
-            .setSmallIcon(R.drawable.ic_notification_download)
+            .setSmallIcon(R.drawable.ic_notification_app)
             .setContentTitle("Checking for new chapters")
             .setContentText(contentText)
             .setOngoing(true)
@@ -120,7 +120,7 @@ class ChapterUpdateWorker(
             if (novelNames.size > 10) "\n…and ${novelNames.size - 10} more" else ""
 
         val notification = NotificationCompat.Builder(applicationContext, NotificationHelper.CHANNEL_CHAPTER_UPDATES)
-            .setSmallIcon(R.drawable.ic_notification_download)
+            .setSmallIcon(R.drawable.ic_notification_app)
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(tapPending)
@@ -155,7 +155,7 @@ class ChapterUpdateWorker(
 
     companion object {
         private const val TAG = "ChapterUpdateWorker"
-        private const val NOTIFICATION_ID_PROGRESS = 7001
+        private val NOTIFICATION_ID_PROGRESS = NotificationHelper.NOTIFICATION_ID_CHAPTER_UPDATE_PROGRESS
         const val NOTIFICATION_ID = 7000
     }
 }

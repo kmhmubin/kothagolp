@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 
 object ChapterUpdateScheduler {
 
-    private const val WORK_NAME = "chapter_update_periodic"
+    internal const val WORK_NAME = "chapter_update_periodic"
 
     fun schedule(context: Context, interval: ChapterUpdateInterval, wifiOnly: Boolean) {
         val wm = WorkManager.getInstance(context)
