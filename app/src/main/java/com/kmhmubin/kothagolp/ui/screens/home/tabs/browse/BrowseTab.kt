@@ -1978,97 +1978,210 @@ private fun ProviderListItem(
     onSolveCloudflare: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val (primaryColor, _) = remember(provider.name) { ProviderColors.getColors(provider.name) }
+    val (primaryColor, secondaryColor) = remember(provider.name) {
+        ProviderColors.getColors(provider.name)
+    }
+    val cardGradient = remember(primaryColor, secondaryColor) {
+        Brush.horizontalGradient(
+            colors = listOf(
+                primaryColor.copy(alpha = 0.14f),
+                secondaryColor.copy(alpha = 0.05f),
+                Color.Transparent
+            ),
+            startX = 0f,
+            endX = 400f
+        )
+    }
+    val orbGradient = remember(primaryColor) {
+        Brush.radialGradient(colors = listOf(primaryColor.copy(alpha = 0.10f), Color.Transparent))
+    }
     val haptic = LocalHapticFeedback.current
+
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessHigh),
+        label = "list_scale"
+    )
 
     Card(
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onClick()
         },
-        modifier = modifier.fillMaxWidth(),
-        shape = AppShape.large,
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .pointerInput(Unit) {
+                detectTapGestures(onPress = { isPressed = true; tryAwaitRelease(); isPressed = false })
+            },
+        shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, pressedElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            // Gradient background — left-anchored, same palette as grid card
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = primaryColor.copy(alpha = 0.15f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+                    .matchParentSize()
+                    .background(cardGradient)
+            )
+
+            // Orb behind icon
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .offset(x = (-8).dp, y = (-8).dp)
+                    .background(brush = orbGradient, shape = CircleShape)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(
-                    text = provider.name.take(1).uppercase(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = primaryColor
+                // Real provider icon (URL / drawable / initials fallback)
+                ProviderIcon(
+                    name = provider.name,
+                    color = primaryColor,
+                    iconRes = provider.iconRes,
+                    iconUrl = provider.iconUrl,
+                    size = 44.dp
                 )
-            }
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = provider.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = provider.mainUrl,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = provider.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = provider.mainUrl,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (provider.tags.isNotEmpty()) {
+                            Surface(
+                                shape = CircleShape,
+                                color = primaryColor.copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    text = "${provider.tags.size} genres",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = primaryColor,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                }
 
-            if (cookieStatus == CloudflareManager.CookieStatus.VALID) {
-                Icon(
-                    imageVector = Icons.Filled.CheckCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                )
-            } else if (onSolveCloudflare != null) {
+                // Cloudflare status
+                when {
+                    cookieStatus == CloudflareManager.CookieStatus.VALID -> {
+                        Surface(
+                            shape = AppShape.small,
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.VerifiedUser,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(10.dp),
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                                Text(
+                                    text = "Active",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 9.sp,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        }
+                    }
+                    onSolveCloudflare != null -> {
+                        Surface(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onSolveCloudflare()
+                            },
+                            shape = AppShape.small,
+                            color = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
+                            else
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                            border = BorderStroke(
+                                1.dp,
+                                if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
+                                else
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Shield,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(10.dp),
+                                    tint = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                        MaterialTheme.colorScheme.tertiary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED) "Retry" else "Solve",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 9.sp,
+                                    color = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                        MaterialTheme.colorScheme.tertiary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Favorite button
                 IconButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onSolveCloudflare()
+                        onFavoriteClick()
                     },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Shield,
-                        contentDescription = "Solve Cloudflare",
-                        modifier = Modifier.size(18.dp),
-                        tint = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
-                            MaterialTheme.colorScheme.tertiary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                        modifier = Modifier.size(20.dp),
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
-            }
-
-            IconButton(onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onFavoriteClick()
-            }) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                    modifier = Modifier.size(20.dp),
-                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }
