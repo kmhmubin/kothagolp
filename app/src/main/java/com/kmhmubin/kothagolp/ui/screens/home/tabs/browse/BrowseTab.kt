@@ -120,8 +120,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.HorizontalDivider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.data.remote.CloudflareManager
 import com.kmhmubin.kothagolp.ui.cloudflare.CloudflareActivity
@@ -2082,20 +2084,9 @@ private fun ProviderCard(
     onSolveCloudflare: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val (primaryColor, secondaryColor) = remember(provider.name) {
+    val (primaryColor, _) = remember(provider.name) {
         ProviderColors.getColors(provider.name)
     }
-    val headerGradient = remember(primaryColor, secondaryColor) {
-        Brush.verticalGradient(colors = listOf(
-            primaryColor.copy(alpha = 0.12f),
-            secondaryColor.copy(alpha = 0.04f),
-            Color.Transparent
-        ))
-    }
-    val orbGradient = remember(primaryColor) {
-        Brush.radialGradient(colors = listOf(primaryColor.copy(alpha = 0.06f), Color.Transparent))
-    }
-
     val haptic = LocalHapticFeedback.current
 
     var isPressed by remember { mutableStateOf(false) }
@@ -2115,7 +2106,7 @@ private fun ProviderCard(
         },
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(0.92f)
+            .aspectRatio(0.85f)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -2131,163 +2122,130 @@ private fun ProviderCard(
             },
         shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp,
-            pressedElevation = 4.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(90.dp)
-                    .background(headerGradient)
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .offset(x = 70.dp, y = (-25).dp)
-                    .background(brush = orbGradient, shape = CircleShape)
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Top icon area — colored gradient background, icon centered
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.60f)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    primaryColor.copy(alpha = 0.20f),
+                                    primaryColor.copy(alpha = 0.07f)
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
                     ProviderIcon(
                         name = provider.name,
                         color = primaryColor,
                         iconRes = provider.iconRes,
-                        iconUrl = provider.iconUrl
+                        iconUrl = provider.iconUrl,
+                        size = 36.dp
                     )
-
-                    Column(
-                        horizontalAlignment = Alignment.End,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        IconButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onFavoriteClick()
-                            }
-                        ) {
-                            Icon(
-                                imageVector = if (isFavorite) {
-                                    Icons.Filled.Favorite
-                                } else {
-                                    Icons.Outlined.FavoriteBorder
-                                },
-                                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                modifier = Modifier.size(18.dp),
-                                tint = if (isFavorite) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                }
-                            )
-                        }
-
-                        if (cookieStatus == CloudflareManager.CookieStatus.VALID) {
-                            CookieStatusBadge(status = cookieStatus)
-                        } else if (onSolveCloudflare != null) {
-                            val haptic2 = LocalHapticFeedback.current
-                            Surface(
-                                onClick = {
-                                    haptic2.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onSolveCloudflare()
-                                },
-                                shape = AppShape.small,
-                                color = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
-                                else
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
-                                border = BorderStroke(
-                                    1.dp,
-                                    if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
-                                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
-                                    else
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Shield,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(10.dp),
-                                        tint = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
-                                            MaterialTheme.colorScheme.tertiary
-                                        else
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED) "Retry" else "Solve",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 9.sp,
-                                        color = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
-                                            MaterialTheme.colorScheme.tertiary
-                                        else
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                )
+
+                // Bottom name area
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.40f)
+                        .padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
                     Text(
                         text = provider.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 13.sp
                     )
+                }
+            }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+            // Favorite button overlay — top right
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(5.dp)
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.82f))
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onFavoriteClick()
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                    modifier = Modifier.size(12.dp),
+                    tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                )
+            }
+
+            // Status badge overlay — top left
+            when {
+                cookieStatus == CloudflareManager.CookieStatus.VALID -> {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(5.dp)
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        ProviderStatChip(
-                            icon = Icons.Rounded.Category,
-                            text = "${provider.tags.size}",
-                            label = "genres",
-                            color = primaryColor
+                        Icon(
+                            imageVector = Icons.Rounded.VerifiedUser,
+                            contentDescription = "Cloudflare active",
+                            modifier = Modifier.size(11.dp),
+                            tint = MaterialTheme.colorScheme.secondary
                         )
-
-                        Surface(
-                            shape = CircleShape,
-                            color = primaryColor.copy(alpha = 0.12f),
-                            modifier = Modifier.size(34.dp)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                                    contentDescription = "Open",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = primaryColor
-                                )
-                            }
-                        }
+                    }
+                }
+                onSolveCloudflare != null -> {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(5.dp)
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f)
+                                else
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                            )
+                            .clickable { onSolveCloudflare() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Shield,
+                            contentDescription = "Solve Cloudflare",
+                            modifier = Modifier.size(11.dp),
+                            tint = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                MaterialTheme.colorScheme.tertiary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -2343,13 +2301,14 @@ private fun ProviderIcon(
     name: String,
     color: Color,
     @DrawableRes iconRes: Int? = null,
-    iconUrl: String? = null
+    iconUrl: String? = null,
+    size: Dp = 40.dp
 ) {
     val hasIcon = iconUrl != null || iconRes != null
     Surface(
         shape = AppShape.large,
         color = if (hasIcon) MaterialTheme.colorScheme.surfaceContainerHigh else color,
-        modifier = Modifier.size(52.dp),
+        modifier = Modifier.size(size),
         shadowElevation = if (hasIcon) 1.dp else 3.dp,
         border = if (hasIcon) {
             BorderStroke(1.dp, color.copy(alpha = 0.2f))
@@ -2388,10 +2347,10 @@ private fun ProviderIcon(
             ) {
                 Text(
                     text = initials,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    fontSize = 20.sp
+                    fontSize = (size.value * 0.38f).sp
                 )
             }
         }
@@ -2507,55 +2466,50 @@ private fun ProviderCardSkeleton() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(0.92f),
+            .aspectRatio(0.85f),
         shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
-                    .size(52.dp)
-                    .clip(AppShape.large)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                    .shimmerEffect()
-            )
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    .fillMaxWidth()
+                    .weight(0.60f)
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .shimmerEffect(),
+                contentAlignment = Alignment.Center
+            ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(18.dp)
+                        .size(36.dp)
+                        .clip(AppShape.large)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                )
+            }
+
+            HorizontalDivider(
+                thickness = 0.5.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.40f)
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.72f)
+                        .height(11.dp)
                         .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         .shimmerEffect()
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(55.dp)
-                            .height(26.dp)
-                            .clip(AppShape.small)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                            .shimmerEffect()
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                            .shimmerEffect()
-                    )
-                }
             }
         }
     }
