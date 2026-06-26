@@ -124,6 +124,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.data.remote.CloudflareManager
 import com.kmhmubin.kothagolp.ui.cloudflare.CloudflareActivity
@@ -2084,9 +2085,20 @@ private fun ProviderCard(
     onSolveCloudflare: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val (primaryColor, _) = remember(provider.name) {
+    val (primaryColor, secondaryColor) = remember(provider.name) {
         ProviderColors.getColors(provider.name)
     }
+    val headerGradient = remember(primaryColor, secondaryColor) {
+        Brush.verticalGradient(colors = listOf(
+            primaryColor.copy(alpha = 0.12f),
+            secondaryColor.copy(alpha = 0.04f),
+            Color.Transparent
+        ))
+    }
+    val orbGradient = remember(primaryColor) {
+        Brush.radialGradient(colors = listOf(primaryColor.copy(alpha = 0.06f), Color.Transparent))
+    }
+
     val haptic = LocalHapticFeedback.current
 
     var isPressed by remember { mutableStateOf(false) }
@@ -2106,7 +2118,7 @@ private fun ProviderCard(
         },
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(0.85f)
+            .aspectRatio(0.92f)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -2122,130 +2134,257 @@ private fun ProviderCard(
             },
         shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 1.dp,
+            pressedElevation = 4.dp
+        )
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Top icon area — colored gradient background, icon centered
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(0.60f)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    primaryColor.copy(alpha = 0.20f),
-                                    primaryColor.copy(alpha = 0.07f)
-                                )
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
+        // BoxWithConstraints so card content adapts to actual rendered width (2–5 columns)
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val cardWidth = maxWidth
+            val isNarrow = cardWidth < 115.dp      // 3+ cols on most phones
+            val isVeryNarrow = cardWidth < 85.dp   // 4–5 cols
+            val padding = when {
+                isVeryNarrow -> 8.dp
+                isNarrow -> 10.dp
+                else -> 14.dp
+            }
+            val iconSize = when {
+                isVeryNarrow -> 32.dp
+                isNarrow -> 38.dp
+                else -> 46.dp
+            }
+            val headerHeight = when {
+                isVeryNarrow -> 52.dp
+                isNarrow -> 62.dp
+                else -> 78.dp
+            }
+
+            // Background header gradient
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(headerHeight)
+                    .background(headerGradient)
+            )
+
+            // Orb decoration — anchored relative to card width so it never overflows weirdly
+            Box(
+                modifier = Modifier
+                    .size(85.dp)
+                    .offset(x = cardWidth - 42.dp, y = (-22).dp)
+                    .background(brush = orbGradient, shape = CircleShape)
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Top row: provider icon  |  favorite + status
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
                 ) {
                     ProviderIcon(
                         name = provider.name,
                         color = primaryColor,
                         iconRes = provider.iconRes,
                         iconUrl = provider.iconUrl,
-                        size = 36.dp
+                        size = iconSize
                     )
-                }
 
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                )
-
-                // Bottom name area
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(0.40f)
-                        .padding(horizontal = 8.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Text(
-                        text = provider.name,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 13.sp
-                    )
-                }
-            }
-
-            // Favorite button overlay — top right
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(5.dp)
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.82f))
-                    .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onFavoriteClick()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                    modifier = Modifier.size(12.dp),
-                    tint = if (isFavorite) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
-                )
-            }
-
-            // Status badge overlay — top left
-            when {
-                cookieStatus == CloudflareManager.CookieStatus.VALID -> {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(5.dp)
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f)),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.VerifiedUser,
-                            contentDescription = "Cloudflare active",
-                            modifier = Modifier.size(11.dp),
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
+                        // Favorite — compact circle on narrow, full IconButton on wide
+                        if (isNarrow) {
+                            Box(
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onFavoriteClick()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(13.dp),
+                                    tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
+                            }
+                        } else {
+                            IconButton(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onFavoriteClick()
+                                },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+
+                        // Cloudflare status — icon-only dot on narrow, full badge on wide
+                        if (!isVeryNarrow) {
+                            if (cookieStatus == CloudflareManager.CookieStatus.VALID) {
+                                if (isNarrow) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.VerifiedUser,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(11.dp),
+                                            tint = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                } else {
+                                    CookieStatusBadge(status = cookieStatus)
+                                }
+                            } else if (onSolveCloudflare != null) {
+                                if (isNarrow) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+                                                else
+                                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+                                            )
+                                            .clickable { onSolveCloudflare() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Shield,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(11.dp),
+                                            tint = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                                MaterialTheme.colorScheme.tertiary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                } else {
+                                    Surface(
+                                        onClick = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            onSolveCloudflare()
+                                        },
+                                        shape = AppShape.small,
+                                        color = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
+                                        else
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                                        border = BorderStroke(
+                                            1.dp,
+                                            if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
+                                            else
+                                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                                        )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Shield,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(10.dp),
+                                                tint = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                                    MaterialTheme.colorScheme.tertiary
+                                                else
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED) "Retry" else "Solve",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 9.sp,
+                                                color = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
+                                                    MaterialTheme.colorScheme.tertiary
+                                                else
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                onSolveCloudflare != null -> {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(5.dp)
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f)
-                                else
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-                            )
-                            .clickable { onSolveCloudflare() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Shield,
-                            contentDescription = "Solve Cloudflare",
-                            modifier = Modifier.size(11.dp),
-                            tint = if (cookieStatus == CloudflareManager.CookieStatus.EXPIRED)
-                                MaterialTheme.colorScheme.tertiary
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+
+                // Bottom: name + stats row
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = provider.name,
+                        style = if (isNarrow) MaterialTheme.typography.labelMedium
+                                else MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = if (isVeryNarrow) 2 else 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (!isVeryNarrow) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (!isNarrow) {
+                                ProviderStatChip(
+                                    icon = Icons.Rounded.Category,
+                                    text = "${provider.tags.size}",
+                                    label = "genres",
+                                    color = primaryColor
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+
+                            Surface(
+                                shape = CircleShape,
+                                color = primaryColor.copy(alpha = 0.12f),
+                                modifier = Modifier.size(if (isNarrow) 26.dp else 32.dp)
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                                        contentDescription = "Open",
+                                        modifier = Modifier.size(if (isNarrow) 12.dp else 15.dp),
+                                        tint = primaryColor
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -2302,7 +2441,7 @@ private fun ProviderIcon(
     color: Color,
     @DrawableRes iconRes: Int? = null,
     iconUrl: String? = null,
-    size: Dp = 40.dp
+    size: Dp = 46.dp
 ) {
     val hasIcon = iconUrl != null || iconRes != null
     Surface(
@@ -2347,10 +2486,10 @@ private fun ProviderIcon(
             ) {
                 Text(
                     text = initials,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    fontSize = (size.value * 0.38f).sp
+                    fontSize = (size.value * 0.42f).sp
                 )
             }
         }
@@ -2466,50 +2605,55 @@ private fun ProviderCardSkeleton() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(0.85f),
+            .aspectRatio(0.92f),
         shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        )
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.60f)
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .shimmerEffect(),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(AppShape.large)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                )
-            }
-
-            HorizontalDivider(
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                    .size(46.dp)
+                    .clip(AppShape.large)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .shimmerEffect()
             )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.40f)
-                    .padding(horizontal = 8.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.72f)
-                        .height(11.dp)
+                        .fillMaxWidth(0.7f)
+                        .height(16.dp)
                         .clip(AppShape.extraSmall)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         .shimmerEffect()
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(52.dp)
+                            .height(22.dp)
+                            .clip(AppShape.small)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .shimmerEffect()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .shimmerEffect()
+                    )
+                }
             }
         }
     }
