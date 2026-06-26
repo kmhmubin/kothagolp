@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.10.1] — 2026-06-26
+
+### Fixed
+
+- Reader position no longer shifts when chrome (top bar / bottom bar) is shown or hidden.
+- Library list card covers now display in correct portrait aspect ratio (matching history page).
+- Source list items now show real provider icons with gradient card style.
+- Source cards properly adapt layout at 3–5 column grids without content overlap.
+- Chapter update notification now shows app icon instead of download icon.
+- Cancel button on chapter update notification now correctly stops the background job.
+
 ## [3.6.2] — 2026-06-22
 
 ### Changed

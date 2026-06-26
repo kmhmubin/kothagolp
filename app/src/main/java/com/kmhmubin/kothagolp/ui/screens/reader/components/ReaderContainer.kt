@@ -137,12 +137,18 @@ fun ReaderContainer(
 
     val touchTargetPadding = if (settings.largerTouchTargets) 8.dp else 0.dp
 
-    // Keep topPadding constant regardless of showControls — chrome overlays content via Box z-order.
-    // A dynamic topPadding would change LazyColumn contentPadding on every toggle, shifting reading position.
-    val topPadding = statusBarPadding.calculateTopPadding() + settings.marginVertical.dp
+    // Track max insets ever seen — system bars report 0 when hidden (immersive mode).
+    // Letting contentPadding shrink shifts the LazyColumn reading position on every chrome toggle.
+    // By only ever increasing, the padding is stable once bars first appear.
+    var maxTopInset by remember { mutableStateOf(0.dp) }
+    var maxBottomInset by remember { mutableStateOf(0.dp) }
+    val currentTopInset = statusBarPadding.calculateTopPadding()
+    val currentBottomInset = navBarPadding.calculateBottomPadding()
+    if (currentTopInset > maxTopInset) maxTopInset = currentTopInset
+    if (currentBottomInset > maxBottomInset) maxBottomInset = currentBottomInset
 
-    val bottomPadding = navBarPadding.calculateBottomPadding() + 100.dp +
-            settings.marginVertical.dp + touchTargetPadding
+    val topPadding = maxTopInset + settings.marginVertical.dp
+    val bottomPadding = maxBottomInset + 100.dp + settings.marginVertical.dp + touchTargetPadding
 
     val topPaddingPx = with(density) { topPadding.roundToPx() }
     val bottomPaddingPx = with(density) { bottomPadding.roundToPx() }

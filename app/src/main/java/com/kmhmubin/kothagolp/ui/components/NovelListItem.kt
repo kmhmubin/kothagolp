@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -223,8 +224,8 @@ fun NovelListItem(
             // Cover Image with overlay
             Box(
                 modifier = Modifier
-                    .width(imageWidth)
                     .fillMaxHeight()
+                    .aspectRatio(2f / 3f, matchHeightConstraintsFirst = true)
                     .clip(ListItemTokens.ImageShape)
             ) {
                 ListItemCoverImage(
@@ -731,8 +732,8 @@ fun NovelListItemSkeleton(
             // Image placeholder
             Box(
                 modifier = Modifier
-                    .width(imageWidth)
                     .fillMaxHeight()
+                    .aspectRatio(2f / 3f, matchHeightConstraintsFirst = true)
                     .clip(ListItemTokens.ImageShape)
                     .shimmerEffect()
             )
