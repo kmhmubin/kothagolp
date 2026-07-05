@@ -136,11 +136,7 @@ class DetailsViewModel : ViewModel() {
     fun loadNovel(novelUrl: String, providerName: String, forceRefresh: Boolean = false) {
         currentNovelUrl = novelUrl
         currentProvider = novelRepository.getProvider(providerName)
-
-        val provider = currentProvider ?: run {
-            _uiState.update { it.copy(error = "Provider not found", isLoading = false) }
-            return
-        }
+        val provider = currentProvider
 
         viewModelScope.launch {
             if (forceRefresh) {
@@ -149,12 +145,19 @@ class DetailsViewModel : ViewModel() {
                 _uiState.update { it.copy(isLoading = true, error = null) }
             }
 
-            val result = novelRepository.loadNovelDetails(provider, novelUrl, forceRefresh)
+            // Source gone dark (provider removed/unavailable): serve cached metadata
+            // so library books stay fully readable and migratable offline
+            val result = if (provider != null) {
+                novelRepository.loadNovelDetails(provider, novelUrl, forceRefresh)
+            } else {
+                novelRepository.getOfflineNovelDetails(novelUrl)?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Source \"$providerName\" is unavailable and no cached data exists for this novel"))
+            }
 
             result.fold(
                 onSuccess = { details ->
                     // If cached details contain no chapters, try a forced network refresh once
-                    if (details.chapters.isEmpty() && !forceRefresh) {
+                    if (details.chapters.isEmpty() && !forceRefresh && provider != null) {
                         loadNovel(novelUrl, providerName, forceRefresh = true)
                         return@fold
                     }
@@ -185,7 +188,7 @@ class DetailsViewModel : ViewModel() {
 
                     // Refresh chapter URLs in background when serving from cache so stale
                     // chapter URLs (e.g. after a site restructure) get updated for next session
-                    if (!forceRefresh) {
+                    if (!forceRefresh && provider != null) {
                         viewModelScope.launch {
                             try {
                                 novelRepository.loadNovelDetails(provider, novelUrl, forceRefresh = true)
@@ -194,7 +197,9 @@ class DetailsViewModel : ViewModel() {
                     }
 
                     // Fetch related suggestions via keyword search
-                    fetchRelatedSuggestions(details, provider, novelUrl)
+                    if (provider != null) {
+                        fetchRelatedSuggestions(details, provider, novelUrl)
+                    }
 
                     // Load reviews if supported
                     if (hasReviewsSupport) {

@@ -72,6 +72,14 @@ interface OfflineDao {
     @Query("DELETE FROM novel_details WHERE url = :url")
     suspend fun deleteNovelDetails(url: String)
 
+    /**
+     * Delete cached details only if the novel is NOT in the library.
+     * Library books' metadata must survive cache eviction so they stay
+     * readable and migratable even when their source goes dark.
+     */
+    @Query("DELETE FROM novel_details WHERE url = :url AND url NOT IN (SELECT url FROM library)")
+    suspend fun deleteNovelDetailsIfNotInLibrary(url: String)
+
     @Query("SELECT * FROM novel_details")
     suspend fun getAllNovelDetails(): List<NovelDetailsEntity>
 
@@ -86,6 +94,14 @@ interface OfflineDao {
 
     @Query("DELETE FROM novel_details")
     suspend fun deleteAllNovelDetails()
+
+    /** Bulk cache clear that preserves library books' metadata. */
+    @Query("DELETE FROM novel_details WHERE url NOT IN (SELECT url FROM library)")
+    suspend fun deleteNonLibraryNovelDetails()
+
+    /** Evictable (non-library) cached details, for accurate clear-cache size reporting. */
+    @Query("SELECT * FROM novel_details WHERE url NOT IN (SELECT url FROM library)")
+    suspend fun getNonLibraryNovelDetails(): List<NovelDetailsEntity>
     /**
      * Get download info for all novels with downloaded chapters
      */

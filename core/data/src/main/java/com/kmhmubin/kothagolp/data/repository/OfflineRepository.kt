@@ -271,7 +271,8 @@ class OfflineRepository(
     suspend fun deleteNovelDownloads(novelUrl: String) = withContext(Dispatchers.IO) {
         offlineDao.deleteChaptersForNovel(novelUrl)
         offlineDao.deleteNovel(novelUrl)
-        offlineDao.deleteNovelDetails(novelUrl)
+        // Keep metadata for library books — needed for offline details & migration if source dies
+        offlineDao.deleteNovelDetailsIfNotInLibrary(novelUrl)
     }
 
     /**
@@ -286,7 +287,7 @@ class OfflineRepository(
         val remainingCount = offlineDao.getDownloadedCount(novelUrl)
         if (remainingCount == 0) {
             offlineDao.deleteNovel(novelUrl)
-            offlineDao.deleteNovelDetails(novelUrl)
+            offlineDao.deleteNovelDetailsIfNotInLibrary(novelUrl)
         }
     }
     /**

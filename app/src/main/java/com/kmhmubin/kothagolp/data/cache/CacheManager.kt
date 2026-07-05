@@ -111,7 +111,9 @@ class CacheManager(
     private suspend fun getNovelDetailsCacheInfo(): CacheCategory {
         val offlineDao = database.offlineDao()
 
-        val details = offlineDao.getAllNovelDetails()
+        // Only non-library rows are evictable — library books' metadata is
+        // permanent (survives cache clears so dead sources stay readable/migratable)
+        val details = offlineDao.getNonLibraryNovelDetails()
 
         val totalSize = details.sumOf { detail ->
             var size = 0L
@@ -287,7 +289,7 @@ class CacheManager(
 
             offlineDao.deleteChaptersForNovel(novelUrl)
             offlineDao.deleteNovel(novelUrl)
-            offlineDao.deleteNovelDetails(novelUrl)
+            offlineDao.deleteNovelDetailsIfNotInLibrary(novelUrl)
 
             ClearCacheResult(
                 success = true,
@@ -303,7 +305,8 @@ class CacheManager(
     }
 
     /**
-     * Clear novel details cache
+     * Clear novel details cache. Library books' metadata is preserved —
+     * it's the only copy left if the source ever goes dark.
      */
     suspend fun clearNovelDetailsCache(): ClearCacheResult = withContext(Dispatchers.IO) {
         try {
@@ -311,7 +314,7 @@ class CacheManager(
 
             val info = getNovelDetailsCacheInfo()
 
-            offlineDao.deleteAllNovelDetails()
+            offlineDao.deleteNonLibraryNovelDetails()
 
             ClearCacheResult(
                 success = true,
