@@ -96,6 +96,8 @@ import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.BuildCircle
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.SystemUpdate
@@ -125,6 +127,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -187,6 +190,7 @@ import com.kmhmubin.kothagolp.domain.model.RatingFormat
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.ThemeMode
 import com.kmhmubin.kothagolp.domain.model.UiDensity
+import com.kmhmubin.kothagolp.data.repository.MetadataBackfillManager
 import com.kmhmubin.kothagolp.data.sync.SyncServiceType
 import com.kmhmubin.kothagolp.data.sync.SyncWorker
 import com.kmhmubin.kothagolp.update.ChapterUpdateScheduler
@@ -616,6 +620,32 @@ fun SettingsLibraryScreen(onBack: () -> Unit) {
                     )
                 }
             }
+
+            item { SectionHeader("Maintenance", Icons.Outlined.BuildCircle) }
+            item {
+                val backfillManager = remember { RepositoryProvider.getMetadataBackfillManager() }
+                val backfillProgress by backfillManager.backfillProgress.collectAsStateWithLifecycle()
+                var showBackfillDialog by remember { mutableStateOf(false) }
+
+                SettingsCard {
+                    ClickableItem(
+                        icon = Icons.Outlined.Refresh,
+                        title = "Refresh All Metadata",
+                        subtitle = "Cache offline metadata for all library books (for dark source recovery)",
+                        tint = MaterialTheme.colorScheme.primary,
+                        onClick = { showBackfillDialog = true }
+                    )
+                }
+
+                if (showBackfillDialog) {
+                    BackfillMetadataDialog(
+                        backfillManager = backfillManager,
+                        progress = backfillProgress,
+                        onDismiss = { showBackfillDialog = false }
+                    )
+                }
+            }
+
             item { Spacer(Modifier.height(80.dp)) }
         }
     }
@@ -3075,6 +3105,78 @@ private fun AiModelRow(
             }
         }
     }
+}
+
+@Composable
+private fun BackfillMetadataDialog(
+    backfillManager: MetadataBackfillManager,
+    progress: com.kmhmubin.kothagolp.data.repository.BackfillProgress,
+    onDismiss: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+
+    AlertDialog(
+        onDismissRequest = { if (!progress.isRunning) onDismiss() },
+        title = { Text("Refresh All Metadata") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (!progress.isRunning && progress.current == 0) {
+                    Text(
+                        text = "Cache offline metadata for all library books. This helps recover reading data if a source goes offline.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "${progress.current} / ${progress.total}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        LinearProgressIndicator(
+                            progress = { if (progress.total > 0) progress.current.toFloat() / progress.total else 0f },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            text = progress.currentNovelTitle.take(60),
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "✓ ${progress.successCount}  ⊘ ${progress.skippedCount}  ✗ ${progress.failedCount}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (progress.isRunning) {
+                        backfillManager.cancelBackfill()
+                    } else if (progress.current == 0) {
+                        scope.launch {
+                            backfillManager.startBackfill()
+                        }
+                    } else {
+                        onDismiss()
+                    }
+                },
+                enabled = true
+            ) {
+                Text(
+                    when {
+                        progress.isRunning -> "Cancel"
+                        progress.current == 0 -> "Start"
+                        else -> "Done"
+                    }
+                )
+            }
+        }
+    )
 }
 
 @Composable

@@ -102,6 +102,59 @@ interface OfflineDao {
     /** Evictable (non-library) cached details, for accurate clear-cache size reporting. */
     @Query("SELECT * FROM novel_details WHERE url NOT IN (SELECT url FROM library)")
     suspend fun getNonLibraryNovelDetails(): List<NovelDetailsEntity>
+
+    // ============ OFFLINE METADATA COVERAGE ============
+
+    /** How many library books have offline metadata cached. Reactive — updates as rows land. */
+    @Query("SELECT COUNT(*) FROM library WHERE url IN (SELECT url FROM novel_details)")
+    fun libraryMetadataCoverageFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM library")
+    fun libraryCountFlow(): Flow<Int>
+
+    // ============ SIZE AGGREGATES (SQL-side; avoids loading content into memory) ============
+
+    /** Estimated bytes of downloaded chapters (UTF-16 ≈ 2 bytes/char), computed in SQLite. */
+    @Query("SELECT COALESCE(SUM(LENGTH(content) + LENGTH(title)) * 2, 0) FROM offline_chapters")
+    suspend fun getChaptersSizeBytes(): Long
+
+    @Query("SELECT COALESCE(SUM(LENGTH(content) + LENGTH(title)) * 2, 0) FROM offline_chapters WHERE novelUrl = :novelUrl")
+    suspend fun getNovelChaptersSizeBytes(novelUrl: String): Long
+
+    @Query("SELECT COUNT(*) FROM offline_chapters")
+    suspend fun getTotalChapterCount(): Int
+
+    @Query("SELECT COUNT(*) FROM offline_chapters WHERE novelUrl = :novelUrl")
+    suspend fun getNovelChapterCount(novelUrl: String): Int
+
+    /**
+     * Estimated bytes of evictable (non-library) cached novel details, computed in SQLite.
+     * chapters/tags/relatedNovelsJson are serialized TEXT columns, so LENGTH covers them.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(
+            (LENGTH(name) + LENGTH(url) + LENGTH(apiName)
+             + LENGTH(COALESCE(synopsis, '')) + LENGTH(COALESCE(author, ''))
+             + LENGTH(COALESCE(status, '')) + LENGTH(COALESCE(posterUrl, ''))
+             + LENGTH(COALESCE(relatedNovelsJson, '')) + LENGTH(COALESCE(chapters, ''))
+             + LENGTH(COALESCE(tags, ''))) * 2
+        ), 0)
+        FROM novel_details WHERE url NOT IN (SELECT url FROM library)
+    """)
+    suspend fun getNonLibraryNovelDetailsSizeBytes(): Long
+
+    @Query("SELECT COUNT(*) FROM novel_details WHERE url NOT IN (SELECT url FROM library)")
+    suspend fun getNonLibraryNovelDetailsCount(): Int
+
+    /** Per-novel download size + count in one grouped query — no chapter content leaves SQLite. */
+    @Query("""
+        SELECT novelUrl,
+               COUNT(*) as count,
+               COALESCE(SUM(LENGTH(content) + LENGTH(title)) * 2, 0) as sizeBytes
+        FROM offline_chapters
+        GROUP BY novelUrl
+    """)
+    suspend fun getNovelDownloadSizes(): List<NovelDownloadSize>
     /**
      * Get download info for all novels with downloaded chapters
      */
@@ -147,4 +200,13 @@ data class NovelDownloadData(
     val novelUrl: String,
     val count: Int,
     val lastDownloadedAt: Long?
+)
+
+/**
+ * Per-novel download size computed in SQL
+ */
+data class NovelDownloadSize(
+    val novelUrl: String,
+    val count: Int,
+    val sizeBytes: Long
 )

@@ -119,11 +119,21 @@ object RepositoryProvider {
     }
 
     private var userFilterManager: UserFilterManager? = null
+    private var metadataBackfillManager: MetadataBackfillManager? = null
 
     fun getUserFilterManager(): UserFilterManager {
         return userFilterManager ?: UserFilterManager(
             filterDao = getDatabase().userFilterDao()
         ).also { userFilterManager = it }
+    }
+
+    fun getMetadataBackfillManager(): MetadataBackfillManager {
+        return metadataBackfillManager ?: MetadataBackfillManager(
+            context = getAppContext(),
+            libraryRepository = getLibraryRepository(),
+            libraryDao = getDatabase().libraryDao(),
+            offlineDao = getDatabase().offlineDao()
+        ).also { metadataBackfillManager = it }
     }
 
     fun getRecommendationEngine(): RecommendationEngine {

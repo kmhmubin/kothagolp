@@ -599,4 +599,48 @@ class LibraryRepository(
     suspend fun getCustomCover(novelUrl: String): String? = withContext(Dispatchers.IO) {
         libraryDao.getCustomCover(novelUrl)
     }
+
+    // ================================================================
+    // METADATA BACKFILL (Dark source recovery)
+    // ================================================================
+
+    /**
+     * Fetch and cache novel details from provider. Used for backfilling offline
+     * metadata so reading data survives source unavailability.
+     * ponytail: single provider search per URL; upgrade to parallel retry if
+     * latency becomes bottleneck
+     */
+    suspend fun fetchAndCacheNovelDetails(novelUrl: String) = withContext(Dispatchers.IO) {
+        val libraryEntity = libraryDao.getByUrl(novelUrl) ?: return@withContext
+
+        // Try the original source first, then fallback to any available provider
+        val providers = mutableListOf(libraryEntity.apiName).apply {
+            addAll(MainProvider.getProviders().map { it.name })
+        }.distinct()
+
+        for (providerName in providers) {
+            try {
+                val provider = MainProvider.getProvider(providerName) ?: continue
+                val details = provider.load(novelUrl) ?: continue
+
+                offlineDao.saveNovelDetails(
+                    NovelDetailsEntity(
+                        url = novelUrl,
+                        name = details.name,
+                        apiName = provider.name,
+                        author = details.author,
+                        synopsis = details.synopsis,
+                        posterUrl = details.posterUrl,
+                        status = details.status,
+                        relatedNovelsJson = null,
+                        chapters = null,
+                        tags = null
+                    )
+                )
+                return@withContext
+            } catch (e: Exception) {
+                continue
+            }
+        }
+    }
 }
