@@ -36,7 +36,47 @@ object SyncBackupMerger {
         local: List<LibraryBackup>,
         remote: List<LibraryBackup>
     ): List<LibraryBackup> {
-        return (local + remote)
+        val allBooks = local + remote
+
+        // Cross-source dedup: if same book exists in multiple sources, keep newest
+        // & remove older. Detects title migrations (SourceA → SourceB).
+        val deduplicated = mutableMapOf<String, LibraryBackup>()
+        val titleIndex = mutableMapOf<String, MutableList<LibraryBackup>>()
+
+        // First pass: group by title (normalized) to find cross-source duplicates
+        for (book in allBooks) {
+            val normalized = normalizeTitleForDedup(book.name)
+            titleIndex.getOrPut(normalized) { mutableListOf() }.add(book)
+        }
+
+        // Second pass: for each title group, keep only the best book (newest activity)
+        for ((_, booksWithSameTitle) in titleIndex) {
+            if (booksWithSameTitle.size == 1) {
+                // No duplicate, keep as-is
+                val book = booksWithSameTitle.first()
+                deduplicated[book.url] = book
+            } else {
+                // Multiple books with same title (cross-source migration case)
+                // Check if they're from different sources
+                val hasDifferentSources = booksWithSameTitle.map { it.apiName }.toSet().size > 1
+                if (hasDifferentSources) {
+                    // Cross-source duplicate: keep the one with most recent activity
+                    val best = booksWithSameTitle.maxByOrNull {
+                        maxOf(it.lastReadAt ?: 0L, it.lastUpdatedAt, it.addedAt)
+                    } ?: booksWithSameTitle.first()
+                    deduplicated[best.url] = best
+                    // Don't add others (they're removed by not adding to map)
+                } else {
+                    // Same source (shouldn't happen), keep all
+                    for (book in booksWithSameTitle) {
+                        deduplicated[book.url] = book
+                    }
+                }
+            }
+        }
+
+        // Third pass: merge same-URL books (standard conflict resolution)
+        return deduplicated.values
             .groupBy { it.url }
             .map { (_, entries) ->
                 val newestRead = entries.maxByOrNull { it.lastReadAt ?: 0L } ?: entries.first()
@@ -61,6 +101,14 @@ object SyncBackupMerger {
                 )
             }
             .sortedByDescending { libraryTimestamp(it) }
+    }
+
+    private fun normalizeTitleForDedup(title: String): String {
+        return title
+            .lowercase()
+            .trim()
+            .replace(Regex("""\s+"""), " ")
+            .replace(Regex("""[^\w\s]"""), "")
     }
 
     private fun mergeBookmarks(
