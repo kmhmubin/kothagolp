@@ -94,6 +94,8 @@ import androidx.compose.material.icons.outlined.SettingsSuggest
 import androidx.compose.material.icons.outlined.SpaceDashboard
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.SystemUpdate
@@ -185,6 +187,8 @@ import com.kmhmubin.kothagolp.domain.model.RatingFormat
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.ThemeMode
 import com.kmhmubin.kothagolp.domain.model.UiDensity
+import com.kmhmubin.kothagolp.data.sync.SyncServiceType
+import com.kmhmubin.kothagolp.data.sync.SyncWorker
 import com.kmhmubin.kothagolp.update.ChapterUpdateScheduler
 import com.kmhmubin.kothagolp.ui.components.ColorPickerDialog
 import com.kmhmubin.kothagolp.ui.navigation.NavRoutes
@@ -336,6 +340,14 @@ fun SettingsScreen(
                     shape = AppShape.large
                 ) {
                     Column {
+                        SettingsNavRow(
+                            icon = Icons.Outlined.Schedule,
+                            iconTint = StatusOnHold,
+                            title = "Scheduled Tasks",
+                            subtitle = "Chapter updates, auto backup and sync intervals",
+                            onClick = { onNavigateTo(NavRoutes.SettingsScheduling.route) }
+                        )
+                        RowDivider()
                         SettingsNavRow(
                             icon = Icons.Outlined.Backup,
                             iconTint = StatusCompleted,
@@ -604,6 +616,64 @@ fun SettingsLibraryScreen(onBack: () -> Unit) {
                     )
                 }
             }
+            item { Spacer(Modifier.height(80.dp)) }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SCHEDULED TASKS  (all time-based automation in one place)
+// ═══════════════════════════════════════════════════════════════════════════
+
+private data class SyncIntervalChoice(val minutes: Int, val label: String)
+
+private val SCHEDULING_SYNC_INTERVALS = listOf(
+    SyncIntervalChoice(0, "Off"),
+    SyncIntervalChoice(30, "Every 30 minutes"),
+    SyncIntervalChoice(60, "Hourly"),
+    SyncIntervalChoice(180, "Every 3 hours"),
+    SyncIntervalChoice(360, "Every 6 hours"),
+    SyncIntervalChoice(720, "Every 12 hours"),
+    SyncIntervalChoice(1440, "Daily"),
+    SyncIntervalChoice(2880, "Every 2 days"),
+    SyncIntervalChoice(10080, "Weekly"),
+    SyncIntervalChoice(20160, "Every 2 weeks"),
+    SyncIntervalChoice(43200, "Monthly")
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsSchedulingScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+    val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
+    val syncSettings by preferencesManager.syncSettings.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val snackbarState = remember { SnackbarHostState() }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Scheduled Tasks", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarState) }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             item { SectionHeader("Chapter Updates", Icons.Outlined.Sync) }
             item {
                 SettingsCard {
@@ -689,6 +759,38 @@ fun SettingsLibraryScreen(onBack: () -> Unit) {
                             LocalBackupWorker.schedule(context, interval, forceUpdate = true)
                         }
                     )
+                }
+            }
+
+            item { SectionHeader("Cloud Sync", Icons.Outlined.CloudSync) }
+            item {
+                SettingsCard {
+                    if (syncSettings.service == SyncServiceType.NONE) {
+                        ClickableItem(
+                            icon = Icons.Outlined.CloudOff,
+                            title = "No sync service configured",
+                            subtitle = "Set up Google Drive in Backup & Sync first",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = { }
+                        )
+                    } else {
+                        val selectedIdx = SCHEDULING_SYNC_INTERVALS
+                            .indexOfFirst { it.minutes == syncSettings.intervalMinutes }
+                            .coerceAtLeast(0)
+                        DropdownItem(
+                            icon = Icons.Outlined.Schedule,
+                            title = "Auto Sync Interval",
+                            selectedValue = SCHEDULING_SYNC_INTERVALS[selectedIdx].label,
+                            options = SCHEDULING_SYNC_INTERVALS.map { it.label },
+                            selectedIndex = selectedIdx,
+                            onSelect = { idx ->
+                                preferencesManager.setSyncIntervalMinutes(
+                                    SCHEDULING_SYNC_INTERVALS[idx].minutes
+                                )
+                                SyncWorker.schedule(context, forceUpdate = true)
+                            }
+                        )
+                    }
                 }
             }
 

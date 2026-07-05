@@ -39,6 +39,7 @@ import com.kmhmubin.kothagolp.ui.screens.settings.SettingsLibraryScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsReaderPrefsScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsForYouScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsPermissionsScreen
+import com.kmhmubin.kothagolp.ui.screens.settings.SettingsSchedulingScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.SettingsSourcesScreen
 import com.kmhmubin.kothagolp.ui.screens.settings.StorageScreen
@@ -247,6 +248,10 @@ fun KothagolpNavGraph(
 
         composable(route = NavRoutes.SettingsForYou.route) {
             SettingsForYouScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(route = NavRoutes.SettingsScheduling.route) {
+            SettingsSchedulingScreen(onBack = { navController.popBackStack() })
         }
 
         // ================================================================

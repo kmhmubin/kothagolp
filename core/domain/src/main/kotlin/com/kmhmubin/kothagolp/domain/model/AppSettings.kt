@@ -303,14 +303,20 @@ enum class ChapterUpdateInterval {
     EVERY_6H,
     EVERY_12H,
     EVERY_24H,
-    EVERY_48H;
+    EVERY_48H,
+    EVERY_WEEK,
+    EVERY_2_WEEKS,
+    EVERY_MONTH;
 
     fun displayName(): String = when (this) {
         OFF -> "Off"
         EVERY_6H -> "Every 6 hours"
         EVERY_12H -> "Every 12 hours"
-        EVERY_24H -> "Every 24 hours"
-        EVERY_48H -> "Every 48 hours"
+        EVERY_24H -> "Daily"
+        EVERY_48H -> "Every 2 days"
+        EVERY_WEEK -> "Weekly"
+        EVERY_2_WEEKS -> "Every 2 weeks"
+        EVERY_MONTH -> "Monthly"
     }
 
     fun hours(): Long = when (this) {
@@ -319,6 +325,9 @@ enum class ChapterUpdateInterval {
         EVERY_12H -> 12L
         EVERY_24H -> 24L
         EVERY_48H -> 48L
+        EVERY_WEEK -> 168L
+        EVERY_2_WEEKS -> 336L
+        EVERY_MONTH -> 720L
     }
 }
 
@@ -331,15 +340,19 @@ enum class LocalBackupInterval {
     EVERY_12H,
     EVERY_24H,
     EVERY_48H,
-    EVERY_WEEK;
+    EVERY_WEEK,
+    EVERY_2_WEEKS,
+    EVERY_MONTH;
 
     fun displayName(): String = when (this) {
         OFF -> "Off"
         EVERY_6H -> "Every 6 hours"
         EVERY_12H -> "Every 12 hours"
-        EVERY_24H -> "Every 24 hours"
-        EVERY_48H -> "Every 48 hours"
+        EVERY_24H -> "Daily"
+        EVERY_48H -> "Every 2 days"
         EVERY_WEEK -> "Weekly"
+        EVERY_2_WEEKS -> "Every 2 weeks"
+        EVERY_MONTH -> "Monthly"
     }
 
     fun hours(): Long = when (this) {
@@ -349,6 +362,8 @@ enum class LocalBackupInterval {
         EVERY_24H -> 24L
         EVERY_48H -> 48L
         EVERY_WEEK -> 168L
+        EVERY_2_WEEKS -> 336L
+        EVERY_MONTH -> 720L
     }
 }
 

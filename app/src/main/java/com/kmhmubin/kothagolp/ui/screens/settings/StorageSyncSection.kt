@@ -74,7 +74,6 @@ fun StorageSyncSection(
     val googleDriveSync = remember(syncManager) { syncManager.getGoogleDriveService() }
 
     var showServiceMenu by remember { mutableStateOf(false) }
-    var showIntervalMenu by remember { mutableStateOf(false) }
     var showDisconnectDialog by remember { mutableStateOf(false) }
     var showPurgeDialog by remember { mutableStateOf(false) }
 
@@ -303,39 +302,11 @@ fun StorageSyncSection(
                                 fontWeight = FontWeight.SemiBold
                             )
 
-                            Box {
-                                OptionField(
-                                    text = syncSettings.intervalMinutes.syncIntervalLabel(),
-                                    icon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
-                                    onClick = { showIntervalMenu = true }
-                                )
-
-                                DropdownMenu(
-                                    expanded = showIntervalMenu,
-                                    onDismissRequest = { showIntervalMenu = false }
-                                ) {
-                                    SYNC_INTERVAL_OPTIONS.forEach { option ->
-                                        DropdownMenuItem(
-                                            text = { Text(option.label) },
-                                            onClick = {
-                                                showIntervalMenu = false
-                                                preferencesManager.setSyncIntervalMinutes(option.minutes)
-                                                SyncWorker.schedule(context, forceUpdate = true)
-                                            },
-                                            trailingIcon = if (option.minutes == syncSettings.intervalMinutes) {
-                                                {
-                                                    Icon(
-                                                        Icons.Outlined.Check,
-                                                        contentDescription = null
-                                                    )
-                                                }
-                                            } else {
-                                                null
-                                            }
-                                        )
-                                    }
-                                }
-                            }
+                            Text(
+                                text = "Runs ${syncSettings.intervalMinutes.syncIntervalLabel().lowercase()} — change the interval in Settings → Scheduled Tasks",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
 
                             ToggleRow(
                                 title = "Notifications",
@@ -682,7 +653,9 @@ private val SYNC_INTERVAL_OPTIONS = listOf(
     SyncIntervalOption(720, "Every 12 hours"),
     SyncIntervalOption(1440, "Daily"),
     SyncIntervalOption(2880, "Every 2 days"),
-    SyncIntervalOption(10080, "Weekly")
+    SyncIntervalOption(10080, "Weekly"),
+    SyncIntervalOption(20160, "Every 2 weeks"),
+    SyncIntervalOption(43200, "Monthly")
 )
 
 private fun SyncServiceType.displayName(): String {
