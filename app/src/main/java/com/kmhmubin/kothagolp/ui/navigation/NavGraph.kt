@@ -289,6 +289,9 @@ fun KothagolpNavGraph(
                 onBack = { navController.popBackStack() },
                 onMigrationComplete = {
                     navController.popBackStack(NavRoutes.MigrationSources.route, inclusive = true)
+                },
+                onOpenDetails = { novelUrl, providerName ->
+                    navController.navigate(NavRoutes.Details.createRoute(novelUrl, providerName))
                 }
             )
         }

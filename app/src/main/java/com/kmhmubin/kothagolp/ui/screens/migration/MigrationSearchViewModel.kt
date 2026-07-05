@@ -80,6 +80,14 @@ class MigrationSearchViewModel(savedStateHandle: SavedStateHandle) : ViewModel()
                                 onFailure = { err -> r.copy(isLoading = false, error = err.message) }
                             )
                         } else r
+                    }.sortedBy { r ->
+                        // Komikku-style: sources with results float to top,
+                        // still-searching in the middle, empty/failed sink to bottom
+                        when {
+                            !r.novels.isNullOrEmpty() -> 0
+                            r.isLoading -> 1
+                            else -> 2
+                        }
                     }
                     val allDone = updated.none { it.isLoading }
                     state.copy(providerResults = updated, isSearching = !allDone)

@@ -1,6 +1,8 @@
 package com.kmhmubin.kothagolp.ui.screens.migration
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -44,8 +47,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +65,7 @@ import com.kmhmubin.kothagolp.ui.theme.AppShape
 fun MigrationSearchScreen(
     onBack: () -> Unit,
     onMigrationComplete: () -> Unit,
+    onOpenDetails: (novelUrl: String, providerName: String) -> Unit = { _, _ -> },
     viewModel: MigrationSearchViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -175,22 +181,29 @@ fun MigrationSearchScreen(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .weight(1f),
-                                contentPadding = PaddingValues(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                contentPadding = PaddingValues(vertical = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 item {
-                                    MigrationSearchHeader(
-                                        fromSource = viewModel.fromSourceName,
-                                        novelName = uiState.sourceEntry?.name ?: ""
-                                    )
-                                    Spacer(Modifier.height(4.dp))
+                                    Box(Modifier.padding(horizontal = 16.dp)) {
+                                        MigrationSearchHeader(
+                                            fromSource = viewModel.fromSourceName,
+                                            novelName = uiState.sourceEntry?.name ?: ""
+                                        )
+                                    }
                                 }
 
-                                items(uiState.providerResults) { result ->
+                                items(
+                                    items = uiState.providerResults,
+                                    key = { it.providerName }
+                                ) { result ->
                                     ProviderResultSection(
                                         result = result,
                                         currentSource = viewModel.fromSourceName,
-                                        onNovelSelected = { viewModel.selectNovel(it) }
+                                        onNovelSelected = { viewModel.selectNovel(it) },
+                                        onNovelLongPressed = { novel ->
+                                            onOpenDetails(novel.url, novel.apiName)
+                                        }
                                     )
                                 }
                             }
@@ -242,7 +255,7 @@ private fun MigrationSearchHeader(fromSource: String, novelName: String) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "from $fromSource · tap a result to migrate",
+                    text = "from $fromSource · tap to migrate, hold to view details",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -251,107 +264,103 @@ private fun MigrationSearchHeader(fromSource: String, novelName: String) {
     }
 }
 
+// Komikku-style section: provider header row + horizontal scroll of cover cards
 @Composable
 private fun ProviderResultSection(
     result: ProviderSearchResult,
     currentSource: String,
-    onNovelSelected: (Novel) -> Unit
+    onNovelSelected: (Novel) -> Unit,
+    onNovelLongPressed: (Novel) -> Unit
 ) {
     val isSameSource = result.providerName == currentSource
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = AppShape.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = result.providerName,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f)
-                )
-                when {
-                    isSameSource -> {
-                        Surface(
-                            shape = AppShape.extraSmall,
-                            color = MaterialTheme.colorScheme.secondaryContainer
-                        ) {
-                            Text(
-                                text = "Current",
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
-                    }
-                    result.isLoading -> {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    }
-                    result.error != null -> {
-                        Icon(
-                            imageVector = Icons.Rounded.Error,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                    result.novels != null -> {
-                        Text(
-                            text = "${result.novels.size}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = result.providerName,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
             when {
-                result.isLoading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp),
-                        contentAlignment = Alignment.Center
+                isSameSource -> {
+                    Surface(
+                        shape = AppShape.extraSmall,
+                        color = MaterialTheme.colorScheme.secondaryContainer
                     ) {
                         Text(
-                            text = "Searching…",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Current",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
                 }
+                result.isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                }
                 result.error != null -> {
-                    Text(
-                        text = result.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    Icon(
+                        imageVector = Icons.Rounded.Error,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
-                result.novels.isNullOrEmpty() -> {
+                result.novels != null -> {
                     Text(
-                        text = "No results",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        text = "${result.novels.size}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                else -> {
-                    result.novels.forEach { novel ->
-                        SearchResultItem(
+            }
+        }
+
+        when {
+            result.isLoading -> {
+                Text(
+                    text = "Searching…",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            result.error != null -> {
+                Text(
+                    text = result.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            result.novels.isNullOrEmpty() -> {
+                Text(
+                    text = "No results",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            else -> {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(
+                        items = result.novels,
+                        key = { it.url }
+                    ) { novel ->
+                        MigrationNovelCard(
                             novel = novel,
                             isSameSource = isSameSource,
-                            onClick = { if (!isSameSource) onNovelSelected(novel) }
+                            onClick = { if (!isSameSource) onNovelSelected(novel) },
+                            onLongClick = { onNovelLongPressed(novel) }
                         )
                     }
                 }
@@ -360,78 +369,86 @@ private fun ProviderResultSection(
     }
 }
 
+// Cover-first card: tap = migrate, long-press = open details for verification
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun SearchResultItem(
+private fun MigrationNovelCard(
     novel: Novel,
     isSameSource: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
-    Row(
+    val haptic = LocalHapticFeedback.current
+
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = !isSameSource, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val coverUrl = novel.posterUrl
-        if (coverUrl != null) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(coverUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(width = 80.dp, height = 110.dp)
-                    .clip(AppShape.extraSmall)
+            .width(104.dp)
+            .clip(AppShape.small)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                }
             )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(width = 80.dp, height = 110.dp)
-                    .clip(AppShape.extraSmall),
-                contentAlignment = Alignment.Center
-            ) {
+            .padding(2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+                .clip(AppShape.small)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        ) {
+            val coverUrl = novel.posterUrl
+            if (coverUrl != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(coverUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
                 Icon(
                     imageVector = Icons.Rounded.Bookmarks,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier
+                        .size(24.dp)
+                        .align(Alignment.Center),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        }
-
-        Spacer(Modifier.width(10.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = novel.name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = if (isSameSource) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                else MaterialTheme.colorScheme.onSurface
-            )
-            novel.latestChapter?.let { latestChapter ->
-                Text(
-                    text = latestChapter,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+            if (isSameSource) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
                 )
             }
         }
 
-        if (!isSameSource) {
-            Spacer(Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
-                contentDescription = "Migrate",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
+        Spacer(Modifier.height(6.dp))
+
+        Text(
+            text = novel.name,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            minLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            color = if (isSameSource) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            else MaterialTheme.colorScheme.onSurface
+        )
+        novel.latestChapter?.let { latestChapter ->
+            Text(
+                text = latestChapter,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
