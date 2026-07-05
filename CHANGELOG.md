@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.11.0] — 2026-07-06
+
+### Added
+
+- **Custom shelf ordering** — Move shelves (Reading, Downloaded, etc.) in any order via up/down arrows in Library settings
+- **Unified Scheduled Tasks screen** — Centralized management of all time-based automation: chapter update intervals, local backup schedules, and cloud sync frequency. Extended intervals: Daily, Every 2 days, Weekly, Every 2 weeks, Monthly
+- **Metadata backfill for dark source recovery** — "Refresh All Metadata" action caches offline metadata for all library books, preserving reading data if a source goes offline. Gracefully handles unavailable sources and supports cancellation
+- **Settings information architecture reorganization** — Restructured main settings hub (GENERAL → CONTENT & DISCOVERY → DATA & SYSTEM) and Library sub-screen (Shelves first, then Behavior) for improved user flow
+
+### Fixed
+
+- **Google Drive sync cross-source book migration** — Detects and deduplicates books migrated from one source to another during sync. Prevents duplicate entries on other devices after source migration
+
 ## [3.10.1] — 2026-06-26
 
 ### Fixed

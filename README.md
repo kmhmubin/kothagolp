@@ -9,7 +9,7 @@
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![Min SDK](https://img.shields.io/badge/Min%20SDK-26-blue.svg)](https://developer.android.com/about/versions/oreo)
 [![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-3.9.1-brightgreen.svg)](../../releases/latest)
+[![Version](https://img.shields.io/badge/Version-3.11.0-brightgreen.svg)](../../releases/latest)
 
 [Download](#installation) · [Features](#features) · [Screenshots](#screenshots)
 
