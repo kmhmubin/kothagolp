@@ -589,6 +589,7 @@ private fun AppSettings.toBackup(updatedAt: Long) = AppSettingsBackup(
     enabledLibraryFilters = LibraryFilter.shelfOptions()
         .filter { it in enabledLibraryFilters }
         .map { it.name },
+    libraryShelfOrder = libraryShelfOrder.map { it.name },
     autoDownloadEnabled = autoDownloadEnabled,
     autoDownloadOnWifiOnly = autoDownloadOnWifiOnly,
     autoDownloadLimit = autoDownloadLimit,
@@ -814,6 +815,9 @@ private fun AppSettingsBackup.toAppSettings(): AppSettings {
             )
         },
         hideSpicyLibraryContent = hideSpicyLibraryContent,
+        libraryShelfOrder = libraryShelfOrder.mapNotNull {
+            try { LibraryFilter.valueOf(it) } catch (e: Exception) { null }
+        },
         autoDownloadEnabled = autoDownloadEnabled,
         autoDownloadOnWifiOnly = autoDownloadOnWifiOnly,
         autoDownloadLimit = autoDownloadLimit,

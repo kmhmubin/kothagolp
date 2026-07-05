@@ -28,6 +28,7 @@ data class LibraryUiState(
     val showNewChaptersCard: Boolean = true,
     val spicyPrivacyEnabled: Boolean = true,
     val enabledShelfFilters: Set<LibraryFilter> = LibraryFilter.defaultEnabledShelves(),
+    val shelfOrder: List<LibraryFilter> = emptyList(),
     val visibleFilters: List<LibraryFilter> = LibraryFilter.visibleFilters(
         enabledFilters = LibraryFilter.defaultEnabledShelves(),
         showSpicyFilter = false

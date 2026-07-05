@@ -152,6 +152,7 @@ data class AppSettingsBackup(
     val defaultLibraryFilter: String = "DOWNLOADED",
     val hideSpicyLibraryContent: Boolean = true,
     val enabledLibraryFilters: List<String> = LibraryFilter.defaultEnabledShelves().map { it.name },
+    val libraryShelfOrder: List<String> = emptyList(),
     val autoDownloadEnabled: Boolean = false,
     val autoDownloadOnWifiOnly: Boolean = true,
     val autoDownloadLimit: Int = 10,

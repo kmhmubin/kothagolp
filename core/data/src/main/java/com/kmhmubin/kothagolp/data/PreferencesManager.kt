@@ -355,6 +355,15 @@ class PreferencesManager(context: Context) {
         val disabledString = prefs.getString(KEY_DISABLED_PROVIDERS, "")
         val disabledSet = if (disabledString.isNullOrBlank()) emptySet() else disabledString.split(",").toSet()
 
+        val shelfOrderString = prefs.getString(KEY_LIBRARY_SHELF_ORDER, null)
+        val libraryShelfOrder = if (shelfOrderString.isNullOrBlank()) {
+            emptyList()
+        } else {
+            shelfOrderString.split(",").mapNotNull { name ->
+                try { LibraryFilter.valueOf(name.trim()) } catch (e: Exception) { null }
+            }
+        }
+
         val enabledLibraryFiltersString = prefs.getString(KEY_ENABLED_LIBRARY_FILTERS, null)
         val enabledLibraryFilters = when {
             enabledLibraryFiltersString == null -> LibraryFilter.defaultEnabledShelves()
@@ -449,6 +458,7 @@ class PreferencesManager(context: Context) {
             },
             hideSpicyLibraryContent = prefs.getBoolean(KEY_HIDE_SPICY_LIBRARY_CONTENT, true),
             enabledLibraryFilters = enabledLibraryFilters,
+            libraryShelfOrder = libraryShelfOrder,
             keepScreenOn = prefs.getBoolean(KEY_KEEP_SCREEN_ON, true),
             infiniteScroll = prefs.getBoolean(KEY_INFINITE_SCROLL, false),
             autoDownloadEnabled = prefs.getBoolean(KEY_AUTO_DOWNLOAD_ENABLED, false),
@@ -519,6 +529,10 @@ class PreferencesManager(context: Context) {
                 LibraryFilter.shelfOptions()
                     .filter { it in sanitizedSettings.enabledLibraryFilters }
                     .joinToString(",") { it.name }
+            )
+            putString(
+                KEY_LIBRARY_SHELF_ORDER,
+                sanitizedSettings.libraryShelfOrder.joinToString(",") { it.name }
             )
             putBoolean(KEY_KEEP_SCREEN_ON, sanitizedSettings.keepScreenOn)
             putBoolean(KEY_INFINITE_SCROLL, sanitizedSettings.infiniteScroll)
@@ -615,6 +629,14 @@ class PreferencesManager(context: Context) {
 
     fun setSpicyShelfRevealed(revealed: Boolean) {
         _isSpicyShelfRevealed.value = revealed
+    }
+
+    fun updateLibraryShelfOrder(order: List<LibraryFilter>) {
+        updateAppSettings(
+            _appSettings.value.copy(
+                libraryShelfOrder = LibraryFilter.orderedShelfOptions(order)
+            )
+        )
     }
 
     fun setLibraryShelfEnabled(filter: LibraryFilter, enabled: Boolean) {
@@ -1695,6 +1717,7 @@ class PreferencesManager(context: Context) {
                     .filter { it in settings.enabledLibraryFilters }
                     .map { it.name }
             )
+            put("libraryShelfOrder", settings.libraryShelfOrder.map { it.name })
             put("keepScreenOn", settings.keepScreenOn)
             put("infiniteScroll", settings.infiniteScroll)
             put("autoDownloadEnabled", settings.autoDownloadEnabled)
@@ -2060,6 +2083,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_DEFAULT_LIBRARY_FILTER = "default_library_filter"
         private const val KEY_HIDE_SPICY_LIBRARY_CONTENT = "hide_spicy_library_content"
         private const val KEY_ENABLED_LIBRARY_FILTERS = "enabled_library_filters"
+        private const val KEY_LIBRARY_SHELF_ORDER = "library_shelf_order"
         private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
         private const val KEY_INFINITE_SCROLL = "infinite_scroll"
         private const val KEY_SEARCH_RESULTS_PER_PROVIDER = "search_results_per_provider"

@@ -753,7 +753,8 @@ class LibraryViewModel : ViewModel() {
         val privacyEnabled = settings.hideSpicyLibraryContent
         val showSpicyFilter = !privacyEnabled || spicyShelfRevealed
         val enabledShelfFilters = settings.enabledLibraryFilters
-        val visibleFilters = LibraryFilter.visibleFilters(enabledShelfFilters, showSpicyFilter)
+        val shelfOrder = settings.libraryShelfOrder
+        val visibleFilters = LibraryFilter.visibleFilters(enabledShelfFilters, showSpicyFilter, shelfOrder)
 
         val resolvedFilter = when {
             // On initial load, honour the default from settings
@@ -769,6 +770,7 @@ class LibraryViewModel : ViewModel() {
             sortOrder = if (isInitialLoad) settings.defaultLibrarySort else sortOrder,
             spicyPrivacyEnabled = privacyEnabled,
             enabledShelfFilters = enabledShelfFilters,
+            shelfOrder = shelfOrder,
             visibleFilters = visibleFilters
         )
     }
@@ -777,7 +779,7 @@ class LibraryViewModel : ViewModel() {
         spicyShelfRevealed: Boolean
     ): LibraryUiState {
         val showSpicyFilter = !spicyPrivacyEnabled || spicyShelfRevealed
-        val visibleFilters = LibraryFilter.visibleFilters(enabledShelfFilters, showSpicyFilter)
+        val visibleFilters = LibraryFilter.visibleFilters(enabledShelfFilters, showSpicyFilter, shelfOrder)
 
         return copy(
             visibleFilters = visibleFilters,

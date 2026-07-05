@@ -263,6 +263,8 @@ data class AppSettings(
     val defaultLibraryFilter: LibraryFilter = LibraryFilter.DOWNLOADED,
     val hideSpicyLibraryContent: Boolean = true,
     val enabledLibraryFilters: Set<LibraryFilter> = LibraryFilter.defaultEnabledShelves(),
+    // Custom shelf display order; empty = default enum order
+    val libraryShelfOrder: List<LibraryFilter> = emptyList(),
 
     // Auto-Download
     val autoDownloadEnabled: Boolean = false,
@@ -419,16 +421,28 @@ enum class LibraryFilter {
             return filters.filterTo(mutableSetOf()) { it in validShelves }
         }
 
+        /**
+         * Shelf options in the user's custom order. Shelves missing from [order]
+         * (e.g. added in an app update) are appended in default enum order.
+         */
+        fun orderedShelfOptions(order: List<LibraryFilter> = emptyList()): List<LibraryFilter> {
+            val base = shelfOptions()
+            if (order.isEmpty()) return base
+            val custom = order.filter { it in base }.distinct()
+            return custom + base.filter { it !in custom }
+        }
+
         fun visibleFilters(
             enabledFilters: Set<LibraryFilter>,
-            showSpicyFilter: Boolean
+            showSpicyFilter: Boolean,
+            order: List<LibraryFilter> = emptyList()
         ): List<LibraryFilter> {
             val sanitizedEnabledFilters = sanitizeEnabledShelves(enabledFilters)
 
             return buildList {
                 add(ALL)
                 addAll(
-                    shelfOptions().filter { filter ->
+                    orderedShelfOptions(order).filter { filter ->
                         filter in sanitizedEnabledFilters &&
                             (filter != SPICY || showSpicyFilter)
                     }
@@ -437,14 +451,15 @@ enum class LibraryFilter {
         }
 
         fun standardOptions(
-            enabledFilters: Set<LibraryFilter> = defaultEnabledShelves()
+            enabledFilters: Set<LibraryFilter> = defaultEnabledShelves(),
+            order: List<LibraryFilter> = emptyList()
         ): List<LibraryFilter> {
             val sanitizedEnabledFilters = sanitizeEnabledShelves(enabledFilters)
 
             return buildList {
                 add(ALL)
                 addAll(
-                    shelfOptions().filter { filter ->
+                    orderedShelfOptions(order).filter { filter ->
                         filter != SPICY && filter in sanitizedEnabledFilters
                     }
                 )

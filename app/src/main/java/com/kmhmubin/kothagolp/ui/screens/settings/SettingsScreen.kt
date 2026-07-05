@@ -114,6 +114,8 @@ import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material3.AlertDialog
@@ -232,10 +234,10 @@ fun SettingsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // ── Personalization ───────────────────────────────────────────
+            // ── General — daily-use personalization, most visited ─────────
             item {
                 Text(
-                    text = "PERSONALIZATION",
+                    text = "GENERAL",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -248,14 +250,6 @@ fun SettingsScreen(
                     shape = AppShape.large
                 ) {
                     Column {
-                        SettingsNavRow(
-                            icon = Icons.Rounded.AutoAwesome,
-                            iconTint = MaterialTheme.colorScheme.tertiary,
-                            title = "Recommendation Engine",
-                            subtitle = "AI picks, OpenRouter key and model",
-                            onClick = { onNavigateTo(NavRoutes.SettingsForYou.route) }
-                        )
-                        RowDivider()
                         SettingsNavRow(
                             icon = Icons.Outlined.Palette,
                             iconTint = MaterialTheme.colorScheme.primary,
@@ -263,14 +257,30 @@ fun SettingsScreen(
                             subtitle = "Theme, colors and display layout",
                             onClick = { onNavigateTo(NavRoutes.SettingsAppearance.route) }
                         )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.AutoMirrored.Outlined.LibraryBooks,
+                            iconTint = StatusReading,
+                            title = "Library",
+                            subtitle = "Shelves, ordering, sorting and visibility",
+                            onClick = { onNavigateTo(NavRoutes.SettingsLibrary.route) }
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.AutoMirrored.Outlined.MenuBook,
+                            iconTint = StatusPlanToRead,
+                            title = "Reader",
+                            subtitle = "Reading experience and preferences",
+                            onClick = { onNavigateTo(NavRoutes.SettingsReader.route) }
+                        )
                     }
                 }
             }
 
-            // ── Content & Reading ─────────────────────────────────────────
+            // ── Content & Discovery — where books come from ────────────────
             item {
                 Text(
-                    text = "CONTENT & READING",
+                    text = "CONTENT & DISCOVERY",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -283,22 +293,6 @@ fun SettingsScreen(
                     shape = AppShape.large
                 ) {
                     Column {
-                        SettingsNavRow(
-                            icon = Icons.AutoMirrored.Outlined.MenuBook,
-                            iconTint = StatusPlanToRead,
-                            title = "Reader",
-                            subtitle = "Reading experience and preferences",
-                            onClick = { onNavigateTo(NavRoutes.SettingsReader.route) }
-                        )
-                        RowDivider()
-                        SettingsNavRow(
-                            icon = Icons.AutoMirrored.Outlined.LibraryBooks,
-                            iconTint = StatusReading,
-                            title = "Library",
-                            subtitle = "Shelves, sorting and visibility",
-                            onClick = { onNavigateTo(NavRoutes.SettingsLibrary.route) }
-                        )
-                        RowDivider()
                         SettingsNavRow(
                             icon = Icons.Outlined.Extension,
                             iconTint = StatusSpicy,
@@ -314,14 +308,22 @@ fun SettingsScreen(
                             subtitle = "Search, ratings and auto-downloads",
                             onClick = { onNavigateTo(NavRoutes.SettingsBrowse.route) }
                         )
+                        RowDivider()
+                        SettingsNavRow(
+                            icon = Icons.Rounded.AutoAwesome,
+                            iconTint = MaterialTheme.colorScheme.tertiary,
+                            title = "Recommendation Engine",
+                            subtitle = "AI picks, OpenRouter key and model",
+                            onClick = { onNavigateTo(NavRoutes.SettingsForYou.route) }
+                        )
                     }
                 }
             }
 
-            // ── System ────────────────────────────────────────────────────
+            // ── Data & System ──────────────────────────────────────────────
             item {
                 Text(
-                    text = "SYSTEM",
+                    text = "DATA & SYSTEM",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
@@ -527,10 +529,26 @@ fun SettingsLibraryScreen(onBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item { SectionHeader("Library", Icons.AutoMirrored.Outlined.LibraryBooks) }
+            item { SectionHeader("Shelves", Icons.Outlined.ViewModule) }
+            item {
+                LibraryShelfCard(
+                    settings = settings,
+                    onShelfEnabledChange = { filter, enabled ->
+                        preferencesManager.setLibraryShelfEnabled(filter, enabled)
+                    },
+                    onShelfOrderChange = { order ->
+                        preferencesManager.updateLibraryShelfOrder(order)
+                    }
+                )
+            }
+
+            item { SectionHeader("Behavior", Icons.AutoMirrored.Outlined.LibraryBooks) }
             item {
                 SettingsCard {
-                    val defaultFilterOptions = LibraryFilter.standardOptions(settings.enabledLibraryFilters)
+                    val defaultFilterOptions = LibraryFilter.standardOptions(
+                        settings.enabledLibraryFilters,
+                        settings.libraryShelfOrder
+                    )
 
                     ToggleItem(
                         icon = Icons.Outlined.Badge,
@@ -586,15 +604,6 @@ fun SettingsLibraryScreen(onBack: () -> Unit) {
                     )
                 }
             }
-            item {
-                LibraryShelfCard(
-                    settings = settings,
-                    onShelfEnabledChange = { filter, enabled ->
-                        preferencesManager.setLibraryShelfEnabled(filter, enabled)
-                    }
-                )
-            }
-
             item { SectionHeader("Chapter Updates", Icons.Outlined.Sync) }
             item {
                 SettingsCard {
@@ -2105,23 +2114,38 @@ private fun ProviderItem(
 @Composable
 private fun LibraryShelfCard(
     settings: AppSettings,
-    onShelfEnabledChange: (LibraryFilter, Boolean) -> Unit
+    onShelfEnabledChange: (LibraryFilter, Boolean) -> Unit,
+    onShelfOrderChange: (List<LibraryFilter>) -> Unit
 ) {
+    val orderedShelves = LibraryFilter.orderedShelfOptions(settings.libraryShelfOrder)
+
     SettingsCard {
-        SettingsLabel("Visible Shelves", Icons.Outlined.ViewModule)
+        SettingsLabel("Shelves", Icons.Outlined.ViewModule)
         Text(
-            "Choose which shelves appear in your Library. 'All' is always visible.",
+            "Toggle which shelves appear in your Library and reorder them with the arrows. 'All' is always visible and always first.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(12.dp))
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            LibraryFilter.shelfOptions().forEach { filter ->
+            orderedShelves.forEachIndexed { index, filter ->
                 LibraryShelfItem(
                     filter = filter,
                     enabled = filter in settings.enabledLibraryFilters,
-                    onEnabledChange = { onShelfEnabledChange(filter, it) }
+                    canMoveUp = index > 0,
+                    canMoveDown = index < orderedShelves.lastIndex,
+                    onEnabledChange = { onShelfEnabledChange(filter, it) },
+                    onMoveUp = {
+                        val next = orderedShelves.toMutableList()
+                        next[index] = next[index - 1].also { next[index - 1] = next[index] }
+                        onShelfOrderChange(next)
+                    },
+                    onMoveDown = {
+                        val next = orderedShelves.toMutableList()
+                        next[index] = next[index + 1].also { next[index + 1] = next[index] }
+                        onShelfOrderChange(next)
+                    }
                 )
             }
         }
@@ -2132,7 +2156,11 @@ private fun LibraryShelfCard(
 private fun LibraryShelfItem(
     filter: LibraryFilter,
     enabled: Boolean,
-    onEnabledChange: (Boolean) -> Unit
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit
 ) {
     val bg by animateColorAsState(
         if (enabled) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -2146,7 +2174,7 @@ private fun LibraryShelfItem(
         shape = AppShape.medium
     ) {
         Row(
-            Modifier.padding(12.dp),
+            Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -2165,6 +2193,30 @@ private fun LibraryShelfItem(
                 color = if (enabled) MaterialTheme.colorScheme.onSurface
                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
+            IconButton(
+                onClick = onMoveUp,
+                enabled = canMoveUp,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowUp,
+                    contentDescription = "Move ${filter.displayName()} up",
+                    tint = if (canMoveUp) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+                )
+            }
+            IconButton(
+                onClick = onMoveDown,
+                enabled = canMoveDown,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = "Move ${filter.displayName()} down",
+                    tint = if (canMoveDown) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+                )
+            }
             Switch(enabled, onEnabledChange)
         }
     }
