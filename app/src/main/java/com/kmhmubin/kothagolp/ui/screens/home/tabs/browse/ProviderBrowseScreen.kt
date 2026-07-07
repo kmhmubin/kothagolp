@@ -1712,7 +1712,10 @@ private fun MainContent(
                 item(span = { GridItemSpan(maxLineSpan) }, key = "spacer_top") {
                     Spacer(Modifier.height(BrowseDesign.spacingSm))
                 }
-                items(items = uiState.displayNovels, key = { it.url }) { novel ->
+                items(
+                    items = uiState.displayNovels,
+                    key = { novel -> novel.url }
+                ) { novel ->
                     NovelCard(
                         novel = novel,
                         onClick = { onNovelClick(novel) },
@@ -1753,7 +1756,10 @@ private fun MainContent(
                 item(key = "spacer_top") {
                     Spacer(Modifier.height(BrowseDesign.spacingSm))
                 }
-                items(uiState.displayNovels, key = { it.url }) { novel ->
+                items(
+                    items = uiState.displayNovels,
+                    key = { novel -> novel.url }
+                ) { novel ->
                     com.kmhmubin.kothagolp.ui.components.NovelListItem(
                         novel = novel,
                         onClick = { onNovelClick(novel) },

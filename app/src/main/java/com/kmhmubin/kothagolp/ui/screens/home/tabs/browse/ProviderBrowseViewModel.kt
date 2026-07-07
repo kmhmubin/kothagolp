@@ -314,10 +314,11 @@ class ProviderBrowseViewModel(
             result.fold(
                 onSuccess = { pageResult ->
                     _uiState.update {
-                        val updatedNovels = if (isLoadMore) it.novels + pageResult.novels
-                        else pageResult.novels
+                        val allNovels = if (isLoadMore) it.novels + pageResult.novels else pageResult.novels
+                        // Deduplicate by URL to prevent Compose key collision errors
+                        val uniqueNovels = allNovels.distinctBy { novel -> novel.url }
                         it.copy(
-                            novels = updatedNovels,
+                            novels = uniqueNovels,
                             hasNextPage = pageResult.hasNextPage && pageResult.novels.isNotEmpty(),
                             isLoading = false,
                             isRefreshing = false,
