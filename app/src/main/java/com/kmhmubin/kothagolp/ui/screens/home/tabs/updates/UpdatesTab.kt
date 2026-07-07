@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.data.repository.LibraryItem
+import com.kmhmubin.kothagolp.domain.model.AppSettings
 import com.kmhmubin.kothagolp.ui.components.NovelCard
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
@@ -40,14 +40,13 @@ import java.util.Locale
 
 @Composable
 fun UpdatesTab(
+    appSettings: AppSettings,
     onNovelClick: (url: String, title: String) -> Unit,
     onNovelLongClick: (url: String, title: String) -> Unit
 ) {
     val viewModel: UpdatesViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val listState = rememberLazyListState()
     val dimensions = KothagolpTheme.dimensions
-    val appSettings by KothagolpTheme.appSettings.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Header
@@ -95,7 +94,6 @@ fun UpdatesTab(
             }
             else -> {
                 LazyColumn(
-                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         horizontal = dimensions.gridPadding,

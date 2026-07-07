@@ -44,6 +44,7 @@ data class LibraryItem(
     val unreadChapterCount: Int = 0,
     val hasNewChapters: Boolean = false,
     val lastCheckedAt: Long = 0,
+    val lastUpdatedAt: Long = 0,
     val isSpicy: Boolean = false
 )
 
@@ -561,6 +562,7 @@ class LibraryRepository(
             unreadChapterCount = unreadChapterCount,
             hasNewChapters = hasNewChapters,
             lastCheckedAt = lastCheckedAt,
+            lastUpdatedAt = lastUpdatedAt,
             isSpicy = getStatus() == ReadingStatus.SPICY
         )
     }
