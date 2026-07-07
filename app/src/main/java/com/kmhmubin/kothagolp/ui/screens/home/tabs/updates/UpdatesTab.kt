@@ -40,13 +40,14 @@ import java.util.Locale
 
 @Composable
 fun UpdatesTab(
-    appSettings: AppSettings,
+    appSettings: AppSettings? = null,
     onNovelClick: (url: String, title: String) -> Unit,
     onNovelLongClick: (url: String, title: String) -> Unit
 ) {
     val viewModel: UpdatesViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dimensions = KothagolpTheme.dimensions
+    val settings = appSettings ?: AppSettings()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Header
@@ -134,7 +135,7 @@ fun UpdatesTab(
                             onNovelLongClick = {
                                 onNovelLongClick(item.novel.url, item.novel.name)
                             },
-                            uiDensity = appSettings.uiDensity
+                            uiDensity = settings.uiDensity
                         )
                     }
                     item {

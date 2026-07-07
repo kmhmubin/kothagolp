@@ -70,7 +70,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -93,12 +95,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.kmhmubin.kothagolp.data.repository.LibraryItem
+import com.kmhmubin.kothagolp.domain.model.AppSettings
 import com.kmhmubin.kothagolp.ui.components.SwipeDeleteState
 import com.kmhmubin.kothagolp.ui.components.TwoStageSwipeToDelete
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.updates.UpdatesTab
 import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.AppSpacing
 import com.kmhmubin.kothagolp.ui.theme.Info
+import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.ui.theme.NewChapters as ThemeNewChapters
 import com.kmhmubin.kothagolp.ui.theme.NewChaptersLight as ThemeNewChaptersLight
 import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
@@ -136,6 +141,7 @@ fun NotificationScreen(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     // Clear confirmation dialog
     if (uiState.showClearConfirmation) {
@@ -150,73 +156,146 @@ fun NotificationScreen(
         topBar = {
             NotificationTopBar(
                 onNavigateBack = onNavigateBack,
-                onClearAll = if (uiState.displayItems.isNotEmpty()) viewModel::requestClearAll else null
+                onClearAll = if (uiState.displayItems.isNotEmpty() && selectedTab == 0) viewModel::requestClearAll else null
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        when {
-            uiState.isLoading -> {
-                NotificationLoadingState(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            // Tab selector
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TabButton(
+                    selected = selectedTab == 0,
+                    label = "Notifications",
+                    onClick = { selectedTab = 0 },
+                    modifier = Modifier.weight(1f)
+                )
+                TabButton(
+                    selected = selectedTab == 1,
+                    label = "Feed",
+                    onClick = { selectedTab = 1 },
+                    modifier = Modifier.weight(1f)
                 )
             }
-            uiState.displayItems.isEmpty() -> {
-                NotificationEmptyState(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
-            }
-            else -> {
-                NotificationContent(
-                    uiState = uiState,
-                    onDownload = { item ->
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.downloadNewChapters(context, item)
-                    },
-                    onDownloadAll = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.downloadAllNewChapters(context)
-                    },
-                    onContinue = { item ->
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        val position = item.lastReadPosition
-                        if (position != null) {
-                            viewModel.markAsSeen(item.novel.url)
-                            onNavigateToReader(
-                                position.chapterUrl,
-                                item.novel.url,
-                                item.novel.apiName
+
+            // Content
+            when (selectedTab) {
+                0 -> {
+                    // Notifications view
+                    when {
+                        uiState.isLoading -> {
+                            NotificationLoadingState(
+                                modifier = Modifier.fillMaxSize()
                             )
-                        } else {
-                            viewModel.markAsSeen(item.novel.url)
-                            onNavigateToDetails(item.novel.url, item.novel.apiName)
                         }
-                    },
-                    onMarkAsSeen = { item ->
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        viewModel.markAsSeen(item.novel.url)
-                    },
-                    onMarkAllSeen = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.markAllAsSeen()
-                    },
-                    onRemoveFromNotifications = { item ->
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.removeFromNotifications(item.novel.url)
-                    },
-                    onNovelClick = { item ->
-                        // Don't auto-mark as seen on click - let user decide
-                        onNavigateToDetails(item.novel.url, item.novel.apiName)
-                    },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                )
+                        uiState.displayItems.isEmpty() -> {
+                            NotificationEmptyState(
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        else -> {
+                            NotificationContent(
+                                uiState = uiState,
+                                onDownload = { item ->
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.downloadNewChapters(context, item)
+                                },
+                                onDownloadAll = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.downloadAllNewChapters(context)
+                                },
+                                onContinue = { item ->
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    val position = item.lastReadPosition
+                                    if (position != null) {
+                                        viewModel.markAsSeen(item.novel.url)
+                                        onNavigateToReader(
+                                            position.chapterUrl,
+                                            item.novel.url,
+                                            item.novel.apiName
+                                        )
+                                    } else {
+                                        viewModel.markAsSeen(item.novel.url)
+                                        onNavigateToDetails(item.novel.url, item.novel.apiName)
+                                    }
+                                },
+                                onMarkAsSeen = { item ->
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.markAsSeen(item.novel.url)
+                                },
+                                onMarkAllSeen = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.markAllAsSeen()
+                                },
+                                onRemoveFromNotifications = { item ->
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.removeFromNotifications(item.novel.url)
+                                },
+                                onNovelClick = { item ->
+                                    onNavigateToDetails(item.novel.url, item.novel.apiName)
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                }
+                1 -> {
+                    // Updates feed view
+                    UpdatesTab(
+                        onNovelClick = { url, _ ->
+                            onNavigateToDetails(url, "")
+                        },
+                        onNovelLongClick = { _, _ -> }
+                    )
+                }
             }
+        }
+    }
+}
+
+// ============================================================================
+// Tab Button
+// ============================================================================
+
+@Composable
+private fun TabButton(
+    selected: Boolean,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(40.dp),
+        shape = AppShape.medium,
+        color = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        }
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
         }
     }
 }
