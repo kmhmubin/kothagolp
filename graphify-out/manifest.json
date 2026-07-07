@@ -1,0 +1,1902 @@
+{
+  ".claude/settings.local.json": {
+    "mtime": 1783272677.7855005,
+    "ast_hash": "d2b504f0db936b6838cdb83966ee3bcd",
+    "semantic_hash": "d2b504f0db936b6838cdb83966ee3bcd"
+  },
+  "app/build.gradle.kts": {
+    "mtime": 1782469879.7078412,
+    "ast_hash": "e29a0a20acb0439a591dda6d18fd68c6",
+    "semantic_hash": "e29a0a20acb0439a591dda6d18fd68c6"
+  },
+  "app/src/androidTest/java/com/kmhmubin/kothagolp/ExampleInstrumentedTest.kt": {
+    "mtime": 1781265859.7707615,
+    "ast_hash": "bd081d2e1347ec7c2fb1f2cb0edb7481",
+    "semantic_hash": "bd081d2e1347ec7c2fb1f2cb0edb7481"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/MainActivity.kt": {
+    "mtime": 1782201144.28578,
+    "ast_hash": "d45ad4610e99afde3d4d92f029055f77",
+    "semantic_hash": "d45ad4610e99afde3d4d92f029055f77"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/NoveryApp.kt": {
+    "mtime": 1782360708.889114,
+    "ast_hash": "dc43c70261cb5fc10508939710048ea7",
+    "semantic_hash": "dc43c70261cb5fc10508939710048ea7"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ai/OpenRouterModelsService.kt": {
+    "mtime": 1782382759.0678442,
+    "ast_hash": "86af2b13516c4605588d9e22dd04302e",
+    "semantic_hash": "86af2b13516c4605588d9e22dd04302e"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ai/OpenRouterService.kt": {
+    "mtime": 1782382759.0692456,
+    "ast_hash": "d21283a8291a11532bb1234fd27bd00a",
+    "semantic_hash": "d21283a8291a11532bb1234fd27bd00a"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/data/cache/CacheManager.kt": {
+    "mtime": 1781265859.777895,
+    "ast_hash": "1a6c520147e2f7a9b849810e5fe28571",
+    "semantic_hash": "1a6c520147e2f7a9b849810e5fe28571"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/data/update/StartupUpdateChecker.kt": {
+    "mtime": 1781265859.778038,
+    "ast_hash": "36e3ea2de2e65db7bb00b28aa708a574",
+    "semantic_hash": "36e3ea2de2e65db7bb00b28aa708a574"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/data/update/UpdateChecker.kt": {
+    "mtime": 1782011409.3728263,
+    "ast_hash": "8171f375a27d877c162f0c4188a763db",
+    "semantic_hash": "8171f375a27d877c162f0c4188a763db"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/data/update/UpdatePreferences.kt": {
+    "mtime": 1781265859.778038,
+    "ast_hash": "0232eb427f9075437b757752c8700a0b",
+    "semantic_hash": "0232eb427f9075437b757752c8700a0b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/AllNovelProvider.kt": {
+    "mtime": 1782292039.1015782,
+    "ast_hash": "60ded0bc3b6ed4d40fb4057361fa9729",
+    "semantic_hash": "60ded0bc3b6ed4d40fb4057361fa9729"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/CyrisiaProvider.kt": {
+    "mtime": 1782292039.1055782,
+    "ast_hash": "dbf35a88a7a78448c24722bfbfa75e96",
+    "semantic_hash": "dbf35a88a7a78448c24722bfbfa75e96"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/FenrirRealmProvider.kt": {
+    "mtime": 1782292039.1125784,
+    "ast_hash": "8ef2dfe218d1a9aee078cd47b83cd057",
+    "semantic_hash": "8ef2dfe218d1a9aee078cd47b83cd057"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/FreeWebNovelProvider.kt": {
+    "mtime": 1782292039.1155784,
+    "ast_hash": "0fbb5f86f71869f00031d6fcc0fb6a25",
+    "semantic_hash": "0fbb5f86f71869f00031d6fcc0fb6a25"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/FuckNovelPiaProvider.kt": {
+    "mtime": 1782292039.1185784,
+    "ast_hash": "a487ed53f242f60889b780938a8a4e8d",
+    "semantic_hash": "a487ed53f242f60889b780938a8a4e8d"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/LibReadProvider.kt": {
+    "mtime": 1782292039.1205783,
+    "ast_hash": "8459711530c69f1b4135bb7699764b86",
+    "semantic_hash": "8459711530c69f1b4135bb7699764b86"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/LightNovelTranslationsProvider.kt": {
+    "mtime": 1782292039.1235783,
+    "ast_hash": "410750458ad3ef3e9271bbb484ee1205",
+    "semantic_hash": "410750458ad3ef3e9271bbb484ee1205"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/LightNovelWorldProvider.kt": {
+    "mtime": 1782292039.1265783,
+    "ast_hash": "c871cbdc4966a1fb78f8467406b1da4c",
+    "semantic_hash": "c871cbdc4966a1fb78f8467406b1da4c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/LnoriProvider.kt": {
+    "mtime": 1782292039.1295784,
+    "ast_hash": "c64ea1794d0ea1e65f689a8e2f61b48b",
+    "semantic_hash": "c64ea1794d0ea1e65f689a8e2f61b48b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/NovelArchiveProvider.kt": {
+    "mtime": 1782292039.1325784,
+    "ast_hash": "1907ab3165f09db38a6ea5f5c7c8795d",
+    "semantic_hash": "1907ab3165f09db38a6ea5f5c7c8795d"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/NovelBinProvider.kt": {
+    "mtime": 1782292039.1345785,
+    "ast_hash": "3e5400fcb81f1f1920e20f81219bd4f6",
+    "semantic_hash": "3e5400fcb81f1f1920e20f81219bd4f6"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/NovelBuddyProvider.kt": {
+    "mtime": 1782292039.1375785,
+    "ast_hash": "cc2a36de1b377a5a9fc46d2143b641ed",
+    "semantic_hash": "cc2a36de1b377a5a9fc46d2143b641ed"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/NovelDexProvider.kt": {
+    "mtime": 1782292039.1395783,
+    "ast_hash": "6c959f465e813c810bcfcdd2927d0fcf",
+    "semantic_hash": "6c959f465e813c810bcfcdd2927d0fcf"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/NovelFireProvider.kt": {
+    "mtime": 1782292039.1415784,
+    "ast_hash": "3d176e4c37629041825a8d7a2ffdec3b",
+    "semantic_hash": "3d176e4c37629041825a8d7a2ffdec3b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/NovelsOnlineProvider.kt": {
+    "mtime": 1782292039.1445785,
+    "ast_hash": "3ebc7268b9ea8a3122ac1724fbf4f8d3",
+    "semantic_hash": "3ebc7268b9ea8a3122ac1724fbf4f8d3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/PawReadProvider.kt": {
+    "mtime": 1782292039.1475785,
+    "ast_hash": "e0cb31cfbbe2709fc6a57d57995ef730",
+    "semantic_hash": "e0cb31cfbbe2709fc6a57d57995ef730"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/RoyalRoadProvider.kt": {
+    "mtime": 1782292039.1535785,
+    "ast_hash": "aeaf53a586bb06df0a6d598bdf9fa8e2",
+    "semantic_hash": "aeaf53a586bb06df0a6d598bdf9fa8e2"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/provider/WebnovelProvider.kt": {
+    "mtime": 1782292039.1555786,
+    "ast_hash": "d7dc59a3b4d74a0d3c0798e52cf6bf3c",
+    "semantic_hash": "d7dc59a3b4d74a0d3c0798e52cf6bf3c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/DownloadService.kt": {
+    "mtime": 1781265859.7783785,
+    "ast_hash": "bffb6963206060832a909f6c4bde2b4d",
+    "semantic_hash": "bffb6963206060832a909f6c4bde2b4d"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/DownloadServiceManager.kt": {
+    "mtime": 1781265859.7783785,
+    "ast_hash": "8b2e9c360bf624325b836281795bac42",
+    "semantic_hash": "8b2e9c360bf624325b836281795bac42"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/DownloadState.kt": {
+    "mtime": 1781265859.7783785,
+    "ast_hash": "8f60a3deb469d5c7c85db2611a2154c3",
+    "semantic_hash": "8f60a3deb469d5c7c85db2611a2154c3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/MediaButtonEventReceiver.kt": {
+    "mtime": 1781265859.7783785,
+    "ast_hash": "f0cf24e691d711d419884a1904afb443",
+    "semantic_hash": "f0cf24e691d711d419884a1904afb443"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/NotificationHelper.kt": {
+    "mtime": 1782461950.317981,
+    "ast_hash": "fda9caf5d5c6ab0f3f82dcb4f7a26827",
+    "semantic_hash": "fda9caf5d5c6ab0f3f82dcb4f7a26827"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/SilentAudioPlayer.kt": {
+    "mtime": 1781265859.7783785,
+    "ast_hash": "3451c55432cc12a14e8b83f0ce96fe70",
+    "semantic_hash": "3451c55432cc12a14e8b83f0ce96fe70"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/TTSBackgroundLoader.kt": {
+    "mtime": 1781265859.7783785,
+    "ast_hash": "ab1dc51dd5632cfa637b17e3390daffa",
+    "semantic_hash": "ab1dc51dd5632cfa637b17e3390daffa"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/TTSNotifications.kt": {
+    "mtime": 1781265859.7783785,
+    "ast_hash": "352ce4fed6e6f53bd607154650dd149c",
+    "semantic_hash": "352ce4fed6e6f53bd607154650dd149c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/TTSService.kt": {
+    "mtime": 1781957773.1484532,
+    "ast_hash": "7d29c9805e516e58a81cc34e71c97378",
+    "semantic_hash": "7d29c9805e516e58a81cc34e71c97378"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/TTSServiceManager.kt": {
+    "mtime": 1782326434.3326547,
+    "ast_hash": "29d380ea17f31cd46667bcc0ddbab2bf",
+    "semantic_hash": "29d380ea17f31cd46667bcc0ddbab2bf"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/service/TTSState.kt": {
+    "mtime": 1781265859.7783785,
+    "ast_hash": "4b9d3e4b28decc50f2acd05274b5dec8",
+    "semantic_hash": "4b9d3e4b28decc50f2acd05274b5dec8"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/tts/TTSEngine.kt": {
+    "mtime": 1781265859.7785935,
+    "ast_hash": "e683ba4a47e26278266b4b095c606321",
+    "semantic_hash": "e683ba4a47e26278266b4b095c606321"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/tts/TTSManager.kt": {
+    "mtime": 1781265859.7785935,
+    "ast_hash": "2170b74db8532e960c3ee246ead34ff7",
+    "semantic_hash": "2170b74db8532e960c3ee246ead34ff7"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/tts/VoiceManager.kt": {
+    "mtime": 1781957773.1484532,
+    "ast_hash": "3aeb3bb55ac3e5691640d94fce4db6db",
+    "semantic_hash": "3aeb3bb55ac3e5691640d94fce4db6db"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/cloudflare/CloudflareActivity.kt": {
+    "mtime": 1782354455.1692584,
+    "ast_hash": "7fa92b75cbaea5b7260570dfaa9e5ee3",
+    "semantic_hash": "7fa92b75cbaea5b7260570dfaa9e5ee3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/BottomNavBar.kt": {
+    "mtime": 1782178551.9700444,
+    "ast_hash": "be4bf6a11bc0c283c9ea87b5476e0d84",
+    "semantic_hash": "be4bf6a11bc0c283c9ea87b5476e0d84"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/ChapterItem.kt": {
+    "mtime": 1781745611.7603612,
+    "ast_hash": "88d23387cb802a341c21776a58053e46",
+    "semantic_hash": "88d23387cb802a341c21776a58053e46"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/ChapterListSheet.kt": {
+    "mtime": 1782260449.8572445,
+    "ast_hash": "cdd8219d7aafe4147bec920213815eb6",
+    "semantic_hash": "cdd8219d7aafe4147bec920213815eb6"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/ColorPickerDialog.kt": {
+    "mtime": 1781745611.7603612,
+    "ast_hash": "383ce78e0891fa03bcb2b17bc32ae3c1",
+    "semantic_hash": "383ce78e0891fa03bcb2b17bc32ae3c1"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/DuplicateLibraryDialog.kt": {
+    "mtime": 1782326449.6017103,
+    "ast_hash": "9aea0f8dc5b63287bdac7b78980003c3",
+    "semantic_hash": "9aea0f8dc5b63287bdac7b78980003c3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/HistoryListItem.kt": {
+    "mtime": 1781745611.7613614,
+    "ast_hash": "ae2656c24658edbdda71397829364262",
+    "semantic_hash": "ae2656c24658edbdda71397829364262"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/LoadingComponents.kt": {
+    "mtime": 1782011409.3728263,
+    "ast_hash": "7d9f9c1459d0b22a452ead170c28bac5",
+    "semantic_hash": "7d9f9c1459d0b22a452ead170c28bac5"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/MarkdownText.kt": {
+    "mtime": 1781265859.778703,
+    "ast_hash": "fc2d2e25dcaabccb6b18139fb78c4cb4",
+    "semantic_hash": "fc2d2e25dcaabccb6b18139fb78c4cb4"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/NovelActionSheet.kt": {
+    "mtime": 1782062394.406208,
+    "ast_hash": "8c999b6b36ace5a2962dcc491ade3c10",
+    "semantic_hash": "8c999b6b36ace5a2962dcc491ade3c10"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/NovelCard.kt": {
+    "mtime": 1782352651.4069176,
+    "ast_hash": "1e6b1145be1b235f0034d601ca9bb415",
+    "semantic_hash": "1e6b1145be1b235f0034d601ca9bb415"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/NovelGrid.kt": {
+    "mtime": 1781265859.7787616,
+    "ast_hash": "ae7af249ac36638afab91bde754ff665",
+    "semantic_hash": "ae7af249ac36638afab91bde754ff665"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/NovelListItem.kt": {
+    "mtime": 1782467029.6613512,
+    "ast_hash": "3bc9b7ff2461bae3ef285c6179bfc0c1",
+    "semantic_hash": "3bc9b7ff2461bae3ef285c6179bfc0c1"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/NoveryButtons.kt": {
+    "mtime": 1781745611.7623613,
+    "ast_hash": "f5753328c688bf88c4a36527ed121587",
+    "semantic_hash": "f5753328c688bf88c4a36527ed121587"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/PullToRefresh.kt": {
+    "mtime": 1781282231.5666625,
+    "ast_hash": "a34328ce4f215b7f471db7253775d266",
+    "semantic_hash": "a34328ce4f215b7f471db7253775d266"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/RatingDisplay.kt": {
+    "mtime": 1782062394.406208,
+    "ast_hash": "067ea2f1de4f80a1ee4fdaf1534ddaf5",
+    "semantic_hash": "067ea2f1de4f80a1ee4fdaf1534ddaf5"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/ReaderBottomBar.kt": {
+    "mtime": 1782299384.252158,
+    "ast_hash": "9e053ac6d955dfd3567f44f0b84584a8",
+    "semantic_hash": "9e053ac6d955dfd3567f44f0b84584a8"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/SearchBar.kt": {
+    "mtime": 1781745611.7623613,
+    "ast_hash": "c23377daec22f02937d6a00956f2ce71",
+    "semantic_hash": "c23377daec22f02937d6a00956f2ce71"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/StateComponents.kt": {
+    "mtime": 1781745611.7623613,
+    "ast_hash": "194c1ff9a270a69033df885dc4e61d3a",
+    "semantic_hash": "194c1ff9a270a69033df885dc4e61d3a"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/StatisticsComponents.kt": {
+    "mtime": 1781745611.7623613,
+    "ast_hash": "87db470b2b716c1030a63d1900882af8",
+    "semantic_hash": "87db470b2b716c1030a63d1900882af8"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/TTSPlayer.kt": {
+    "mtime": 1782299772.078198,
+    "ast_hash": "5fe429f14eb74bf6f9cc4693488bab4e",
+    "semantic_hash": "5fe429f14eb74bf6f9cc4693488bab4e"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/TTSSettingsPanel.kt": {
+    "mtime": 1782062394.407208,
+    "ast_hash": "bf97b64eeaa9435ec99beeab151b6e78",
+    "semantic_hash": "bf97b64eeaa9435ec99beeab151b6e78"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/TwoStageSwipeToDelete.kt": {
+    "mtime": 1781745611.7633612,
+    "ast_hash": "71a6b5bb2720c56967c653d1b7686f66",
+    "semantic_hash": "71a6b5bb2720c56967c653d1b7686f66"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/components/VoiceSelector.kt": {
+    "mtime": 1782062394.4082081,
+    "ast_hash": "dd18fa06aded5fc5a85833892a9e7334",
+    "semantic_hash": "dd18fa06aded5fc5a85833892a9e7334"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/navigation/NavGraph.kt": {
+    "mtime": 1782382759.0692456,
+    "ast_hash": "ad7935bbe2b9f069e69ab27ee452747b",
+    "semantic_hash": "ad7935bbe2b9f069e69ab27ee452747b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/navigation/NavRoutes.kt": {
+    "mtime": 1782382759.0692456,
+    "ast_hash": "edeaff36e730ac5bb5d662c24397146a",
+    "semantic_hash": "edeaff36e730ac5bb5d662c24397146a"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/navigation/NavigationHistoryManager.kt": {
+    "mtime": 1781265859.779228,
+    "ast_hash": "4f8548e31530437ed1bfe08e0b2100e5",
+    "semantic_hash": "4f8548e31530437ed1bfe08e0b2100e5"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/navigation/TabNavigationState.kt": {
+    "mtime": 1781265859.779228,
+    "ast_hash": "6274c602d0a0d4aecb1c25e9d87de50b",
+    "semantic_hash": "6274c602d0a0d4aecb1c25e9d87de50b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/MainScaffold.kt": {
+    "mtime": 1781265859.7819188,
+    "ast_hash": "fc4381ebdc03419d75b00031832a1e71",
+    "semantic_hash": "fc4381ebdc03419d75b00031832a1e71"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/about/AboutScreen.kt": {
+    "mtime": 1782011409.3728263,
+    "ast_hash": "48524002029aae1dc49c403ad85bfe33",
+    "semantic_hash": "48524002029aae1dc49c403ad85bfe33"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/about/AboutViewModel.kt": {
+    "mtime": 1781265859.7793148,
+    "ast_hash": "24dfcc0d0d8966fea7bf627d9c62326c",
+    "semantic_hash": "24dfcc0d0d8966fea7bf627d9c62326c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/DetailsScreen.kt": {
+    "mtime": 1782350987.5057502,
+    "ast_hash": "c50fbdb9504fbe730af45483e79062a8",
+    "semantic_hash": "c50fbdb9504fbe730af45483e79062a8"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/DetailsUiState.kt": {
+    "mtime": 1782136348.0644727,
+    "ast_hash": "8559906b12ea9ddbc8b51143b9e5473c",
+    "semantic_hash": "8559906b12ea9ddbc8b51143b9e5473c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/DetailsViewModel.kt": {
+    "mtime": 1782359926.7740629,
+    "ast_hash": "b5b485faf15a15bc2e0e1d6b5e8516ec",
+    "semantic_hash": "b5b485faf15a15bc2e0e1d6b5e8516ec"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/ActionButtonsRow.kt": {
+    "mtime": 1781764805.93182,
+    "ast_hash": "95f369f74e0d32fd62454ac2275f2044",
+    "semantic_hash": "95f369f74e0d32fd62454ac2275f2044"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/ChapterItem.kt": {
+    "mtime": 1781929073.240358,
+    "ast_hash": "05a6eb69f974f416ce8baf82aac59ee8",
+    "semantic_hash": "05a6eb69f974f416ce8baf82aac59ee8"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/ChapterListHeader.kt": {
+    "mtime": 1781745611.7633612,
+    "ast_hash": "fa6e0313818508b6fcd95ca6dcc313cd",
+    "semantic_hash": "fa6e0313818508b6fcd95ca6dcc313cd"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/ChaptersTabContent.kt": {
+    "mtime": 1782260444.789227,
+    "ast_hash": "7c51eca1acbe627bf840171928aaf935",
+    "semantic_hash": "7c51eca1acbe627bf840171928aaf935"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/CoverZoomDialog.kt": {
+    "mtime": 1781745611.7643614,
+    "ast_hash": "10ffcaf42cbced55c6b9ee47d187948e",
+    "semantic_hash": "10ffcaf42cbced55c6b9ee47d187948e"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/DetailsTabRow.kt": {
+    "mtime": 1781745611.7643614,
+    "ast_hash": "5105eba30ffe2e15565b3b2456c112f9",
+    "semantic_hash": "5105eba30ffe2e15565b3b2456c112f9"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/DownloadBottomSheet.kt": {
+    "mtime": 1781745611.7643614,
+    "ast_hash": "f0acf94639aa9978ddea39251808119d",
+    "semantic_hash": "f0acf94639aa9978ddea39251808119d"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/EmptyChaptersMessage.kt": {
+    "mtime": 1781745611.7643614,
+    "ast_hash": "61fafa3e17af8adfc387268ff9df8071",
+    "semantic_hash": "61fafa3e17af8adfc387268ff9df8071"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/ErrorContent.kt": {
+    "mtime": 1781745611.7653613,
+    "ast_hash": "ecc037928cd6f6337966bf3342784957",
+    "semantic_hash": "ecc037928cd6f6337966bf3342784957"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/FastScroller.kt": {
+    "mtime": 1781929073.241358,
+    "ast_hash": "676dc5516e88c053209727881c7c186c",
+    "semantic_hash": "676dc5516e88c053209727881c7c186c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/FloatingScrollButton.kt": {
+    "mtime": 1781745611.7653613,
+    "ast_hash": "fb532dafb21b927afb64729414d95742",
+    "semantic_hash": "fb532dafb21b927afb64729414d95742"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/NovelHeader.kt": {
+    "mtime": 1781980537.2693517,
+    "ast_hash": "7cce7dbb15c4ee7fe3e2e588a4a6af43",
+    "semantic_hash": "7cce7dbb15c4ee7fe3e2e588a4a6af43"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/PaginationControls.kt": {
+    "mtime": 1781745611.7653613,
+    "ast_hash": "51a709c1472cfb75541ef6edf38581f0",
+    "semantic_hash": "51a709c1472cfb75541ef6edf38581f0"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/ReadingProgressCard.kt": {
+    "mtime": 1781745611.7653613,
+    "ast_hash": "a3d78d8cf2a4e9fbd814900a4dfeeaba",
+    "semantic_hash": "a3d78d8cf2a4e9fbd814900a4dfeeaba"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/RelatedNovelsSection.kt": {
+    "mtime": 1782136348.0654726,
+    "ast_hash": "a87e0f0c79686cb67d7e7ac757e67f77",
+    "semantic_hash": "a87e0f0c79686cb67d7e7ac757e67f77"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/RelatedTabContent.kt": {
+    "mtime": 1781265859.7793882,
+    "ast_hash": "6e12ee426b610888a1f45e59ce228abb",
+    "semantic_hash": "6e12ee426b610888a1f45e59ce228abb"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/ReviewCard.kt": {
+    "mtime": 1781745611.7653613,
+    "ast_hash": "e4044edafda90ad319b3a23153255ff1",
+    "semantic_hash": "e4044edafda90ad319b3a23153255ff1"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/ReviewsSection.kt": {
+    "mtime": 1781745611.7653613,
+    "ast_hash": "f46789aa761eb36f0705194c37752e39",
+    "semantic_hash": "f46789aa761eb36f0705194c37752e39"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/ReviewsTabContent.kt": {
+    "mtime": 1781745611.7653613,
+    "ast_hash": "bf401c98e926f8609b937c33c5d714da",
+    "semantic_hash": "bf401c98e926f8609b937c33c5d714da"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/SelectionModeOverlay.kt": {
+    "mtime": 1781745611.7653613,
+    "ast_hash": "11bf2f4cc60c9e0c83318f73bb638e5b",
+    "semantic_hash": "11bf2f4cc60c9e0c83318f73bb638e5b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/StatsRow.kt": {
+    "mtime": 1782062394.409208,
+    "ast_hash": "eb80b5a71e5436ab1bef16b2cc0fceff",
+    "semantic_hash": "eb80b5a71e5436ab1bef16b2cc0fceff"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/StatusBottomSheet.kt": {
+    "mtime": 1781745611.7663612,
+    "ast_hash": "8d073c6fd551ec5b5408b56b3643acbc",
+    "semantic_hash": "8d073c6fd551ec5b5408b56b3643acbc"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/SynopsisSection.kt": {
+    "mtime": 1781745611.7663612,
+    "ast_hash": "a545065687f90d078dc1f217b87c4e2b",
+    "semantic_hash": "a545065687f90d078dc1f217b87c4e2b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/components/TagsRow.kt": {
+    "mtime": 1781745611.7663612,
+    "ast_hash": "d3f278a9e6ad4ea796634b6c62e9720b",
+    "semantic_hash": "d3f278a9e6ad4ea796634b6c62e9720b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/details/utl/StatusUtils.kt": {
+    "mtime": 1781745611.7663612,
+    "ast_hash": "78cb1463e3896534a2f2e8b325b9bbaa",
+    "semantic_hash": "78cb1463e3896534a2f2e8b325b9bbaa"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/downloads/DownloadsScreen.kt": {
+    "mtime": 1781745611.7663612,
+    "ast_hash": "a1c0f60f302df0bcb8e43d43de95afa9",
+    "semantic_hash": "a1c0f60f302df0bcb8e43d43de95afa9"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/downloads/DownloadsViewModel.kt": {
+    "mtime": 1781265859.7800508,
+    "ast_hash": "476634c53581457795abd74fe8704620",
+    "semantic_hash": "476634c53581457795abd74fe8704620"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/downloads/components/EpubExportDialog.kt": {
+    "mtime": 1781745611.7663612,
+    "ast_hash": "fe1bf9aba5fb2d0b4cceedf317d201e7",
+    "semantic_hash": "fe1bf9aba5fb2d0b4cceedf317d201e7"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/HomeScreen.kt": {
+    "mtime": 1782384519.1391826,
+    "ast_hash": "c7a6912da69af2965960d22b8a8ac7fa",
+    "semantic_hash": "c7a6912da69af2965960d22b8a8ac7fa"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/shared/ActionSheetManager.kt": {
+    "mtime": 1782326459.1067448,
+    "ast_hash": "436a8c9982d4f9d3ba29ac1c1a34fbaf",
+    "semantic_hash": "436a8c9982d4f9d3ba29ac1c1a34fbaf"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/shared/LibraryStateHolder.kt": {
+    "mtime": 1781265859.7801633,
+    "ast_hash": "64ac2cf5c42a64d65163a6a99b29c165",
+    "semantic_hash": "64ac2cf5c42a64d65163a6a99b29c165"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/shared/RecommendationNavigationHelper.kt": {
+    "mtime": 1781265859.7801633,
+    "ast_hash": "963c3d7f6f6e7a304bb94976595ae051",
+    "semantic_hash": "963c3d7f6f6e7a304bb94976595ae051"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/browse/BrowseTab.kt": {
+    "mtime": 1782466408.2265024,
+    "ast_hash": "d4147967649020e3ea9319cf7dc1c4d3",
+    "semantic_hash": "d4147967649020e3ea9319cf7dc1c4d3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/browse/BrowseUiState.kt": {
+    "mtime": 1781265859.7802503,
+    "ast_hash": "83d5a20bc54fda5ab7a36dddc71835f4",
+    "semantic_hash": "83d5a20bc54fda5ab7a36dddc71835f4"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/browse/BrowseViewModel.kt": {
+    "mtime": 1782351195.0935388,
+    "ast_hash": "ce78177fc869074d0d9c4202ca2f5d8c",
+    "semantic_hash": "ce78177fc869074d0d9c4202ca2f5d8c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/browse/ProviderBrowseScreen.kt": {
+    "mtime": 1782351044.9249394,
+    "ast_hash": "ecdeb5ba93e53e6789b8cc09bcb53489",
+    "semantic_hash": "ecdeb5ba93e53e6789b8cc09bcb53489"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/browse/ProviderBrowseUiState.kt": {
+    "mtime": 1781752705.8452885,
+    "ast_hash": "9c9db83b0ffdcf75cf03163902979910",
+    "semantic_hash": "9c9db83b0ffdcf75cf03163902979910"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/browse/ProviderBrowseViewModel.kt": {
+    "mtime": 1782351204.8135796,
+    "ast_hash": "c6f4ce7bfd76b24f94a1362ead2c5f9b",
+    "semantic_hash": "c6f4ce7bfd76b24f94a1362ead2c5f9b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/browse/ProviderWebViewScreen.kt": {
+    "mtime": 1782062394.412208,
+    "ast_hash": "09305d38c6edffba2235d37d4bc68823",
+    "semantic_hash": "09305d38c6edffba2235d37d4bc68823"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/history/HistoryTab.kt": {
+    "mtime": 1782068422.4550004,
+    "ast_hash": "529b4111d3e5f22c6fe5f63345dbd12d",
+    "semantic_hash": "529b4111d3e5f22c6fe5f63345dbd12d"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/history/HistoryViewModel.kt": {
+    "mtime": 1781265859.7804217,
+    "ast_hash": "31d74fd76f47bfdb013dcb895a60a967",
+    "semantic_hash": "31d74fd76f47bfdb013dcb895a60a967"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/library/LibraryTab.kt": {
+    "mtime": 1782356629.1277525,
+    "ast_hash": "11b08bf2e25714d1b371e7086182d6c8",
+    "semantic_hash": "11b08bf2e25714d1b371e7086182d6c8"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/library/LibraryUiState.kt": {
+    "mtime": 1781752705.8462884,
+    "ast_hash": "1a3da1789369e6c9866ccac23e5c155c",
+    "semantic_hash": "1a3da1789369e6c9866ccac23e5c155c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/library/LibraryViewModel.kt": {
+    "mtime": 1782067454.449866,
+    "ast_hash": "a16bec1ab9695c02d3894b53ed6b7094",
+    "semantic_hash": "a16bec1ab9695c02d3894b53ed6b7094"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/more/MoreTab.kt": {
+    "mtime": 1782384506.0101256,
+    "ast_hash": "461e17134ba0ed2757b0dd9d2ae82805",
+    "semantic_hash": "461e17134ba0ed2757b0dd9d2ae82805"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/more/MoreViewModel.kt": {
+    "mtime": 1781265859.7805612,
+    "ast_hash": "fc62e0d1f7ceb1d17ed55813e1757983",
+    "semantic_hash": "fc62e0d1f7ceb1d17ed55813e1757983"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/RecommendationSection.kt": {
+    "mtime": 1782056815.7956576,
+    "ast_hash": "dcf9429ffd8ccf8cdca3f837dbd1d68a",
+    "semantic_hash": "dcf9429ffd8ccf8cdca3f837dbd1d68a"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/RecommendationTab.kt": {
+    "mtime": 1782382759.069844,
+    "ast_hash": "87b927bb2b4e1ee936e7a6abc3975444",
+    "semantic_hash": "87b927bb2b4e1ee936e7a6abc3975444"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/RecommendationUiState.kt": {
+    "mtime": 1782382759.0708442,
+    "ast_hash": "7989208efe47324d267a880040414537",
+    "semantic_hash": "7989208efe47324d267a880040414537"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/RecommendationViewModel.kt": {
+    "mtime": 1782382759.0708442,
+    "ast_hash": "65a3b8f3548ecbd978fc9266d2ebed60",
+    "semantic_hash": "65a3b8f3548ecbd978fc9266d2ebed60"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/AiRecommendationSection.kt": {
+    "mtime": 1782382759.0708442,
+    "ast_hash": "e40a8562f2064b00a3cb84752d8da3ba",
+    "semantic_hash": "e40a8562f2064b00a3cb84752d8da3ba"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/BudgetStatusCard.kt": {
+    "mtime": 1781745611.7683613,
+    "ast_hash": "5a76ee0564483552eb5ea4536ac916b3",
+    "semantic_hash": "5a76ee0564483552eb5ea4536ac916b3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/EmptyRecommendations.kt": {
+    "mtime": 1781745611.7683613,
+    "ast_hash": "b26551a657fdab67adeb79511c70e8a2",
+    "semantic_hash": "b26551a657fdab67adeb79511c70e8a2"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/FilterManagementSheet.kt": {
+    "mtime": 1781745611.7683613,
+    "ast_hash": "5975685165a6cf71fb860faa9a71f0d0",
+    "semantic_hash": "5975685165a6cf71fb860faa9a71f0d0"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/GenrePreferencesSheet.kt": {
+    "mtime": 1782362724.9411838,
+    "ast_hash": "dfd903354ba4d60ed63206c9fe0e3bc3",
+    "semantic_hash": "dfd903354ba4d60ed63206c9fe0e3bc3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/LibrarySourceSelector.kt": {
+    "mtime": 1781745611.7683613,
+    "ast_hash": "00324f6e6229a25705dc39bc9a1e49e5",
+    "semantic_hash": "00324f6e6229a25705dc39bc9a1e49e5"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/NovelActionMenu.kt": {
+    "mtime": 1781745611.7693613,
+    "ast_hash": "e50566ae491b4ead0ec557c6d892e991",
+    "semantic_hash": "e50566ae491b4ead0ec557c6d892e991"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/ProfileHeader.kt": {
+    "mtime": 1781745611.7693613,
+    "ast_hash": "f5299878d957786f9f30fe56353fd60a",
+    "semantic_hash": "f5299878d957786f9f30fe56353fd60a"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/RecommendationCard.kt": {
+    "mtime": 1781745611.7693613,
+    "ast_hash": "2bcd5f63bc3ac0aff76993f876974880",
+    "semantic_hash": "2bcd5f63bc3ac0aff76993f876974880"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/RecommendationSettingsSheet.kt": {
+    "mtime": 1782362724.9391837,
+    "ast_hash": "0e20a649e30986497924f840bef8fb2a",
+    "semantic_hash": "0e20a649e30986497924f840bef8fb2a"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/SourceRecommendationsSection.kt": {
+    "mtime": 1781745611.7693613,
+    "ast_hash": "04d7ac8f77c4585253a9e8dcc03b0915",
+    "semantic_hash": "04d7ac8f77c4585253a9e8dcc03b0915"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/TagFilterSheet.kt": {
+    "mtime": 1781745611.7693613,
+    "ast_hash": "1e12646798cbffbda95ec446907bd362",
+    "semantic_hash": "1e12646798cbffbda95ec446907bd362"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/home/tabs/recommendation/components/TagNovelsSection.kt": {
+    "mtime": 1782382759.071844,
+    "ast_hash": "c9d272b6a148f2038e3d28febe08e277",
+    "semantic_hash": "c9d272b6a148f2038e3d28febe08e277"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/migration/MigrationBulkScreen.kt": {
+    "mtime": 1782062394.414208,
+    "ast_hash": "742e7e8ddadc8bc2ddae67572358975f",
+    "semantic_hash": "742e7e8ddadc8bc2ddae67572358975f"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/migration/MigrationBulkViewModel.kt": {
+    "mtime": 1781347377.3664916,
+    "ast_hash": "b9209bcca6b5f5f20ff8d7d87e455717",
+    "semantic_hash": "b9209bcca6b5f5f20ff8d7d87e455717"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/migration/MigrationNovelsScreen.kt": {
+    "mtime": 1782326459.9757478,
+    "ast_hash": "367c18f6c644b88833e2c1e60e84c63d",
+    "semantic_hash": "367c18f6c644b88833e2c1e60e84c63d"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/migration/MigrationNovelsViewModel.kt": {
+    "mtime": 1781347377.3674915,
+    "ast_hash": "be5344c86315356feb92155e3341ad2a",
+    "semantic_hash": "be5344c86315356feb92155e3341ad2a"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/migration/MigrationSearchScreen.kt": {
+    "mtime": 1782326452.023719,
+    "ast_hash": "3efe12d7cb6f031b383bef6a87817bd3",
+    "semantic_hash": "3efe12d7cb6f031b383bef6a87817bd3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/migration/MigrationSearchViewModel.kt": {
+    "mtime": 1781347377.3674915,
+    "ast_hash": "e1786b7633fe879941e8e8198a4acc63",
+    "semantic_hash": "e1786b7633fe879941e8e8198a4acc63"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/migration/MigrationSourcesScreen.kt": {
+    "mtime": 1782062394.415208,
+    "ast_hash": "3f54e036ef182d994fc932f6a0a7d464",
+    "semantic_hash": "3f54e036ef182d994fc932f6a0a7d464"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/migration/MigrationSourcesViewModel.kt": {
+    "mtime": 1781347377.3684916,
+    "ast_hash": "7a8cab72d06f998ba51290ac2e291273",
+    "semantic_hash": "7a8cab72d06f998ba51290ac2e291273"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/notes/NotesHighlightsScreen.kt": {
+    "mtime": 1781885400.272605,
+    "ast_hash": "4ae461222da8f2799959ca8620e416c0",
+    "semantic_hash": "4ae461222da8f2799959ca8620e416c0"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/notes/NotesHighlightsViewModel.kt": {
+    "mtime": 1781885400.2735674,
+    "ast_hash": "f8a6a7a8265b219a53c401c6e1af5df1",
+    "semantic_hash": "f8a6a7a8265b219a53c401c6e1af5df1"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/notification/NotificationScreen.kt": {
+    "mtime": 1782062394.416208,
+    "ast_hash": "b707ae3c79401783ac5b390101917673",
+    "semantic_hash": "b707ae3c79401783ac5b390101917673"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/notification/NotificationUiState.kt": {
+    "mtime": 1781265859.7807615,
+    "ast_hash": "3bcf847113cf8f3c3682864831d8b688",
+    "semantic_hash": "3bcf847113cf8f3c3682864831d8b688"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/notification/NotificationViewModel.kt": {
+    "mtime": 1781265859.7807615,
+    "ast_hash": "1452d07d9c69b83ac451728e98189d2c",
+    "semantic_hash": "1452d07d9c69b83ac451728e98189d2c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/onboarding/OnboardingScreen.kt": {
+    "mtime": 1782294590.688476,
+    "ast_hash": "c45d4dadf96393dd4e3ba5e405161df7",
+    "semantic_hash": "c45d4dadf96393dd4e3ba5e405161df7"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/onboarding/OnboardingState.kt": {
+    "mtime": 1782296802.3745382,
+    "ast_hash": "d7342c82a5efb985f3c8f02d1bbef4d4",
+    "semantic_hash": "d7342c82a5efb985f3c8f02d1bbef4d4"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/onboarding/OnboardingViewModel.kt": {
+    "mtime": 1782297074.3260548,
+    "ast_hash": "50226d4905dd634d34763d14c9a4b385",
+    "semantic_hash": "50226d4905dd634d34763d14c9a4b385"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/profile/ProfileScreen.kt": {
+    "mtime": 1782357175.7331882,
+    "ast_hash": "a3eaf811b28d320a7ac091b8cbd5150d",
+    "semantic_hash": "a3eaf811b28d320a7ac091b8cbd5150d"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/profile/ProfileUiState.kt": {
+    "mtime": 1782356990.2463675,
+    "ast_hash": "c061b8c7033f993ca1eb0580fd3b354d",
+    "semantic_hash": "c061b8c7033f993ca1eb0580fd3b354d"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/profile/ProfileViewModel.kt": {
+    "mtime": 1782357044.3746076,
+    "ast_hash": "39fe85250f8305142edb673a73cbcacd",
+    "semantic_hash": "39fe85250f8305142edb673a73cbcacd"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/ReaderScreen.kt": {
+    "mtime": 1782299326.5268595,
+    "ast_hash": "8c85fcd79da2196ab26d54eb799d4bfe",
+    "semantic_hash": "8c85fcd79da2196ab26d54eb799d4bfe"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/ReaderViewModel.kt": {
+    "mtime": 1782053293.652172,
+    "ast_hash": "76cd536e9a4132fc5462d53aeb97b268",
+    "semantic_hash": "76cd536e9a4132fc5462d53aeb97b268"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/AuthorNoteItem.kt": {
+    "mtime": 1781745611.7703614,
+    "ast_hash": "86fb3b3632bfcebb119e158092b47128",
+    "semantic_hash": "86fb3b3632bfcebb119e158092b47128"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/ImageItem.kt": {
+    "mtime": 1782299443.699465,
+    "ast_hash": "a15cb62c84e2d88e008e444e1df360f6",
+    "semantic_hash": "a15cb62c84e2d88e008e444e1df360f6"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/LoadingStates.kt": {
+    "mtime": 1782299318.1778162,
+    "ast_hash": "0fb9edbbf1ce07ee3cc8c502d015987f",
+    "semantic_hash": "0fb9edbbf1ce07ee3cc8c502d015987f"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/ParagraphItem.kt": {
+    "mtime": 1782326443.488688,
+    "ast_hash": "135111b9eacff8b16775e0060dae4182",
+    "semantic_hash": "135111b9eacff8b16775e0060dae4182"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/ReaderContainer.kt": {
+    "mtime": 1782468641.569728,
+    "ast_hash": "fa38bb9360740554d7b776b3dc6e2540",
+    "semantic_hash": "fa38bb9360740554d7b776b3dc6e2540"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/ReaderOverlays.kt": {
+    "mtime": 1782299339.1039245,
+    "ast_hash": "0496ada393fe36543d51c6b14b3711be",
+    "semantic_hash": "0496ada393fe36543d51c6b14b3711be"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/ScrollBehavior.kt": {
+    "mtime": 1781265859.7812471,
+    "ast_hash": "ef609f144a9ea320be6229f9f774d676",
+    "semantic_hash": "ef609f144a9ea320be6229f9f774d676"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/ScrollUtils.kt": {
+    "mtime": 1781265859.7812471,
+    "ast_hash": "8575c25bf1b919f974170f2290d0798a",
+    "semantic_hash": "8575c25bf1b919f974170f2290d0798a"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/SnapScrollBehavior.kt": {
+    "mtime": 1781265859.7812471,
+    "ast_hash": "8f458006e0fa994f15097aa4414b64e2",
+    "semantic_hash": "8f458006e0fa994f15097aa4414b64e2"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/TTSBoundedScrollConnection.kt": {
+    "mtime": 1781265859.7812471,
+    "ast_hash": "4b78a4a655c6cb3f8636e54628729f9b",
+    "semantic_hash": "4b78a4a655c6cb3f8636e54628729f9b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/components/TextSelectionPopup.kt": {
+    "mtime": 1781885400.273605,
+    "ast_hash": "a638531f87e74a667279f138c37953f3",
+    "semantic_hash": "a638531f87e74a667279f138c37953f3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/logic/AuthorNoteDetector.kt": {
+    "mtime": 1781265859.7814927,
+    "ast_hash": "3a2d71504b6def7582de5848a07c98eb",
+    "semantic_hash": "3a2d71504b6def7582de5848a07c98eb"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/logic/ChapterLoader.kt": {
+    "mtime": 1781265859.7814927,
+    "ast_hash": "a87f42fc3866154c6e7b2ff742290f34",
+    "semantic_hash": "a87f42fc3866154c6e7b2ff742290f34"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/logic/ReaderPaginator.kt": {
+    "mtime": 1781265859.7814927,
+    "ast_hash": "db02ea920b95b1bb2af9ec1d356b4d60",
+    "semantic_hash": "db02ea920b95b1bb2af9ec1d356b4d60"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/logic/RichTextParser.kt": {
+    "mtime": 1781265859.7814927,
+    "ast_hash": "c13157b9de89f4c7b0d17f0e7c0c1a0b",
+    "semantic_hash": "c13157b9de89f4c7b0d17f0e7c0c1a0b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/logic/TextProcessor.kt": {
+    "mtime": 1781265859.7814927,
+    "ast_hash": "c46487ffa55f72203bf1df9eae030f74",
+    "semantic_hash": "c46487ffa55f72203bf1df9eae030f74"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/model/ReaderDisplayItem.kt": {
+    "mtime": 1781265859.7816024,
+    "ast_hash": "d856441a042814cfcc6d36fe2e989717",
+    "semantic_hash": "d856441a042814cfcc6d36fe2e989717"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/model/ReaderUiState.kt": {
+    "mtime": 1781843180.5813885,
+    "ast_hash": "d7763c1d3dcf47bc27c491e561272710",
+    "semantic_hash": "d7763c1d3dcf47bc27c491e561272710"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/model/StablePosition.kt": {
+    "mtime": 1781265859.7816024,
+    "ast_hash": "68f63a5677c21ddac0175baf804f4145",
+    "semantic_hash": "68f63a5677c21ddac0175baf804f4145"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/model/TextHighlight.kt": {
+    "mtime": 1781885400.274605,
+    "ast_hash": "ba9d3e38380a8991915deceb1ed159b3",
+    "semantic_hash": "ba9d3e38380a8991915deceb1ed159b3"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/settings/ReaderSettingsScreen.kt": {
+    "mtime": 1782461251.392463,
+    "ast_hash": "4186d06614904acbb8d83be7d7d1623f",
+    "semantic_hash": "4186d06614904acbb8d83be7d7d1623f"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/theme/FontProvider.kt": {
+    "mtime": 1781265859.7817404,
+    "ast_hash": "7304d497d76b6edde9a363707ee5024e",
+    "semantic_hash": "7304d497d76b6edde9a363707ee5024e"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/reader/theme/ReaderTheme.kt": {
+    "mtime": 1781265859.7817404,
+    "ast_hash": "495e17ef22a16a1e5babd24d778d7c55",
+    "semantic_hash": "495e17ef22a16a1e5babd24d778d7c55"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/search/GlobalSearchScreen.kt": {
+    "mtime": 1782329969.5359626,
+    "ast_hash": "a183f88bcb744553b5e13bb950113779",
+    "semantic_hash": "a183f88bcb744553b5e13bb950113779"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/search/GlobalSearchUiState.kt": {
+    "mtime": 1781764805.9347448,
+    "ast_hash": "39dd994bfaadbaf2163713b11b2ef0d8",
+    "semantic_hash": "39dd994bfaadbaf2163713b11b2ef0d8"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/search/GlobalSearchViewModel.kt": {
+    "mtime": 1782326499.8668926,
+    "ast_hash": "6e356fb70ed3a878fda737179914ff1f",
+    "semantic_hash": "6e356fb70ed3a878fda737179914ff1f"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/settings/SettingsScreen.kt": {
+    "mtime": 1782384530.315231,
+    "ast_hash": "220f8f527080dc3ce004e346dd4e6770",
+    "semantic_hash": "220f8f527080dc3ce004e346dd4e6770"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/settings/StorageScreen.kt": {
+    "mtime": 1781745611.7723613,
+    "ast_hash": "5224d03b9749acb4745983c0f1787cef",
+    "semantic_hash": "5224d03b9749acb4745983c0f1787cef"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/settings/StorageSyncSection.kt": {
+    "mtime": 1782320275.8711748,
+    "ast_hash": "7441729d257ef9f9bf5dc2cf83017800",
+    "semantic_hash": "7441729d257ef9f9bf5dc2cf83017800"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/tagexplorer/TagExplorerScreen.kt": {
+    "mtime": 1781983286.754323,
+    "ast_hash": "f33ad79002668bd3206cc780f373daed",
+    "semantic_hash": "f33ad79002668bd3206cc780f373daed"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/tagexplorer/TagExplorerUiState.kt": {
+    "mtime": 1781265859.7819188,
+    "ast_hash": "b4c7c54faf3ed8ebde0e14560a81e726",
+    "semantic_hash": "b4c7c54faf3ed8ebde0e14560a81e726"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/tagexplorer/TagExplorerViewModel.kt": {
+    "mtime": 1781265859.7819188,
+    "ast_hash": "fb65c668045245f54889d3a759f556a0",
+    "semantic_hash": "fb65c668045245f54889d3a759f556a0"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/screens/tagexplorer/components/TagSelectorSheet.kt": {
+    "mtime": 1781745611.7733614,
+    "ast_hash": "cf2005702d3e405872c3c2808e2275db",
+    "semantic_hash": "cf2005702d3e405872c3c2808e2275db"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/ui/sync/GoogleDriveLoginActivity.kt": {
+    "mtime": 1781265859.782083,
+    "ast_hash": "f182cd07ed0170de656662e4541937f4",
+    "semantic_hash": "f182cd07ed0170de656662e4541937f4"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/update/ChapterUpdateCancelReceiver.kt": {
+    "mtime": 1782461963.942889,
+    "ast_hash": "935f284d2631c9871ec79bcf7ad1cf95",
+    "semantic_hash": "935f284d2631c9871ec79bcf7ad1cf95"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/update/ChapterUpdateScheduler.kt": {
+    "mtime": 1782461940.9840732,
+    "ast_hash": "b6b2e8d57fa5130525f6320a3edfc719",
+    "semantic_hash": "b6b2e8d57fa5130525f6320a3edfc719"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/update/ChapterUpdateWorker.kt": {
+    "mtime": 1782461995.2207909,
+    "ast_hash": "78b10c527ce1bd53d02859f47035157b",
+    "semantic_hash": "78b10c527ce1bd53d02859f47035157b"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/AppLoadState.kt": {
+    "mtime": 1781265859.7821267,
+    "ast_hash": "e81a3fe1e1257a45036edb4c9cf5c11e",
+    "semantic_hash": "e81a3fe1e1257a45036edb4c9cf5c11e"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/GridUtils.kt": {
+    "mtime": 1781983286.754323,
+    "ast_hash": "1db68015503c4c676e22e18821bf8e4c",
+    "semantic_hash": "1db68015503c4c676e22e18821bf8e4c"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/ImageLoader.kt": {
+    "mtime": 1781265859.7821267,
+    "ast_hash": "82ed739b30d743c16a7cc99ff84b5db7",
+    "semantic_hash": "82ed739b30d743c16a7cc99ff84b5db7"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/ImageUtils.kt": {
+    "mtime": 1781265859.7821267,
+    "ast_hash": "0e5e1220903832b2aa738048005e034f",
+    "semantic_hash": "0e5e1220903832b2aa738048005e034f"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/ImmersiveMode.kt": {
+    "mtime": 1781265859.7821267,
+    "ast_hash": "a4157751c0950b8ffb2d64da12731e27",
+    "semantic_hash": "a4157751c0950b8ffb2d64da12731e27"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/RatingUtils.kt": {
+    "mtime": 1781265859.7821267,
+    "ast_hash": "d8d2c52175f49f8ac8f795eab5bf2499",
+    "semantic_hash": "d8d2c52175f49f8ac8f795eab5bf2499"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/ReaderState.kt": {
+    "mtime": 1781885400.274605,
+    "ast_hash": "b2278651101adda0ea09077efef47ce5",
+    "semantic_hash": "b2278651101adda0ea09077efef47ce5"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/ReadingTimeTracker.kt": {
+    "mtime": 1781265859.7821267,
+    "ast_hash": "fa3bd40954c42c1b1663f2b61c019bed",
+    "semantic_hash": "fa3bd40954c42c1b1663f2b61c019bed"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/SentenceParser.kt": {
+    "mtime": 1781265859.7821267,
+    "ast_hash": "0ba7a574e427dffd01dbc2c427db776e",
+    "semantic_hash": "0ba7a574e427dffd01dbc2c427db776e"
+  },
+  "app/src/main/java/com/kmhmubin/kothagolp/util/VolumeKeyManager.kt": {
+    "mtime": 1781265859.7821267,
+    "ast_hash": "449468aa72c2453210a8971a206feab7",
+    "semantic_hash": "449468aa72c2453210a8971a206feab7"
+  },
+  "app/src/test/java/com/kmhmubin/kothagolp/ExampleUnitTest.kt": {
+    "mtime": 1781265859.7657614,
+    "ast_hash": "de1e4c7d739d5f03d13fab6b2f0c8c22",
+    "semantic_hash": "de1e4c7d739d5f03d13fab6b2f0c8c22"
+  },
+  "build.gradle.kts": {
+    "mtime": 1781266319.8207424,
+    "ast_hash": "19b883b303ccfef0e4ac28bdecc8e598",
+    "semantic_hash": "19b883b303ccfef0e4ac28bdecc8e598"
+  },
+  "core/common/build.gradle.kts": {
+    "mtime": 1781266319.8217754,
+    "ast_hash": "09948a278b642267c7a0324e6cc3d88a",
+    "semantic_hash": "09948a278b642267c7a0324e6cc3d88a"
+  },
+  "core/common/src/main/java/com/kmhmubin/kothagolp/data/remote/CloudflareManager.kt": {
+    "mtime": 1781966635.8100872,
+    "ast_hash": "23ce9d0d5b4a139e0aa8ab51c5e9ce01",
+    "semantic_hash": "23ce9d0d5b4a139e0aa8ab51c5e9ce01"
+  },
+  "core/common/src/main/java/com/kmhmubin/kothagolp/data/remote/CloudflareWebViewSolver.kt": {
+    "mtime": 1781966658.5412297,
+    "ast_hash": "0f5e90acbaff887b9f977cc4ee4ace4f",
+    "semantic_hash": "0f5e90acbaff887b9f977cc4ee4ace4f"
+  },
+  "core/common/src/main/java/com/kmhmubin/kothagolp/data/remote/NetworkClient.kt": {
+    "mtime": 1781966702.5448136,
+    "ast_hash": "45ff3011b90909b1ece2f8b55cb4c6fb",
+    "semantic_hash": "45ff3011b90909b1ece2f8b55cb4c6fb"
+  },
+  "core/common/src/main/java/com/kmhmubin/kothagolp/util/Extensions.kt": {
+    "mtime": 1781265859.7422357,
+    "ast_hash": "6a92cd38a8574fa644272e3cb71d62f0",
+    "semantic_hash": "6a92cd38a8574fa644272e3cb71d62f0"
+  },
+  "core/common/src/main/java/com/kmhmubin/kothagolp/util/HtmlUtils.kt": {
+    "mtime": 1781265859.7422357,
+    "ast_hash": "d8f319c7ddd32cc67f9a8dda72c4da06",
+    "semantic_hash": "d8f319c7ddd32cc67f9a8dda72c4da06"
+  },
+  "core/common/src/main/java/com/kmhmubin/kothagolp/util/TimeUtils.kt": {
+    "mtime": 1781265859.7422357,
+    "ast_hash": "68ad89c2cdb947ade802fbb99de3a000",
+    "semantic_hash": "68ad89c2cdb947ade802fbb99de3a000"
+  },
+  "core/data/build.gradle.kts": {
+    "mtime": 1782296999.3576496,
+    "ast_hash": "40b26a3883bfdca7d9f03b1e20ba9ff4",
+    "semantic_hash": "40b26a3883bfdca7d9f03b1e20ba9ff4"
+  },
+  "core/data/src/androidTest/java/com/kmhmubin/kothagolp/data/BookmarkDaoTest.kt": {
+    "mtime": 1781265859.7307637,
+    "ast_hash": "3481347a90e4ef3267b7682279148af5",
+    "semantic_hash": "3481347a90e4ef3267b7682279148af5"
+  },
+  "core/data/src/androidTest/java/com/kmhmubin/kothagolp/data/HistoryDaoTest.kt": {
+    "mtime": 1781265859.7307637,
+    "ast_hash": "1e28005e4725fa5d3bd6e967332d5809",
+    "semantic_hash": "1e28005e4725fa5d3bd6e967332d5809"
+  },
+  "core/data/src/androidTest/java/com/kmhmubin/kothagolp/data/LibraryDaoTest.kt": {
+    "mtime": 1781265859.7307637,
+    "ast_hash": "40aa824ff3b70a3bd84d4eba3fa88e1b",
+    "semantic_hash": "40aa824ff3b70a3bd84d4eba3fa88e1b"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/Converters.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "86fdb917566f60f1d6ebeb162e9fb060",
+    "semantic_hash": "86fdb917566f60f1d6ebeb162e9fb060"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/NovelDatabase.kt": {
+    "mtime": 1781942567.3304996,
+    "ast_hash": "8b3aa542fb4aa0642e5cfc8687ebc010",
+    "semantic_hash": "8b3aa542fb4aa0642e5cfc8687ebc010"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/PreferencesManager.kt": {
+    "mtime": 1782382759.0738442,
+    "ast_hash": "0a53d7e8da4d303b8e14a44eb04ef1f8",
+    "semantic_hash": "0a53d7e8da4d303b8e14a44eb04ef1f8"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/backup/BackupData.kt": {
+    "mtime": 1781265859.748333,
+    "ast_hash": "f028898c2e84c6ca01217349bac500b3",
+    "semantic_hash": "f028898c2e84c6ca01217349bac500b3"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/backup/BackupManager.kt": {
+    "mtime": 1782053293.6531723,
+    "ast_hash": "45ff3c995f83326ec31f0f9cebbc3699",
+    "semantic_hash": "45ff3c995f83326ec31f0f9cebbc3699"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/backup/LocalBackupWorker.kt": {
+    "mtime": 1782320275.8711748,
+    "ast_hash": "9f4450ec9f2349d58d2728cd6a9861ae",
+    "semantic_hash": "9f4450ec9f2349d58d2728cd6a9861ae"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/backup/quicknovel/QuickNovelBackupConverter.kt": {
+    "mtime": 1781265859.748333,
+    "ast_hash": "bbcceaf0980c29c91380cdef40758afb",
+    "semantic_hash": "bbcceaf0980c29c91380cdef40758afb"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/backup/quicknovel/QuickNovelBackupModels.kt": {
+    "mtime": 1781265859.748333,
+    "ast_hash": "e5d518e8b8106b6c5836207adab18162",
+    "semantic_hash": "e5d518e8b8106b6c5836207adab18162"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/dao/AuthorPreferenceDao.kt": {
+    "mtime": 1781265859.7474446,
+    "ast_hash": "c5b36db71a8cd004cf403d597e0590e8",
+    "semantic_hash": "c5b36db71a8cd004cf403d597e0590e8"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/dao/BookmarkDao.kt": {
+    "mtime": 1781885400.274605,
+    "ast_hash": "ede5fc2e73cb8e707c882ff16de51df2",
+    "semantic_hash": "ede5fc2e73cb8e707c882ff16de51df2"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/dao/HistoryDao.kt": {
+    "mtime": 1781265859.7474446,
+    "ast_hash": "a8f5f4013f6cee6638795ddc158dc53f",
+    "semantic_hash": "a8f5f4013f6cee6638795ddc158dc53f"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/dao/LibraryDao.kt": {
+    "mtime": 1782053293.6531723,
+    "ast_hash": "26dc1131bb5181a9336a0987a6a652c6",
+    "semantic_hash": "26dc1131bb5181a9336a0987a6a652c6"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/dao/NetworkBudgetDao.kt": {
+    "mtime": 1781265859.7474446,
+    "ast_hash": "cf366ee8a82d7a1ac699c0c7ba7998e4",
+    "semantic_hash": "cf366ee8a82d7a1ac699c0c7ba7998e4"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/dao/OfflineDao.kt": {
+    "mtime": 1781265859.7474446,
+    "ast_hash": "3f51f090fa36199efccf5808f594527f",
+    "semantic_hash": "3f51f090fa36199efccf5808f594527f"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/dao/RecommendationDao.kt": {
+    "mtime": 1782382759.0738442,
+    "ast_hash": "b6a5404a56949318740566fee698e2a3",
+    "semantic_hash": "b6a5404a56949318740566fee698e2a3"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/dao/StatsDao.kt": {
+    "mtime": 1781265859.7474446,
+    "ast_hash": "63b931b8e50ad28f061fb5976841f0bc",
+    "semantic_hash": "63b931b8e50ad28f061fb5976841f0bc"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/dao/UserFilterDao.kt": {
+    "mtime": 1781265859.7474446,
+    "ast_hash": "a88aa9c57b7a34a56dc0cb14cf7c0671",
+    "semantic_hash": "a88aa9c57b7a34a56dc0cb14cf7c0671"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/AuthorPreferenceEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "cf8c3abe07775dd150386262fabb5b0f",
+    "semantic_hash": "cf8c3abe07775dd150386262fabb5b0f"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/BookmarkEntity.kt": {
+    "mtime": 1781885400.274605,
+    "ast_hash": "d0a91df8db0759d7f0355a5668bdaa29",
+    "semantic_hash": "d0a91df8db0759d7f0355a5668bdaa29"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/DiscoveredNovelEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "9ef469e5a8d897e325c4c84ae056e858",
+    "semantic_hash": "9ef469e5a8d897e325c4c84ae056e858"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/HistoryEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "918979a382157eec48298c51351d76e2",
+    "semantic_hash": "918979a382157eec48298c51351d76e2"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/LibraryEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "c8fd8455374e917f9b59b6369c15628d",
+    "semantic_hash": "c8fd8455374e917f9b59b6369c15628d"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/NetworkBudgetEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "459c7fff1710988d08a68a2f371d800e",
+    "semantic_hash": "459c7fff1710988d08a68a2f371d800e"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/NovelDetailsEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "578e7d34ecbba222169190e725c1a509",
+    "semantic_hash": "578e7d34ecbba222169190e725c1a509"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/OfflineChapterEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "d0612d9742560a1f73747d2ac7cce516",
+    "semantic_hash": "d0612d9742560a1f73747d2ac7cce516"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/OfflineNovelEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "fe880abff813330709679f653c83a609",
+    "semantic_hash": "fe880abff813330709679f653c83a609"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/ReadChapterEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "298b879b58453916dfa0718d1be76df5",
+    "semantic_hash": "298b879b58453916dfa0718d1be76df5"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/ReadingStatsEntity.kt": {
+    "mtime": 1781941226.5617547,
+    "ast_hash": "e363debba1b003be6c99d7abb894c176",
+    "semantic_hash": "e363debba1b003be6c99d7abb894c176"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/ReadingStreakEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "01f1dd22f15b529f27805650c0e3b042",
+    "semantic_hash": "01f1dd22f15b529f27805650c0e3b042"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/UserFilterEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "6a857d54c1878285976b52f366f11ed0",
+    "semantic_hash": "6a857d54c1878285976b52f366f11ed0"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/entity/UserPreferenceEntity.kt": {
+    "mtime": 1781265859.7477956,
+    "ast_hash": "c65bd82fb5995400668bc1fbcd676c21",
+    "semantic_hash": "c65bd82fb5995400668bc1fbcd676c21"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/migration/MigrationUseCase.kt": {
+    "mtime": 1781347377.3694916,
+    "ast_hash": "c9e05fc46a7fb5b1085395e33824cdf2",
+    "semantic_hash": "c9e05fc46a7fb5b1085395e33824cdf2"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/repository/BookmarkRepository.kt": {
+    "mtime": 1781885400.274605,
+    "ast_hash": "dd6632182add01b532fd9a05fbf9d36d",
+    "semantic_hash": "dd6632182add01b532fd9a05fbf9d36d"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/repository/ContentLoadingStrategy.kt": {
+    "mtime": 1781265859.7481515,
+    "ast_hash": "5dc6234a07df56141f0cd6ccc628708d",
+    "semantic_hash": "5dc6234a07df56141f0cd6ccc628708d"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/repository/HistoryRepository.kt": {
+    "mtime": 1781265859.7481515,
+    "ast_hash": "0bc6861af54d2821f9cafc980f93f3a2",
+    "semantic_hash": "0bc6861af54d2821f9cafc980f93f3a2"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/repository/LibraryRepository.kt": {
+    "mtime": 1782053293.6531723,
+    "ast_hash": "be1fb3d182574b4d9d7d3bd920941a1d",
+    "semantic_hash": "be1fb3d182574b4d9d7d3bd920941a1d"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/repository/NotificationRepository.kt": {
+    "mtime": 1781265859.7481515,
+    "ast_hash": "6c2e768a929ab104e496283a6a492aaf",
+    "semantic_hash": "6c2e768a929ab104e496283a6a492aaf"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/repository/NovelRepository.kt": {
+    "mtime": 1782326423.2136145,
+    "ast_hash": "833d719b078da6d5e8a77d524d5cd500",
+    "semantic_hash": "833d719b078da6d5e8a77d524d5cd500"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/repository/OfflineRepository.kt": {
+    "mtime": 1781265859.7481515,
+    "ast_hash": "02b23fb12e8692256647829307075169",
+    "semantic_hash": "02b23fb12e8692256647829307075169"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/repository/RepositoryProvider.kt": {
+    "mtime": 1781265859.7481515,
+    "ast_hash": "d5dc6fc84c02c1616ea7a90ad0f6e6ac",
+    "semantic_hash": "d5dc6fc84c02c1616ea7a90ad0f6e6ac"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/repository/StatsRepository.kt": {
+    "mtime": 1781941226.5617547,
+    "ast_hash": "c323febfcc91c40ea086f24bcc1ea58c",
+    "semantic_hash": "c323febfcc91c40ea086f24bcc1ea58c"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/sync/GoogleDriveSyncService.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "ca6dbcb7a9c5ea6401bea3f68da36579",
+    "semantic_hash": "ca6dbcb7a9c5ea6401bea3f68da36579"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/sync/SyncActionReceiver.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "64954ad5965e662fce03b09efc397148",
+    "semantic_hash": "64954ad5965e662fce03b09efc397148"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/sync/SyncBackupMerger.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "2060eed054475ffbb79e1a5dbf9a5423",
+    "semantic_hash": "2060eed054475ffbb79e1a5dbf9a5423"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/sync/SyncConstants.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "17a3e754a04aa4e3fad05521edb84d8c",
+    "semantic_hash": "17a3e754a04aa4e3fad05521edb84d8c"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/sync/SyncManager.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "28c9f763fe3cbf9608108c372a6cea0e",
+    "semantic_hash": "28c9f763fe3cbf9608108c372a6cea0e"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/sync/SyncModels.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "28b9328687d926f8eb3bdc9732bfe6a2",
+    "semantic_hash": "28b9328687d926f8eb3bdc9732bfe6a2"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/sync/SyncNotifier.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "e0bb4970fd1517c785a15fa98afdc5d2",
+    "semantic_hash": "e0bb4970fd1517c785a15fa98afdc5d2"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/sync/SyncStatusTracker.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "f0fa74caf34faa715b77ea55bc2630db",
+    "semantic_hash": "f0fa74caf34faa715b77ea55bc2630db"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/data/sync/SyncWorker.kt": {
+    "mtime": 1781265859.7484386,
+    "ast_hash": "9ff7428b2a1071a59ab7644d68aa4fd8",
+    "semantic_hash": "9ff7428b2a1071a59ab7644d68aa4fd8"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/epub/EpubBuilder.kt": {
+    "mtime": 1781265859.7491913,
+    "ast_hash": "6bd3f9ba39bd38e3cd4a6a86cedf3a02",
+    "semantic_hash": "6bd3f9ba39bd38e3cd4a6a86cedf3a02"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/epub/EpubChapter.kt": {
+    "mtime": 1781265859.7491913,
+    "ast_hash": "0141189f75d84073a58bfcc771013e41",
+    "semantic_hash": "0141189f75d84073a58bfcc771013e41"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/epub/EpubExportState.kt": {
+    "mtime": 1781265859.7491913,
+    "ast_hash": "c4804d01a11291b09a47696192ada4b0",
+    "semantic_hash": "c4804d01a11291b09a47696192ada4b0"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/epub/EpubExporter.kt": {
+    "mtime": 1781265859.7491913,
+    "ast_hash": "3de7274011739e4373dc104efa0c7cc4",
+    "semantic_hash": "3de7274011739e4373dc104efa0c7cc4"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/epub/EpubMetadata.kt": {
+    "mtime": 1781265859.7491913,
+    "ast_hash": "d2f6f42796a72531e9d8d902c29f9e91",
+    "semantic_hash": "d2f6f42796a72531e9d8d902c29f9e91"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/epub/EpubWriter.kt": {
+    "mtime": 1781265859.7491913,
+    "ast_hash": "e692c0b1f160bd1146973ee1a6afbc35",
+    "semantic_hash": "e692c0b1f160bd1146973ee1a6afbc35"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/AuthorPreferenceManager.kt": {
+    "mtime": 1781265859.7487407,
+    "ast_hash": "be3585eb0c9fac7c10a3d1ee3a5ac761",
+    "semantic_hash": "be3585eb0c9fac7c10a3d1ee3a5ac761"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/DiscoveryManager.kt": {
+    "mtime": 1782382759.0748441,
+    "ast_hash": "fc28c2e97e90e4382b65675e3eadeb10",
+    "semantic_hash": "fc28c2e97e90e4382b65675e3eadeb10"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/NetworkBudgetManager.kt": {
+    "mtime": 1781265859.7487614,
+    "ast_hash": "d252ad83df1e7d804f1fa0df6b4752ff",
+    "semantic_hash": "d252ad83df1e7d804f1fa0df6b4752ff"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/NovelScorer.kt": {
+    "mtime": 1782056815.7956576,
+    "ast_hash": "ff8d1a82b1e71064df22b30ddae470e9",
+    "semantic_hash": "ff8d1a82b1e71064df22b30ddae470e9"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/RecommendationEngine.kt": {
+    "mtime": 1782056815.7966576,
+    "ast_hash": "2801b8cf1ec146264e0864ae4dc1cc61",
+    "semantic_hash": "2801b8cf1ec146264e0864ae4dc1cc61"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/SimilarityCalculator.kt": {
+    "mtime": 1781265859.7487614,
+    "ast_hash": "ba59961817b0dc454ffaf6801fcdbb24",
+    "semantic_hash": "ba59961817b0dc454ffaf6801fcdbb24"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/SynopsisTagExtractor.kt": {
+    "mtime": 1781265859.7487614,
+    "ast_hash": "4d7bd47ec4873021f1d654c26860d426",
+    "semantic_hash": "4d7bd47ec4873021f1d654c26860d426"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/TagEnhancementManager.kt": {
+    "mtime": 1781265859.7487614,
+    "ast_hash": "f8e822e32c574534d529314a1e2ee510",
+    "semantic_hash": "f8e822e32c574534d529314a1e2ee510"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/TagNormalizer.kt": {
+    "mtime": 1781265859.7487614,
+    "ast_hash": "3fd66845f5092de71a3b8c7725297010",
+    "semantic_hash": "3fd66845f5092de71a3b8c7725297010"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/UserFilterManager.kt": {
+    "mtime": 1781265859.7487614,
+    "ast_hash": "26581c57c3db6c548185aa6ecddad65c",
+    "semantic_hash": "26581c57c3db6c548185aa6ecddad65c"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/UserPreferenceManager.kt": {
+    "mtime": 1781265859.7487614,
+    "ast_hash": "991be01022ec31db37192600ac0cd3c5",
+    "semantic_hash": "991be01022ec31db37192600ac0cd3c5"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/model/LibrarySourceNovel.kt": {
+    "mtime": 1781265859.7487407,
+    "ast_hash": "d6fb3eaa2b5b4ae01f285ba3fd7c5acc",
+    "semantic_hash": "d6fb3eaa2b5b4ae01f285ba3fd7c5acc"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/model/NovelVector.kt": {
+    "mtime": 1782056815.7966576,
+    "ast_hash": "ff81590704b3500037717e189fed214d",
+    "semantic_hash": "ff81590704b3500037717e189fed214d"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/model/OnboardingPreferences.kt": {
+    "mtime": 1781265859.7487407,
+    "ast_hash": "1a6579406a0b80e899b08fd953b9873a",
+    "semantic_hash": "1a6579406a0b80e899b08fd953b9873a"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/model/Recommendation.kt": {
+    "mtime": 1781265859.7487407,
+    "ast_hash": "bce34f093574fbaf63b10052c0903ad1",
+    "semantic_hash": "bce34f093574fbaf63b10052c0903ad1"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/model/RecommendationType.kt": {
+    "mtime": 1782056815.7976575,
+    "ast_hash": "48c5a14b2263f8359761d269376e17e2",
+    "semantic_hash": "48c5a14b2263f8359761d269376e17e2"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/model/TagAffinity.kt": {
+    "mtime": 1781265859.7487407,
+    "ast_hash": "e2a629aeec6608611f01dddad0c9f609",
+    "semantic_hash": "e2a629aeec6608611f01dddad0c9f609"
+  },
+  "core/data/src/main/java/com/kmhmubin/kothagolp/recommendation/model/UserTasteProfile.kt": {
+    "mtime": 1781265859.7487407,
+    "ast_hash": "fef699a4bf178c96f71571fc09740f73",
+    "semantic_hash": "fef699a4bf178c96f71571fc09740f73"
+  },
+  "core/data/src/test/java/com/kmhmubin/kothagolp/recommendation/TagNormalizerTest.kt": {
+    "mtime": 1781265859.7958283,
+    "ast_hash": "ec23687b6b3defc629f811c9e95e80aa",
+    "semantic_hash": "ec23687b6b3defc629f811c9e95e80aa"
+  },
+  "core/domain/build.gradle.kts": {
+    "mtime": 1781266319.8224971,
+    "ast_hash": "fdaa55455f3680f542c3ddd76f48639a",
+    "semantic_hash": "fdaa55455f3680f542c3ddd76f48639a"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/AppSettings.kt": {
+    "mtime": 1782326706.3079798,
+    "ast_hash": "9e448ae042b4339237e1bbf9d949cc63",
+    "semantic_hash": "9e448ae042b4339237e1bbf9d949cc63"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/AuthorNoteDisplayMode.kt": {
+    "mtime": 1781265859.7247949,
+    "ast_hash": "688de28ccedd909d3b17293c1f35bc39",
+    "semantic_hash": "688de28ccedd909d3b17293c1f35bc39"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/Chapter.kt": {
+    "mtime": 1781265859.7247949,
+    "ast_hash": "eb20baa42ca6ba22dfc008708dbe8807",
+    "semantic_hash": "eb20baa42ca6ba22dfc008708dbe8807"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/ChapterPreferences.kt": {
+    "mtime": 1781265859.7247949,
+    "ast_hash": "3fa81f00de74bf1e86cc12c77397ad49",
+    "semantic_hash": "3fa81f00de74bf1e86cc12c77397ad49"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/FilterGroup.kt": {
+    "mtime": 1781265859.7247949,
+    "ast_hash": "f81b2856837edc95bfc99cfa2ac5c62a",
+    "semantic_hash": "f81b2856837edc95bfc99cfa2ac5c62a"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/FilterOption.kt": {
+    "mtime": 1781265859.7247949,
+    "ast_hash": "0aa021abf4d5618b205bbb1fcb65edbd",
+    "semantic_hash": "0aa021abf4d5618b205bbb1fcb65edbd"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/MainPageResult.kt": {
+    "mtime": 1781283971.3608902,
+    "ast_hash": "6da2fd12cd30c3e444ceeeb205b06fe0",
+    "semantic_hash": "6da2fd12cd30c3e444ceeeb205b06fe0"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/Novel.kt": {
+    "mtime": 1781265859.7247949,
+    "ast_hash": "63957c4b611f314953978c4c269dd393",
+    "semantic_hash": "63957c4b611f314953978c4c269dd393"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/NovelDetails.kt": {
+    "mtime": 1781265859.7247949,
+    "ast_hash": "9dcb1b62e08031cff118cd7358cd310e",
+    "semantic_hash": "9dcb1b62e08031cff118cd7358cd310e"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/ReaderSettings.kt": {
+    "mtime": 1782461262.2934864,
+    "ast_hash": "2266b73f4941b476857f9eefc58e6274",
+    "semantic_hash": "2266b73f4941b476857f9eefc58e6274"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/ReadingStatus.kt": {
+    "mtime": 1781265859.7247949,
+    "ast_hash": "0ef4bebc917aab937bdefcb0190db959",
+    "semantic_hash": "0ef4bebc917aab937bdefcb0190db959"
+  },
+  "core/domain/src/main/kotlin/com/kmhmubin/kothagolp/domain/model/UserReview.kt": {
+    "mtime": 1781265859.7247949,
+    "ast_hash": "6b90868d67fdc01041212587fc8d6461",
+    "semantic_hash": "6b90868d67fdc01041212587fc8d6461"
+  },
+  "core/domain/src/test/kotlin/com/kmhmubin/kothagolp/domain/model/AppSettingsTest.kt": {
+    "mtime": 1781265859.7376568,
+    "ast_hash": "8580906e4ea203790b8eff58ecda335c",
+    "semantic_hash": "8580906e4ea203790b8eff58ecda335c"
+  },
+  "core/ui/build.gradle.kts": {
+    "mtime": 1781745611.7813613,
+    "ast_hash": "a15c2196256b3ca244ee184d4ff17400",
+    "semantic_hash": "a15c2196256b3ca244ee184d4ff17400"
+  },
+  "core/ui/src/main/java/com/kmhmubin/kothagolp/ui/adaptive/AdaptiveUtils.kt": {
+    "mtime": 1781265859.75761,
+    "ast_hash": "d7a4e4bec4f27c97fca7ef130a47f27e",
+    "semantic_hash": "d7a4e4bec4f27c97fca7ef130a47f27e"
+  },
+  "core/ui/src/main/java/com/kmhmubin/kothagolp/ui/theme/AppDesignSystem.kt": {
+    "mtime": 1781745611.7823613,
+    "ast_hash": "f46920876790e774588437a48b09210d",
+    "semantic_hash": "f46920876790e774588437a48b09210d"
+  },
+  "core/ui/src/main/java/com/kmhmubin/kothagolp/ui/theme/Color.kt": {
+    "mtime": 1782207812.593341,
+    "ast_hash": "ea4c689d8a4bc15a91c644c46ae35974",
+    "semantic_hash": "ea4c689d8a4bc15a91c644c46ae35974"
+  },
+  "core/ui/src/main/java/com/kmhmubin/kothagolp/ui/theme/Density.kt": {
+    "mtime": 1781745611.7823613,
+    "ast_hash": "984f9e06b28b53475921ba57398f93c9",
+    "semantic_hash": "984f9e06b28b53475921ba57398f93c9"
+  },
+  "core/ui/src/main/java/com/kmhmubin/kothagolp/ui/theme/Theme.kt": {
+    "mtime": 1782207812.593341,
+    "ast_hash": "6da284a16bfa86bad1e93eeac47802e4",
+    "semantic_hash": "6da284a16bfa86bad1e93eeac47802e4"
+  },
+  "core/ui/src/main/java/com/kmhmubin/kothagolp/ui/theme/Type.kt": {
+    "mtime": 1781265859.7574651,
+    "ast_hash": "b6eb398729565308a0421ba73290bb16",
+    "semantic_hash": "b6eb398729565308a0421ba73290bb16"
+  },
+  "gradle/build-logic/build.gradle.kts": {
+    "mtime": 1781266319.8223307,
+    "ast_hash": "830b5b2a72a498f17dab6a14c0e58d26",
+    "semantic_hash": "830b5b2a72a498f17dab6a14c0e58d26"
+  },
+  "gradle/build-logic/settings.gradle.kts": {
+    "mtime": 1781257810.5976164,
+    "ast_hash": "cf460af50e3ffea7b3065b547ed4b450",
+    "semantic_hash": "cf460af50e3ffea7b3065b547ed4b450"
+  },
+  "gradle/build-logic/src/main/kotlin/kothagolp.android.application.gradle.kts": {
+    "mtime": 1781259064.9183428,
+    "ast_hash": "a0baba00c9451ee3c6e2afb8f977df53",
+    "semantic_hash": "a0baba00c9451ee3c6e2afb8f977df53"
+  },
+  "gradle/build-logic/src/main/kotlin/kothagolp.android.compose.gradle.kts": {
+    "mtime": 1781745611.7823613,
+    "ast_hash": "aaa4772d0e07961516b0f55611448166",
+    "semantic_hash": "aaa4772d0e07961516b0f55611448166"
+  },
+  "gradle/build-logic/src/main/kotlin/kothagolp.android.library.gradle.kts": {
+    "mtime": 1781259043.776262,
+    "ast_hash": "6b3ca8c5d7140846cd9c751f1fcae362",
+    "semantic_hash": "6b3ca8c5d7140846cd9c751f1fcae362"
+  },
+  "gradle/build-logic/src/main/kotlin/kothagolp.kotlin.library.gradle.kts": {
+    "mtime": 1781257816.0866396,
+    "ast_hash": "53d0b2affe0b79032540cf6fbec83baa",
+    "semantic_hash": "53d0b2affe0b79032540cf6fbec83baa"
+  },
+  "gradlew": {
+    "mtime": 1781151376.1689975,
+    "ast_hash": "266606e78242737ef3da02a80ea0564d",
+    "semantic_hash": "266606e78242737ef3da02a80ea0564d"
+  },
+  "settings.gradle.kts": {
+    "mtime": 1781266319.8261995,
+    "ast_hash": "f2ded138196204c6723e8af5329ff1c9",
+    "semantic_hash": "f2ded138196204c6723e8af5329ff1c9"
+  },
+  "source-api/build.gradle.kts": {
+    "mtime": 1781266319.821562,
+    "ast_hash": "2677a9e487c10dc6f176cad0758c2aa8",
+    "semantic_hash": "2677a9e487c10dc6f176cad0758c2aa8"
+  },
+  "source-api/src/main/java/com/kmhmubin/kothagolp/provider/MainProvider.kt": {
+    "mtime": 1782222883.6235852,
+    "ast_hash": "916e788b925779875517180aa772b1ca",
+    "semantic_hash": "916e788b925779875517180aa772b1ca"
+  },
+  "source-api/src/test/java/com/kmhmubin/kothagolp/provider/ProviderRegistryTest.kt": {
+    "mtime": 1781265859.7175262,
+    "ast_hash": "6c34931c6fa4b67e7f703d88b6816aa6",
+    "semantic_hash": "6c34931c6fa4b67e7f703d88b6816aa6"
+  },
+  ".github/ISSUE_TEMPLATE/bug_report.yml": {
+    "mtime": 1781151375.9632027,
+    "ast_hash": "276e7e0c5d4a04eee300d80dd1af6532",
+    "semantic_hash": "276e7e0c5d4a04eee300d80dd1af6532"
+  },
+  ".github/ISSUE_TEMPLATE/feature_request.yml": {
+    "mtime": 1781151375.9633856,
+    "ast_hash": "fca9a0bc1b038a788e0fa377bf5392a4",
+    "semantic_hash": "fca9a0bc1b038a788e0fa377bf5392a4"
+  },
+  ".github/PULL_REQUEST_TEMPLATE.md": {
+    "mtime": 1781151375.9633856,
+    "ast_hash": "61448aaa096f28c07c10f44fe1290f59",
+    "semantic_hash": "61448aaa096f28c07c10f44fe1290f59"
+  },
+  ".github/workflows/build.yml": {
+    "mtime": 1782053293.652172,
+    "ast_hash": "ee0252122cc9b82a5bc943dac18e4422",
+    "semantic_hash": "ee0252122cc9b82a5bc943dac18e4422"
+  },
+  ".github/workflows/release.yml": {
+    "mtime": 1782385263.4613023,
+    "ast_hash": "2717f404191d7390c7379490cdbfc806",
+    "semantic_hash": "2717f404191d7390c7379490cdbfc806"
+  },
+  "CHANGELOG.md": {
+    "mtime": 1782469890.5407808,
+    "ast_hash": "32d5d77f6a96acfd21d11465b83862ab",
+    "semantic_hash": "32d5d77f6a96acfd21d11465b83862ab"
+  },
+  "CONTRIBUTING.md": {
+    "mtime": 1781266379.0763147,
+    "ast_hash": "3825462a66a0d6a33984578ca48722c2",
+    "semantic_hash": "3825462a66a0d6a33984578ca48722c2"
+  },
+  "README.md": {
+    "mtime": 1782324234.4967446,
+    "ast_hash": "630d829d1f5c9cd58338deda54fa02fe",
+    "semantic_hash": "630d829d1f5c9cd58338deda54fa02fe"
+  },
+  "Screenshots/Screenshot_2026-06-24-22-05-18-417_com.kmhmubin.kothagolp.webp": {
+    "mtime": 1782317667.7591462,
+    "ast_hash": "d1a0e00e3feb69237b82fa1b032f442b",
+    "semantic_hash": "d1a0e00e3feb69237b82fa1b032f442b"
+  },
+  "Screenshots/Screenshot_2026-06-24-22-05-23-740_com.kmhmubin.kothagolp.webp": {
+    "mtime": 1782317664.3621798,
+    "ast_hash": "0ce7e636dfe6a437a957692936c5124e",
+    "semantic_hash": "0ce7e636dfe6a437a957692936c5124e"
+  },
+  "Screenshots/Screenshot_2026-06-24-22-09-12-026_com.kmhmubin.kothagolp.webp": {
+    "mtime": 1782317661.3552094,
+    "ast_hash": "4ed8c27de59f23973ff20fabb27dc005",
+    "semantic_hash": "4ed8c27de59f23973ff20fabb27dc005"
+  },
+  "app/src/main/ic_launcher-playstore.png": {
+    "mtime": 1781745611.7593613,
+    "ast_hash": "a2cf7a423c33715de8cd9c249d65b67f",
+    "semantic_hash": "a2cf7a423c33715de8cd9c249d65b67f"
+  },
+  "app/src/main/res/drawable/ic_launcher_icon.png": {
+    "mtime": 1781745611.7753613,
+    "ast_hash": "3fc7dbb65cca2c84d29335f81613ad75",
+    "semantic_hash": "3fc7dbb65cca2c84d29335f81613ad75"
+  },
+  "app/src/main/res/drawable/ic_launcher_icon_mono.png": {
+    "mtime": 1781745611.7753613,
+    "ast_hash": "8d245607fabcc5fb6bb0492a48b7105f",
+    "semantic_hash": "8d245607fabcc5fb6bb0492a48b7105f"
+  },
+  "app/src/main/res/drawable/ic_launcher_icon_transparent.png": {
+    "mtime": 1781745611.7783613,
+    "ast_hash": "8178adaf7eed27c4b31851c6d41b6036",
+    "semantic_hash": "8178adaf7eed27c4b31851c6d41b6036"
+  },
+  "app/src/main/res/drawable/ic_provider_allnovel.png": {
+    "mtime": 1781151376.027282,
+    "ast_hash": "b49762007a30461b906938c0f0be05bc",
+    "semantic_hash": "b49762007a30461b906938c0f0be05bc"
+  },
+  "app/src/main/res/drawable/ic_provider_empirenovel.png": {
+    "mtime": 1781151376.0274062,
+    "ast_hash": "0fc43b41a821d18020e6f2babcd1c17f",
+    "semantic_hash": "0fc43b41a821d18020e6f2babcd1c17f"
+  },
+  "app/src/main/res/drawable/ic_provider_freewebnovel.png": {
+    "mtime": 1781151376.0276208,
+    "ast_hash": "90f268abd55088ea93c541427b968a13",
+    "semantic_hash": "90f268abd55088ea93c541427b968a13"
+  },
+  "app/src/main/res/drawable/ic_provider_libread.png": {
+    "mtime": 1781151376.0281723,
+    "ast_hash": "b1d1679da7db40773da805778688892b",
+    "semantic_hash": "b1d1679da7db40773da805778688892b"
+  },
+  "app/src/main/res/drawable/ic_provider_lnori.jpg": {
+    "mtime": 1781151376.0281723,
+    "ast_hash": "a193225a313ca4ea3524644f475b084c",
+    "semantic_hash": "a193225a313ca4ea3524644f475b084c"
+  },
+  "app/src/main/res/drawable/ic_provider_novelbin.png": {
+    "mtime": 1781151376.0283906,
+    "ast_hash": "11d24214563658ef796a2138abc3edc5",
+    "semantic_hash": "11d24214563658ef796a2138abc3edc5"
+  },
+  "app/src/main/res/drawable/ic_provider_novelfire.png": {
+    "mtime": 1781151376.0283906,
+    "ast_hash": "1ea81e2de20f72d764b3d212fb1f7ee0",
+    "semantic_hash": "1ea81e2de20f72d764b3d212fb1f7ee0"
+  },
+  "app/src/main/res/drawable/ic_provider_novelsonline.png": {
+    "mtime": 1781151376.028579,
+    "ast_hash": "00078fe63b709902bd83217bf6ec2900",
+    "semantic_hash": "00078fe63b709902bd83217bf6ec2900"
+  },
+  "app/src/main/res/drawable/ic_provider_royalroad.png": {
+    "mtime": 1781151376.0286732,
+    "ast_hash": "b7ba647d028eb29f0d9c9068a5a6da14",
+    "semantic_hash": "b7ba647d028eb29f0d9c9068a5a6da14"
+  },
+  "app/src/main/res/drawable/ic_provider_webnovel.png": {
+    "mtime": 1781151376.0286732,
+    "ast_hash": "e0b05eba2ef5c1116dbaf22099231466",
+    "semantic_hash": "e0b05eba2ef5c1116dbaf22099231466"
+  },
+  "app/src/main/res/drawable/ic_provider_wtrlab.png": {
+    "mtime": 1781151376.0296447,
+    "ast_hash": "6eed519ed504ec9fdb357dbd8d49e575",
+    "semantic_hash": "6eed519ed504ec9fdb357dbd8d49e575"
+  },
+  "app/src/main/res/mipmap-hdpi/ic_launcher.png": {
+    "mtime": 1782006368.4387205,
+    "ast_hash": "5dfb26fa2d9ec868fd5e5d9ee8572f98",
+    "semantic_hash": "5dfb26fa2d9ec868fd5e5d9ee8572f98"
+  },
+  "app/src/main/res/mipmap-hdpi/ic_launcher_background.png": {
+    "mtime": 1781745611.7783613,
+    "ast_hash": "efbce25bce44eea4043bf79910809a73",
+    "semantic_hash": "efbce25bce44eea4043bf79910809a73"
+  },
+  "app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png": {
+    "mtime": 1781745611.7783613,
+    "ast_hash": "db84b8d480aebb43538f43cfc0c6de48",
+    "semantic_hash": "db84b8d480aebb43538f43cfc0c6de48"
+  },
+  "app/src/main/res/mipmap-hdpi/ic_launcher_monochrome.png": {
+    "mtime": 1781745611.7783613,
+    "ast_hash": "f5cbc1d8ff4eb1815f4fb1730530e895",
+    "semantic_hash": "f5cbc1d8ff4eb1815f4fb1730530e895"
+  },
+  "app/src/main/res/mipmap-hdpi/ic_launcher_round.png": {
+    "mtime": 1782006368.6937215,
+    "ast_hash": "5dfb26fa2d9ec868fd5e5d9ee8572f98",
+    "semantic_hash": "5dfb26fa2d9ec868fd5e5d9ee8572f98"
+  },
+  "app/src/main/res/mipmap-mdpi/ic_launcher.png": {
+    "mtime": 1782006367.9774592,
+    "ast_hash": "9175a23c23ccba2b7dfd82881176b02f",
+    "semantic_hash": "9175a23c23ccba2b7dfd82881176b02f"
+  },
+  "app/src/main/res/mipmap-mdpi/ic_launcher_background.png": {
+    "mtime": 1781745611.7793612,
+    "ast_hash": "c44f0f4991fd68c2bbd29e1b5d373ac2",
+    "semantic_hash": "c44f0f4991fd68c2bbd29e1b5d373ac2"
+  },
+  "app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png": {
+    "mtime": 1781745611.7793612,
+    "ast_hash": "1f95d88d847bc5a3120bc42749f7d133",
+    "semantic_hash": "1f95d88d847bc5a3120bc42749f7d133"
+  },
+  "app/src/main/res/mipmap-mdpi/ic_launcher_monochrome.png": {
+    "mtime": 1781745611.7793612,
+    "ast_hash": "1ff1f7c81bd5fba2d866ab5f62c156cb",
+    "semantic_hash": "1ff1f7c81bd5fba2d866ab5f62c156cb"
+  },
+  "app/src/main/res/mipmap-mdpi/ic_launcher_round.png": {
+    "mtime": 1782006368.2077196,
+    "ast_hash": "9aca01bbe2cf8c8c9e015a727fa47429",
+    "semantic_hash": "9aca01bbe2cf8c8c9e015a727fa47429"
+  },
+  "app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
+    "mtime": 1782006368.9247224,
+    "ast_hash": "232336112b07b102086f528bccd036c9",
+    "semantic_hash": "232336112b07b102086f528bccd036c9"
+  },
+  "app/src/main/res/mipmap-xhdpi/ic_launcher_background.png": {
+    "mtime": 1781745611.7793612,
+    "ast_hash": "2d5579f4b682900375a80dd79341aa8c",
+    "semantic_hash": "2d5579f4b682900375a80dd79341aa8c"
+  },
+  "app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png": {
+    "mtime": 1781745611.7793612,
+    "ast_hash": "4491eb340dde4fb6d50e26533d105c88",
+    "semantic_hash": "4491eb340dde4fb6d50e26533d105c88"
+  },
+  "app/src/main/res/mipmap-xhdpi/ic_launcher_monochrome.png": {
+    "mtime": 1781745611.7803614,
+    "ast_hash": "94d5b992bd5e8ff0eccbd060cb1369f5",
+    "semantic_hash": "94d5b992bd5e8ff0eccbd060cb1369f5"
+  },
+  "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png": {
+    "mtime": 1782006369.1847234,
+    "ast_hash": "b2baa5a9d59750cb992f06d399d772d5",
+    "semantic_hash": "b2baa5a9d59750cb992f06d399d772d5"
+  },
+  "app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+    "mtime": 1782006369.4407244,
+    "ast_hash": "1b0f3904badbd8c86c91319b1dbad068",
+    "semantic_hash": "1b0f3904badbd8c86c91319b1dbad068"
+  },
+  "app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png": {
+    "mtime": 1781745611.7803614,
+    "ast_hash": "56df0bfcfee1b9d8f0d8eb09f9a64440",
+    "semantic_hash": "56df0bfcfee1b9d8f0d8eb09f9a64440"
+  },
+  "app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png": {
+    "mtime": 1781745611.7803614,
+    "ast_hash": "c6beabb7df721f0e09a4a7bebeaa6066",
+    "semantic_hash": "c6beabb7df721f0e09a4a7bebeaa6066"
+  },
+  "app/src/main/res/mipmap-xxhdpi/ic_launcher_monochrome.png": {
+    "mtime": 1781745611.7803614,
+    "ast_hash": "2444a96ef098aca8248bd8e77a52a6ad",
+    "semantic_hash": "2444a96ef098aca8248bd8e77a52a6ad"
+  },
+  "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png": {
+    "mtime": 1782006369.6527252,
+    "ast_hash": "1b0f3904badbd8c86c91319b1dbad068",
+    "semantic_hash": "1b0f3904badbd8c86c91319b1dbad068"
+  },
+  "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+    "mtime": 1782006369.8787262,
+    "ast_hash": "ff2c5a0b0e40b3f864ea0cc355360716",
+    "semantic_hash": "ff2c5a0b0e40b3f864ea0cc355360716"
+  },
+  "app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png": {
+    "mtime": 1781745611.7813613,
+    "ast_hash": "88be94000773f9fb3230a5ecc4a1fe7a",
+    "semantic_hash": "88be94000773f9fb3230a5ecc4a1fe7a"
+  },
+  "app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png": {
+    "mtime": 1781745611.7813613,
+    "ast_hash": "1ba9eed86e7b3340f61427817d7f937c",
+    "semantic_hash": "1ba9eed86e7b3340f61427817d7f937c"
+  },
+  "app/src/main/res/mipmap-xxxhdpi/ic_launcher_monochrome.png": {
+    "mtime": 1781745611.7813613,
+    "ast_hash": "a14a993fd758fa224dd4a6b2812fc1ec",
+    "semantic_hash": "a14a993fd758fa224dd4a6b2812fc1ec"
+  },
+  "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png": {
+    "mtime": 1782006370.0997272,
+    "ast_hash": "8c4b0ace92b944ef1d72c5d7dde04ebc",
+    "semantic_hash": "8c4b0ace92b944ef1d72c5d7dde04ebc"
+  },
+  "kothagolp.png": {
+    "mtime": 1781745611.7843614,
+    "ast_hash": "8dd36f75b8b98da1186199e3e6a10e7d",
+    "semantic_hash": "8dd36f75b8b98da1186199e3e6a10e7d"
+  }
+}
