@@ -168,13 +168,17 @@ private fun GridItemSelectable(
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale = if (isPressed) NovelCardTokens.PressScale else 1f
+    val isPressed = interactionSource.collectIsPressedAsState()
     val selectionColor = MaterialTheme.colorScheme.secondaryContainer
 
     Box(
         modifier = modifier
-            .graphicsLayer { scaleX = scale; scaleY = scale }
+            // State read deferred to the layer block: press feedback skips recomposition
+            .graphicsLayer {
+                val scale = if (isPressed.value) NovelCardTokens.PressScale else 1f
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(NovelCardTokens.ItemShape)
             .combinedClickable(
                 interactionSource = interactionSource,
@@ -368,6 +372,12 @@ private fun NovelGridCover(
     }
 }
 
+/** Static gradient shared by all cards — avoids per-recomposition allocation */
+private val CoverOverlayGradient = Brush.verticalGradient(
+    0f to Color.Transparent,
+    1f to Color(0xAA000000)
+)
+
 /**
  * Bottom gradient + title, Komikku compact-grid style.
  */
@@ -382,12 +392,7 @@ private fun CoverTextOverlay(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .fillMaxHeight(0.33f)
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        1f to Color(0xAA000000)
-                    )
-                )
+                .background(CoverOverlayGradient)
         )
         Column(
             modifier = Modifier

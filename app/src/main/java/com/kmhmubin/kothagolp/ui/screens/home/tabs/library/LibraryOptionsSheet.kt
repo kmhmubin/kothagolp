@@ -30,7 +30,11 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -217,7 +221,12 @@ private fun GridSizeSlider(
     columns: GridColumns,
     onChange: (GridColumns) -> Unit
 ) {
-    val value = GridColumns.toInt(columns)
+    // Local value during drag; persisting per drag-frame rewrites all settings
+    // and recomposes the whole app each frame. Commit once on release.
+    var sliderValue by remember(columns) {
+        mutableFloatStateOf(GridColumns.toInt(columns).toFloat())
+    }
+    val displayValue = sliderValue.toInt()
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -227,8 +236,11 @@ private fun GridSizeSlider(
     ) {
         Slider(
             modifier = Modifier.weight(1f),
-            value = value.toFloat(),
-            onValueChange = { onChange(GridColumns.fromInt(it.toInt())) },
+            value = sliderValue,
+            onValueChange = { sliderValue = it },
+            onValueChangeFinished = {
+                onChange(GridColumns.fromInt(sliderValue.toInt()))
+            },
             valueRange = 0f..5f,
             steps = 4
         )
@@ -237,7 +249,7 @@ private fun GridSizeSlider(
             color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             Text(
-                text = if (value <= 0) "Auto" else "$value",
+                text = if (displayValue <= 0) "Auto" else "$displayValue",
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.labelMedium
             )
