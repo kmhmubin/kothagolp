@@ -65,6 +65,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.UiDensity
+import com.kmhmubin.kothagolp.ui.screens.details.util.StatusUtils
 import com.kmhmubin.kothagolp.ui.theme.AppElevation
 import com.kmhmubin.kothagolp.ui.theme.AppShape
 import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
@@ -489,32 +490,21 @@ private fun ListStatusBadge(
     if (compact) {
         ListStatusDot(status = status, modifier = modifier)
     } else {
+        // Shelf icon instead of text — each shelf has its own dedicated icon
         Surface(
             modifier = modifier,
             shape = ListItemTokens.BadgeShape,
             color = statusColor.copy(alpha = 0.15f),
             shadowElevation = 1.dp
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                // Small dot indicator
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(statusColor)
-                )
-                Text(
-                    text = status.displayName(),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = statusColor,
-                    fontSize = 10.sp
-                )
-            }
+            Icon(
+                imageVector = StatusUtils.getStatusIcon(status),
+                contentDescription = status.displayName(),
+                tint = statusColor,
+                modifier = Modifier
+                    .padding(horizontal = 8.dp, vertical = 5.dp)
+                    .size(14.dp)
+            )
         }
     }
 }
