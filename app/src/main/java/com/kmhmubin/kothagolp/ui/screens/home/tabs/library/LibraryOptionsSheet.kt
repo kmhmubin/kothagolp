@@ -190,15 +190,20 @@ private fun DisplayPage(
             )
         }
 
-        HeadingItem("Density")
+        HeadingItem("Card style")
         ChipRow {
             UiDensity.entries.forEach { density ->
                 FilterChip(
                     selected = appSettings.uiDensity == density,
                     onClick = { onDensitySelected(density) },
                     label = {
+                        // Komikku grid style names
                         Text(
-                            density.name.lowercase().replaceFirstChar { it.uppercase() }
+                            when (density) {
+                                UiDensity.COMPACT -> "Cover only"
+                                UiDensity.DEFAULT -> "Compact"
+                                UiDensity.COMFORTABLE -> "Comfortable"
+                            }
                         )
                     }
                 )

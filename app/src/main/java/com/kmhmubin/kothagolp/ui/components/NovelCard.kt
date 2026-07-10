@@ -146,7 +146,9 @@ fun NovelCard(
             lastReadChapter = lastReadChapter,
             showApiName = showApiName,
             isSelected = isSelected,
-            isInLibrary = isInLibrary
+            isInLibrary = isInLibrary,
+            // Komikku cover-only grid: COMPACT hides the title overlay entirely
+            showTitle = density != UiDensity.COMPACT
         )
     }
 }
@@ -193,7 +195,8 @@ private fun GridItemSelectable(
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Compact Layout — title overlays the cover (Komikku compact grid)
+// Compact Layout — title overlays the cover (Komikku compact grid);
+// with showTitle = false it becomes Komikku's cover-only grid
 // ══════════════════════════════════════════════════════════════════════════════
 
 @Composable
@@ -207,7 +210,8 @@ private fun CompactNovelCard(
     lastReadChapter: String?,
     showApiName: Boolean,
     isSelected: Boolean,
-    isInLibrary: Boolean
+    isInLibrary: Boolean,
+    showTitle: Boolean = true
 ) {
     GridItemSelectable(
         isSelected = isSelected,
@@ -222,11 +226,13 @@ private fun CompactNovelCard(
             readingStatus = readingStatus,
             isInLibrary = isInLibrary
         ) {
-            CoverTextOverlay(
-                title = novel.name,
-                subtitle = lastReadChapter?.takeIf { it.isNotBlank() }
-                    ?: novel.apiName.takeIf { showApiName && it.isNotBlank() }
-            )
+            if (showTitle) {
+                CoverTextOverlay(
+                    title = novel.name,
+                    subtitle = lastReadChapter?.takeIf { it.isNotBlank() }
+                        ?: novel.apiName.takeIf { showApiName && it.isNotBlank() }
+                )
+            }
         }
     }
 }
