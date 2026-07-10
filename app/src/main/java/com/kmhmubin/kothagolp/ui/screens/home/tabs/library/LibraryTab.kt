@@ -146,6 +146,7 @@ import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.ui.theme.NewChapters
 import com.kmhmubin.kothagolp.ui.theme.NewChaptersLight
 import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
+import com.kmhmubin.kothagolp.ui.theme.StatusDownloaded
 import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
 import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
 import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
@@ -1149,7 +1150,7 @@ private fun getFilterEmptyContent(filter: LibraryFilter): FilterEmptyContent {
         )
         LibraryFilter.DOWNLOADED -> FilterEmptyContent(
             icon = Icons.Rounded.CloudDownload,
-            color = Info,
+            color = StatusDownloaded,
             message = "No downloads yet",
             hint = "Download chapters to read offline"
         )
@@ -1428,7 +1429,7 @@ private fun getFilterColor(filter: LibraryFilter): Color {
     return when (filter) {
         LibraryFilter.ALL -> MaterialTheme.colorScheme.primary
         LibraryFilter.SPICY -> StatusSpicy
-        LibraryFilter.DOWNLOADED -> Info
+        LibraryFilter.DOWNLOADED -> StatusDownloaded
         LibraryFilter.READING -> StatusReading
         LibraryFilter.COMPLETED -> StatusCompleted
         LibraryFilter.ON_HOLD -> StatusOnHold

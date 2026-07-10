@@ -114,6 +114,7 @@ val StatusCompleted = Success
 val StatusOnHold = Warning
 val StatusPlanToRead = Color(0xFF8B5CF6)
 val StatusDROPPED = Error
+val StatusDownloaded = Color(0xFF06B6D4) // Cyan-500 — matches Novery's downloaded shelf
 
 val AppOrange = Color(0xFFFF6B35)     // brand orange — reader TTS accent, streak fire
 
