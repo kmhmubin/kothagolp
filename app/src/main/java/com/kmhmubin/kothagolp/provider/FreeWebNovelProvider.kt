@@ -188,19 +188,36 @@ class FreeWebNovelProvider : MainProvider() {
         return NovelMetadata(author, posterUrl, synopsis, tags, rating, peopleVoted, status)
     }
 
+    /**
+     * The site paginates the chapter list (window.chapterPagination, 40/page),
+     * so the details page HTML only carries the first page. Full list comes
+     * from the chapterlist API, with the paginated ajax endpoint as backup.
+     */
     private suspend fun loadChapters(document: Document, novelPath: String): List<Chapter> {
-        val ajaxChapters = tryLoadChaptersViaAjax(document)
+        val totalChapters = parseTotalChapters(document)
+        val ajaxChapters = tryLoadChaptersViaAjax(document, novelPath)
+        if (ajaxChapters.isNotEmpty() && ajaxChapters.size >= (totalChapters ?: 0)) return ajaxChapters
+        val paginatedChapters = tryLoadChaptersPaginated(novelPath, totalChapters)
+        if (paginatedChapters.size > ajaxChapters.size) return paginatedChapters
         if (ajaxChapters.isNotEmpty()) return ajaxChapters
         return loadChaptersFromHtml(document)
     }
 
-    private suspend fun tryLoadChaptersViaAjax(document: Document): List<Chapter> {
+    /** Reads totalChapters from the inline `window.chapterPagination` script. */
+    private fun parseTotalChapters(document: Document): Int? {
+        val scriptText = document.select("script").joinToString("\n") { it.html() }
+        return Regex("totalChapters\\s*:\\s*(\\d+)").find(scriptText)
+            ?.groupValues?.getOrNull(1)?.toIntOrNull()
+    }
+
+    private suspend fun tryLoadChaptersViaAjax(document: Document, novelPath: String): List<Chapter> {
         return try {
             val scriptText = document.select("script").joinToString("\n") { it.html() }
             val aidMatch = Regex("(\\d+)s\\.jpg").find(scriptText)
             val aid = aidMatch?.groupValues?.getOrNull(1) ?: return emptyList()
-            val acodeMatch = Regex("(?<=freewebnovel\\.com/)([^/\"]+)(?=/chapter)").find(scriptText)
-            val acode = acodeMatch?.value ?: return emptyList()
+            // acode is the novel slug; the old script-scraping regex broke when
+            // the site markup changed, so derive it from the novel URL instead.
+            val acode = novelPath.substringAfterLast("/").ifBlank { return emptyList() }
             val ajaxUrl = "$mainUrl/api/chapterlist.php"
             val response = post(url = ajaxUrl, data = mapOf("acode" to acode, "aid" to aid))
             val html = response.text.replace("""\\""", "")
@@ -209,10 +226,49 @@ class FreeWebNovelProvider : MainProvider() {
             val chapters = mutableListOf<Chapter>()
             for (option in options) {
                 val value = option.attrOrNull("value") ?: continue
+                // Broken links like /novel//chapter-1 mean the acode was wrong
+                if (value.contains("//")) return emptyList()
                 val chapterUrl = fixUrl(deSlash(value)) ?: continue
                 val chapterName = option.textOrNull()?.trim()?.takeIf { it.isNotBlank() }
                     ?: "Chapter ${chapters.size + 1}"
                 chapters.add(Chapter(name = chapterName, url = chapterUrl))
+            }
+            chapters
+        } catch (_: Exception) { emptyList() }
+    }
+
+    /**
+     * Walks the site's own pagination endpoint
+     * (`<novelUrl>?ajax=chapters&page=N&pageSize=200`, JSON `{code, html}`).
+     * Server caps pageSize at 200.
+     */
+    private suspend fun tryLoadChaptersPaginated(novelPath: String, totalChapters: Int?): List<Chapter> {
+        return try {
+            val pageSize = 200
+            val maxPages = totalChapters?.let { (it + pageSize - 1) / pageSize } ?: 100
+            val chapters = mutableListOf<Chapter>()
+            val seenUrls = mutableSetOf<String>()
+            for (page in 1..maxPages) {
+                val responseText = get("$mainUrl/$novelPath?ajax=chapters&page=$page&pageSize=$pageSize").text
+                val html = try {
+                    org.json.JSONObject(responseText).optString("html", "")
+                } catch (_: Exception) {
+                    responseText
+                }
+                if (html.isBlank()) break
+                val links = Jsoup.parse(html).select("a[href*=chapter]")
+                var added = false
+                for (link in links) {
+                    val href = link.attrOrNull("href") ?: continue
+                    val chapterUrl = fixUrl(deSlash(href)) ?: continue
+                    if (!seenUrls.add(chapterUrl)) continue
+                    val chapterName = link.attrOrNull("title")?.takeIf { it.isNotBlank() }
+                        ?: link.textOrNull()?.trim()?.takeIf { it.isNotBlank() }
+                        ?: "Chapter ${chapters.size + 1}"
+                    chapters.add(Chapter(name = chapterName, url = chapterUrl))
+                    added = true
+                }
+                if (!added) break
             }
             chapters
         } catch (_: Exception) { emptyList() }
