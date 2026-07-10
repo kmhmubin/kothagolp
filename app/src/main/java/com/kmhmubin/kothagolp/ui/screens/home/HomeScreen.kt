@@ -82,8 +82,17 @@ fun HomeScreen(
         currentTabIndex = HomeTabs.LIBRARY.ordinal
     }
 
+    // Incremented when the Library nav button is pressed while already on Library —
+    // LibraryTab observes this to open its options sheet (Komikku behavior).
+    var libraryOptionsRequestId by rememberSaveable { mutableIntStateOf(0) }
+
     fun onTabSelected(route: String) {
-        HomeTabs.fromRoute("tab_$route")?.let { currentTabIndex = it.ordinal }
+        HomeTabs.fromRoute("tab_$route")?.let { tab ->
+            if (tab == HomeTabs.LIBRARY && currentTab == HomeTabs.LIBRARY) {
+                libraryOptionsRequestId++
+            }
+            currentTabIndex = tab.ordinal
+        }
     }
 
     val isTablet = isTabletUi()
@@ -124,6 +133,7 @@ fun HomeScreen(
                     onNavigateToGlobalSearch = onNavigateToGlobalSearch,
                     onNavigateToNotesHighlights = onNavigateToNotesHighlights,
                     onNavigateToForYouSettings = onNavigateToForYouSettings,
+                    libraryOptionsRequestId = libraryOptionsRequestId,
                     onSwitchTab = { currentTabIndex = it.ordinal }
                 )
             }
@@ -161,6 +171,7 @@ fun HomeScreen(
                     onNavigateToGlobalSearch = onNavigateToGlobalSearch,
                     onNavigateToNotesHighlights = onNavigateToNotesHighlights,
                     onNavigateToForYouSettings = onNavigateToForYouSettings,
+                    libraryOptionsRequestId = libraryOptionsRequestId,
                     onSwitchTab = { currentTabIndex = it.ordinal }
                 )
             }
@@ -195,6 +206,7 @@ private fun PersistentTabContent(
     onNavigateToGlobalSearch: ((String) -> Unit)?,
     onNavigateToNotesHighlights: (() -> Unit)?,
     onNavigateToForYouSettings: () -> Unit = {},
+    libraryOptionsRequestId: Int = 0,
     onSwitchTab: (HomeTabs) -> Unit
 ) {
     @Composable
@@ -205,7 +217,8 @@ private fun PersistentTabContent(
                 onNavigateToDetails = onNavigateToDetails,
                 onNavigateToReader = onNavigateToReader,
                 onNavigateToNotifications = onNavigateToNotifications,
-                onNavigateToGlobalSearch = onNavigateToGlobalSearch
+                onNavigateToGlobalSearch = onNavigateToGlobalSearch,
+                optionsSheetRequestId = libraryOptionsRequestId
             )
             HomeTabs.BROWSE -> BrowseTab(
                 appSettings = appSettings,

@@ -103,6 +103,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
@@ -170,6 +171,7 @@ fun LibraryTab(
     onNavigateToReader: (chapterUrl: String, novelUrl: String, providerName: String) -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
+    optionsSheetRequestId: Int = 0,
     viewModel: LibraryViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -259,6 +261,29 @@ fun LibraryTab(
                 showStatusPicker = false
             },
             onDismiss = { showStatusPicker = false }
+        )
+    }
+
+    // Komikku-style options sheet, opened by re-pressing the Library nav button
+    var showOptionsSheet by remember { mutableStateOf(false) }
+    LaunchedEffect(optionsSheetRequestId) {
+        if (optionsSheetRequestId > 0) showOptionsSheet = true
+    }
+    if (showOptionsSheet) {
+        val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+        LibraryOptionsSheet(
+            sortOrder = uiState.sortOrder,
+            appSettings = appSettings,
+            onSortSelected = { sort ->
+                viewModel.setSortOrder(sort)
+                preferencesManager.updateAppSettings(
+                    preferencesManager.appSettings.value.copy(defaultLibrarySort = sort)
+                )
+            },
+            onDisplayModeSelected = { preferencesManager.updateLibraryDisplayMode(it) },
+            onGridColumnsSelected = { preferencesManager.updateLibraryGridColumns(it) },
+            onDensitySelected = { preferencesManager.updateDensity(it) },
+            onDismiss = { showOptionsSheet = false }
         )
     }
 
