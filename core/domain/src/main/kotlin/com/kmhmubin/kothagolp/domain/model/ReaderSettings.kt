@@ -37,6 +37,9 @@ data class ReaderSettings(
     /** Enable hyphenation for justified text */
     val hyphenation: Boolean = true,
 
+    /** Strip bloat from chapters: duplicated chapter titles and translator/editor credit lines */
+    val removeBloat: Boolean = false,
+
     // =========================================================================
     // LAYOUT
     // =========================================================================

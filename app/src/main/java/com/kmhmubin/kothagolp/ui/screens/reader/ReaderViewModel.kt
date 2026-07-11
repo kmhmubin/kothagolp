@@ -277,6 +277,7 @@ class ReaderViewModel : ViewModel() {
                 _uiState.update { it.copy(settings = settings) }
                 VolumeKeyManager.setVolumeKeyNavigationEnabled(settings.volumeKeyNavigation)
                 _ttsScrollLocked.value = settings.lockScrollDuringTTS
+                chapterLoader.removeBloat = settings.removeBloat
             }
         }
 

@@ -748,6 +748,7 @@ class PreferencesManager(context: Context) {
             lockScrollDuringTTS = prefs.getBoolean(KEY_READER_LOCK_SCROLL_DURING_TTS, true),
             keepScreenOn = prefs.getBoolean(KEY_READER_KEEP_SCREEN_ON, true),
             volumeKeyNavigation = prefs.getBoolean(KEY_VOLUME_KEY_NAVIGATION, false),
+            removeBloat = prefs.getBoolean(KEY_READER_REMOVE_BLOAT, false),
             volumeKeyDirection = loadVolumeKeyDirection(),
             readingDirection = loadReadingDirection(),
             tapZones = loadTapZoneConfig(),
@@ -931,6 +932,7 @@ class PreferencesManager(context: Context) {
             putBoolean(KEY_READER_TTS_AUTO_ADVANCE, settings.ttsAutoAdvanceChapter)
             putBoolean(KEY_READER_LOCK_SCROLL_DURING_TTS, settings.lockScrollDuringTTS)
             putBoolean(KEY_VOLUME_KEY_NAVIGATION, settings.volumeKeyNavigation)
+            putBoolean(KEY_READER_REMOVE_BLOAT, settings.removeBloat)
             putString(KEY_VOLUME_KEY_DIRECTION, settings.volumeKeyDirection.id)
             putString(KEY_READING_DIRECTION, settings.readingDirection.id)
             putBoolean(KEY_LONG_PRESS_SELECTION, settings.longPressSelection)
@@ -1980,6 +1982,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_READER_TTS_AUTO_ADVANCE = "reader_tts_auto_advance"
         private const val KEY_READER_LOCK_SCROLL_DURING_TTS = "reader_lock_scroll_during_tts"
         private const val KEY_VOLUME_KEY_NAVIGATION = "reader_volume_key_navigation"
+        private const val KEY_READER_REMOVE_BLOAT = "reader_remove_bloat"
         private const val KEY_VOLUME_KEY_DIRECTION = "reader_volume_key_direction"
         private const val KEY_READING_DIRECTION = "reader_reading_direction"
         private const val KEY_LONG_PRESS_SELECTION = "reader_long_press_selection"

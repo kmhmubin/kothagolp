@@ -2709,6 +2709,14 @@ private fun AdvancedSettings(
                     colors = colors,
                     onCheckedChange = { onSettingsChange(settings.copy(longPressSelection = it)) }
                 )
+
+                SettingSwitch(
+                    title = "Remove Bloat",
+                    subtitle = "Strip duplicated chapter titles and translator/editor credit lines. Applies to newly loaded chapters",
+                    checked = settings.removeBloat,
+                    colors = colors,
+                    onCheckedChange = { onSettingsChange(settings.copy(removeBloat = it)) }
+                )
             }
         }
 

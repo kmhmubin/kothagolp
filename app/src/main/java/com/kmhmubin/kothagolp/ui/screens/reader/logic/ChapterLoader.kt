@@ -22,6 +22,10 @@ class ChapterLoader(
 ) {
     private var currentProvider: MainProvider? = null
 
+    /** When true, strips duplicated titles and credit lines before parsing. */
+    @Volatile
+    var removeBloat: Boolean = false
+
     /**
      * Configure the loader with the current provider.
      */
@@ -47,8 +51,9 @@ class ChapterLoader(
         return novelRepository.loadChapterContent(provider, chapter.url)
             .fold(
                 onSuccess = { content ->
+                    val cleaned = if (removeBloat) BloatRemover.strip(content, chapter.name) else content
                     // Parse HTML into ordered content items (text + images interleaved)
-                    val orderedContent = TextProcessor.parseHtmlToOrderedContent(content)
+                    val orderedContent = TextProcessor.parseHtmlToOrderedContent(cleaned)
                     val isFromCache = novelRepository.isChapterOffline(chapter.url)
 
                     ChapterLoadResult.Success(
