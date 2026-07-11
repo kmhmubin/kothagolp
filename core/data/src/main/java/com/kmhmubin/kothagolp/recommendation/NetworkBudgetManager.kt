@@ -59,7 +59,7 @@ class NetworkBudgetManager(
             baseCooldownMs = 30_000,
             maxCooldownMs = 1800_000
         ),
-        "NovelArrow" to ProviderBudget(
+        "NovelBin" to ProviderBudget(
             dailyDiscoveryLimit = 100,
             dailyUserLimit = 400,
             minRequestDelayMs = 750,

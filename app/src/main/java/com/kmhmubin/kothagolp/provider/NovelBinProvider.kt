@@ -6,208 +6,187 @@ import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.NovelDetails
-import org.json.JSONArray
-import org.json.JSONObject
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 /**
- * NovelBin rebranded to NovelArrow (novelbin.com -> novelarrow.com) and moved
- * to a Next.js app with a JSON API under /api-web. The provider follows the
- * rebrand; a "NovelBin" alias registered at startup keeps existing library
- * entries (keyed by apiName) resolving to this provider.
+ * NovelBin moved to novel-bin.com (backup mirror: www.novelbin.cc — note the
+ * mirror runs a different engine and does not share this markup). The new
+ * site keeps the classic NovelBin markup (div.list > div.row, h3.novel-title,
+ * #chr-content) but with different routes:
  *
- * API map (all GET, JSON):
- *  - browse/search: /api-web/novels?page=N[&keyword=][&genre=][&status=]
- *  - details:       /api-web/novels/{id}          -> item.novelInfo
- *  - chapter list:  /api-web/novels/{id}/chapters?sort=asc -> items[]
- *  - content:       /api-web/novels/{id}/chapters/{chapterId}
- *                   -> item.chapterInfo.chapter_content (HTML)
- *  - covers:        https://images.novelarrow.com/novel/{id}.jpg
+ *  - lists: / (hot), /allvisit/, /dayvisit/, /monthvisit/, /full.html, ?page=N
+ *  - genre: /genre/{Name}/?page=N
+ *  - search: /search?keyword=
+ *  - novel: /novel-bin/{slug}/ — full chapter list embedded (ul.list-chapter)
+ *  - chapter: /novel-bin/{slug}/chapter-N — content in #chr-content
  */
 class NovelBinProvider : MainProvider() {
 
-    override val name = "NovelArrow"
-    override val mainUrl = "https://novelarrow.com"
+    override val name = "NovelBin"
+    override val mainUrl = "https://novel-bin.com"
     override val iconRes = R.drawable.ic_provider_novelbin
     override val hasMainPage = true
 
-    private val apiBase = "$mainUrl/api-web"
-    private val jsonHeaders = mapOf("Accept" to "application/json")
-
     override val tags = listOf(
         FilterOption("All", ""),
-        FilterOption("Action", "action"),
-        FilterOption("Adventure", "adventure"),
-        FilterOption("Comedy", "comedy"),
-        FilterOption("Drama", "drama"),
-        FilterOption("Eastern", "eastern"),
-        FilterOption("Ecchi", "ecchi"),
-        FilterOption("Fan-fiction", "fan-fiction"),
-        FilterOption("Fantasy", "fantasy"),
-        FilterOption("Game", "game"),
-        FilterOption("Gender Bender", "gender-bender"),
-        FilterOption("Harem", "harem"),
-        FilterOption("Historical", "historical"),
-        FilterOption("Horror", "horror"),
-        FilterOption("Isekai", "isekai"),
-        FilterOption("Josei", "josei"),
-        FilterOption("LitRPG", "litrpg"),
-        FilterOption("Martial Arts", "martial-arts"),
-        FilterOption("Mature", "mature"),
-        FilterOption("Mecha", "mecha"),
-        FilterOption("Mystery", "mystery"),
-        FilterOption("Psychological", "psychological"),
-        FilterOption("Reincarnation", "reincarnation"),
-        FilterOption("Romance", "romance"),
-        FilterOption("School Life", "school-life"),
-        FilterOption("Sci-fi", "sci-fi"),
-        FilterOption("Seinen", "seinen"),
-        FilterOption("Shoujo", "shoujo"),
-        FilterOption("Shounen", "shounen"),
-        FilterOption("Slice of Life", "slice-of-life"),
-        FilterOption("Smut", "smut"),
-        FilterOption("Sports", "sports"),
-        FilterOption("Supernatural", "supernatural"),
-        FilterOption("System", "system"),
-        FilterOption("Tragedy", "tragedy"),
-        FilterOption("Wuxia", "wuxia"),
-        FilterOption("Xianxia", "xianxia"),
-        FilterOption("Xuanhuan", "xuanhuan"),
-        FilterOption("Yaoi", "yaoi"),
-        FilterOption("Yuri", "yuri")
+        FilterOption("Action", "Action"),
+        FilterOption("Adventure", "Adventure"),
+        FilterOption("Comedy", "Comedy"),
+        FilterOption("Drama", "Drama"),
+        FilterOption("Eastern", "Eastern"),
+        FilterOption("Fantasy", "Fantasy"),
+        FilterOption("Harem", "Harem"),
+        FilterOption("Historical", "Historical"),
+        FilterOption("Horror", "Horror"),
+        FilterOption("Josei", "Josei"),
+        FilterOption("Martial Arts", "Martial Arts"),
+        FilterOption("Mature", "Mature"),
+        FilterOption("Mecha", "Mecha"),
+        FilterOption("Mystery", "Mystery"),
+        FilterOption("Psychological", "Psychological"),
+        FilterOption("Romance", "Romance"),
+        FilterOption("School Life", "School Life"),
+        FilterOption("Sci-fi", "Sci-fi"),
+        FilterOption("Seinen", "Seinen"),
+        FilterOption("Shoujo", "Shoujo"),
+        FilterOption("Shounen", "Shounen"),
+        FilterOption("Slice of Life", "Slice of Life"),
+        FilterOption("Smut", "Smut"),
+        FilterOption("Sports", "Sports"),
+        FilterOption("Supernatural", "Supernatural"),
+        FilterOption("Tragedy", "Tragedy"),
+        FilterOption("Wuxia", "Wuxia"),
+        FilterOption("Xianxia", "Xianxia"),
+        FilterOption("Xuanhuan", "Xuanhuan"),
+        FilterOption("Yaoi", "Yaoi")
     )
 
-    // The new API has no working sort parameter; ordering is the site default
-    // (recently updated). Status doubles as the only server-side list filter.
+    // The homepage uses a different markup (index-novel) with no parseable
+    // rows, so every sort maps to a standard list page; default = Most Visited.
     override val orderBys = listOf(
-        FilterOption("All", ""),
-        FilterOption("Ongoing", "ongoing"),
-        FilterOption("Completed", "completed")
+        FilterOption("Most Visited", "allvisit"),
+        FilterOption("Daily Top", "dayvisit"),
+        FilterOption("Monthly Top", "monthvisit"),
+        FilterOption("Completed", "full.html")
     )
 
-    private fun coverUrl(novelId: String) = "https://images.novelarrow.com/novel/$novelId.jpg"
-
-    private fun parseNovels(items: JSONArray): List<Novel> {
-        val novels = mutableListOf<Novel>()
-        for (i in 0 until items.length()) {
-            val obj = items.optJSONObject(i) ?: continue
-            val id = obj.optString("novel_id", null) ?: continue
-            val title = obj.optString("novel_name", null) ?: continue
-            novels.add(
-                Novel(
-                    name = title,
-                    url = "$mainUrl/novel/$id",
-                    posterUrl = coverUrl(id),
-                    apiName = this.name
-                )
-            )
+    private fun parseStatus(statusText: String?): String? {
+        if (statusText.isNullOrBlank()) return null
+        return when (statusText.lowercase().trim()) {
+            "ongoing" -> "Ongoing"
+            "completed" -> "Completed"
+            "hiatus", "on hiatus" -> "On Hiatus"
+            "dropped", "cancelled", "canceled" -> "Cancelled"
+            else -> statusText.trim().replaceFirstChar { it.uppercase() }
         }
-        return novels
+    }
+
+    private fun fixPosterUrl(imgElement: Element?): String? {
+        if (imgElement == null) return null
+        val rawSrc = imgElement.attrOrNull("data-src") ?: imgElement.attrOrNull("src") ?: return null
+        if (rawSrc.isBlank() || rawSrc.contains("data:image")) return null
+        return fixUrl(rawSrc)
+    }
+
+    private fun parseNovels(document: Document): List<Novel> {
+        // Skip sidebar lists (list-side): they carry hot-item rows with no covers
+        val container = document.selectFirstOrNull("div.list.list-novel:not(.list-side)")
+            ?: document.selectFirstOrNull("div.list")
+            ?: return emptyList()
+        return container.select("div.row").mapNotNull { parseNovelElement(it) }
+    }
+
+    private fun parseNovelElement(element: Element): Novel? {
+        val titleElement = element.selectFirstOrNull("h3.novel-title > a") ?: return null
+        val name = titleElement.attrOrNull("title") ?: titleElement.textOrNull()?.trim() ?: return null
+        val novelUrl = fixUrl(titleElement.attrOrNull("href")) ?: return null
+        val posterUrl = fixPosterUrl(element.selectFirstOrNull("img"))
+        return Novel(name = name, url = novelUrl, posterUrl = posterUrl, apiName = this.name)
     }
 
     override suspend fun loadMainPage(
         page: Int, orderBy: String?, tag: String?, extraFilters: Map<String, String>
     ): MainPageResult {
-        val params = buildString {
-            append("page=$page")
-            orderBy?.takeIf { it.isNotBlank() }?.let { append("&status=$it") }
-            tag?.takeIf { it.isNotBlank() }?.let { append("&genre=$it") }
+        val url = when {
+            !tag.isNullOrBlank() -> "$mainUrl/genre/$tag/?page=$page"
+            orderBy == "full.html" -> "$mainUrl/full.html?page=$page"
+            else -> "$mainUrl/${orderBy?.takeIf { it.isNotBlank() } ?: "allvisit"}/?page=$page"
         }
-        val url = "$apiBase/novels?$params"
-        return try {
-            val json = JSONObject(get(url, jsonHeaders).text)
-            val novels = parseNovels(json.optJSONArray("items") ?: JSONArray())
-            val pagination = json.optJSONObject("pagination")
-            val hasNext = pagination != null &&
-                pagination.optInt("page", page) < pagination.optInt("totalPages", page)
-            MainPageResult(url = url, novels = novels, hasNextPage = hasNext)
-        } catch (_: Throwable) {
-            MainPageResult(url = url, novels = emptyList())
-        }
+        val document = get(url).document
+        val novels = parseNovels(document)
+        val hasNext = document.selectFirstOrNull("ul.pagination a[href*='page=${page + 1}'], li.next:not(.disabled)") != null ||
+            novels.size >= 20
+        return MainPageResult(url = url, novels = novels, hasNextPage = hasNext && novels.isNotEmpty())
     }
 
     override suspend fun search(query: String): List<Novel> {
         val encoded = java.net.URLEncoder.encode(query.trim(), "UTF-8")
-        return try {
-            val json = JSONObject(get("$apiBase/novels?keyword=$encoded&page=1", jsonHeaders).text)
-            parseNovels(json.optJSONArray("items") ?: JSONArray())
-        } catch (_: Throwable) { emptyList() }
+        val document = get("$mainUrl/search?keyword=$encoded").document
+        return parseNovels(document)
     }
 
-    /** Novel id is the last path segment of /novel/{id} (or a legacy URL). */
-    private fun novelIdFromUrl(url: String): String =
-        url.substringBefore("?").trimEnd('/').substringAfterLast("/")
-
     override suspend fun load(url: String): NovelDetails? {
-        val novelId = novelIdFromUrl(url)
-        if (novelId.isBlank()) return null
-        val json = try {
-            JSONObject(get("$apiBase/novels/$novelId", jsonHeaders).text)
-        } catch (_: Throwable) { return null }
-        val info = json.optJSONObject("item")?.optJSONObject("novelInfo") ?: return null
+        val document = get(url).document
+        val name = document.selectFirstOrNull("h3.title")?.textOrNull()?.trim() ?: return null
 
-        val title = info.optString("novel_name", null) ?: return null
-        val author = info.optString("novel_author", null)?.takeIf { it.isNotBlank() }
-        val synopsis = info.optString("novel_desc", null)?.takeIf { it.isNotBlank() }
-        // Verified against the status filter: ?status=ongoing -> 0, ?status=completed -> 1
-        val status = when (info.optInt("novel_status", -1)) {
-            0 -> "Ongoing"
-            1 -> "Completed"
-            else -> null
+        val posterUrl = fixPosterUrl(
+            document.selectFirstOrNull("div.book img, div.books img, .info-holder img")
+        )
+        val synopsis = document.selectFirstOrNull("div.desc-text")?.let { element ->
+            element.select("br").append("\\n")
+            element.select("p").prepend("\\n")
+            element.text().replace("\\n", "\n").replace(Regex("\n{3,}"), "\n\n").trim()
         }
-        val genres = info.optJSONArray("novel_genres")?.let { arr ->
-            (0 until arr.length()).mapNotNull { arr.optString(it, null) }
-                .map { g -> g.lowercase().replaceFirstChar { it.uppercase() } }
-        } ?: emptyList()
-        // avgPoint is {"$numberDecimal": "4.51..."} on a 0-5 scale
-        val rating = info.optJSONObject("avgPoint")
-            ?.optString("\$numberDecimal", null)?.toFloatOrNull()
-            ?.let { (it / 5f * 1000f).toInt().coerceIn(0, 1000) }
-        val peopleVoted = info.optInt("voteCount", 0).takeIf { it > 0 }
+        val author = document.selectFirstOrNull(
+            "ul.info li:contains(Author) a, ul.info-meta li:contains(Author) a, a[href*='/a/'], a[href*='/author/']"
+        )?.textOrNull()?.trim()
+        val genres = document.select(
+            "ul.info li:contains(Genre) a, ul.info-meta li:contains(Genre) a, a[href*='/genre/']"
+        ).mapNotNull { it.textOrNull()?.trim() }.filter { it.isNotBlank() }.distinct()
+        val status = document.selectFirstOrNull(
+            "ul.info li:contains(Status) a, ul.info-meta li:contains(Status) a"
+        )?.textOrNull()?.let { parseStatus(it) }
+
+        val chapters = parseChapters(document)
 
         return NovelDetails(
-            url = "$mainUrl/novel/$novelId",
-            name = title,
-            chapters = loadChapters(novelId),
-            author = author,
-            posterUrl = coverUrl(novelId),
-            synopsis = synopsis,
-            tags = genres.ifEmpty { null },
-            rating = rating,
-            peopleVoted = peopleVoted,
-            status = status
+            url = url, name = name, chapters = chapters, author = author,
+            posterUrl = posterUrl, synopsis = synopsis,
+            tags = genres.ifEmpty { null }, status = status
         )
     }
 
-    private suspend fun loadChapters(novelId: String): List<Chapter> {
-        return try {
-            val json = JSONObject(get("$apiBase/novels/$novelId/chapters?sort=asc", jsonHeaders).text)
-            val items = json.optJSONArray("items") ?: JSONArray()
-            (0 until items.length()).mapNotNull { i ->
-                val obj = items.optJSONObject(i) ?: return@mapNotNull null
-                val chapterId = obj.optString("chapter_id", null) ?: return@mapNotNull null
-                val chapterName = obj.optString("chapter_name", null)
-                    ?.takeIf { it.isNotBlank() } ?: "Chapter ${i + 1}"
-                Chapter(name = chapterName, url = "$mainUrl/chapter/$novelId/$chapterId")
-            }
-        } catch (_: Throwable) { emptyList() }
+    /** The details page embeds the complete chapter list. */
+    private fun parseChapters(document: Document): List<Chapter> {
+        val chapters = mutableListOf<Chapter>()
+        val seen = mutableSetOf<String>()
+        val elements = document.select("ul.list-chapter li a, select > option[value*='chapter']")
+        for (element in elements) {
+            val href = element.attrOrNull("href") ?: element.attrOrNull("value") ?: continue
+            if (!href.contains("chapter")) continue
+            val chapterUrl = fixUrl(href) ?: continue
+            if (!seen.add(chapterUrl)) continue
+            val chapterName = element.attrOrNull("title")?.takeIf { it.isNotBlank() }
+                ?: element.textOrNull()?.trim()?.takeIf { it.isNotBlank() }
+                ?: "Chapter ${chapters.size + 1}"
+            chapters.add(Chapter(name = chapterName, url = chapterUrl))
+        }
+        return chapters
     }
 
     override suspend fun loadChapterContent(url: String): String? {
-        // Chapter URLs are /chapter/{novelId}/{chapterId}; strip any host
-        val segments = url.substringBefore("?").trimEnd('/')
-            .replace(Regex("^https?://[^/]+"), "").trim('/').split("/")
-        if (segments.size < 3 || segments[0] != "chapter") return null
-        val novelId = segments[1]
-        val chapterId = segments[2]
-        return try {
-            val json = JSONObject(
-                get("$apiBase/novels/$novelId/chapters/$chapterId", jsonHeaders).text
-            )
-            json.optJSONObject("item")
-                ?.optJSONObject("chapterInfo")
-                ?.optString("chapter_content", null)
-                ?.trim()
-                ?.takeIf { it.isNotBlank() }
-        } catch (_: Throwable) { null }
+        val document = get(url).document
+        val contentElement = document.selectFirstOrNull("#chr-content, #chapter-content, .chr-c")
+            ?: return null
+        contentElement.select(
+            ".unlock-buttons, .ads, .adsbygoogle, sub, script, style, iframe, " +
+                ".ads-holder, .ads-middle, [id*='ads'], [class*='ads'], " +
+                ".hidden, [style*='display:none'], [style*='display: none']"
+        ).remove()
+        val rawHtml = contentElement.html()
+            .replace(Regex("\\s{3,}"), "\n\n")
+            .replace(Regex("(<br\\s*/?>\\s*){3,}"), "<br/><br/>")
+        return rawHtml.trim().takeIf { it.isNotBlank() }
     }
 }
