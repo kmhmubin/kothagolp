@@ -267,10 +267,11 @@ fun LibraryTab(
     }
 
     // Komikku-style options sheet, opened by re-pressing the Library nav button.
-    // Track the last consumed request id (saveable) so re-entering composition
-    // after visiting another screen doesn't replay an already-handled press.
+    // The consumed-id tracker initializes to the current request id on every
+    // fresh composition, so only presses that arrive while composed open the
+    // sheet — stale ids from before a screen change are never replayed.
     var showOptionsSheet by remember { mutableStateOf(false) }
-    var consumedOptionsRequestId by rememberSaveable { mutableIntStateOf(optionsSheetRequestId) }
+    var consumedOptionsRequestId by remember { mutableIntStateOf(optionsSheetRequestId) }
     LaunchedEffect(optionsSheetRequestId) {
         if (optionsSheetRequestId > consumedOptionsRequestId) {
             consumedOptionsRequestId = optionsSheetRequestId

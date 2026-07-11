@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.ui.zIndex
@@ -84,11 +85,15 @@ fun HomeScreen(
 
     // Incremented when the Library nav button is pressed while already on Library —
     // LibraryTab observes this to open its options sheet (Komikku behavior).
-    var libraryOptionsRequestId by rememberSaveable { mutableIntStateOf(0) }
+    // Deliberately plain remember (not saveable): a persisted value would replay
+    // and reopen the sheet after returning from another screen.
+    var libraryOptionsRequestId by remember { mutableIntStateOf(0) }
 
     fun onTabSelected(route: String) {
         HomeTabs.fromRoute("tab_$route")?.let { tab ->
-            if (tab == HomeTabs.LIBRARY && currentTab == HomeTabs.LIBRARY) {
+            // Read currentTabIndex (live snapshot state), not the derived
+            // currentTab val, which can be stale inside a click closure.
+            if (tab == HomeTabs.LIBRARY && currentTabIndex == HomeTabs.LIBRARY.ordinal) {
                 libraryOptionsRequestId++
             }
             currentTabIndex = tab.ordinal
