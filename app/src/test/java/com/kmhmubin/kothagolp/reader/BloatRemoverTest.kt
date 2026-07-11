@@ -50,4 +50,53 @@ class BloatRemoverTest {
         val out = BloatRemover.strip("<p>Only content</p>", null)
         assertTrue(out.contains("Only content"))
     }
+
+    @Test
+    fun `strips quality checker and decorated credit lines`() {
+        val html = """
+            <p>— TL: SomeGuy</p>
+            <p>[Editor: OtherGuy]</p>
+            <p>Quality Checker: ThirdGuy</p>
+            <p>QC: FourthGuy</p>
+            <p>Proofread by: FifthGuy</p>
+            <p>Actual story text goes here.</p>
+        """.trimIndent()
+        val out = BloatRemover.strip(html, null)
+        assertFalse(out.contains("SomeGuy"))
+        assertFalse(out.contains("OtherGuy"))
+        assertFalse(out.contains("ThirdGuy"))
+        assertFalse(out.contains("FourthGuy"))
+        assertFalse(out.contains("FifthGuy"))
+        assertTrue(out.contains("Actual story text"))
+    }
+
+    @Test
+    fun `fuzzy title match survives chapter number prefix differences`() {
+        // source list name has the prefix, content heading does not (and vice versa)
+        val html = "<p><strong>The Hunt Begins</strong></p><p>The forest was quiet.</p>"
+        val out = BloatRemover.strip(html, "Chapter 12 - The Hunt Begins")
+        assertFalse(out.contains("Hunt Begins"))
+        assertTrue(out.contains("forest was quiet"))
+    }
+
+    @Test
+    fun `title inside wrapper divs still removed`() {
+        val html = """
+            <div class="outer"><div class="inner">
+            <h2><span>Chapter 7: Rebirth</span></h2>
+            <p>Content paragraph one.</p>
+            </div></div>
+        """.trimIndent()
+        val out = BloatRemover.strip(html, "Chapter 7: Rebirth")
+        assertFalse(out.contains("Rebirth</span>"))
+        assertTrue(out.contains("Content paragraph one"))
+    }
+
+    @Test
+    fun `prose paragraph starting with chapter word is kept`() {
+        val long = "Chapter 3 had been the hardest week of his life, he thought, " +
+            "as he stared out over the ruined city and remembered everything that led here."
+        val out = BloatRemover.strip("<p>$long</p>", "Chapter 99: Elsewhere")
+        assertTrue(out.contains("ruined city"))
+    }
 }
