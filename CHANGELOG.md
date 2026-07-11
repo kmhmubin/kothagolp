@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.12.1] — 2026-07-11
+
+### Added
+
+- **Komikku-style book cards** — Flat covers with squircle-free tight grid, joined badge groups, and three distinct card styles per density: Cover only / Compact (title overlay) / Comfortable (title below)
+- **Shelf icon badges** — Library shelf badges on cards now show each shelf's dedicated icon on its status color instead of a text pill
+- **Library options sheet** — Double-tap the Library nav button to open a Komikku-style tabbed sheet with Sort (all six orders with direction arrows) and Display (mode, grid size, card style) options
+- **Downloaded shelf color** — Distinct cyan for the Downloaded shelf (was identical to Reading's blue)
+
+### Fixed
+
+- **FreeWebNovel chapter list** — Site added chapter pagination which limited books to 40 chapters; the full chapter list is fetched again, with a pagination-walking fallback
+- **App icon cropped/zoomed on other devices** — Launcher, themed (Android 13+), and splash icons now fit their official safe zones, so circle/squircle/teardrop launcher masks no longer crop the logo
+- **Library options sheet replay** — Sheet no longer opens by itself when returning to the Library screen; the gesture is a true double-tap and resets after each open
+
+### Performance
+
+- **Fenrir Realm details load** — Metadata and chapter list fetch in parallel (remaining latency is the source's own server)
+- **Library grid** — Removed per-frame settings writes from the grid size slider and per-press recomposition from card press feedback
+
 ## [3.11.0] — 2026-07-06
 
 ### Added
