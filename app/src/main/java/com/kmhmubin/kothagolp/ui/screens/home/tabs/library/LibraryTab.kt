@@ -103,6 +103,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -264,10 +266,16 @@ fun LibraryTab(
         )
     }
 
-    // Komikku-style options sheet, opened by re-pressing the Library nav button
+    // Komikku-style options sheet, opened by re-pressing the Library nav button.
+    // Track the last consumed request id (saveable) so re-entering composition
+    // after visiting another screen doesn't replay an already-handled press.
     var showOptionsSheet by remember { mutableStateOf(false) }
+    var consumedOptionsRequestId by rememberSaveable { mutableIntStateOf(optionsSheetRequestId) }
     LaunchedEffect(optionsSheetRequestId) {
-        if (optionsSheetRequestId > 0) showOptionsSheet = true
+        if (optionsSheetRequestId > consumedOptionsRequestId) {
+            consumedOptionsRequestId = optionsSheetRequestId
+            showOptionsSheet = true
+        }
     }
     if (showOptionsSheet) {
         val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
