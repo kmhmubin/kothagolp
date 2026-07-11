@@ -62,7 +62,7 @@ data class KothagolpDimensions(
                     bottomBarIconSize = 24.dp,
                     showBottomBarLabels = true,
                     bottomBarHeight = 80.dp,
-                    cardSpacing = 6.dp,      // Reduced from 12dp
+                    cardSpacing = 4.dp,      // Komikku-style tight grid (cards carry 4dp internal padding)
                     gridPadding = 10.dp,     // Reduced from 16dp
                     cardCornerRadius = 10.dp,
                     spacingXs = 2.dp,

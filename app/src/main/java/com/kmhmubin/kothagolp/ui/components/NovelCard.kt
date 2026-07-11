@@ -13,28 +13,22 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Bookmark
-import androidx.compose.material.icons.automirrored.rounded.MenuBook
-import androidx.compose.material.icons.rounded.NewReleases
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
@@ -51,67 +46,51 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.domain.model.UiDensity
+import com.kmhmubin.kothagolp.ui.screens.details.util.StatusUtils
 import com.kmhmubin.kothagolp.ui.theme.AppShape
-import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
-import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
-import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
-import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
-import com.kmhmubin.kothagolp.ui.theme.StatusReading
-import com.kmhmubin.kothagolp.ui.theme.StatusSpicy
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Design Tokens
+// Design Tokens — Komikku/Mihon-style flat grid item
 // ══════════════════════════════════════════════════════════════════════════════
 
 private object NovelCardTokens {
-    val CardCornerRadius = 16.dp   // matches AppShape.large
-    val CardShape = AppShape.large
-    val ImageShapeTop = RoundedCornerShape(topStart = CardCornerRadius, topEnd = CardCornerRadius)
-    val BadgeShape = AppShape.small
-    val PillShape = AppShape.pill
+    /** Outer selectable clip — Komikku clips the whole grid cell */
+    val ItemShape = AppShape.medium          // 12dp
+    /** Cover corner rounding */
+    val CoverShape = AppShape.small          // 8dp
+    /** Badge group rounding (badges inside share one clipped row) */
+    val BadgeGroupShape = AppShape.extraSmall // 4dp
 
     val AspectRatio = 2f / 3f
-    val BadgeIconSize = 14.dp
-    val StatusDotSize = 8.dp
+    /** Inner padding: makes room for the selection frame, doubles as grid gap */
+    val ItemPadding = 4.dp
+    val BadgeHeight = 18.dp
+    val BadgeIconSize = 12.dp
 
-    object Padding {
-        val Compact = 8.dp
-        val Default = 10.dp
-        val Comfortable = 12.dp
-        val Badge = 8.dp
-    }
+    /** Komikku dims the cover when the item is selected */
+    const val SelectedCoverAlpha = 0.76f
+    const val PressScale = 0.97f
 
-    object Elevation {
-        val Resting = 2.dp
-        val Pressed = 1.dp
-        val Badge = 4.dp
-    }
-
-    object Animation {
-        val PressScale = 0.97f
-        const val PressDuration = 100
-        const val ShimmerDuration = 1400
-    }
+    const val ShimmerDuration = 1400
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -139,15 +118,16 @@ fun NovelCard(
         if (isInLibrary) append(", in library")
         lastReadChapter?.let { append(", last read: $it") }
     }
+    val semanticsModifier = modifier.semantics {
+        contentDescription = semanticsLabel
+        role = Role.Button
+    }
 
     when (density) {
         UiDensity.COMFORTABLE -> ComfortableNovelCard(
             novel = novel,
             onClick = onClick,
-            modifier = modifier.semantics {
-                contentDescription = semanticsLabel
-                role = Role.Button
-            },
+            modifier = semanticsModifier,
             onLongClick = onLongClick,
             newChapterCount = newChapterCount,
             readingStatus = readingStatus,
@@ -159,27 +139,112 @@ fun NovelCard(
         else -> CompactNovelCard(
             novel = novel,
             onClick = onClick,
-            modifier = modifier.semantics {
-                contentDescription = semanticsLabel
-                role = Role.Button
-            },
+            modifier = semanticsModifier,
             onLongClick = onLongClick,
             newChapterCount = newChapterCount,
             readingStatus = readingStatus,
             lastReadChapter = lastReadChapter,
             showApiName = showApiName,
-            isCompact = density == UiDensity.COMPACT,
             isSelected = isSelected,
-            isInLibrary = isInLibrary
+            isInLibrary = isInLibrary,
+            // Komikku cover-only grid: COMPACT hides the title overlay entirely
+            showTitle = density != UiDensity.COMPACT
         )
     }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Comfortable Layout
+// Selectable wrapper (Komikku GridItemSelectable)
 // ══════════════════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun GridItemSelectable(
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed = interactionSource.collectIsPressedAsState()
+    val selectionColor = MaterialTheme.colorScheme.secondaryContainer
+
+    Box(
+        modifier = modifier
+            // State read deferred to the layer block: press feedback skips recomposition
+            .graphicsLayer {
+                val scale = if (isPressed.value) NovelCardTokens.PressScale else 1f
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(NovelCardTokens.ItemShape)
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+                onLongClick = onLongClick?.let {
+                    {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        it()
+                    }
+                }
+            )
+            .drawBehind { if (isSelected) drawRect(color = selectionColor) }
+            .padding(NovelCardTokens.ItemPadding)
+    ) {
+        content()
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Compact Layout — title overlays the cover (Komikku compact grid);
+// with showTitle = false it becomes Komikku's cover-only grid
+// ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun CompactNovelCard(
+    novel: Novel,
+    onClick: () -> Unit,
+    modifier: Modifier,
+    onLongClick: (() -> Unit)?,
+    newChapterCount: Int,
+    readingStatus: ReadingStatus?,
+    lastReadChapter: String?,
+    showApiName: Boolean,
+    isSelected: Boolean,
+    isInLibrary: Boolean,
+    showTitle: Boolean = true
+) {
+    GridItemSelectable(
+        isSelected = isSelected,
+        onClick = onClick,
+        onLongClick = onLongClick,
+        modifier = modifier
+    ) {
+        NovelGridCover(
+            novel = novel,
+            coverAlpha = if (isSelected) NovelCardTokens.SelectedCoverAlpha else 1f,
+            newChapterCount = newChapterCount,
+            readingStatus = readingStatus,
+            isInLibrary = isInLibrary
+        ) {
+            if (showTitle) {
+                CoverTextOverlay(
+                    title = novel.name,
+                    subtitle = lastReadChapter?.takeIf { it.isNotBlank() }
+                        ?: novel.apiName.takeIf { showApiName && it.isNotBlank() }
+                )
+            }
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Comfortable Layout — title below the cover (Komikku comfortable grid)
+// ══════════════════════════════════════════════════════════════════════════════
+
 @Composable
 private fun ComfortableNovelCard(
     novel: Novel,
@@ -193,253 +258,113 @@ private fun ComfortableNovelCard(
     isSelected: Boolean,
     isInLibrary: Boolean
 ) {
-    val haptic = LocalHapticFeedback.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale = if (isPressed) NovelCardTokens.Animation.PressScale else 1f
-    val elevation = when {
-        isPressed -> NovelCardTokens.Elevation.Pressed
-        isSelected -> 6.dp
-        else -> NovelCardTokens.Elevation.Resting
-    }
-
-    Card(
+    GridItemSelectable(
+        isSelected = isSelected,
+        onClick = onClick,
+        onLongClick = onLongClick,
         modifier = modifier
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .then(
-                if (isSelected) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                        shape = NovelCardTokens.CardShape
-                    )
-                } else Modifier
-            )
-            .combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-                onLongClick = onLongClick?.let {
-                    {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        it()
-                    }
-                }
-            ),
-        shape = NovelCardTokens.CardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(NovelCardTokens.AspectRatio)
-                    .clip(NovelCardTokens.ImageShapeTop)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            ) {
-                NovelCoverImage(
-                    url = novel.posterUrl,
-                    title = novel.name,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                VignetteOverlay(
-                    modifier = Modifier.fillMaxSize(),
-                    topAlpha = 0.4f,
-                    bottomAlpha = 0f
-                )
-
-                BadgeRow(
-                    readingStatus = readingStatus,
-                    newChapterCount = newChapterCount,
-                    isInLibrary = isInLibrary,
-                    compactMode = false,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(NovelCardTokens.Padding.Badge)
+            NovelGridCover(
+                novel = novel,
+                coverAlpha = if (isSelected) NovelCardTokens.SelectedCoverAlpha else 1f,
+                newChapterCount = newChapterCount,
+                readingStatus = readingStatus,
+                isInLibrary = isInLibrary
+            )
+            Text(
+                text = novel.name,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp, end = 4.dp),
+                style = MaterialTheme.typography.titleSmall,
+                fontSize = 12.sp,
+                lineHeight = 18.sp,
+                minLines = 2,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            lastReadChapter?.takeIf { it.isNotBlank() }?.let { chapter ->
+                Text(
+                    text = chapter,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-
-            Column(
-                modifier = Modifier.padding(NovelCardTokens.Padding.Comfortable),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                lastReadChapter?.takeIf { it.isNotBlank() }?.let { chapter ->
-                    ChapterProgress(
-                        chapterName = chapter,
-                        style = ChapterProgressStyle.Comfortable
-                    )
-                }
-
+            if (showApiName && novel.apiName.isNotBlank()) {
                 Text(
-                    text = novel.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 18.sp
+                    text = novel.apiName,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-
-                if (showApiName && novel.apiName.isNotBlank()) {
-                    Text(
-                        text = novel.apiName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
         }
     }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Compact Layout
+// Cover with badge groups (Komikku MangaGridCover)
 // ══════════════════════════════════════════════════════════════════════════════
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CompactNovelCard(
+private fun NovelGridCover(
     novel: Novel,
-    onClick: () -> Unit,
-    modifier: Modifier,
-    onLongClick: (() -> Unit)?,
+    coverAlpha: Float,
     newChapterCount: Int,
     readingStatus: ReadingStatus?,
-    lastReadChapter: String?,
-    showApiName: Boolean,
-    isCompact: Boolean,
-    isSelected: Boolean,
-    isInLibrary: Boolean
+    isInLibrary: Boolean,
+    modifier: Modifier = Modifier,
+    content: (@Composable () -> Unit)? = null
 ) {
-    val haptic = LocalHapticFeedback.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale = if (isPressed) NovelCardTokens.Animation.PressScale else 1f
-    val elevation = if (isPressed) NovelCardTokens.Elevation.Pressed else NovelCardTokens.Elevation.Resting
-
-    Card(
+    Box(
         modifier = modifier
+            .fillMaxWidth()
             .aspectRatio(NovelCardTokens.AspectRatio)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .then(
-                if (isSelected) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                        shape = NovelCardTokens.CardShape
-                    )
-                } else Modifier
-            )
-            .combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-                onLongClick = onLongClick?.let {
-                    {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        it()
-                    }
-                }
-            ),
-        shape = NovelCardTokens.CardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val badgeMode = when {
-                maxWidth < 80.dp -> BadgeDisplayMode.MINIMAL
-                maxWidth < 110.dp -> BadgeDisplayMode.COMPACT
-                else -> BadgeDisplayMode.FULL
-            }
-
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(coverAlpha)
+                .clip(NovelCardTokens.CoverShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+        ) {
             NovelCoverImage(
                 url = novel.posterUrl,
                 title = novel.name,
                 modifier = Modifier.fillMaxSize()
             )
+            content?.invoke()
+        }
 
-            CinematicOverlay(modifier = Modifier.fillMaxSize())
-
-            when (badgeMode) {
-                BadgeDisplayMode.MINIMAL -> MinimalBadgeOverlay(
-                    readingStatus = readingStatus,
-                    newChapterCount = newChapterCount
-                )
-                BadgeDisplayMode.COMPACT -> BadgeRow(
-                    readingStatus = readingStatus,
-                    newChapterCount = newChapterCount,
-                    isInLibrary = isInLibrary,
-                    compactMode = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(NovelCardTokens.Padding.Badge)
-                )
-                BadgeDisplayMode.FULL -> BadgeRow(
-                    readingStatus = readingStatus,
-                    newChapterCount = newChapterCount,
-                    isInLibrary = isInLibrary,
-                    compactMode = false,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(NovelCardTokens.Padding.Badge)
-                )
+        // Top-start: new chapter count (Komikku unread badge)
+        if (newChapterCount > 0) {
+            BadgeGroup(modifier = Modifier.align(Alignment.TopStart)) {
+                Badge(text = if (newChapterCount > 99) "99+" else "$newChapterCount")
             }
+        }
 
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(if (isCompact) NovelCardTokens.Padding.Compact else NovelCardTokens.Padding.Default),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = novel.name,
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        shadow = Shadow(
-                            color = Color.Black.copy(alpha = 0.8f),
-                            offset = Offset(0f, 1f),
-                            blurRadius = 3f
-                        )
-                    ),
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = if (isCompact) 14.sp else 16.sp,
-                    fontSize = if (isCompact) 11.sp else 13.sp
-                )
-
-                lastReadChapter?.takeIf { it.isNotBlank() }?.let { chapter ->
-                    ChapterProgress(
-                        chapterName = chapter,
-                        style = ChapterProgressStyle.Overlay
+        // Top-end: shelf icon + in-library marker
+        if (readingStatus != null || isInLibrary) {
+            BadgeGroup(modifier = Modifier.align(Alignment.TopEnd)) {
+                if (readingStatus != null) {
+                    Badge(
+                        imageVector = StatusUtils.getStatusIcon(readingStatus),
+                        color = StatusUtils.getStatusColor(readingStatus),
+                        contentColor = Color.White,
+                        contentDescription = readingStatus.displayName()
                     )
                 }
-
-                if (showApiName && novel.apiName.isNotBlank() && !isCompact) {
-                    Text(
-                        text = novel.apiName,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            shadow = Shadow(
-                                color = Color.Black.copy(alpha = 0.6f),
-                                offset = Offset(0f, 1f),
-                                blurRadius = 2f
-                            )
-                        ),
-                        color = Color.White.copy(alpha = 0.7f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 10.sp
+                if (isInLibrary) {
+                    Badge(
+                        imageVector = Icons.Rounded.Bookmark,
+                        color = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                        contentDescription = "In library"
                     )
                 }
             }
@@ -447,8 +372,129 @@ private fun CompactNovelCard(
     }
 }
 
+/** Static gradient shared by all cards — avoids per-recomposition allocation */
+private val CoverOverlayGradient = Brush.verticalGradient(
+    0f to Color.Transparent,
+    1f to Color(0xAA000000)
+)
+
+/**
+ * Bottom gradient + title, Komikku compact-grid style.
+ */
+@Composable
+private fun CoverTextOverlay(
+    title: String,
+    subtitle: String? = null
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(0.33f)
+                .background(CoverOverlayGradient)
+        )
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    color = Color.White,
+                    shadow = Shadow(color = Color.Black, blurRadius = 4f)
+                ),
+                fontSize = 12.sp,
+                lineHeight = 18.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            subtitle?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = Color.White.copy(alpha = 0.78f),
+                        shadow = Shadow(color = Color.Black, blurRadius = 4f)
+                    ),
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
-// Shared Components
+// Badges (Komikku Badge / BadgeGroup)
+// ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun BadgeGroup(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = modifier
+            .padding(4.dp)
+            .height(NovelCardTokens.BadgeHeight)
+            .clip(NovelCardTokens.BadgeGroupShape),
+        content = content
+    )
+}
+
+@Composable
+private fun Badge(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimary
+) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(color)
+            .padding(horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = contentColor,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun Badge(
+    imageVector: ImageVector,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.secondary,
+    contentColor: Color = MaterialTheme.colorScheme.onSecondary,
+    contentDescription: String? = null
+) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(color)
+            .padding(horizontal = 3.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = imageVector,
+            contentDescription = contentDescription,
+            tint = contentColor,
+            modifier = Modifier.size(NovelCardTokens.BadgeIconSize)
+        )
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Cover image with placeholder / fallback
 // ══════════════════════════════════════════════════════════════════════════════
 
 @Composable
@@ -473,7 +519,7 @@ private fun NovelCoverImage(
         )
         when {
             imageState is AsyncImagePainter.State.Loading || imageState is AsyncImagePainter.State.Empty -> {
-                CoverPlaceholder(title = title)
+                CoverPlaceholder()
             }
             imageState is AsyncImagePainter.State.Error || url.isNullOrBlank() -> {
                 CoverFallback(title = title)
@@ -483,7 +529,7 @@ private fun NovelCoverImage(
 }
 
 @Composable
-private fun CoverPlaceholder(title: String, modifier: Modifier = Modifier) {
+private fun CoverPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -537,316 +583,6 @@ private fun CoverFallback(title: String, modifier: Modifier = Modifier) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Overlays
-// ══════════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun VignetteOverlay(
-    modifier: Modifier = Modifier,
-    topAlpha: Float = 0.3f,
-    bottomAlpha: Float = 0.6f
-) {
-    Box(
-        modifier = modifier.drawWithCache {
-            val gradient = Brush.verticalGradient(
-                0f to Color.Black.copy(alpha = topAlpha),
-                0.3f to Color.Transparent,
-                0.65f to Color.Transparent,
-                1f to Color.Black.copy(alpha = bottomAlpha)
-            )
-            onDrawBehind { drawRect(gradient) }
-        }
-    )
-}
-
-@Composable
-private fun CinematicOverlay(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.drawWithCache {
-            val gradient = Brush.verticalGradient(
-                colorStops = arrayOf(
-                    0f to Color.Black.copy(alpha = 0.25f),
-                    0.25f to Color.Transparent,
-                    0.5f to Color.Transparent,
-                    0.75f to Color.Black.copy(alpha = 0.5f),
-                    1f to Color.Black.copy(alpha = 0.9f)
-                )
-            )
-            onDrawBehind {
-                drawRect(gradient)
-            }
-        }
-    )
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// Badges
-// ══════════════════════════════════════════════════════════════════════════════
-
-private enum class BadgeDisplayMode { FULL, COMPACT, MINIMAL }
-
-@Composable
-private fun MinimalBadgeOverlay(
-    readingStatus: ReadingStatus?,
-    newChapterCount: Int,
-    modifier: Modifier = Modifier
-) {
-    Box(modifier = modifier.fillMaxSize()) {
-        if (readingStatus != null) {
-            val statusColor = when (readingStatus) {
-                ReadingStatus.READING -> StatusReading
-                ReadingStatus.SPICY -> StatusSpicy
-                ReadingStatus.COMPLETED -> StatusCompleted
-                ReadingStatus.ON_HOLD -> StatusOnHold
-                ReadingStatus.PLAN_TO_READ -> StatusPlanToRead
-                ReadingStatus.DROPPED -> StatusDROPPED
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(4.dp)
-                    .size(10.dp)
-                    .drawWithCache {
-                        val r = size.minDimension / 2
-                        onDrawBehind {
-                            drawCircle(color = statusColor.copy(alpha = 0.25f), radius = r * 2f)
-                            drawCircle(color = statusColor.copy(alpha = 0.5f), radius = r * 1.4f)
-                            drawCircle(color = statusColor, radius = r)
-                        }
-                    }
-            )
-        }
-
-        if (newChapterCount > 0) {
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary,
-                shadowElevation = 0.dp
-            ) {
-                Text(
-                    text = if (newChapterCount > 99) "99" else "$newChapterCount",
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 8.sp,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun BadgeRow(
-    readingStatus: ReadingStatus?,
-    newChapterCount: Int,
-    isInLibrary: Boolean,
-    compactMode: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
-    ) {
-        if (readingStatus != null) {
-            StatusBadge(status = readingStatus, compactMode = compactMode)
-        } else {
-            Spacer(Modifier)
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            if (isInLibrary) LibraryBookmarkBadge(compactMode = compactMode)
-            if (newChapterCount > 0) NewChaptersBadge(count = newChapterCount, compactMode = compactMode)
-        }
-    }
-}
-
-@Composable
-private fun LibraryBookmarkBadge(
-    modifier: Modifier = Modifier,
-    compactMode: Boolean = false
-) {
-    // Reuse the details cover treatment so "in library" reads consistently across screens.
-    Surface(
-        modifier = modifier.size(if (compactMode) 22.dp else 24.dp),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f),
-        shadowElevation = 0.dp
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Bookmark,
-                contentDescription = "In library",
-                modifier = Modifier.size(if (compactMode) 12.dp else 14.dp),
-                tint = Color.White
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatusBadge(
-    status: ReadingStatus,
-    modifier: Modifier = Modifier,
-    compactMode: Boolean = false
-) {
-    val statusColor = remember(status) {
-        when (status) {
-            ReadingStatus.READING -> StatusReading
-            ReadingStatus.SPICY -> StatusSpicy
-            ReadingStatus.COMPLETED -> StatusCompleted
-            ReadingStatus.ON_HOLD -> StatusOnHold
-            ReadingStatus.PLAN_TO_READ -> StatusPlanToRead
-            ReadingStatus.DROPPED -> StatusDROPPED
-        }
-    }
-
-    if (compactMode) {
-        Surface(
-            modifier = modifier,
-            shape = CircleShape,
-            color = Color.Black.copy(alpha = 0.5f),
-            shadowElevation = 0.dp
-        ) {
-            Box(
-                modifier = Modifier.padding(6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(NovelCardTokens.StatusDotSize)
-                        .drawWithCache {
-                            val r = size.minDimension / 2
-                            val c1 = statusColor.copy(alpha = 0.15f)
-                            val c2 = statusColor.copy(alpha = 0.35f)
-                            val solid = statusColor
-                            onDrawBehind {
-                                drawCircle(color = c1, radius = r * 2.2f)
-                                drawCircle(color = c2, radius = r * 1.5f)
-                                drawCircle(color = solid, radius = r)
-                            }
-                        }
-                )
-            }
-        }
-    } else {
-        Surface(
-            modifier = modifier,
-            shape = NovelCardTokens.BadgeShape,
-            color = statusColor,
-            shadowElevation = 0.dp
-        ) {
-            Text(
-                text = status.displayName(),
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White,
-                fontSize = 10.sp,
-                maxLines = 1
-            )
-        }
-    }
-}
-
-@Composable
-private fun NewChaptersBadge(
-    count: Int,
-    modifier: Modifier = Modifier,
-    compactMode: Boolean = false
-) {
-    val displayText = remember(count) {
-        if (count > 99) "99+" else "$count"
-    }
-
-    Surface(
-        modifier = modifier,
-        shape = NovelCardTokens.PillShape,
-        color = MaterialTheme.colorScheme.primary,
-        shadowElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(
-                horizontal = if (compactMode) 6.dp else 8.dp,
-                vertical = if (compactMode) 4.dp else 5.dp
-            ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            if (!compactMode) {
-                Icon(
-                    imageVector = Icons.Rounded.NewReleases,
-                    contentDescription = null,
-                    modifier = Modifier.size(NovelCardTokens.BadgeIconSize),
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-            Text(
-                text = displayText,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontSize = if (compactMode) 9.sp else 11.sp,
-                maxLines = 1,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// Chapter Progress
-// ══════════════════════════════════════════════════════════════════════════════
-
-private enum class ChapterProgressStyle { Comfortable, Overlay }
-
-@Composable
-private fun ChapterProgress(
-    chapterName: String,
-    style: ChapterProgressStyle,
-    modifier: Modifier = Modifier
-) {
-    val textStyle = when (style) {
-        ChapterProgressStyle.Comfortable -> MaterialTheme.typography.labelSmall.copy(
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Medium
-        )
-        ChapterProgressStyle.Overlay -> MaterialTheme.typography.labelSmall.copy(
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 10.sp,
-            shadow = Shadow(
-                color = Color.Black.copy(alpha = 0.7f),
-                offset = Offset(0f, 1f),
-                blurRadius = 2f
-            )
-        )
-    }
-
-    Text(
-        text = chapterName,
-        style = textStyle,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-    )
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
 // Skeleton / Loading State
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -855,97 +591,31 @@ fun NovelCardSkeleton(
     modifier: Modifier = Modifier,
     density: UiDensity = UiDensity.DEFAULT
 ) {
-    when (density) {
-        UiDensity.COMFORTABLE -> ComfortableSkeleton(modifier)
-        else -> CompactSkeleton(modifier)
-    }
-}
-
-@Composable
-private fun ComfortableSkeleton(modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = NovelCardTokens.CardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = NovelCardTokens.Elevation.Resting)
-    ) {
+    Box(modifier = modifier.padding(NovelCardTokens.ItemPadding)) {
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(NovelCardTokens.AspectRatio)
-                    .clip(NovelCardTokens.ImageShapeTop)
+                    .clip(NovelCardTokens.CoverShape)
                     .shimmerEffect()
             )
-            Column(
-                modifier = Modifier.padding(NovelCardTokens.Padding.Comfortable),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            if (density == UiDensity.COMFORTABLE) {
                 Box(
                     modifier = Modifier
+                        .padding(top = 6.dp, start = 4.dp)
                         .fillMaxWidth(0.85f)
-                        .height(14.dp)
-                        .clip(AppShape.extraSmall)
-                        .shimmerEffect()
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(14.dp)
-                        .clip(AppShape.extraSmall)
-                        .shimmerEffect()
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .height(10.dp)
-                        .clip(AppShape.extraSmall)
-                        .shimmerEffect()
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CompactSkeleton(modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier.aspectRatio(NovelCardTokens.AspectRatio),
-        shape = NovelCardTokens.CardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = NovelCardTokens.Elevation.Resting)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .shimmerEffect()
-            )
-
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(NovelCardTokens.Padding.Default),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.75f)
                         .height(12.dp)
                         .clip(AppShape.extraSmall)
-                        .background(Color.White.copy(alpha = 0.15f))
+                        .shimmerEffect()
                 )
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(10.dp)
+                        .padding(top = 4.dp, start = 4.dp)
+                        .fillMaxWidth(0.55f)
+                        .height(12.dp)
                         .clip(AppShape.extraSmall)
-                        .background(Color.White.copy(alpha = 0.1f))
+                        .shimmerEffect()
                 )
             }
         }
@@ -969,7 +639,7 @@ fun Modifier.shimmerEffect(): Modifier {
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = NovelCardTokens.Animation.ShimmerDuration,
+                durationMillis = NovelCardTokens.ShimmerDuration,
                 easing = LinearEasing
             ),
             repeatMode = RepeatMode.Restart
@@ -987,22 +657,3 @@ fun Modifier.shimmerEffect(): Modifier {
         drawRect(brush)
     }
 }
-
-@Composable
-private fun Modifier.border(
-    width: Dp,
-    color: Color,
-    shape: RoundedCornerShape
-): Modifier = this.then(
-    Modifier.drawWithCache {
-        onDrawBehind {
-            drawRoundRect(
-                color = color,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width.toPx()),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
-                    NovelCardTokens.CardCornerRadius.toPx()
-                )
-            )
-        }
-    }
-)

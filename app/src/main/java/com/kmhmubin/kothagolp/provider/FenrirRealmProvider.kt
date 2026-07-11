@@ -6,6 +6,8 @@ import com.kmhmubin.kothagolp.domain.model.MainPageResult
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.NovelDetails
 import com.kmhmubin.kothagolp.provider.MainProvider
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.nodes.Document
@@ -93,12 +95,21 @@ class FenrirRealmProvider : MainProvider() {
         } catch (_: Throwable) { emptyList() }
     }
 
-    override suspend fun load(url: String): NovelDetails? {
+    override suspend fun load(url: String): NovelDetails? = coroutineScope {
         val slug = url.trimEnd('/').substringAfterLast("/")
+        // The chapters endpoint has 2-3s of server latency; fetch it in
+        // parallel with the metadata call instead of sequentially.
+        val chaptersDeferred = async { loadChapters(slug) }
         val metaUrl = "$mainUrl/api/new/v2/series/$slug"
         val metaResponse = get(metaUrl, jsonHeaders)
-        val metaJson = try { JSONObject(metaResponse.text) } catch (_: Throwable) { return null }
-        val title = metaJson.optString("title", null) ?: return null
+        val metaJson = try { JSONObject(metaResponse.text) } catch (_: Throwable) {
+            chaptersDeferred.cancel()
+            return@coroutineScope null
+        }
+        val title = metaJson.optString("title", null) ?: run {
+            chaptersDeferred.cancel()
+            return@coroutineScope null
+        }
         val cover = metaJson.optString("cover", null)
         val posterUrl = buildCoverUrl(cover)
         val descriptionHtml = metaJson.optString("description", null)
@@ -112,9 +123,9 @@ class FenrirRealmProvider : MainProvider() {
         } else emptyList()
         val userObj = metaJson.optJSONObject("user")
         val author = userObj?.optString("name", null) ?: userObj?.optString("username", null)
-        val chapters = loadChapters(slug)
+        val chapters = chaptersDeferred.await()
         val fullUrl = if (url.startsWith("http")) url else "$mainUrl/$slug"
-        return NovelDetails(
+        NovelDetails(
             url = fullUrl, name = title, chapters = chapters,
             author = author, posterUrl = posterUrl, synopsis = synopsis,
             tags = tags.ifEmpty { null }, status = status

@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.ui.screens.home
 
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -19,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.ui.zIndex
@@ -82,8 +85,29 @@ fun HomeScreen(
         currentTabIndex = HomeTabs.LIBRARY.ordinal
     }
 
+    // Incremented on a Library nav double-tap — LibraryTab observes this to open
+    // its options sheet (Komikku behavior). Deliberately plain remember (not
+    // saveable): a persisted value would replay and reopen the sheet after
+    // returning from another screen.
+    var libraryOptionsRequestId by remember { mutableIntStateOf(0) }
+    var lastLibraryPressAt by remember { mutableLongStateOf(0L) }
+
     fun onTabSelected(route: String) {
-        HomeTabs.fromRoute("tab_$route")?.let { currentTabIndex = it.ordinal }
+        HomeTabs.fromRoute("tab_$route")?.let { tab ->
+            if (tab == HomeTabs.LIBRARY) {
+                // True double-tap: two Library presses within the window.
+                // Consuming the timestamp resets the gesture after each open,
+                // so the next single press never re-triggers the sheet.
+                val now = SystemClock.uptimeMillis()
+                if (now - lastLibraryPressAt <= 600L) {
+                    libraryOptionsRequestId++
+                    lastLibraryPressAt = 0L
+                } else {
+                    lastLibraryPressAt = now
+                }
+            }
+            currentTabIndex = tab.ordinal
+        }
     }
 
     val isTablet = isTabletUi()
@@ -124,6 +148,7 @@ fun HomeScreen(
                     onNavigateToGlobalSearch = onNavigateToGlobalSearch,
                     onNavigateToNotesHighlights = onNavigateToNotesHighlights,
                     onNavigateToForYouSettings = onNavigateToForYouSettings,
+                    libraryOptionsRequestId = libraryOptionsRequestId,
                     onSwitchTab = { currentTabIndex = it.ordinal }
                 )
             }
@@ -161,6 +186,7 @@ fun HomeScreen(
                     onNavigateToGlobalSearch = onNavigateToGlobalSearch,
                     onNavigateToNotesHighlights = onNavigateToNotesHighlights,
                     onNavigateToForYouSettings = onNavigateToForYouSettings,
+                    libraryOptionsRequestId = libraryOptionsRequestId,
                     onSwitchTab = { currentTabIndex = it.ordinal }
                 )
             }
@@ -195,6 +221,7 @@ private fun PersistentTabContent(
     onNavigateToGlobalSearch: ((String) -> Unit)?,
     onNavigateToNotesHighlights: (() -> Unit)?,
     onNavigateToForYouSettings: () -> Unit = {},
+    libraryOptionsRequestId: Int = 0,
     onSwitchTab: (HomeTabs) -> Unit
 ) {
     @Composable
@@ -205,7 +232,8 @@ private fun PersistentTabContent(
                 onNavigateToDetails = onNavigateToDetails,
                 onNavigateToReader = onNavigateToReader,
                 onNavigateToNotifications = onNavigateToNotifications,
-                onNavigateToGlobalSearch = onNavigateToGlobalSearch
+                onNavigateToGlobalSearch = onNavigateToGlobalSearch,
+                optionsSheetRequestId = libraryOptionsRequestId
             )
             HomeTabs.BROWSE -> BrowseTab(
                 appSettings = appSettings,

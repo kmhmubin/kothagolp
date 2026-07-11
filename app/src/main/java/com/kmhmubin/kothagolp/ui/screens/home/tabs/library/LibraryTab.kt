@@ -103,6 +103,9 @@ import androidx.compose.foundation.pager.rememberPagerState
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
@@ -146,6 +149,7 @@ import com.kmhmubin.kothagolp.ui.theme.KothagolpTheme
 import com.kmhmubin.kothagolp.ui.theme.NewChapters
 import com.kmhmubin.kothagolp.ui.theme.NewChaptersLight
 import com.kmhmubin.kothagolp.ui.theme.StatusCompleted
+import com.kmhmubin.kothagolp.ui.theme.StatusDownloaded
 import com.kmhmubin.kothagolp.ui.theme.StatusDROPPED
 import com.kmhmubin.kothagolp.ui.theme.StatusOnHold
 import com.kmhmubin.kothagolp.ui.theme.StatusPlanToRead
@@ -169,6 +173,7 @@ fun LibraryTab(
     onNavigateToReader: (chapterUrl: String, novelUrl: String, providerName: String) -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToGlobalSearch: ((query: String) -> Unit)? = null,
+    optionsSheetRequestId: Int = 0,
     viewModel: LibraryViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -258,6 +263,36 @@ fun LibraryTab(
                 showStatusPicker = false
             },
             onDismiss = { showStatusPicker = false }
+        )
+    }
+
+    // Komikku-style options sheet, opened by re-pressing the Library nav button.
+    // The consumed-id tracker initializes to the current request id on every
+    // fresh composition, so only presses that arrive while composed open the
+    // sheet — stale ids from before a screen change are never replayed.
+    var showOptionsSheet by remember { mutableStateOf(false) }
+    var consumedOptionsRequestId by remember { mutableIntStateOf(optionsSheetRequestId) }
+    LaunchedEffect(optionsSheetRequestId) {
+        if (optionsSheetRequestId > consumedOptionsRequestId) {
+            consumedOptionsRequestId = optionsSheetRequestId
+            showOptionsSheet = true
+        }
+    }
+    if (showOptionsSheet) {
+        val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
+        LibraryOptionsSheet(
+            sortOrder = uiState.sortOrder,
+            appSettings = appSettings,
+            onSortSelected = { sort ->
+                viewModel.setSortOrder(sort)
+                preferencesManager.updateAppSettings(
+                    preferencesManager.appSettings.value.copy(defaultLibrarySort = sort)
+                )
+            },
+            onDisplayModeSelected = { preferencesManager.updateLibraryDisplayMode(it) },
+            onGridColumnsSelected = { preferencesManager.updateLibraryGridColumns(it) },
+            onDensitySelected = { preferencesManager.updateDensity(it) },
+            onDismiss = { showOptionsSheet = false }
         )
     }
 
@@ -1149,7 +1184,7 @@ private fun getFilterEmptyContent(filter: LibraryFilter): FilterEmptyContent {
         )
         LibraryFilter.DOWNLOADED -> FilterEmptyContent(
             icon = Icons.Rounded.CloudDownload,
-            color = Info,
+            color = StatusDownloaded,
             message = "No downloads yet",
             hint = "Download chapters to read offline"
         )
@@ -1428,7 +1463,7 @@ private fun getFilterColor(filter: LibraryFilter): Color {
     return when (filter) {
         LibraryFilter.ALL -> MaterialTheme.colorScheme.primary
         LibraryFilter.SPICY -> StatusSpicy
-        LibraryFilter.DOWNLOADED -> Info
+        LibraryFilter.DOWNLOADED -> StatusDownloaded
         LibraryFilter.READING -> StatusReading
         LibraryFilter.COMPLETED -> StatusCompleted
         LibraryFilter.ON_HOLD -> StatusOnHold
