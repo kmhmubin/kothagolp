@@ -346,7 +346,15 @@ class NovelFireProvider : MainProvider() {
 
     override suspend fun loadChapterContent(url: String): String? {
         val fullUrl = if (url.startsWith("http")) url else "$mainUrl/$url"
-        val document = get(fullUrl).document
+        // Chapter pages serve a JS "Loading..." bot gate to mobile user agents;
+        // a desktop UA receives the real content directly.
+        val document = get(
+            fullUrl,
+            mapOf(
+                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+            )
+        ).document
         val contentElement = document.selectFirst(Selectors.chapterContent) ?: return null
         contentElement.select(
             ".ads, .adsbygoogle, script, style, .ads-holder, .ads-middle, " +

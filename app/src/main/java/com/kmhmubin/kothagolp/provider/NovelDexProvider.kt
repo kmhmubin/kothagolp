@@ -190,12 +190,15 @@ class NovelDexProvider : MainProvider() {
                 val publishedAt = obj.optString("publishedAt", null)
                 val isLocked = obj.optBoolean("isLocked", false)
                 val prefix = if (isLocked) "🔒 " else ""
-                Chapter(
+                number to Chapter(
                     name = "$prefix$chTitle",
                     url = "$mainUrl/series/$typeSegment/$slug/chapter/$number",
                     dateOfRelease = publishedAt
                 )
-            }.sortedBy { it.url }
+            }
+                // Numeric order — sorting by url put chapter 10 before chapter 2
+                .sortedBy { it.first }
+                .map { it.second }
         } catch (_: Throwable) { emptyList() }
     }
 
