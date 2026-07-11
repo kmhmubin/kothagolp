@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Adaptive icon foreground. The 108dp canvas is masked by launchers to
+    at most a 66dp-diameter circle (the safe zone), so the artwork must be
+    inset 22dp per side to survive circle/squircle/teardrop OEM masks.
+-->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:drawable="@drawable/ic_launcher_icon_transparent"
-        android:left="14dp"
-        android:right="14dp"
-        android:top="14dp"
-        android:bottom="14dp" />
+        android:left="22dp"
+        android:right="22dp"
+        android:top="22dp"
+        android:bottom="22dp" />
 </layer-list>
