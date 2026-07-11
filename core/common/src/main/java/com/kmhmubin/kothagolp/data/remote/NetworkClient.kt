@@ -1,7 +1,11 @@
 package com.kmhmubin.kothagolp.data.remote
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.FormBody
@@ -10,6 +14,10 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import java.io.IOException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.util.concurrent.ConcurrentHashMap
@@ -159,6 +167,26 @@ object NetworkClient {
     private fun okhttp3.Headers.toMap(): Map<String, String> =
         (0 until size).associate { name(it) to value(it) }
 
+    /**
+     * Cancellation-cooperative call execution. The previous blocking
+     * execute() kept downloading and parsing after the caller's coroutine
+     * was cancelled (e.g. user backs out of a loading source), stealing
+     * IO threads and CPU from the screen the user actually moved to.
+     * Cancelling the coroutine now cancels the OkHttp call and socket.
+     */
+    private suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
+        enqueue(object : Callback {
+            override fun onResponse(call: Call, response: Response) {
+                cont.resume(response)
+            }
+
+            override fun onFailure(call: Call, e: IOException) {
+                if (!cont.isCancelled) cont.resumeWithException(e)
+            }
+        })
+        cont.invokeOnCancellation { cancel() }
+    }
+
     // ========================================================================
     // Public API
     // ========================================================================
@@ -169,7 +197,7 @@ object NetworkClient {
                 val request = Request.Builder().url(url).get()
                     .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                     .build()
-                val response = httpClient.newCall(request).execute()
+                val response = httpClient.newCall(request).await()
                 val body = response.body?.string() ?: ""
                 val responseHeaders = response.headers
                 val code = response.code
@@ -178,13 +206,14 @@ object NetworkClient {
                 if (isCloudflareChallenge(code, body)) {
                     val solved = CloudflareWebViewSolver.solve(url)
                     if (solved) {
-                        return@withContext httpClient.newCall(request).execute().use { retry ->
+                        return@withContext httpClient.newCall(request).await().use { retry ->
                             val retryBody = retry.body?.string() ?: ""
                             buildResponse(retry.code, retryBody, url, retry.headers)
                         }
                     }
                 }
 
+                ensureActive() // don't parse for a cancelled caller
                 buildResponse(code, body, url, responseHeaders)
             } catch (e: Exception) {
                 android.util.Log.e("NetworkClient", "GET failed: $url", e)
@@ -203,7 +232,7 @@ object NetworkClient {
                 .header("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
                 .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                 .build()
-            val response = httpClient.newCall(request).execute()
+            val response = httpClient.newCall(request).await()
             val body = response.body?.string() ?: ""
             val responseHeaders = response.headers
             val code = response.code
@@ -212,13 +241,14 @@ object NetworkClient {
             if (isCloudflareChallenge(code, body)) {
                 val solved = CloudflareWebViewSolver.solve(url)
                 if (solved) {
-                    return@withContext httpClient.newCall(request).execute().use { retry ->
+                    return@withContext httpClient.newCall(request).await().use { retry ->
                         val retryBody = retry.body?.string() ?: ""
                         buildResponse(retry.code, retryBody, url, retry.headers)
                     }
                 }
             }
 
+            ensureActive() // don't parse for a cancelled caller
             buildResponse(code, body, url, responseHeaders)
         } catch (e: Exception) {
             android.util.Log.e("NetworkClient", "POST failed: $url", e)
@@ -236,7 +266,7 @@ object NetworkClient {
             val request = Request.Builder().url(url).post(jsonBody.toRequestBody(mediaType))
                 .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                 .build()
-            val response = httpClient.newCall(request).execute()
+            val response = httpClient.newCall(request).await()
             val body = response.body?.string() ?: ""
             val responseHeaders = response.headers
             val code = response.code
@@ -245,13 +275,14 @@ object NetworkClient {
             if (isCloudflareChallenge(code, body)) {
                 val solved = CloudflareWebViewSolver.solve(url)
                 if (solved) {
-                    return@withContext httpClient.newCall(request).execute().use { retry ->
+                    return@withContext httpClient.newCall(request).await().use { retry ->
                         val retryBody = retry.body?.string() ?: ""
                         buildResponse(retry.code, retryBody, url, retry.headers)
                     }
                 }
             }
 
+            ensureActive() // don't parse for a cancelled caller
             buildResponse(code, body, url, responseHeaders)
         } catch (e: Exception) {
             android.util.Log.e("NetworkClient", "POST JSON failed: $url", e)
@@ -265,7 +296,7 @@ object NetworkClient {
                 val request = Request.Builder().url(url).get()
                     .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                     .build()
-                httpClient.newCall(request).execute().use { response ->
+                httpClient.newCall(request).await().use { response ->
                     if (!response.isSuccessful) throw NetworkException("Download failed: HTTP ${response.code}")
                     response.body?.bytes() ?: throw NetworkException("Empty response body")
                 }
@@ -283,7 +314,7 @@ object NetworkClient {
                 val request = Request.Builder().url(url).head()
                     .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                     .build()
-                httpClient.newCall(request).execute().use { it.isSuccessful }
+                httpClient.newCall(request).await().use { it.isSuccessful }
             } catch (e: Exception) {
                 false
             }
@@ -295,7 +326,7 @@ object NetworkClient {
                 val request = Request.Builder().url(url).get()
                     .also { b -> headers.forEach { (k, v) -> b.header(k, v) } }
                     .build()
-                httpClient.newCall(request).execute().use { response ->
+                httpClient.newCall(request).await().use { response ->
                     if (!response.isSuccessful) throw NetworkException("HTTP ${response.code}")
                     response.body?.string() ?: ""
                 }
