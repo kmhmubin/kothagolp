@@ -162,16 +162,20 @@ class NovelBuddyProvider : MainProvider() {
         val parts = url.split("~~")
         // New-format URLs carry titleId/chapterId after ~~
         parts.getOrNull(1)?.let { ids ->
-            fetchChapterContent(ids)?.let { return it }
+            val titleId = ids.substringBefore("/")
+            val chapterId = ids.substringAfter("/", "")
+            if (titleId.isNotBlank() && chapterId.isNotBlank()) {
+                fetchChapterContent(titleId, chapterId)?.let { return it }
+            }
         }
         // Legacy URLs (saved before the site redesign): resolve ids from the
         // novel page, then match the chapter by slug via the chapters API.
         return loadContentFromLegacyUrl(parts[0])
     }
 
-    private suspend fun fetchChapterContent(ids: String): String? {
+    private suspend fun fetchChapterContent(titleId: String, chapterId: String): String? {
         return try {
-            val json = JSONObject(get("$apiUrl/titles/$ids", jsonHeaders).text)
+            val json = JSONObject(get("$apiUrl/titles/$titleId/chapters/$chapterId", jsonHeaders).text)
             json.optJSONObject("data")
                 ?.optJSONObject("chapter")
                 ?.optString("content", null)
@@ -182,7 +186,10 @@ class NovelBuddyProvider : MainProvider() {
 
     private suspend fun loadContentFromLegacyUrl(pageUrl: String): String? {
         return try {
-            val path = pageUrl.removePrefix(mainUrl).trim('/')
+            // Strip scheme+host generically: saved URLs may still use the old .io domain
+            val path = pageUrl
+                .replace(Regex("^https?://[^/]+"), "")
+                .trim('/')
             val segments = path.split("/")
             if (segments.size < 2) return null
             val novelSlug = segments[0]
@@ -201,7 +208,7 @@ class NovelBuddyProvider : MainProvider() {
                 val obj = chaptersArray.optJSONObject(i) ?: continue
                 if (obj.optString("slug", null) == chapterSlug) {
                     val chapterId = obj.optString("id", null) ?: return null
-                    return fetchChapterContent("$novelId/$chapterId")
+                    return fetchChapterContent(novelId, chapterId)
                 }
             }
             null
