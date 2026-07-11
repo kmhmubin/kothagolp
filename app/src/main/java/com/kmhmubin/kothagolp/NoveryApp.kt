@@ -22,6 +22,7 @@ import com.kmhmubin.kothagolp.provider.LightNovelWorldProvider
 import com.kmhmubin.kothagolp.provider.LnoriProvider
 import com.kmhmubin.kothagolp.provider.MainProvider
 import com.kmhmubin.kothagolp.provider.NovelArchiveProvider
+import com.kmhmubin.kothagolp.provider.NovelArrowProvider
 import com.kmhmubin.kothagolp.provider.NovelBinProvider
 import com.kmhmubin.kothagolp.provider.NovelBuddyProvider
 import com.kmhmubin.kothagolp.provider.NovelDexProvider
@@ -88,8 +89,7 @@ class KothagolpApp : Application() {
         MainProvider.register(LnoriProvider())
         MainProvider.register(NovelArchiveProvider())
         MainProvider.register(NovelBinProvider())
-        // NovelBin rebranded to NovelArrow; keep old library entries resolving
-        MainProvider.registerAlias(legacyName = "NovelBin", currentName = "NovelArrow")
+        MainProvider.register(NovelArrowProvider())
         MainProvider.register(NovelBuddyProvider())
         MainProvider.register(NovelDexProvider())
         MainProvider.register(NovelFireProvider())
