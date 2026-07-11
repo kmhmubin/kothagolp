@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.ui.screens.home
 
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.SaveableStateHolder
@@ -83,18 +85,26 @@ fun HomeScreen(
         currentTabIndex = HomeTabs.LIBRARY.ordinal
     }
 
-    // Incremented when the Library nav button is pressed while already on Library —
-    // LibraryTab observes this to open its options sheet (Komikku behavior).
-    // Deliberately plain remember (not saveable): a persisted value would replay
-    // and reopen the sheet after returning from another screen.
+    // Incremented on a Library nav double-tap — LibraryTab observes this to open
+    // its options sheet (Komikku behavior). Deliberately plain remember (not
+    // saveable): a persisted value would replay and reopen the sheet after
+    // returning from another screen.
     var libraryOptionsRequestId by remember { mutableIntStateOf(0) }
+    var lastLibraryPressAt by remember { mutableLongStateOf(0L) }
 
     fun onTabSelected(route: String) {
         HomeTabs.fromRoute("tab_$route")?.let { tab ->
-            // Read currentTabIndex (live snapshot state), not the derived
-            // currentTab val, which can be stale inside a click closure.
-            if (tab == HomeTabs.LIBRARY && currentTabIndex == HomeTabs.LIBRARY.ordinal) {
-                libraryOptionsRequestId++
+            if (tab == HomeTabs.LIBRARY) {
+                // True double-tap: two Library presses within the window.
+                // Consuming the timestamp resets the gesture after each open,
+                // so the next single press never re-triggers the sheet.
+                val now = SystemClock.uptimeMillis()
+                if (now - lastLibraryPressAt <= 600L) {
+                    libraryOptionsRequestId++
+                    lastLibraryPressAt = 0L
+                } else {
+                    lastLibraryPressAt = now
+                }
             }
             currentTabIndex = tab.ordinal
         }
