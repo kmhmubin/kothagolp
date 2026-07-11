@@ -1145,6 +1145,15 @@ private fun BehaviorSettingsContent(
     onSettingsChange: (ReaderSettings) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        SettingSectionCard(title = "Content") {
+            ToggleSetting(
+                title = "Remove Bloat",
+                subtitle = "Strip duplicated titles and translator credits from chapters",
+                checked = settings.removeBloat,
+                onCheckedChange = { onSettingsChange(settings.copy(removeBloat = it)) }
+            )
+        }
+
         SettingSectionCard(title = "Screen") {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ToggleSetting(
