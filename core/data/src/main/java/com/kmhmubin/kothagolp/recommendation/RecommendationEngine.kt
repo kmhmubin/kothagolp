@@ -349,7 +349,7 @@ class RecommendationEngine(
             url.contains("novelfire") -> "NovelFire"
             url.contains("royalroad") -> "Royal Road"
             url.contains("webnovel") -> "Webnovel"
-            url.contains("novelbin") -> "NovelBin"
+            url.contains("novelbin") || url.contains("novelarrow") -> "NovelArrow"
             url.contains("libread") -> "LibRead"
             url.contains("novelsonline") -> "NovelsOnline"
             else -> "Unknown"

@@ -11,8 +11,9 @@ import org.json.JSONObject
 
 /**
  * NovelBin rebranded to NovelArrow (novelbin.com -> novelarrow.com) and moved
- * to a Next.js app with a JSON API under /api-web. The provider keeps the
- * "NovelBin" name so existing library entries (keyed by apiName) stay valid.
+ * to a Next.js app with a JSON API under /api-web. The provider follows the
+ * rebrand; a "NovelBin" alias registered at startup keeps existing library
+ * entries (keyed by apiName) resolving to this provider.
  *
  * API map (all GET, JSON):
  *  - browse/search: /api-web/novels?page=N[&keyword=][&genre=][&status=]
@@ -24,7 +25,7 @@ import org.json.JSONObject
  */
 class NovelBinProvider : MainProvider() {
 
-    override val name = "NovelBin"
+    override val name = "NovelArrow"
     override val mainUrl = "https://novelarrow.com"
     override val iconRes = R.drawable.ic_provider_novelbin
     override val hasMainPage = true

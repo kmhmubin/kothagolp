@@ -169,11 +169,21 @@ abstract class MainProvider {
             providersFlow.value = providers.toList()
         }
 
+        /** Legacy provider names -> current names, for sources that rebranded. */
+        private val nameAliases = mutableMapOf<String, String>()
+
+        @Synchronized
+        fun registerAlias(legacyName: String, currentName: String) {
+            nameAliases[legacyName] = currentName
+        }
+
         @Synchronized
         fun getProviders(): List<MainProvider> = providers.toList()
 
         @Synchronized
-        fun getProvider(name: String): MainProvider? = providers.find { it.name == name }
+        fun getProvider(name: String): MainProvider? =
+            providers.find { it.name == name }
+                ?: nameAliases[name]?.let { current -> providers.find { it.name == current } }
 
         fun providersState(): kotlinx.coroutines.flow.StateFlow<List<MainProvider>> = providersFlow
 
