@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
@@ -16,7 +17,7 @@ class NovelFireProvider : MainProvider() {
 
     override val name = "NovelFire"
     override val mainUrl = "https://novelfire.net"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=novelfire.net&sz=64"
+    override val iconRes = R.drawable.ic_provider_novelfire
     override val hasMainPage = true
 
     override val tags = listOf(

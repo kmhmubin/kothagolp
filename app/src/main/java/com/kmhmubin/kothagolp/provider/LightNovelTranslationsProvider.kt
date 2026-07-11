@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
@@ -11,7 +12,7 @@ class LightNovelTranslationsProvider : MainProvider() {
 
     override val name = "Light Novel Translations"
     override val mainUrl = "https://lightnovelstranslations.com"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=lightnovelstranslations.com&sz=64"
+    override val iconRes = R.drawable.ic_provider_lightnoveltranslations
     override val hasMainPage = true
 
     override val orderBys = listOf(

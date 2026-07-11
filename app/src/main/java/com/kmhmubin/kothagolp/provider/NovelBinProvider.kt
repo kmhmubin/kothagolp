@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
@@ -16,7 +17,7 @@ class NovelBinProvider : MainProvider() {
 
     override val name = "NovelBin"
     override val mainUrl = "https://novelbin.com"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=novelbin.com&sz=64"
+    override val iconRes = R.drawable.ic_provider_novelbin
     override val hasMainPage = true
 
     private val searchInterval = 3400L
