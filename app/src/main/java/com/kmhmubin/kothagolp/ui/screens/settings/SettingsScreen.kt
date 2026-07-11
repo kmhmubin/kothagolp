@@ -65,6 +65,7 @@ import androidx.compose.material.icons.rounded.Battery5Bar
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.outlined.AllInclusive
+import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.Bookmark
@@ -967,6 +968,7 @@ fun SettingsReaderPrefsScreen(
 ) {
     val preferencesManager = remember { RepositoryProvider.getPreferencesManager() }
     val settings by preferencesManager.appSettings.collectAsStateWithLifecycle()
+    val readerSettings by preferencesManager.readerSettings.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -1010,6 +1012,16 @@ fun SettingsReaderPrefsScreen(
                         checked = settings.infiniteScroll,
                         onCheckedChange = {
                             preferencesManager.updateAppSettings(settings.copy(infiniteScroll = it))
+                        }
+                    )
+                    SettingsDivider()
+                    ToggleItem(
+                        icon = Icons.Outlined.CleaningServices,
+                        title = "Remove Bloat",
+                        subtitle = "Strip duplicated titles and translator credits from chapters",
+                        checked = readerSettings.removeBloat,
+                        onCheckedChange = {
+                            preferencesManager.updateReaderSettings(readerSettings.copy(removeBloat = it))
                         }
                     )
                     SettingsDivider()
