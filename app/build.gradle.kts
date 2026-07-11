@@ -186,6 +186,10 @@ dependencies {
 
     implementation("androidx.core:core-splashscreen:1.0.1")
 
+    // Installs Compose/library baseline profiles at install time so ART
+    // AOT-compiles hot paths — big scroll-smoothness win on low-end devices
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
