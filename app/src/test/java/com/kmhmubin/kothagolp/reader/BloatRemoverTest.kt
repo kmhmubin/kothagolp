@@ -93,6 +93,32 @@ class BloatRemoverTest {
     }
 
     @Test
+    fun `strips combined and note-style credit lines`() {
+        val html = """
+            <p>Translator/Editor: ComboGuy</p>
+            <p>Raw/Consultant: RawGuy</p>
+            <p>TL &amp; ED: TeamGuy</p>
+            <p>Editor Notes: fixed some typos this week</p>
+            <p>Translator's Note: names use pinyin</p>
+            <p>The real chapter text continues here.</p>
+        """.trimIndent()
+        val out = BloatRemover.strip(html, null)
+        assertFalse(out.contains("ComboGuy"))
+        assertFalse(out.contains("RawGuy"))
+        assertFalse(out.contains("TeamGuy"))
+        assertFalse(out.contains("fixed some typos"))
+        assertFalse(out.contains("pinyin"))
+        assertTrue(out.contains("real chapter text"))
+    }
+
+    @Test
+    fun `words merely starting with a role prefix are kept`() {
+        val html = "<p>Transformation: the ancient art he studied for years, was finally complete.</p>"
+        val out = BloatRemover.strip(html, null)
+        assertTrue(out.contains("ancient art"))
+    }
+
+    @Test
     fun `prose paragraph starting with chapter word is kept`() {
         val long = "Chapter 3 had been the hardest week of his life, he thought, " +
             "as he stared out over the ruined city and remembered everything that led here."

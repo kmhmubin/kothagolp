@@ -17,13 +17,20 @@ import org.jsoup.nodes.Element
 object BloatRemover {
 
     private const val ROLES =
-        "translator|translated by|translation|trans|editor|edited by|" +
-            "proofreader|proofread by|proofer|quality checker|quality check|" +
-            "checker|qc|tl|tlc|ed|pr|raw provider|raws|raw|scheduler|typesetter"
+        "translators?|translated by|translation|trans|editors?|edited by|" +
+            "editor'?s? notes?|translator'?s? notes?|proofreaders?|proofread by|" +
+            "proofer|quality checkers?|quality check|checkers?|consultants?|" +
+            "qc|tl|tlc|t/n|tn|e/n|ed|pr|raw providers?|raw consultants?|raws?|" +
+            "schedulers?|typesetters?|sponsors?|sponsored by"
 
-    /** Credit line: optionally decorated block starting with a role label + colon. */
+    /**
+     * Credit line: optionally decorated block starting with one or more
+     * slash/ampersand-combined role labels followed by a colon —
+     * "Translator: X", "Translator/Editor: X", "Raw/Consultant: Y",
+     * "Editor Notes: ...", "TL & ED: Z".
+     */
     private val creditLineRegex = Regex(
-        "^\\s*[\\[({\\-–—~*_•>«\"']*\\s*($ROLES)\\s*[:：]",
+        "^\\s*[\\[({\\-–—~*_•>«\"']*\\s*($ROLES)(\\s*[/&+,]\\s*($ROLES))*\\s*[:：]",
         RegexOption.IGNORE_CASE
     )
 
