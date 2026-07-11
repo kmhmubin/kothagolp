@@ -87,43 +87,44 @@ jobs:
             echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Build release notes from CHANGELOG.md
+        id: notes
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          VER="${TAG#v}"
+          # Extract the section for this version: from "## [VER]" up to the next "## ["
+          SECTION=$(awk -v ver="$VER" '
+            $0 ~ "^## \\[" ver "\\]" {grab=1; next}
+            grab && /^## \[/ {exit}
+            grab {print}
+          ' CHANGELOG.md)
+          if [ -z "$SECTION" ]; then
+            SECTION="See CHANGELOG.md for details."
+          fi
+          {
+            echo "body<<RELEOF"
+            echo "## Kothagolp $TAG"
+            echo ""
+            echo "$SECTION"
+            echo "---"
+            echo ""
+            echo "### Download the right APK for your device"
+            echo ""
+            echo "| APK | Device |"
+            echo "|-----|--------|"
+            echo "| \`arm64-v8a\` | Most Android phones (2017 and newer) ✅ recommended |"
+            echo "| \`armeabi-v7a\` | Older Android phones (pre-2017) |"
+            echo "| \`x86_64\` | Android emulators / Intel tablets |"
+            echo "| \`universal\` | If unsure — works on all devices (larger file) |"
+            echo "RELEOF"
+          } >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: "Kothagolp ${{ steps.tag.outputs.tag }}"
-          body: |
-            ## Kothagolp ${{ steps.tag.outputs.tag }}
-
-            ### What's new
-
-            **AI Recommendations — OpenRouter powered**
-            - Add your free [OpenRouter](https://openrouter.ai) API key in Settings → Recommendation Engine to unlock AI picks
-            - Two AI sections on the For You tab: **Based on Your Reading** (personalized) and **Trending AI Picks** (globally popular)
-            - Personalized picks are skipped if you haven't read anything yet — no empty recommendations
-            - AI picks auto-load when you open the tab or return from settings — no manual trigger needed
-            - Model picker: choose from 100+ models (free and paid) with live list, FREE badges, and curated "recommended" stars
-            - Recommended models pre-selected for novel recommendation quality (Gemini 2.0 Flash, Llama 3.3 70B, DeepSeek R1, and more)
-            - Actionable rate-limit messages distinguish daily limit vs per-minute throttle
-            - Switching models bypasses the error cooldown — new model always gets an immediate attempt
-            - AI recommendation cards now match the app's existing card style (cover image, same dimensions and layout)
-
-            **Settings reorganization**
-            - Settings menu split into three labeled groups: **Personalization**, **Content & Reading**, **System**
-            - For You renamed to **Recommendation Engine** in settings
-            - **Data** renamed to **Backup & Sync** with updated icon and subtitle
-
-            ---
-
-            ### Download the right APK for your device
-
-            | APK | Device |
-            |-----|--------|
-            | `arm64-v8a` | Most Android phones (2017 and newer) ✅ recommended |
-            | `armeabi-v7a` | Older Android phones (pre-2017) |
-            | `x86_64` | Android emulators / Intel tablets |
-            | `universal` | If unsure — works on all devices (larger file) |
-
+          body: ${{ steps.notes.outputs.body }}
           files: release-assets/*.apk
           draft: false
           prerelease: false

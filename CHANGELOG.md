@@ -1,5 +1,27 @@
 # Changelog
 
+## [3.12.2] — 2026-07-12
+
+### Added
+
+- **Remove Bloat (Reader)** — New toggle in Settings → Reader that strips per-chapter noise from every page: the chapter title duplicated inside the content and translator / editor / proofreader / quality-checker credit lines (including combined labels like "Translator/Editor:" and note-style lines). Cleans reading and TTS alike; off by default
+- **Bundled source icons** — All source icons now ship inside the app in high quality instead of being fetched from the web each time. Source lists and headers render instantly with zero network use
+- **NovelArrow** — Added as a new source (novelarrow.com)
+
+### Fixed
+
+- **NovelBuddy** — Followed the move to novelbuddy.me and rebuilt chapter loading for their site redesign; chapters open again. Old library entries keep working
+- **NovelBin** — Restored at its new home novel-bin.com after the old domain went offline; browsing, details, full chapter lists, and reading all work again
+- **NovelFire** — Chapters no longer fail to open (the site was serving a "Loading…" bot page to the app)
+- **NovelDex** — Chapter list now sorts in correct numeric order (chapter 2 before chapter 10)
+- **Reader crash on image-heavy chapters** — Novels with large embedded illustrations (e.g. Lnori) no longer crash the app while rendering; image decode size is now capped
+- **App icon** — Fixed the icon appearing cropped or zoomed on devices with circular / squircle launcher masks
+
+### Performance
+
+- **Smooth scrolling on low-end devices** — Ship Compose baseline profiles so the app AOT-compiles hot paths at install time; measured scroll jank dropped from ~10% to under 1% on a low-end test device
+- **Faster source switching** — Backing out of a loading source now cancels its network request immediately instead of letting it finish in the background, so opening a second source no longer stutters while the first keeps working
+
 ## [3.12.1] — 2026-07-11
 
 ### Added
