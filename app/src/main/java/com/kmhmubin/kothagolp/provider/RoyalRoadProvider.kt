@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
@@ -14,7 +15,7 @@ class RoyalRoadProvider : MainProvider() {
 
     override val name = "Royal Road"
     override val mainUrl = "https://www.royalroad.com"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=royalroad.com&sz=64"
+    override val iconRes = R.drawable.ic_provider_royalroad
     override val hasMainPage = true
     override val rateLimitTime: Long = 500L
 

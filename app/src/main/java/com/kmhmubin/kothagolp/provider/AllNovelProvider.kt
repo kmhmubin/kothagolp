@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
@@ -14,7 +15,7 @@ class AllNovelProvider : MainProvider() {
 
     override val name = "AllNovel"
     override val mainUrl = "https://allnovel.org"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=allnovel.org&sz=64"
+    override val iconRes = R.drawable.ic_provider_allnovel
     override val hasMainPage = true
 
     override val tags = listOf(

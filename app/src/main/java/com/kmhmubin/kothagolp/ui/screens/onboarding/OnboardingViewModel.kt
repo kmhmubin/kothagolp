@@ -72,7 +72,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         return when (name) {
             "Royal Road" -> "Western web fiction with strong LitRPG & progression fantasy"
             "NovelFire" -> "Large collection of translated & original novels"
-            "NovelBin" -> "Diverse selection of light novels & web novels"
+            "NovelArrow" -> "Diverse selection of light novels & web novels"
             "Webnovel" -> "Premium platform with exclusive titles"
             "LibRead" -> "Free light novel & web novel library"
             "NovelsOnline" -> "Extensive catalog of translated novels"
@@ -84,7 +84,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         return when (name) {
             "Royal Road" -> "15,000+ novels"
             "NovelFire" -> "50,000+ novels"
-            "NovelBin" -> "30,000+ novels"
+            "NovelArrow" -> "30,000+ novels"
             "Webnovel" -> "100,000+ novels"
             "LibRead" -> "40,000+ novels"
             "NovelsOnline" -> "20,000+ novels"
@@ -96,7 +96,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         return when (name) {
             "Royal Road" -> listOf("LitRPG", "Progression", "Fantasy")
             "NovelFire" -> listOf("Cultivation", "Romance", "Fantasy")
-            "NovelBin" -> listOf("Light Novel", "Isekai", "Fantasy")
+            "NovelArrow" -> listOf("Light Novel", "Isekai", "Fantasy")
             "Webnovel" -> listOf("Romance", "Fantasy", "Urban")
             "LibRead" -> listOf("Fantasy", "Romance", "Isekai")
             "NovelsOnline" -> listOf("Cultivation", "Martial Arts", "Fantasy")

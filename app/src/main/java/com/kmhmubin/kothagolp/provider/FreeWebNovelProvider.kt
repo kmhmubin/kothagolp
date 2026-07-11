@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
@@ -14,7 +15,7 @@ class FreeWebNovelProvider : MainProvider() {
 
     override val name = "FreeWebNovel"
     override val mainUrl = "https://freewebnovel.com"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=freewebnovel.com&sz=64"
+    override val iconRes = R.drawable.ic_provider_freewebnovel
     override val hasMainPage = true
 
     override val tags = listOf(

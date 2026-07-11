@@ -64,11 +64,26 @@ fun ChapterImageItem(
 
     // Track if we've determined the actual image size
     var hasLoadedSize by remember { mutableStateOf(false) }
-    var imageAspectRatio by remember { mutableStateOf(16f / 9f) } // Default aspect ratio
 
     // Use a STABLE minimum height to prevent layout shifts
     // Only update size AFTER image loads to avoid jarring shifts
     val stableHeight = remember { 200.dp } // Fixed stable height during loading
+
+    val context = LocalContext.current
+    // Sources like Lnori embed full-print illustrations (1700x2600+, ~18MB
+    // decoded each, dozens per book). Cap the decode size and keep bitmaps in
+    // software so large images can't OOM or crash hardware-bitmap draws.
+    val imageRequest = remember(resolvedUrl, refererUrl) {
+        ImageRequest.Builder(context)
+            .data(resolvedUrl)
+            .size(coil.size.Size(1080, 1600))
+            .scale(coil.size.Scale.FIT)
+            .allowHardware(false)
+            .crossfade(false) // Disable crossfade to reduce layout changes
+            .addHeader("Referer", refererUrl)
+            .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
+            .build()
+    }
 
     Box(
         modifier = Modifier
@@ -92,12 +107,7 @@ fun ChapterImageItem(
         contentAlignment = Alignment.Center
     ) {
         AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(resolvedUrl)
-                .crossfade(false) // Disable crossfade to reduce layout changes
-                .addHeader("Referer", refererUrl)
-                .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
-                .build(),
+            model = imageRequest,
             contentDescription = image.altText ?: "Chapter image",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit,
@@ -176,11 +186,20 @@ fun ImageViewerDialog(
                 .clickable { onDismiss() },
             contentAlignment = Alignment.Center
         ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
+            val context = LocalContext.current
+            val viewerRequest = remember(imageUrl) {
+                ImageRequest.Builder(context)
                     .data(imageUrl)
+                    // Higher cap than inline images for zoom quality, still
+                    // bounded so print-resolution scans can't OOM
+                    .size(coil.size.Size(1600, 2560))
+                    .scale(coil.size.Scale.FIT)
+                    .allowHardware(false)
                     .crossfade(true)
-                    .build(),
+                    .build()
+            }
+            AsyncImage(
+                model = viewerRequest,
                 contentDescription = "Full size image",
                 modifier = Modifier
                     .fillMaxWidth()

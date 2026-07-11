@@ -88,6 +88,8 @@ class KothagolpApp : Application() {
         MainProvider.register(LnoriProvider())
         MainProvider.register(NovelArchiveProvider())
         MainProvider.register(NovelBinProvider())
+        // NovelBin rebranded to NovelArrow; keep old library entries resolving
+        MainProvider.registerAlias(legacyName = "NovelBin", currentName = "NovelArrow")
         MainProvider.register(NovelBuddyProvider())
         MainProvider.register(NovelDexProvider())
         MainProvider.register(NovelFireProvider())

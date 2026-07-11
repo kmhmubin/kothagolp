@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
@@ -14,7 +15,7 @@ class NovelBuddyProvider : MainProvider() {
     override val name = "Novel Buddy"
     override val mainUrl = "https://novelbuddy.me"
     private val apiUrl = "https://api.novelbuddy.me"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=novelbuddy.me&sz=64"
+    override val iconRes = R.drawable.ic_provider_novelbuddy
     override val hasMainPage = true
 
     private val jsonHeaders = mapOf("Accept" to "application/json")

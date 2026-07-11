@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
@@ -17,7 +18,7 @@ class FenrirRealmProvider : MainProvider() {
 
     override val name = "Fenrir Realm"
     override val mainUrl = "https://fenrirealm.com"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=fenrirealm.com&sz=64"
+    override val iconRes = R.drawable.ic_provider_fenrirrealm
     override val hasMainPage = true
 
     private val apiBase = "$mainUrl/api/new/v2"

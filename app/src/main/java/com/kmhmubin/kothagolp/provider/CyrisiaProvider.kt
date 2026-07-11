@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterOption
 import com.kmhmubin.kothagolp.domain.model.MainPageResult
@@ -18,7 +19,7 @@ class CyrisiaProvider : MainProvider() {
 
     override val name = "Cyrisia"
     override val mainUrl = "https://cyrisia.com"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=cyrisia.com&sz=64"
+    override val iconRes = R.drawable.ic_provider_cyrisia
     override val hasMainPage = true
 
     override val orderBys = listOf(

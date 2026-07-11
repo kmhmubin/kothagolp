@@ -290,7 +290,7 @@ class QuickNovelBackupConverter {
      */
     private fun mapApiName(apiName: String): String {
         return when (apiName.lowercase()) {
-            "novelbin" -> "NovelBin"
+            "novelbin" -> "NovelArrow"
             "libread" -> "LibRead"
             "webnovel" -> "WebNovel"
             "royal road", "royalroad" -> "RoyalRoad"

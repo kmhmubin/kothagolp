@@ -1,5 +1,6 @@
 package com.kmhmubin.kothagolp.provider
 
+import com.kmhmubin.kothagolp.R
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.FilterGroup
 import com.kmhmubin.kothagolp.domain.model.FilterOption
@@ -18,7 +19,7 @@ class WebnovelProvider : MainProvider() {
 
     override val name = "Webnovel"
     override val mainUrl = "https://www.webnovel.com"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=webnovel.com&sz=64"
+    override val iconRes = R.drawable.ic_provider_webnovel
     override val hasMainPage = true
 
     private val csrfToken = AtomicReference<String?>(null)
