@@ -12,9 +12,9 @@ import org.json.JSONObject
 class NovelBuddyProvider : MainProvider() {
 
     override val name = "Novel Buddy"
-    override val mainUrl = "https://novelbuddy.io"
-    private val apiUrl = "https://api.novelbuddy.io"
-    override val iconUrl = "https://www.google.com/s2/favicons?domain=novelbuddy.io&sz=64"
+    override val mainUrl = "https://novelbuddy.me"
+    private val apiUrl = "https://api.novelbuddy.me"
+    override val iconUrl = "https://www.google.com/s2/favicons?domain=novelbuddy.me&sz=64"
     override val hasMainPage = true
 
     private val jsonHeaders = mapOf("Accept" to "application/json")
@@ -141,34 +141,70 @@ class NovelBuddyProvider : MainProvider() {
                 val obj = chaptersArray.optJSONObject(i) ?: return@mapNotNull null
                 val name = obj.optString("name", null) ?: return@mapNotNull null
                 val chUrl = obj.optString("url", null) ?: return@mapNotNull null
+                val chapterId = obj.optString("id", null) ?: return@mapNotNull null
                 val chFullUrl = when {
                     chUrl.startsWith("http") -> chUrl
                     else -> "$mainUrl/${chUrl.trimStart('/')}"
                 }
                 val date = obj.optString("updated_at", null)
-                Chapter(name = name, url = chFullUrl, dateOfRelease = date)
+                val number = obj.optInt("number", i + 1)
+                // Chapter content now lives behind the API and needs both ids;
+                // embed them in the stored URL (same ~~ scheme as FenrirRealm).
+                Triple(number, date, Chapter(name = name, url = "$chFullUrl~~$novelId/$chapterId", dateOfRelease = date))
             }
+                // API returns newest-first since the redesign; app expects ascending
+                .sortedBy { it.first }
+                .map { it.third }
         } catch (_: Throwable) { emptyList() }
     }
 
     override suspend fun loadChapterContent(url: String): String? {
-        val fullUrl = if (url.startsWith("http")) url else "$mainUrl/${url.trimStart('/')}"
-        val document = get(fullUrl).document
-
-        val script = document.selectFirstOrNull("#__NEXT_DATA__")?.data()
-        if (script != null) {
-            try {
-                val json = JSONObject(script)
-                val content = json.optJSONObject("props")
-                    ?.optJSONObject("pageProps")
-                    ?.optJSONObject("initialChapter")
-                    ?.optString("content", null)
-                if (!content.isNullOrBlank()) return content.trim()
-            } catch (_: Throwable) {}
+        val parts = url.split("~~")
+        // New-format URLs carry titleId/chapterId after ~~
+        parts.getOrNull(1)?.let { ids ->
+            fetchChapterContent(ids)?.let { return it }
         }
+        // Legacy URLs (saved before the site redesign): resolve ids from the
+        // novel page, then match the chapter by slug via the chapters API.
+        return loadContentFromLegacyUrl(parts[0])
+    }
 
-        val contentEl = document.selectFirstOrNull(".chapter__content") ?: return null
-        contentEl.select("#listen-chapter, #google_translate_element, script, style").remove()
-        return contentEl.html().trim().takeIf { it.isNotBlank() }
+    private suspend fun fetchChapterContent(ids: String): String? {
+        return try {
+            val json = JSONObject(get("$apiUrl/titles/$ids", jsonHeaders).text)
+            json.optJSONObject("data")
+                ?.optJSONObject("chapter")
+                ?.optString("content", null)
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+        } catch (_: Throwable) { null }
+    }
+
+    private suspend fun loadContentFromLegacyUrl(pageUrl: String): String? {
+        return try {
+            val path = pageUrl.removePrefix(mainUrl).trim('/')
+            val segments = path.split("/")
+            if (segments.size < 2) return null
+            val novelSlug = segments[0]
+            val chapterSlug = segments[1]
+
+            val document = get("$mainUrl/$novelSlug").document
+            val scriptData = document.selectFirstOrNull("#__NEXT_DATA__")?.data() ?: return null
+            val novelId = JSONObject(scriptData)
+                .optJSONObject("props")?.optJSONObject("pageProps")
+                ?.optJSONObject("initialManga")?.optString("id", null)
+                ?: return null
+
+            val chaptersJson = JSONObject(get("$apiUrl/titles/$novelId/chapters", jsonHeaders).text)
+            val chaptersArray = chaptersJson.optJSONObject("data")?.optJSONArray("chapters") ?: return null
+            for (i in 0 until chaptersArray.length()) {
+                val obj = chaptersArray.optJSONObject(i) ?: continue
+                if (obj.optString("slug", null) == chapterSlug) {
+                    val chapterId = obj.optString("id", null) ?: return null
+                    return fetchChapterContent("$novelId/$chapterId")
+                }
+            }
+            null
+        } catch (_: Throwable) { null }
     }
 }
