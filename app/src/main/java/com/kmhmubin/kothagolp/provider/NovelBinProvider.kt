@@ -62,8 +62,9 @@ class NovelBinProvider : MainProvider() {
         FilterOption("Yaoi", "Yaoi")
     )
 
+    // The homepage uses a different markup (index-novel) with no parseable
+    // rows, so every sort maps to a standard list page; default = Most Visited.
     override val orderBys = listOf(
-        FilterOption("Hot", ""),
         FilterOption("Most Visited", "allvisit"),
         FilterOption("Daily Top", "dayvisit"),
         FilterOption("Monthly Top", "monthvisit"),
@@ -109,9 +110,8 @@ class NovelBinProvider : MainProvider() {
     ): MainPageResult {
         val url = when {
             !tag.isNullOrBlank() -> "$mainUrl/genre/$tag/?page=$page"
-            orderBy.isNullOrBlank() -> "$mainUrl/?page=$page"
             orderBy == "full.html" -> "$mainUrl/full.html?page=$page"
-            else -> "$mainUrl/$orderBy/?page=$page"
+            else -> "$mainUrl/${orderBy?.takeIf { it.isNotBlank() } ?: "allvisit"}/?page=$page"
         }
         val document = get(url).document
         val novels = parseNovels(document)
