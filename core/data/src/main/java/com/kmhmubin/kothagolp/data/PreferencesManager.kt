@@ -490,7 +490,17 @@ class PreferencesManager(context: Context) {
         )
     }
 
-    fun updateAppSettings(settings: AppSettings) {
+    /**
+     * @param updatedAt when this value was actually authored. Defaults to now
+     * for genuine local edits. Sync restore must pass the timestamp the settings
+     * came from: stamping "now" onto values received from another device makes
+     * this device look like the most recent author, so its stale copy then wins
+     * the next last-write-wins comparison and silently reverts the real change.
+     */
+    fun updateAppSettings(
+        settings: AppSettings,
+        updatedAt: Long = System.currentTimeMillis()
+    ) {
         val sanitizedEnabledLibraryFilters = LibraryFilter.sanitizeEnabledShelves(
             settings.enabledLibraryFilters
         )
@@ -555,7 +565,7 @@ class PreferencesManager(context: Context) {
             putBoolean(KEY_CHAPTER_UPDATE_WIFI_ONLY, sanitizedSettings.chapterUpdateOnWifiOnly)
             putBoolean(KEY_CHAPTER_UPDATE_NOTIFY, sanitizedSettings.chapterUpdateNotify)
             putString(KEY_LOCAL_BACKUP_INTERVAL, sanitizedSettings.localBackupInterval.name)
-            putLong(KEY_APP_SETTINGS_UPDATED_AT, System.currentTimeMillis())
+            putLong(KEY_APP_SETTINGS_UPDATED_AT, updatedAt)
 
             apply()
         }
@@ -899,7 +909,11 @@ class PreferencesManager(context: Context) {
         )
     }
 
-    fun updateReaderSettings(settings: ReaderSettings) {
+    /** @param updatedAt see [updateAppSettings]; sync restore preserves the origin time. */
+    fun updateReaderSettings(
+        settings: ReaderSettings,
+        updatedAt: Long = System.currentTimeMillis()
+    ) {
         prefs.edit().apply {
             // Typography
             putInt(KEY_FONT_SIZE, settings.fontSize)
@@ -959,7 +973,7 @@ class PreferencesManager(context: Context) {
             putBoolean(KEY_FORCE_HIGH_CONTRAST, settings.forceHighContrast)
             putBoolean(KEY_REDUCE_MOTION, settings.reduceMotion)
             putBoolean(KEY_LARGER_TOUCH_TARGETS, settings.largerTouchTargets)
-            putLong(KEY_READER_SETTINGS_UPDATED_AT, System.currentTimeMillis())
+            putLong(KEY_READER_SETTINGS_UPDATED_AT, updatedAt)
 
             apply()
         }

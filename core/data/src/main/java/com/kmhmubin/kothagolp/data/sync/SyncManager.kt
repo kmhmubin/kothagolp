@@ -52,40 +52,71 @@ class SyncManager(
         SyncStatusTracker.start(trigger, "Preparing local backup")
 
         return try {
-            currentCoroutineContext().ensureActive()
-            val localBackup = backupManager.createBackup(selection.toBackupSelection())
-            val localPayload = SyncPayload(
-                syncedAt = System.currentTimeMillis(),
-                deviceId = preferencesManager.getUniqueDeviceId(),
-                backup = localBackup
-            )
+            // pull -> merge -> push is not atomic on Drive. If another device
+            // pushes between our pull and our push, a blind update drops its
+            // changes (classic lost update). The push therefore guards on the
+            // revision we merged from, and a conflict restarts the cycle with a
+            // fresh pull so the other device's data is merged in rather than
+            // overwritten.
+            var mergedPayload: SyncPayload? = null
+            var appliedRemote = false
 
-            SyncStatusTracker.update("Checking Google Drive")
-            currentCoroutineContext().ensureActive()
-            val remotePayload = googleDriveSyncService.pullSyncPayload()
+            for (attempt in 1..MAX_SYNC_ATTEMPTS) {
+                currentCoroutineContext().ensureActive()
+                val localBackup = backupManager.createBackup(selection.toBackupSelection())
+                val localPayload = SyncPayload(
+                    syncedAt = System.currentTimeMillis(),
+                    deviceId = preferencesManager.getUniqueDeviceId(),
+                    backup = localBackup
+                )
 
-            val mergedPayload = when {
-                remotePayload == null -> localPayload
-                else -> {
-                    SyncStatusTracker.update("Merging remote changes")
-                    currentCoroutineContext().ensureActive()
-                    SyncPayload(
-                        syncedAt = System.currentTimeMillis(),
-                        deviceId = localPayload.deviceId,
-                        backup = SyncBackupMerger.merge(localBackup, remotePayload.backup)
-                    )
+                SyncStatusTracker.update(
+                    if (attempt == 1) "Checking Google Drive" else "Remote changed — remerging"
+                )
+                currentCoroutineContext().ensureActive()
+                val snapshot = googleDriveSyncService.pullSnapshot()
+
+                val payload = when (snapshot) {
+                    null -> localPayload
+                    else -> {
+                        SyncStatusTracker.update("Merging remote changes")
+                        currentCoroutineContext().ensureActive()
+                        SyncPayload(
+                            syncedAt = System.currentTimeMillis(),
+                            deviceId = localPayload.deviceId,
+                            backup = SyncBackupMerger.merge(localBackup, snapshot.payload.backup)
+                        )
+                    }
                 }
+
+                SyncStatusTracker.update("Uploading merged data")
+                currentCoroutineContext().ensureActive()
+                try {
+                    googleDriveSyncService.pushSyncPayload(
+                        payload = payload,
+                        expected = snapshot,
+                        requireExpectedVersion = true,
+                        // pullSnapshot() merged every remote file into this
+                        // payload, so consolidating duplicates is safe.
+                        mergedAllRemoteFiles = true
+                    )
+                } catch (conflict: GoogleDriveSyncService.RemoteChangedException) {
+                    if (attempt == MAX_SYNC_ATTEMPTS) throw conflict
+                    continue
+                }
+
+                mergedPayload = payload
+                appliedRemote = snapshot != null
+                break
             }
 
-            SyncStatusTracker.update("Uploading merged data")
-            currentCoroutineContext().ensureActive()
-            googleDriveSyncService.pushSyncPayload(mergedPayload)
+            val finalPayload = mergedPayload ?: error("Sync did not produce a payload.")
 
-            if (remotePayload != null) {
+            if (appliedRemote) {
                 SyncStatusTracker.update("Applying merged data locally")
                 currentCoroutineContext().ensureActive()
                 val restoreResult = backupManager.restoreBackupData(
-                    mergedPayload.backup,
+                    finalPayload.backup,
                     selection.toRestoreOptions()
                 )
 
@@ -121,6 +152,9 @@ class SyncManager(
     }
 
     companion object {
+        /** Re-merge attempts when another device writes mid-sync. */
+        private const val MAX_SYNC_ATTEMPTS = 3
+
         /** Deletions older than this are assumed fully propagated (90 days). */
         private const val TOMBSTONE_RETENTION_MS = 90L * 24 * 60 * 60 * 1000
 

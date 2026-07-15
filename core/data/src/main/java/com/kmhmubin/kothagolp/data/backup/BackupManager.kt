@@ -436,11 +436,21 @@ class BackupManager(
 
             // Restore settings
             if (options.restoreSettings) {
+                // Keep the authoring time from the payload. Stamping "now" here
+                // would inflate this device's clock over every other device and
+                // let these just-received values overwrite genuinely newer edits
+                // made elsewhere on the next sync.
                 backup.appSettings?.let { settings ->
-                    preferencesManager.updateAppSettings(settings.toAppSettings())
+                    preferencesManager.updateAppSettings(
+                        settings = settings.toAppSettings(),
+                        updatedAt = settings.updatedAt
+                    )
                 }
                 backup.readerSettings?.let { settings ->
-                    preferencesManager.updateReaderSettings(settings.toReaderSettings())
+                    preferencesManager.updateReaderSettings(
+                        settings = settings.toReaderSettings(),
+                        updatedAt = settings.updatedAt
+                    )
                 }
                 settingsRestored = true
             }

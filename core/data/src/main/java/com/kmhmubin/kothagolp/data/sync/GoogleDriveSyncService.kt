@@ -86,12 +86,58 @@ class GoogleDriveSyncService(
         setupDriveService(accessToken, refreshToken)
     }
 
-    suspend fun pullSyncPayload(): SyncPayload? = withContext(Dispatchers.IO) {
+    /**
+     * Raised when the remote file changed between the pull and the push, i.e.
+     * another device synced in the meantime. The caller must re-pull, re-merge
+     * and retry rather than push a payload built from a stale snapshot.
+     */
+    class RemoteChangedException : IllegalStateException(
+        "Google Drive copy changed during sync"
+    )
+
+    /** A pulled payload together with the Drive file revision it came from. */
+    data class RemoteSnapshot(
+        val payload: SyncPayload,
+        val fileId: String,
+        /** Drive's monotonic content version; null when unavailable. */
+        val version: Long?
+    )
+
+    suspend fun pullSyncPayload(): SyncPayload? = pullSnapshot()?.payload
+
+    /**
+     * Pulls the remote payload along with its revision so the subsequent push
+     * can detect a concurrent write instead of silently overwriting it.
+     */
+    suspend fun pullSnapshot(): RemoteSnapshot? = withContext(Dispatchers.IO) {
         refreshToken()
         val drive = requireDriveService()
-        val existingFile = getRemoteFile(drive) ?: return@withContext null
+        val remoteFiles = getRemoteFiles(drive)
+        val existingFile = remoteFiles.firstOrNull() ?: return@withContext null
 
-        drive.files().get(existingFile.id).executeMediaAsInputStream().use { input ->
+        // A race can leave more than one payload file in appDataFolder. Reading
+        // only the newest and dropping the rest loses whatever the other device
+        // wrote, so every file is read and merged together here.
+        val payloads = remoteFiles.mapNotNull { file ->
+            runCatching { readPayload(drive, file.id) }.getOrNull()
+        }
+        if (payloads.isEmpty()) return@withContext null
+
+        val payload = payloads.reduce { acc, next ->
+            acc.copy(backup = SyncBackupMerger.merge(acc.backup, next.backup))
+        }
+
+        RemoteSnapshot(
+            payload = payload,
+            fileId = existingFile.id,
+            // Only a single-file remote has an unambiguous revision to guard on;
+            // with duplicates present the push must consolidate them anyway.
+            version = existingFile.version.takeIf { remoteFiles.size == 1 }
+        )
+    }
+
+    private fun readPayload(drive: Drive, fileId: String): SyncPayload {
+        return drive.files().get(fileId).executeMediaAsInputStream().use { input ->
             GZIPInputStream(input).use { gzipInput ->
                 val payloadJson = gzipInput.readBytes().decodeToString()
                 json.decodeFromString(SyncPayload.serializer(), payloadJson)
@@ -99,10 +145,45 @@ class GoogleDriveSyncService(
         }
     }
 
-    suspend fun pushSyncPayload(payload: SyncPayload) = withContext(Dispatchers.IO) {
+    /**
+     * Uploads [payload].
+     *
+     * [expected] is the snapshot the payload was merged from. If the remote file
+     * has moved on since (another device synced), this throws
+     * [RemoteChangedException] instead of overwriting: a blind update here means
+     * the other device's changes are silently dropped from Drive — a lost update.
+     *
+     * Passing null [expected] means "no remote existed at pull time"; a file
+     * appearing since is likewise treated as a conflict.
+     */
+    suspend fun pushSyncPayload(
+        payload: SyncPayload,
+        expected: RemoteSnapshot? = null,
+        requireExpectedVersion: Boolean = false,
+        mergedAllRemoteFiles: Boolean = false
+    ) = withContext(Dispatchers.IO) {
         val drive = requireDriveService()
         val remoteFiles = getRemoteFiles(drive)
         val existingFile = remoteFiles.firstOrNull()
+
+        if (requireExpectedVersion) {
+            val currentVersion = existingFile?.version
+            val expectedVersion = expected?.version
+            val changed = when {
+                // Someone created the remote file after we found none.
+                expected == null && existingFile != null -> true
+                // The file we merged from is gone or was replaced.
+                expected != null && existingFile == null -> true
+                expected != null && existingFile != null &&
+                    existingFile.id != expected.fileId -> true
+                // Content moved on under us.
+                expectedVersion != null && currentVersion != null &&
+                    currentVersion > expectedVersion -> true
+                else -> false
+            }
+            if (changed) throw RemoteChangedException()
+        }
+
         val payloadBytes = gzip(json.encodeToString(SyncPayload.serializer(), payload))
         val media = ByteArrayContent(GZIP_MIME_TYPE, payloadBytes)
         val metadata = File().apply {
@@ -113,17 +194,23 @@ class GoogleDriveSyncService(
 
         if (existingFile != null) {
             drive.files().update(existingFile.id, metadata, media)
-                .setFields("id, modifiedTime")
+                .setFields("id, modifiedTime, version")
                 .execute()
         } else {
             metadata.parents = listOf("appDataFolder")
             drive.files().create(metadata, media)
-                .setFields("id, modifiedTime")
+                .setFields("id, modifiedTime, version")
                 .execute()
         }
 
-        remoteFiles.drop(1).forEach { duplicate ->
-            runCatching { drive.files().delete(duplicate.id).execute() }
+        // Duplicate payload files are consolidated only when this push carries
+        // their contents: pullSnapshot() merges every remote file, so a payload
+        // built from that snapshot already contains them. Deleting them without
+        // that guarantee would discard a concurrent device's data outright.
+        if (mergedAllRemoteFiles) {
+            remoteFiles.drop(1).forEach { duplicate ->
+                runCatching { drive.files().delete(duplicate.id).execute() }
+            }
         }
     }
 
@@ -247,7 +334,7 @@ class GoogleDriveSyncService(
             .setSpaces("appDataFolder")
             .setQ("name = '$REMOTE_FILE_NAME'")
             .setOrderBy("modifiedTime desc")
-            .setFields("files(id, name, createdTime, modifiedTime, appProperties)")
+            .setFields("files(id, name, createdTime, modifiedTime, appProperties, version)")
             .execute()
             .files
             .orEmpty()
