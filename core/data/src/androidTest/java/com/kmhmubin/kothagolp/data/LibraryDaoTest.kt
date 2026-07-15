@@ -68,12 +68,15 @@ class LibraryDaoTest {
     }
 
     @Test
-    fun delete_removesEntry() = runTest {
+    fun softDelete_hidesEntryFromLibrary() = runTest {
         val url = "https://delete.test"
         dao.insert(makeEntry(url))
         assertTrue(dao.exists(url))
-        dao.delete(url)
+        dao.softDelete(url)
+        // Hidden from the library, but retained as a tombstone so the deletion
+        // can propagate through sync instead of being undone by a stale copy.
         assertFalse(dao.exists(url))
+        assertEquals(1, dao.getAllForSync().size)
     }
 
     @Test
@@ -89,7 +92,7 @@ class LibraryDaoTest {
     fun updateStatus_changesStatus() = runTest {
         val url = "https://status.test"
         dao.insert(makeEntry(url))
-        dao.updateStatus(url, ReadingStatus.COMPLETED.name)
+        dao.updateStatus(url, ReadingStatus.COMPLETED.name, System.currentTimeMillis())
         val found = dao.getByUrl(url)
         assertEquals(ReadingStatus.COMPLETED.name, found!!.readingStatus)
     }

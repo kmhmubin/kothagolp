@@ -4,6 +4,7 @@ package com.kmhmubin.kothagolp.data.local
  * Type converters for Room database
  */
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -522,7 +523,8 @@ abstract class NovelDatabase : RoomDatabase() {
          * restored it on the next sync merge. The tombstone lets a removal
          * propagate as state and win a newest-wins comparison.
          */
-        private val MIGRATION_14_15 = object : Migration(14, 15) {
+        @VisibleForTesting
+        internal val MIGRATION_14_15 = object : Migration(14, 15) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE `library` ADD COLUMN `deletedAt` INTEGER DEFAULT NULL")
             }
