@@ -96,7 +96,7 @@ class DatabaseConverters {
         BlockedAuthorEntity::class,
         AuthorPreferenceEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
@@ -139,7 +139,8 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_10_11,
                         MIGRATION_11_12,
                         MIGRATION_12_13,
-                        MIGRATION_13_14
+                        MIGRATION_13_14,
+                        MIGRATION_14_15
                     )
                     .fallbackToDestructiveMigration()
                     .build()
@@ -513,6 +514,20 @@ abstract class NovelDatabase : RoomDatabase() {
          * UNIQUE INDEX, causing Room's schema validator to crash the app on every launch.
          * This migration recreates the table with the schema Room actually expects.
          */
+        /**
+         * Adds the soft-delete tombstone to `library`.
+         *
+         * Removing a book used to delete the row outright, so the deletion was
+         * represented as absence — and the other device's surviving copy simply
+         * restored it on the next sync merge. The tombstone lets a removal
+         * propagate as state and win a newest-wins comparison.
+         */
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE `library` ADD COLUMN `deletedAt` INTEGER DEFAULT NULL")
+            }
+        }
+
         private val MIGRATION_13_14 = object : Migration(13, 14) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("""

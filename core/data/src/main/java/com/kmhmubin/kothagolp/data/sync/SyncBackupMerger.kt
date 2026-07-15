@@ -32,104 +32,69 @@ object SyncBackupMerger {
         )
     }
 
+    /**
+     * Merges local and remote library snapshots.
+     *
+     * Books are keyed by URL only — a book's identity is its source + URL. The
+     * previous version also tried to guess cross-source duplicates by comparing
+     * normalized titles and silently dropped the "losing" copy; that both merged
+     * genuinely unrelated same-titled books and fought with migration, which now
+     * records its own tombstone for the old source instead.
+     *
+     * Conflict rules mirror LibraryEntity.mergeForSync: the reading position is
+     * taken atomically from whichever side read last, deletions compete with
+     * activity on recency, and only monotonic counters take the max.
+     */
     private fun mergeLibrary(
         local: List<LibraryBackup>,
         remote: List<LibraryBackup>
     ): List<LibraryBackup> {
-        val allBooks = local + remote
-
-        // Two-way sync + cross-source dedup:
-        // 1. Detect cross-source duplicates (same book, different sources)
-        // 2. Merge reading positions from ALL versions (keep latest)
-        // 3. Remove old source versions, keep migration target
-        val deduplicated = mutableMapOf<String, LibraryBackup>()
-        val titleIndex = mutableMapOf<String, MutableList<LibraryBackup>>()
-
-        // First pass: group by normalized title to find cross-source duplicates
-        for (book in allBooks) {
-            val normalized = normalizeTitleForDedup(book.name)
-            titleIndex.getOrPut(normalized) { mutableListOf() }.add(book)
-        }
-
-        // Second pass: for each title group, merge cross-source duplicates
-        for ((_, booksWithSameTitle) in titleIndex) {
-            if (booksWithSameTitle.size == 1) {
-                // No duplicate, keep as-is
-                val book = booksWithSameTitle.first()
-                deduplicated[book.url] = book
-            } else {
-                // Multiple books with same title (cross-source migration case)
-                val hasDifferentSources = booksWithSameTitle.map { it.apiName }.toSet().size > 1
-                if (hasDifferentSources) {
-                    // Cross-source merge: keep newest source, merge ALL reading positions
-                    // Find the newest source (most recent lastReadAt across all versions)
-                    val newestByRead = booksWithSameTitle.maxByOrNull { it.lastReadAt ?: 0L }
-                        ?: booksWithSameTitle.first()
-
-                    // Merge all data: take latest timestamp for each field
-                    val merged = newestByRead.copy(
-                        // Take newest reading position from ANY source
-                        lastReadAt = booksWithSameTitle.mapNotNull { it.lastReadAt }.maxOrNull(),
-                        lastReadChapterIndex = booksWithSameTitle.maxOf { it.lastReadChapterIndex },
-                        lastScrollIndex = booksWithSameTitle.maxOf { it.lastScrollIndex },
-                        lastScrollOffset = booksWithSameTitle.maxOf { it.lastScrollOffset },
-                        // Take newest metadata
-                        totalChapterCount = booksWithSameTitle.maxOf { it.totalChapterCount },
-                        acknowledgedChapterCount = booksWithSameTitle.maxOf { it.acknowledgedChapterCount },
-                        lastUpdatedAt = booksWithSameTitle.maxOf { it.lastUpdatedAt }
-                    )
-                    deduplicated[merged.url] = merged
-                    // Only keep migration target; old sources are removed
-                } else {
-                    // Same source (shouldn't happen), keep all
-                    for (book in booksWithSameTitle) {
-                        deduplicated[book.url] = book
-                    }
-                }
-            }
-        }
-
-        // Third pass: merge same-URL books (bidirectional sync for same source)
-        return deduplicated.values
+        return (local + remote)
             .groupBy { it.url }
             .map { (_, entries) ->
-                if (entries.size == 1) {
-                    entries.first()
-                } else {
-                    // Multiple versions of same URL: bidirectional merge
-                    // Take latest timestamp for reading position (ensures 2-way sync works)
-                    val newestRead = entries.maxByOrNull { it.lastReadAt ?: 0L } ?: entries.first()
-                    val newestUpdate = entries.maxByOrNull { it.lastUpdatedAt }
-                    val newestMeta = entries.maxByOrNull { libraryTimestamp(it) } ?: entries.first()
-
-                    newestMeta.copy(
-                        name = newestMeta.name.ifBlank { newestRead.name },
-                        posterUrl = newestMeta.posterUrl ?: newestRead.posterUrl,
-                        latestChapter = newestUpdate?.latestChapter ?: newestMeta.latestChapter,
-                        lastChapterUrl = newestRead.lastChapterUrl,
-                        lastChapterName = newestRead.lastChapterName,
-                        lastReadAt = newestRead.lastReadAt,
-                        lastScrollIndex = newestRead.lastScrollIndex,
-                        lastScrollOffset = newestRead.lastScrollOffset,
-                        totalChapterCount = entries.maxOf { it.totalChapterCount },
-                        acknowledgedChapterCount = entries.maxOf { it.acknowledgedChapterCount },
-                        lastCheckedAt = entries.maxOf { it.lastCheckedAt },
-                        lastUpdatedAt = entries.maxOf { it.lastUpdatedAt },
-                        lastReadChapterIndex = entries.maxOf { it.lastReadChapterIndex },
-                        unreadChapterCount = newestRead.unreadChapterCount.coerceAtLeast(0)
-                    )
-                }
+                if (entries.size == 1) entries.first() else entries.reduce(::mergeLibraryEntry)
             }
             .sortedByDescending { libraryTimestamp(it) }
     }
 
-    private fun normalizeTitleForDedup(title: String): String {
-        return title
-            .lowercase()
-            .trim()
-            .replace(Regex("""\s+"""), " ")
-            .replace(Regex("""[^\w\s]"""), "")
+    private fun mergeLibraryEntry(a: LibraryBackup, b: LibraryBackup): LibraryBackup {
+        // Whole-entity winner for the reading position (ties keep `a`).
+        val newestRead = if ((b.lastReadAt ?: 0L) > (a.lastReadAt ?: 0L)) b else a
+        val newestMeta = if (b.lastUpdatedAt > a.lastUpdatedAt) b else a
+
+        val mergedDeletedAt = when {
+            a.deletedAt == null && b.deletedAt == null -> null
+            a.deletedAt != null && b.deletedAt != null -> maxOf(a.deletedAt, b.deletedAt)
+            else -> {
+                val deletion = a.deletedAt ?: b.deletedAt!!
+                val otherSide = if (a.deletedAt != null) b else a
+                val otherActivity = maxOf(otherSide.lastReadAt ?: 0L, otherSide.lastUpdatedAt)
+                if (otherActivity > deletion) null else deletion
+            }
+        }
+
+        return newestMeta.copy(
+            name = newestMeta.name.ifBlank { newestRead.name },
+            posterUrl = newestMeta.posterUrl ?: newestRead.posterUrl,
+            latestChapter = newestMeta.latestChapter ?: newestRead.latestChapter,
+            addedAt = minOf(a.addedAt, b.addedAt),
+            // --- atomic reading position ---
+            lastChapterUrl = newestRead.lastChapterUrl,
+            lastChapterName = newestRead.lastChapterName,
+            lastReadAt = newestRead.lastReadAt,
+            lastScrollIndex = newestRead.lastScrollIndex,
+            lastScrollOffset = newestRead.lastScrollOffset,
+            lastReadChapterIndex = newestRead.lastReadChapterIndex,
+            unreadChapterCount = newestRead.unreadChapterCount.coerceAtLeast(0),
+            // --- monotonic counters ---
+            totalChapterCount = maxOf(a.totalChapterCount, b.totalChapterCount),
+            acknowledgedChapterCount = maxOf(a.acknowledgedChapterCount, b.acknowledgedChapterCount),
+            lastCheckedAt = maxOf(a.lastCheckedAt, b.lastCheckedAt),
+            lastUpdatedAt = maxOf(a.lastUpdatedAt, b.lastUpdatedAt),
+            deletedAt = mergedDeletedAt
+        )
     }
+
 
     private fun mergeBookmarks(
         local: List<BookmarkBackup>,

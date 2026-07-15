@@ -231,7 +231,7 @@ fun KothagolpNavGraph(
             val prefsManager = remember { RepositoryProvider.getPreferencesManager() }
             val cacheManager = remember { CacheManager(context, database) }
             val backupManager = remember { BackupManager(context, database, prefsManager) }
-            val syncManager = remember { SyncManager(context, prefsManager, backupManager) }
+            val syncManager = remember { SyncManager(context, prefsManager, database, backupManager) }
 
             StorageScreen(
                 cacheManager = cacheManager,

@@ -116,9 +116,13 @@ class MigrationUseCase(private val database: NovelDatabase) {
                     historyDao.deleteByNovelUrl(fromEntry.url)
                 }
 
-                // Remove old library entry and its read chapters
+                // Tombstone the old library entry (soft delete) rather than
+                // dropping the row: an absent row is indistinguishable from
+                // "never synced", so the other device's surviving pre-migration
+                // copy would push the old-source book straight back on the next
+                // merge, leaving the same book in the library twice.
                 historyDao.clearReadChapters(fromEntry.url)
-                libraryDao.deleteByUrl(fromEntry.url)
+                libraryDao.softDelete(fromEntry.url)
             }
 
             Log.i(TAG, "Migrated '${fromEntry.name}' → '${toNovel.name}' (${toNovel.apiName}), ${newReadChapters.size} chapters transferred")

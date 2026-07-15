@@ -218,6 +218,7 @@ class LibraryRepository(
     ) = withContext(Dispatchers.IO) {
         val entity = LibraryEntity.fromNovel(novel, status)
         libraryDao.insert(entity)
+        libraryDao.clearTombstone(novel.url)
     }
 
     suspend fun addToLibraryWithDetails(
@@ -232,6 +233,7 @@ class LibraryRepository(
             lastCheckedAt = System.currentTimeMillis()
         )
         libraryDao.insert(entity)
+        libraryDao.clearTombstone(novel.url)
 
         offlineDao.saveNovelDetails(NovelDetailsEntity.fromNovelDetails(details))
         offlineDao.saveNovel(
@@ -243,17 +245,23 @@ class LibraryRepository(
         )
     }
 
+    /**
+     * Soft-delete so the removal can beat a stale remote copy at sync time
+     * instead of the book reappearing on the next merge.
+     */
     suspend fun removeFromLibrary(url: String) = withContext(Dispatchers.IO) {
-        libraryDao.delete(url)
+        libraryDao.softDelete(url)
     }
 
     suspend fun toggleFavorite(novel: Novel): Boolean = withContext(Dispatchers.IO) {
         val exists = libraryDao.exists(novel.url)
         if (exists) {
-            libraryDao.delete(novel.url)
+            libraryDao.softDelete(novel.url)
             false
         } else {
+            // Re-adding clears any tombstone from a previous removal
             libraryDao.insert(LibraryEntity.fromNovel(novel))
+            libraryDao.clearTombstone(novel.url)
             true
         }
     }
@@ -268,7 +276,8 @@ class LibraryRepository(
         chapterUrl: String,
         chapterName: String,
         scrollIndex: Int = 0,
-        scrollOffset: Int = 0
+        scrollOffset: Int = 0,
+        chapterIndex: Int
     ) = withContext(Dispatchers.IO) {
         libraryDao.updateReadingPosition(
             novelUrl = novelUrl,
@@ -276,7 +285,8 @@ class LibraryRepository(
             chapterName = chapterName,
             timestamp = System.currentTimeMillis(),
             scrollIndex = scrollIndex,
-            scrollOffset = scrollOffset
+            scrollOffset = scrollOffset,
+            chapterIndex = chapterIndex
         )
     }
 

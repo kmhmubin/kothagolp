@@ -17,6 +17,7 @@ import java.io.IOException
 class SyncManager(
     context: Context,
     private val preferencesManager: PreferencesManager = PreferencesManager.getInstance(context),
+    private val database: NovelDatabase = NovelDatabase.getInstance(context.applicationContext),
     private val backupManager: BackupManager = BackupManager(
         context.applicationContext,
         NovelDatabase.getInstance(context.applicationContext),
@@ -94,6 +95,16 @@ class SyncManager(
             }
 
             val syncedAt = System.currentTimeMillis()
+
+            // Tombstones exist only to outlive a stale remote copy. Once a
+            // deletion is this old every device has long since merged it, so
+            // drop the rows rather than growing the table forever. A device
+            // offline past this window can still resurrect the book — the same
+            // bounded tradeoff every tombstone-based sync makes.
+            runCatching {
+                database.libraryDao().purgeOldTombstones(syncedAt - TOMBSTONE_RETENTION_MS)
+            }
+
             preferencesManager.setLastSyncTime(syncedAt)
             val message = "Last synced ${selection.enabledCountLabel()} to Google Drive"
             SyncStatusTracker.finishSuccess(message)
@@ -110,6 +121,9 @@ class SyncManager(
     }
 
     companion object {
+        /** Deletions older than this are assumed fully propagated (90 days). */
+        private const val TOMBSTONE_RETENTION_MS = 90L * 24 * 60 * 60 * 1000
+
         fun shouldTriggerSync(
             preferencesManager: PreferencesManager,
             trigger: SyncTrigger

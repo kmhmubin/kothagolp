@@ -13,25 +13,37 @@ interface LibraryDao {
 
     // ============ BASIC QUERIES ============
 
-    @Query("SELECT * FROM library ORDER BY lastReadAt DESC, addedAt DESC")
+    @Query("SELECT * FROM library WHERE deletedAt IS NULL ORDER BY lastReadAt DESC, addedAt DESC")
     fun getAllFlow(): Flow<List<LibraryEntity>>
 
-    @Query("SELECT url FROM library")
+    @Query("SELECT url FROM library WHERE deletedAt IS NULL")
     fun observeLibraryUrls(): Flow<List<String>>
 
-    @Query("SELECT * FROM library ORDER BY lastReadAt DESC, addedAt DESC")
+    @Query("SELECT * FROM library WHERE deletedAt IS NULL ORDER BY lastReadAt DESC, addedAt DESC")
     suspend fun getAll(): List<LibraryEntity>
 
-    @Query("SELECT * FROM library WHERE url = :url")
+    /**
+     * Includes tombstoned rows — backup/sync payloads must carry deletions,
+     * otherwise a removal never reaches the other device and the book is
+     * resurrected from its stale copy on the next merge.
+     */
+    @Query("SELECT * FROM library ORDER BY lastReadAt DESC, addedAt DESC")
+    suspend fun getAllForSync(): List<LibraryEntity>
+
+    @Query("SELECT * FROM library WHERE url = :url AND deletedAt IS NULL")
     suspend fun getByUrl(url: String): LibraryEntity?
 
+    /** Includes tombstoned rows — sync/merge needs to see deletions. */
     @Query("SELECT * FROM library WHERE url = :url")
+    suspend fun getByUrlIncludingDeleted(url: String): LibraryEntity?
+
+    @Query("SELECT * FROM library WHERE url = :url AND deletedAt IS NULL")
     fun getByUrlFlow(url: String): Flow<LibraryEntity?>
 
-    @Query("SELECT EXISTS(SELECT 1 FROM library WHERE url = :url)")
+    @Query("SELECT EXISTS(SELECT 1 FROM library WHERE url = :url AND deletedAt IS NULL)")
     suspend fun exists(url: String): Boolean
 
-    @Query("SELECT EXISTS(SELECT 1 FROM library WHERE url = :url)")
+    @Query("SELECT EXISTS(SELECT 1 FROM library WHERE url = :url AND deletedAt IS NULL)")
     fun existsFlow(url: String): Flow<Boolean>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -45,13 +57,21 @@ interface LibraryDao {
 
     // ============ READING POSITION ============
 
+    /**
+     * A reading position is one atomic unit: chapter URL, chapter index, scroll
+     * and timestamp must be written together. `lastReadChapterIndex` used to be
+     * left out here, so it went stale while the rest advanced — and sync then
+     * paired a fresh chapter URL with a stale index, sending the reader back to
+     * whatever chapter that old index pointed at.
+     */
     @Query("""
         UPDATE library SET 
             lastChapterUrl = :chapterUrl,
             lastChapterName = :chapterName,
             lastReadAt = :timestamp,
             lastScrollIndex = :scrollIndex,
-            lastScrollOffset = :scrollOffset
+            lastScrollOffset = :scrollOffset,
+            lastReadChapterIndex = :chapterIndex
         WHERE url = :novelUrl
     """)
     suspend fun updateReadingPosition(
@@ -60,7 +80,8 @@ interface LibraryDao {
         chapterName: String,
         timestamp: Long,
         scrollIndex: Int,
-        scrollOffset: Int
+        scrollOffset: Int,
+        chapterIndex: Int
     )
 
     @Query("""
@@ -131,7 +152,7 @@ interface LibraryDao {
      */
     @Query("""
         SELECT * FROM library 
-        WHERE totalChapterCount > acknowledgedChapterCount
+        WHERE deletedAt IS NULL AND totalChapterCount > acknowledgedChapterCount
         ORDER BY lastUpdatedAt DESC
     """)
     suspend fun getNovelsWithNewChapters(): List<LibraryEntity>
@@ -141,7 +162,7 @@ interface LibraryDao {
      */
     @Query("""
         SELECT * FROM library 
-        WHERE totalChapterCount > acknowledgedChapterCount
+        WHERE deletedAt IS NULL AND totalChapterCount > acknowledgedChapterCount
         ORDER BY lastUpdatedAt DESC
     """)
     fun observeNovelsWithNewChapters(): Flow<List<LibraryEntity>>
@@ -152,7 +173,7 @@ interface LibraryDao {
     @Query("""
         SELECT COALESCE(SUM(totalChapterCount - acknowledgedChapterCount), 0)
         FROM library
-        WHERE totalChapterCount > acknowledgedChapterCount
+        WHERE deletedAt IS NULL AND totalChapterCount > acknowledgedChapterCount
     """)
     suspend fun getTotalNewChapterCount(): Int
 
@@ -162,7 +183,7 @@ interface LibraryDao {
     @Query("""
         SELECT COALESCE(SUM(totalChapterCount - acknowledgedChapterCount), 0)
         FROM library
-        WHERE totalChapterCount > acknowledgedChapterCount
+        WHERE deletedAt IS NULL AND totalChapterCount > acknowledgedChapterCount
     """)
     fun observeTotalNewChapterCount(): Flow<Int>
 
@@ -171,7 +192,7 @@ interface LibraryDao {
      */
     @Query("""
         SELECT * FROM library 
-        WHERE lastCheckedAt < :threshold
+        WHERE deletedAt IS NULL AND lastCheckedAt < :threshold
         ORDER BY lastCheckedAt ASC
         LIMIT :limit
     """)
@@ -179,18 +200,34 @@ interface LibraryDao {
 
     // ============ DELETE ============
 
+    /**
+     * Soft-delete: keep the row as a tombstone so the removal survives a sync
+     * merge instead of being resurrected by the other device's stale copy.
+     */
+    @Query("UPDATE library SET deletedAt = :deletedAt WHERE url = :url")
+    suspend fun softDelete(url: String, deletedAt: Long = System.currentTimeMillis())
+
+    /** Re-adding a previously removed book clears its tombstone. */
+    @Query("UPDATE library SET deletedAt = NULL WHERE url = :url")
+    suspend fun clearTombstone(url: String)
+
     @Query("DELETE FROM library WHERE url = :url")
-    suspend fun delete(url: String)
+    suspend fun deleteHard(url: String)
 
     @Query("DELETE FROM library")
     suspend fun deleteAll()
+
+    /** Tombstones older than [threshold] are safe to purge permanently. */
+    @Query("DELETE FROM library WHERE deletedAt IS NOT NULL AND deletedAt < :threshold")
+    suspend fun purgeOldTombstones(threshold: Long)
 
     // ============ SEARCH ============
 
     @Query("""
         SELECT * FROM library 
-        WHERE name LIKE '%' || :query || '%' 
-           OR apiName LIKE '%' || :query || '%'
+        WHERE deletedAt IS NULL
+          AND (name LIKE '%' || :query || '%' 
+           OR apiName LIKE '%' || :query || '%')
         ORDER BY lastReadAt DESC, addedAt DESC
     """)
     suspend fun search(query: String): List<LibraryEntity>
@@ -205,12 +242,12 @@ interface LibraryDao {
 
     // ============ MIGRATION ============
 
-    @Query("SELECT * FROM library WHERE apiName = :sourceName ORDER BY name ASC")
+    @Query("SELECT * FROM library WHERE apiName = :sourceName AND deletedAt IS NULL ORDER BY name ASC")
     suspend fun getBySourceName(sourceName: String): List<LibraryEntity>
 
-    @Query("SELECT DISTINCT apiName FROM library ORDER BY apiName ASC")
+    @Query("SELECT DISTINCT apiName FROM library WHERE deletedAt IS NULL ORDER BY apiName ASC")
     suspend fun getDistinctSources(): List<String>
 
-    @Query("DELETE FROM library WHERE url = :url")
-    suspend fun deleteByUrl(url: String)
+    @Query("UPDATE library SET deletedAt = :deletedAt WHERE url = :url")
+    suspend fun deleteByUrl(url: String, deletedAt: Long = System.currentTimeMillis())
 }

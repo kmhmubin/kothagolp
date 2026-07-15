@@ -35,7 +35,18 @@ data class LibraryEntity(
     val unreadChapterCount: Int = 0,
 
     //Custom Cover
-    val customCoverUrl: String? = null
+    val customCoverUrl: String? = null,
+
+    /**
+     * Soft-delete tombstone. Non-null = removed from the library at this time.
+     *
+     * Removal must survive as *state*, not absence: a deleted row that simply
+     * vanished from the sync payload gets resurrected by the other device's
+     * surviving copy on the next merge. The row stays here (and in backups) so
+     * the deletion can win a newest-wins comparison, then is filtered out of
+     * every library query.
+     */
+    val deletedAt: Long? = null
 ) {
     // Update toNovel() to use custom cover
     fun toNovel(): Novel = Novel(

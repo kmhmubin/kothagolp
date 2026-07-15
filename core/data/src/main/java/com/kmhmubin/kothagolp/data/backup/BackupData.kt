@@ -72,7 +72,13 @@ data class LibraryBackup(
     val lastCheckedAt: Long = 0,
     val lastUpdatedAt: Long = 0,
     val lastReadChapterIndex: Int = -1,
-    val unreadChapterCount: Int = 0
+    val unreadChapterCount: Int = 0,
+    /**
+     * Soft-delete tombstone (see LibraryEntity.deletedAt). Carried in backups so
+     * a removal propagates as state; older backups simply have null here and are
+     * treated as present.
+     */
+    val deletedAt: Long? = null
 )
 
 @Serializable

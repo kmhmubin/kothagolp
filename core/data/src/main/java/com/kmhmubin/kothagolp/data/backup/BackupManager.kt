@@ -79,7 +79,8 @@ class BackupManager(
             appVersion = getAppVersion(),
             deviceInfo = getDeviceInfo(),
             library = if (selection.includeLibrary) {
-                libraryDao.getAll().map { it.toBackup() }
+                // getAllForSync: tombstones must travel with the payload
+                libraryDao.getAllForSync().map { it.toBackup() }
             } else {
                 emptyList()
             },
@@ -318,7 +319,10 @@ class BackupManager(
                 backup.library.forEach { item ->
                     val entity = item.toEntity()
                     if (options.mergeWithExisting) {
-                        val existing = libraryDao.getByUrl(entity.url)
+                        // Include tombstoned rows: a local deletion must take part
+                        // in the merge, otherwise the remote copy looks "new" and
+                        // silently resurrects the book.
+                        val existing = libraryDao.getByUrlIncludingDeleted(entity.url)
                         if (existing == null) {
                             libraryDao.insert(entity)
                             libraryCount++
@@ -335,18 +339,28 @@ class BackupManager(
                 // Bridge synced scroll positions into scrollPrefs so the reader
                 // resumes at the exact segment on Device B. Only overwrite if the
                 // synced position is newer — Device B ahead means keep local.
+                //
+                // The merged row that lands in the DB is what we bridge from, not
+                // the raw remote item: the remote may have lost the merge. And a
+                // position is only written when its chapter index actually points
+                // at the chapter it was recorded in — pairing one chapter's URL
+                // with another chapter's index is what used to yank the reader
+                // back to an old chapter no matter which one was opened.
                 backup.library.forEach { item ->
-                    val chapterUrl = item.lastChapterUrl ?: return@forEach
-                    val lastReadAt = item.lastReadAt ?: return@forEach
+                    val merged = libraryDao.getByUrlIncludingDeleted(item.url) ?: return@forEach
+                    if (merged.deletedAt != null) return@forEach
+                    val chapterUrl = merged.lastChapterUrl ?: return@forEach
+                    val lastReadAt = merged.lastReadAt ?: return@forEach
+                    if (merged.lastReadChapterIndex < 0) return@forEach
                     val local = preferencesManager.getReadingPosition(chapterUrl)
                     if (local == null || lastReadAt > local.timestamp) {
                         preferencesManager.saveReadingPosition(
                             chapterUrl = chapterUrl,
-                            segmentId = "seg-${item.lastScrollIndex}",
-                            segmentIndex = item.lastScrollIndex,
+                            segmentId = "seg-${merged.lastScrollIndex}",
+                            segmentIndex = merged.lastScrollIndex,
                             progress = 0f,
-                            offset = item.lastScrollOffset,
-                            chapterIndex = item.lastReadChapterIndex.coerceAtLeast(0)
+                            offset = merged.lastScrollOffset,
+                            chapterIndex = merged.lastReadChapterIndex
                         )
                     }
                 }
@@ -511,6 +525,8 @@ private fun LibraryEntity.toBackup() = LibraryBackup(
     lastUpdatedAt = lastUpdatedAt,
     lastReadChapterIndex = lastReadChapterIndex,
     unreadChapterCount = unreadChapterCount
+,
+    deletedAt = deletedAt
 )
 
 private fun BookmarkEntity.toBackup() = BookmarkBackup(
@@ -673,13 +689,50 @@ private fun LibraryBackup.toEntity() = LibraryEntity(
     lastUpdatedAt = lastUpdatedAt,
     lastReadChapterIndex = lastReadChapterIndex,
     unreadChapterCount = unreadChapterCount
+,
+    deletedAt = deletedAt
 )
 
+/**
+ * Merges a remote library entry into the local one.
+ *
+ * Two rules, both learned the hard way:
+ *
+ * 1. **The reading position is atomic.** chapter URL, chapter index, scroll
+ *    index/offset and timestamp all describe one point in one chapter, so they
+ *    are taken wholesale from whichever side read last. Mixing fields across
+ *    sides (e.g. a fresh chapter URL with `maxOf(...)` of the indexes) yields a
+ *    position that never existed and drags the reader to the wrong chapter.
+ * 2. **Deletion is state, not absence.** A tombstone competes with the other
+ *    side's activity on recency: remove-then-read-elsewhere keeps the book,
+ *    read-then-remove-elsewhere keeps it deleted.
+ *
+ * Counters that only ever grow (chapter counts, timestamps) still take the max
+ * — those are genuinely independent of the reading position.
+ */
 private fun LibraryEntity.mergeForSync(remote: LibraryEntity): LibraryEntity {
     val localReadAt = lastReadAt ?: 0L
     val remoteReadAt = remote.lastReadAt ?: 0L
+
+    // Whole-entity winner for the reading position (ties keep local).
     val newestRead = if (remoteReadAt > localReadAt) remote else this
     val newestMetadata = if (remote.lastUpdatedAt > lastUpdatedAt) remote else this
+
+    // Tombstone vs. activity: newest action wins.
+    val localDeletedAt = deletedAt
+    val remoteDeletedAt = remote.deletedAt
+    val mergedDeletedAt = when {
+        localDeletedAt == null && remoteDeletedAt == null -> null
+        localDeletedAt != null && remoteDeletedAt != null ->
+            maxOf(localDeletedAt, remoteDeletedAt)
+        else -> {
+            // One side deleted; the other may have read/updated it since.
+            val deletion = localDeletedAt ?: remoteDeletedAt!!
+            val otherSide = if (localDeletedAt != null) remote else this
+            val otherActivity = maxOf(otherSide.lastReadAt ?: 0L, otherSide.lastUpdatedAt)
+            if (otherActivity > deletion) null else deletion
+        }
+    }
 
     return newestMetadata.copy(
         name = newestMetadata.name.ifBlank { newestRead.name },
@@ -687,17 +740,20 @@ private fun LibraryEntity.mergeForSync(remote: LibraryEntity): LibraryEntity {
         latestChapter = newestMetadata.latestChapter ?: newestRead.latestChapter,
         addedAt = minOf(addedAt, remote.addedAt),
         readingStatus = newestMetadata.readingStatus,
+        // --- atomic reading position: all from newestRead ---
         lastChapterUrl = newestRead.lastChapterUrl,
         lastChapterName = newestRead.lastChapterName,
         lastReadAt = newestRead.lastReadAt,
         lastScrollIndex = newestRead.lastScrollIndex,
         lastScrollOffset = newestRead.lastScrollOffset,
+        lastReadChapterIndex = newestRead.lastReadChapterIndex,
+        unreadChapterCount = newestRead.unreadChapterCount.coerceAtLeast(0),
+        // --- monotonic counters ---
         totalChapterCount = maxOf(totalChapterCount, remote.totalChapterCount),
         acknowledgedChapterCount = maxOf(acknowledgedChapterCount, remote.acknowledgedChapterCount),
         lastCheckedAt = maxOf(lastCheckedAt, remote.lastCheckedAt),
         lastUpdatedAt = maxOf(lastUpdatedAt, remote.lastUpdatedAt),
-        lastReadChapterIndex = maxOf(lastReadChapterIndex, remote.lastReadChapterIndex),
-        unreadChapterCount = newestRead.unreadChapterCount.coerceAtLeast(0)
+        deletedAt = mergedDeletedAt
     )
 }
 

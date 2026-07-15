@@ -707,10 +707,19 @@ class DetailsViewModel : ViewModel() {
     fun setLastReadToSelected() {
         val novelUrl = currentNovelUrl ?: return
         val selected = _uiState.value.selectedChapters.firstOrNull() ?: return
-        val chapter = _uiState.value.novelDetails?.chapters?.find { it.url == selected } ?: return
+        val chapters = _uiState.value.novelDetails?.chapters ?: return
+        val index = chapters.indexOfFirst { it.url == selected }
+        if (index < 0) return
+        val chapter = chapters[index]
 
         viewModelScope.launch {
-            libraryRepository.updateReadingPosition(novelUrl, selected, chapter.name, 0)
+            libraryRepository.updateReadingPosition(
+                novelUrl = novelUrl,
+                chapterUrl = selected,
+                chapterName = chapter.name,
+                scrollIndex = 0,
+                chapterIndex = index
+            )
             disableSelectionMode()
         }
     }
@@ -738,7 +747,8 @@ class DetailsViewModel : ViewModel() {
                 chapterUrl = selected,
                 chapterName = selectedChapter.name,
                 scrollIndex = 0,
-                scrollOffset = 0
+                scrollOffset = 0,
+                chapterIndex = selectedIndex
             )
 
             // Update UI state

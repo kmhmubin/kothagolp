@@ -2237,7 +2237,8 @@ class ReaderViewModel : ViewModel() {
                     chapterUrl = chapter.url,
                     chapterName = chapter.name,
                     scrollIndex = position.segmentIndex,
-                    scrollOffset = position.characterOffset
+                    scrollOffset = position.characterOffset,
+                    chapterIndex = position.chapterIndex
                 )
             }
         }
