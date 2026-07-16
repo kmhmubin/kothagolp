@@ -97,7 +97,7 @@ class DatabaseConverters {
         BlockedAuthorEntity::class,
         AuthorPreferenceEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
@@ -141,7 +141,8 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_11_12,
                         MIGRATION_12_13,
                         MIGRATION_13_14,
-                        MIGRATION_14_15
+                        MIGRATION_14_15,
+                        MIGRATION_15_16
                     )
                     .fallbackToDestructiveMigration()
                     .build()
@@ -523,6 +524,22 @@ abstract class NovelDatabase : RoomDatabase() {
          * restored it on the next sync merge. The tombstone lets a removal
          * propagate as state and win a newest-wins comparison.
          */
+        /**
+         * Adds the local-change counter and its last-synced baseline.
+         *
+         * Existing rows start at version 0 / syncedVersion 0, i.e. "unchanged
+         * since the last sync". That is the safe default: the first sync after
+         * upgrading falls back to the timestamp rules that were already in use,
+         * rather than claiming every existing book changed locally.
+         */
+        @VisibleForTesting
+        internal val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE `library` ADD COLUMN `version` INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE `library` ADD COLUMN `syncedVersion` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         @VisibleForTesting
         internal val MIGRATION_14_15 = object : Migration(14, 15) {
             override fun migrate(database: SupportSQLiteDatabase) {

@@ -52,7 +52,7 @@ interface LibraryDao {
     @Update
     suspend fun update(entity: LibraryEntity)
 
-    @Query("UPDATE library SET readingStatus = :status, lastUpdatedAt = :updatedAt WHERE url = :url")
+    @Query("UPDATE library SET readingStatus = :status, lastUpdatedAt = :updatedAt, version = version + 1 WHERE url = :url")
     suspend fun updateStatus(url: String, status: String, updatedAt: Long)
 
     // ============ READING POSITION ============
@@ -71,7 +71,8 @@ interface LibraryDao {
             lastReadAt = :timestamp,
             lastScrollIndex = :scrollIndex,
             lastScrollOffset = :scrollOffset,
-            lastReadChapterIndex = :chapterIndex
+            lastReadChapterIndex = :chapterIndex,
+            version = version + 1
         WHERE url = :novelUrl
     """)
     suspend fun updateReadingPosition(
@@ -88,7 +89,8 @@ interface LibraryDao {
         UPDATE library SET 
             lastChapterUrl = :chapterUrl,
             lastChapterName = :chapterName,
-            lastReadAt = :timestamp
+            lastReadAt = :timestamp,
+            version = version + 1
         WHERE url = :novelUrl
     """)
     suspend fun updateLastChapter(
@@ -138,7 +140,8 @@ interface LibraryDao {
     @Query("""
         UPDATE library SET 
             lastReadChapterIndex = :chapterIndex,
-            unreadChapterCount = :unreadCount
+            unreadChapterCount = :unreadCount,
+            version = version + 1
         WHERE url = :novelUrl
     """)
     suspend fun updateUnreadTracking(
@@ -204,11 +207,11 @@ interface LibraryDao {
      * Soft-delete: keep the row as a tombstone so the removal survives a sync
      * merge instead of being resurrected by the other device's stale copy.
      */
-    @Query("UPDATE library SET deletedAt = :deletedAt WHERE url = :url")
+    @Query("UPDATE library SET deletedAt = :deletedAt, version = version + 1 WHERE url = :url")
     suspend fun softDelete(url: String, deletedAt: Long = System.currentTimeMillis())
 
     /** Re-adding a previously removed book clears its tombstone. */
-    @Query("UPDATE library SET deletedAt = NULL WHERE url = :url")
+    @Query("UPDATE library SET deletedAt = NULL, version = version + 1 WHERE url = :url")
     suspend fun clearTombstone(url: String)
 
     @Query("DELETE FROM library WHERE url = :url")
@@ -216,6 +219,18 @@ interface LibraryDao {
 
     @Query("DELETE FROM library")
     suspend fun deleteAll()
+
+    /**
+     * Records that this row's current [LibraryEntity.version] is what Drive has.
+     * Deliberately does not bump `version`: this is sync bookkeeping, not a user
+     * edit, and treating it as one would make every synced row look changed.
+     */
+    @Query("UPDATE library SET syncedVersion = :version WHERE url = :url")
+    suspend fun markSynced(url: String, version: Long)
+
+    /** Rows changed locally since the last sync agreement. */
+    @Query("SELECT * FROM library WHERE version > syncedVersion")
+    suspend fun getLocallyChanged(): List<LibraryEntity>
 
     /** Tombstones older than [threshold] are safe to purge permanently. */
     @Query("DELETE FROM library WHERE deletedAt IS NOT NULL AND deletedAt < :threshold")
@@ -234,7 +249,7 @@ interface LibraryDao {
 
     // ============ CUSTOM COVER ============
 
-    @Query("UPDATE library SET customCoverUrl = :coverUrl WHERE url = :novelUrl")
+    @Query("UPDATE library SET customCoverUrl = :coverUrl, version = version + 1 WHERE url = :novelUrl")
     suspend fun updateCustomCover(novelUrl: String, coverUrl: String?)
 
     @Query("SELECT customCoverUrl FROM library WHERE url = :novelUrl")
@@ -248,6 +263,6 @@ interface LibraryDao {
     @Query("SELECT DISTINCT apiName FROM library WHERE deletedAt IS NULL ORDER BY apiName ASC")
     suspend fun getDistinctSources(): List<String>
 
-    @Query("UPDATE library SET deletedAt = :deletedAt WHERE url = :url")
+    @Query("UPDATE library SET deletedAt = :deletedAt, version = version + 1 WHERE url = :url")
     suspend fun deleteByUrl(url: String, deletedAt: Long = System.currentTimeMillis())
 }

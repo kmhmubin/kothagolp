@@ -78,7 +78,13 @@ data class LibraryBackup(
      * a removal propagates as state; older backups simply have null here and are
      * treated as present.
      */
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
+    /**
+     * Local-change counter (see LibraryEntity.version). Travels with the payload
+     * so the other device can tell "changed since we last agreed" from
+     * "identical to what we already had". Older backups default to 0.
+     */
+    val version: Long = 0
 )
 
 @Serializable

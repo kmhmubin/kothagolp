@@ -57,6 +57,17 @@ object SyncBackupMerger {
             .sortedByDescending { libraryTimestamp(it) }
     }
 
+    /**
+     * Payload-level merge of one book from two snapshots.
+     *
+     * Note this is deliberately *not* the 3-way merge that
+     * LibraryEntity.mergeForSync performs. The baseline (`syncedVersion`) is
+     * per-device local bookkeeping and never travels in a payload, so two
+     * snapshots alone cannot say which side changed since they last agreed.
+     * The authoritative 3-way decision happens on restore, against the local
+     * row; this pass only has to produce a payload that loses nothing, so it
+     * resolves by recency and keeps the highest version seen.
+     */
     private fun mergeLibraryEntry(a: LibraryBackup, b: LibraryBackup): LibraryBackup {
         // Whole-entity winner for the reading position (ties keep `a`).
         val newestRead = if ((b.lastReadAt ?: 0L) > (a.lastReadAt ?: 0L)) b else a
@@ -91,7 +102,10 @@ object SyncBackupMerger {
             acknowledgedChapterCount = maxOf(a.acknowledgedChapterCount, b.acknowledgedChapterCount),
             lastCheckedAt = maxOf(a.lastCheckedAt, b.lastCheckedAt),
             lastUpdatedAt = maxOf(a.lastUpdatedAt, b.lastUpdatedAt),
-            deletedAt = mergedDeletedAt
+            deletedAt = mergedDeletedAt,
+            // Keep the highest counter so the merged payload supersedes both
+            // sides on every device that later merges against it.
+            version = maxOf(a.version, b.version)
         )
     }
 

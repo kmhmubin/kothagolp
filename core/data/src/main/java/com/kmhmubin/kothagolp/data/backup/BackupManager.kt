@@ -323,15 +323,18 @@ class BackupManager(
                         // in the merge, otherwise the remote copy looks "new" and
                         // silently resurrects the book.
                         val existing = libraryDao.getByUrlIncludingDeleted(entity.url)
-                        if (existing == null) {
-                            libraryDao.insert(entity)
-                            libraryCount++
-                        } else {
-                            libraryDao.insert(existing.mergeForSync(entity))
-                            libraryCount++
-                        }
+                        val resolved = existing?.mergeForSync(entity) ?: entity
+                        libraryDao.insert(resolved)
+                        // Record the agreement: this row now matches what the
+                        // payload carries, so future syncs can tell a real local
+                        // edit from a row that simply already agreed. Without
+                        // advancing the baseline every row looks permanently
+                        // "changed locally" and 3-way merge degrades to guessing.
+                        libraryDao.markSynced(resolved.url, resolved.version)
+                        libraryCount++
                     } else {
                         libraryDao.insert(entity)
+                        libraryDao.markSynced(entity.url, entity.version)
                         libraryCount++
                     }
                 }
@@ -536,7 +539,8 @@ private fun LibraryEntity.toBackup() = LibraryBackup(
     lastReadChapterIndex = lastReadChapterIndex,
     unreadChapterCount = unreadChapterCount
 ,
-    deletedAt = deletedAt
+    deletedAt = deletedAt,
+    version = version
 )
 
 private fun BookmarkEntity.toBackup() = BookmarkBackup(
@@ -700,27 +704,65 @@ private fun LibraryBackup.toEntity() = LibraryEntity(
     lastReadChapterIndex = lastReadChapterIndex,
     unreadChapterCount = unreadChapterCount
 ,
-    deletedAt = deletedAt
+    deletedAt = deletedAt,
+    version = version
 )
+
+/**
+ * Test hook for [mergeForSync], which is private to this file. The 3-way merge
+ * is the heart of sync correctness, so it is exercised directly rather than
+ * only through a full restore.
+ */
+@androidx.annotation.VisibleForTesting
+internal fun LibraryEntity.mergeForSyncForTest(remote: LibraryEntity): LibraryEntity =
+    mergeForSync(remote)
 
 /**
  * Merges a remote library entry into the local one.
  *
- * Two rules, both learned the hard way:
+ * This is a 3-way merge. `syncedVersion` is the baseline: the version this row
+ * had when it last agreed with Drive. Comparing against it separates "changed
+ * here since we last agreed" from "identical to what we already had" — without
+ * a baseline every difference looks like a conflict and has to be guessed at,
+ * which is how one device's real edits kept losing to another's stale copy.
  *
- * 1. **The reading position is atomic.** chapter URL, chapter index, scroll
- *    index/offset and timestamp all describe one point in one chapter, so they
- *    are taken wholesale from whichever side read last. Mixing fields across
- *    sides (e.g. a fresh chapter URL with `maxOf(...)` of the indexes) yields a
- *    position that never existed and drags the reader to the wrong chapter.
- * 2. **Deletion is state, not absence.** A tombstone competes with the other
- *    side's activity on recency: remove-then-read-elsewhere keeps the book,
- *    read-then-remove-elsewhere keeps it deleted.
+ *  - only this device changed  -> keep local, no conflict
+ *  - only the other changed    -> take remote, no conflict
+ *  - both changed              -> a real conflict; resolve field-wise below
  *
- * Counters that only ever grow (chapter counts, timestamps) still take the max
- * — those are genuinely independent of the reading position.
+ * Field-wise rules for a real conflict:
+ *  - The reading position is atomic and resolved by *recency*, never by version.
+ *    The counter counts edits, not progress: a device that opened a book twenty
+ *    times is not the device that read furthest, and picking it would undo real
+ *    progress.
+ *  - Deletion competes with the other side's activity on recency.
+ *  - Counters that only grow take the max.
  */
 private fun LibraryEntity.mergeForSync(remote: LibraryEntity): LibraryEntity {
+    val localChanged = version > syncedVersion
+    val remoteChanged = remote.version > syncedVersion
+
+    return when {
+        // Nothing changed anywhere since the last agreement, or only this device
+        // moved: local already represents the newest intent.
+        localChanged && !remoteChanged -> this
+        // Only the other device moved: adopt it wholesale, but keep our own
+        // sync bookkeeping (syncedVersion is per-device, never synced).
+        !localChanged && remoteChanged -> remote.copy(syncedVersion = syncedVersion)
+        // Neither side reports a change. Fall back to the timestamp rules so
+        // rows written before versioning existed (version == 0 everywhere) still
+        // reconcile instead of silently freezing.
+        !localChanged && !remoteChanged -> resolveByRecency(remote)
+        // Both changed: a genuine conflict.
+        else -> resolveByRecency(remote)
+    }
+}
+
+/**
+ * Timestamp-based resolution, used when both devices changed a row (or when no
+ * version information is available yet).
+ */
+private fun LibraryEntity.resolveByRecency(remote: LibraryEntity): LibraryEntity {
     val localReadAt = lastReadAt ?: 0L
     val remoteReadAt = remote.lastReadAt ?: 0L
 
@@ -736,7 +778,6 @@ private fun LibraryEntity.mergeForSync(remote: LibraryEntity): LibraryEntity {
         localDeletedAt != null && remoteDeletedAt != null ->
             maxOf(localDeletedAt, remoteDeletedAt)
         else -> {
-            // One side deleted; the other may have read/updated it since.
             val deletion = localDeletedAt ?: remoteDeletedAt!!
             val otherSide = if (localDeletedAt != null) remote else this
             val otherActivity = maxOf(otherSide.lastReadAt ?: 0L, otherSide.lastUpdatedAt)
@@ -763,7 +804,10 @@ private fun LibraryEntity.mergeForSync(remote: LibraryEntity): LibraryEntity {
         acknowledgedChapterCount = maxOf(acknowledgedChapterCount, remote.acknowledgedChapterCount),
         lastCheckedAt = maxOf(lastCheckedAt, remote.lastCheckedAt),
         lastUpdatedAt = maxOf(lastUpdatedAt, remote.lastUpdatedAt),
-        deletedAt = mergedDeletedAt
+        deletedAt = mergedDeletedAt,
+        // Conflict resolved: the surviving row supersedes both sides.
+        version = maxOf(version, remote.version),
+        syncedVersion = syncedVersion
     )
 }
 
