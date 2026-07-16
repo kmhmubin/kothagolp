@@ -80,6 +80,72 @@ class LibraryDaoTest {
     }
 
     @Test
+    fun clearTombstone_restoresEntryToLibrary() = runTest {
+        val url = "https://readd.test"
+        dao.insert(makeEntry(url))
+        dao.softDelete(url)
+        assertFalse(dao.exists(url))
+
+        // Re-adding a previously removed book must undo the tombstone,
+        // otherwise the row stays invisible forever.
+        dao.clearTombstone(url)
+        assertTrue(dao.exists(url))
+        assertNull(dao.getByUrl(url)!!.deletedAt)
+    }
+
+    @Test
+    fun purgeOldTombstones_removesOnlyExpiredOnes() = runTest {
+        val url = "https://purge.test"
+        dao.insert(makeEntry(url))
+        dao.softDelete(url, deletedAt = 1_000)
+
+        // A tombstone still inside the retention window must survive: it is the
+        // only thing stopping another device from resurrecting the book.
+        dao.purgeOldTombstones(threshold = 500)
+        assertNotNull(dao.getByUrlIncludingDeleted(url))
+
+        dao.purgeOldTombstones(threshold = 5_000)
+        assertNull(dao.getByUrlIncludingDeleted(url))
+    }
+
+    @Test
+    fun localEdits_bumpVersion_butSyncBookkeepingDoesNot() = runTest {
+        val url = "https://version.test"
+        dao.insert(makeEntry(url))
+        val start = dao.getByUrl(url)!!.version
+
+        dao.updateStatus(url, ReadingStatus.COMPLETED.name, System.currentTimeMillis())
+        val afterEdit = dao.getByUrl(url)!!.version
+        assertTrue("a local edit must bump version", afterEdit > start)
+
+        // Recording sync agreement is bookkeeping, not a user edit. Bumping the
+        // counter here would make every synced row look locally changed and
+        // collapse the 3-way merge back into guesswork.
+        dao.markSynced(url, afterEdit)
+        val row = dao.getByUrl(url)!!
+        assertEquals(afterEdit, row.version)
+        assertEquals(afterEdit, row.syncedVersion)
+    }
+
+    @Test
+    fun getLocallyChanged_reportsOnlyRowsEditedSinceLastSync() = runTest {
+        val synced = "https://synced.test"
+        val edited = "https://edited.test"
+        dao.insert(makeEntry(synced))
+        dao.insert(makeEntry(edited))
+
+        // Bring both to an agreed baseline.
+        dao.markSynced(synced, dao.getByUrl(synced)!!.version)
+        dao.markSynced(edited, dao.getByUrl(edited)!!.version)
+        assertTrue(dao.getLocallyChanged().isEmpty())
+
+        dao.updateStatus(edited, ReadingStatus.COMPLETED.name, System.currentTimeMillis())
+
+        val changed = dao.getLocallyChanged().map { it.url }
+        assertEquals(listOf(edited), changed)
+    }
+
+    @Test
     fun getAll_returnsAllInserted() = runTest {
         dao.insert(makeEntry("https://a.test"))
         dao.insert(makeEntry("https://b.test"))

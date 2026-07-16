@@ -144,7 +144,23 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_14_15,
                         MIGRATION_15_16
                     )
-                    .fallbackToDestructiveMigration()
+                    // No fallbackToDestructiveMigration() on purpose.
+                    //
+                    // It silently DELETES the entire library whenever a schema
+                    // change lacks a correct migration — no exception, no
+                    // warning; the user simply opens the app to an empty
+                    // collection, unrecoverably.
+                    //
+                    // Without it, a missing or broken migration throws on open
+                    // instead. That is a loud, ugly failure, but the data is
+                    // still on disk: shipping the correct migration restores
+                    // access. A wipe cannot be undone. Losing a reading
+                    // collection is far worse than a crash that we can fix.
+                    //
+                    // The cost: every future schema change MUST ship a
+                    // migration (and a downgrade — installing an older APK —
+                    // will fail to open until the newer build is reinstalled,
+                    // which leaves the data intact).
                     .build()
                 INSTANCE = instance
                 instance
