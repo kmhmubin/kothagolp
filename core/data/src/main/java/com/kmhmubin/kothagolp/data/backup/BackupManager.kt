@@ -770,11 +770,15 @@ private fun LibraryEntity.resolveByRecency(remote: LibraryEntity): LibraryEntity
     val newestRead = if (remoteReadAt > localReadAt) remote else this
     val newestMetadata = if (remote.lastUpdatedAt > lastUpdatedAt) remote else this
 
-    // Tombstone vs. activity: newest action wins.
+    // Deletion vs. presence: the higher change counter is the more recent
+    // authoritative edit and its state wins (a re-add bumps version past the
+    // tombstone). Only ties fall back to activity recency.
     val localDeletedAt = deletedAt
     val remoteDeletedAt = remote.deletedAt
     val mergedDeletedAt = when {
         localDeletedAt == null && remoteDeletedAt == null -> null
+        version > remote.version -> localDeletedAt
+        remote.version > version -> remoteDeletedAt
         localDeletedAt != null && remoteDeletedAt != null ->
             maxOf(localDeletedAt, remoteDeletedAt)
         else -> {

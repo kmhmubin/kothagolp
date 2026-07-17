@@ -214,6 +214,10 @@ interface LibraryDao {
     @Query("UPDATE library SET deletedAt = NULL, version = version + 1 WHERE url = :url")
     suspend fun clearTombstone(url: String)
 
+    /** The current local-change counter for a row (tombstoned or not), or null. */
+    @Query("SELECT version FROM library WHERE url = :url")
+    suspend fun getVersion(url: String): Long?
+
     @Query("DELETE FROM library WHERE url = :url")
     suspend fun deleteHard(url: String)
 

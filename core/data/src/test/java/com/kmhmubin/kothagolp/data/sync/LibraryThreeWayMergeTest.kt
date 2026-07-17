@@ -142,6 +142,17 @@ class LibraryThreeWayMergeTest {
     }
 
     @Test
+    fun `re-add outranks a synced tombstone by version`() {
+        // Local re-added the book, bumping version past the synced tombstone.
+        // The re-add has no fresh activity timestamp, so only the counter can
+        // establish it as the newer intent.
+        val local = row(deletedAt = null, lastUpdatedAt = 0, version = 3, syncedVersion = 1)
+        val remote = row(deletedAt = 5_000, lastUpdatedAt = 5_000, version = 2)
+
+        assertNull(local.mergeForSyncForTest(remote).deletedAt)
+    }
+
+    @Test
     fun `reading elsewhere after a local delete revives the book`() {
         // Both sides moved: genuine conflict, resolved by recency.
         val local = row(deletedAt = 2_000, lastUpdatedAt = 2_000, version = 6, syncedVersion = 5)

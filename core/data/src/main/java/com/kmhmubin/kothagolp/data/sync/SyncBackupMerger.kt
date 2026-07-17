@@ -73,8 +73,16 @@ object SyncBackupMerger {
         val newestRead = if ((b.lastReadAt ?: 0L) > (a.lastReadAt ?: 0L)) b else a
         val newestMeta = if (b.lastUpdatedAt > a.lastUpdatedAt) b else a
 
+        // Deletion vs. presence is decided by the change counter first: a higher
+        // version is the more recent authoritative edit, so its delete/re-add
+        // state wins. This is what lets a re-add (which bumps version past the
+        // synced tombstone) survive — recency alone can't, because re-adding a
+        // book carries no fresh read/update timestamp to beat the deletion time.
+        // Only when versions tie do we fall back to activity recency.
         val mergedDeletedAt = when {
             a.deletedAt == null && b.deletedAt == null -> null
+            a.version > b.version -> a.deletedAt
+            b.version > a.version -> b.deletedAt
             a.deletedAt != null && b.deletedAt != null -> maxOf(a.deletedAt, b.deletedAt)
             else -> {
                 val deletion = a.deletedAt ?: b.deletedAt!!

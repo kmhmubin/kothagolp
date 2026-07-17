@@ -25,7 +25,8 @@ class SyncBackupMergerTest {
         lastScrollIndex: Int = 0,
         lastUpdatedAt: Long = 0,
         addedAt: Long = 1_000,
-        deletedAt: Long? = null
+        deletedAt: Long? = null,
+        version: Long = 0
     ) = LibraryBackup(
         url = url,
         name = name,
@@ -38,7 +39,8 @@ class SyncBackupMergerTest {
         lastScrollIndex = lastScrollIndex,
         lastReadChapterIndex = lastReadChapterIndex,
         lastUpdatedAt = lastUpdatedAt,
-        deletedAt = deletedAt
+        deletedAt = deletedAt,
+        version = version
     )
 
     private fun merge(local: List<LibraryBackup>, remote: List<LibraryBackup>): List<LibraryBackup> =
@@ -180,6 +182,39 @@ class SyncBackupMergerTest {
         val merged = merge(listOf(a, b), emptyList())
 
         assertEquals(2, merged.size)
+    }
+
+    @Test
+    fun `re-adding a book after syncing its deletion keeps it live`() {
+        // Caught on two real devices: delete on A -> sync (tombstone reaches
+        // Drive) -> re-add on A -> sync, and the book came back deleted.
+        // A re-add carries no fresh read/update timestamp, so recency alone
+        // hands the win to the deletion. The bumped version is the only signal
+        // that the re-add is the newer intent.
+        val tombstone = book(deletedAt = 5_000, lastUpdatedAt = 5_000, version = 1)
+        val readded = book(deletedAt = null, lastUpdatedAt = 0, lastReadAt = null, version = 2)
+
+        // Order must not matter.
+        assertNull(merge(listOf(readded), listOf(tombstone)).single().deletedAt)
+        assertNull(merge(listOf(tombstone), listOf(readded)).single().deletedAt)
+    }
+
+    @Test
+    fun `higher version deletion still wins over a stale live copy`() {
+        // The mirror case: the delete is the newer edit and must stick.
+        val deleted = book(deletedAt = 5_000, lastUpdatedAt = 5_000, version = 3)
+        val stale = book(deletedAt = null, lastUpdatedAt = 9_000, version = 2)
+
+        assertNotNull(merge(listOf(stale), listOf(deleted)).single().deletedAt)
+    }
+
+    @Test
+    fun `equal-version deletion falls back to recency`() {
+        // Guards the fallback path for rows predating the version counter.
+        val deleted = book(deletedAt = 9_000, lastUpdatedAt = 9_000, version = 1)
+        val stale = book(deletedAt = null, lastUpdatedAt = 1_000, version = 1)
+
+        assertNotNull(merge(listOf(stale), listOf(deleted)).single().deletedAt)
     }
 
     @Test
