@@ -7,8 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,8 +26,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.Colorize
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,8 +49,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
@@ -62,8 +70,15 @@ import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import kotlin.math.roundToInt
+import kotlinx.coroutines.withTimeoutOrNull
 import com.kmhmubin.kothagolp.domain.model.ReaderSettings
 import com.kmhmubin.kothagolp.ui.components.GhostButton
 import com.kmhmubin.kothagolp.ui.screens.reader.model.TextHighlight
@@ -181,8 +196,12 @@ fun SegmentItem(
     tempSelectionEnd: Int = -1,
     onHandleDragStart: (() -> Unit)? = null,
     onHandleDragUpdate: ((start: Int, end: Int) -> Unit)? = null,
-    onHandleDragEnd: ((text: String) -> Unit)? = null,
-    onSelectionTapped: (() -> Unit)? = null
+    hasActiveSelection: Boolean = false,
+    onClearSelection: (() -> Unit)? = null,
+    onQuickCopy: ((text: String) -> Unit)? = null,
+    onQuickHighlight: ((text: String) -> Unit)? = null,
+    onQuickDictionary: ((text: String) -> Unit)? = null,
+    onQuickNote: ((text: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val segment = item.segment
@@ -380,8 +399,14 @@ fun SegmentItem(
     val latestTempEnd by rememberUpdatedState(tempSelectionEnd)
     val latestOnHandleDragStart by rememberUpdatedState(onHandleDragStart)
     val latestOnHandleDragUpdate by rememberUpdatedState(onHandleDragUpdate)
-    val latestOnHandleDragEnd by rememberUpdatedState(onHandleDragEnd)
-    val latestOnSelectionTapped by rememberUpdatedState(onSelectionTapped)
+    val latestHasActiveSelection by rememberUpdatedState(hasActiveSelection)
+    val latestOnClearSelection by rememberUpdatedState(onClearSelection)
+
+    val haptic = LocalHapticFeedback.current
+    // Selection visuals follow the app theme instead of a hardcoded blue.
+    val selectionAccent = MaterialTheme.colorScheme.primary
+    // Hide the floating toolbar while a handle (or long-press extension) drags.
+    var isDraggingSelection by remember { mutableStateOf(false) }
 
     // Extra vertical padding for larger touch targets
     val extraPadding = if (settings.largerTouchTargets) 4.dp else 0.dp
@@ -407,33 +432,44 @@ fun SegmentItem(
                     // frame and would cancel the in-progress drag coroutine if used as keys.
                     // Latest values are read via rememberUpdatedState refs instead.
                     Modifier.pointerInput(segment.id, textHighlights) {
-                        val handleTouchRadius = 28.dp.toPx()
+                        val handleTouchRadius = 24.dp.toPx()
+                        val handleRadiusPx = 8.dp.toPx()
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             val layout = textLayoutResult
+                            // All offsets live in the LAID-OUT text space (word
+                            // spacing inserts extra characters), so extraction
+                            // must substring the layout text, never segment.text.
+                            val layoutText = layout?.layoutInput?.text?.text ?: segment.text
 
                             // Snapshot current selection at gesture start
                             val curTempStart = latestTempStart
                             val curTempEnd = latestTempEnd
 
-                            // Detect touch near a handle
+                            // Detect touch near a handle. Hit centers match the DRAWN
+                            // circle centers exactly; when both handles are in range
+                            // (one-word selection) the nearest one wins.
                             var draggingStart = false
                             var draggingEnd = false
                             if (layout != null && curTempStart >= 0 && curTempEnd > curTempStart) {
-                                val textLen = layout.layoutInput.text.length
+                                val textLen = layoutText.length
                                 if (textLen > 0) {
                                     val safeStart = curTempStart.coerceIn(0, textLen - 1)
                                     val safeEndCursor = curTempEnd.coerceIn(0, textLen)
                                     val startRect = layout.getCursorRect(safeStart)
                                     val endRect = layout.getCursorRect(safeEndCursor)
-                                    val startCenter = Offset(startRect.left, startRect.bottom + 12.dp.toPx())
-                                    val endCenter = Offset(endRect.right, endRect.bottom + 12.dp.toPx())
-                                    draggingStart = (down.position - startCenter).getDistance() < handleTouchRadius
-                                    draggingEnd = !draggingStart && (down.position - endCenter).getDistance() < handleTouchRadius
+                                    val startCenter = Offset(startRect.left, startRect.bottom + handleRadiusPx)
+                                    val endCenter = Offset(endRect.right, endRect.bottom + handleRadiusPx)
+                                    val dStart = (down.position - startCenter).getDistance()
+                                    val dEnd = (down.position - endCenter).getDistance()
+                                    if (dStart < handleTouchRadius || dEnd < handleTouchRadius) {
+                                        if (dStart <= dEnd) draggingStart = true else draggingEnd = true
+                                    }
                                 }
                             }
 
                             if (draggingStart || draggingEnd) {
+                                isDraggingSelection = true
                                 latestOnHandleDragStart?.invoke()
                                 // Local vars track drag position — avoids reading stale
                                 // state that hasn't recomposed yet after onHandleDragUpdate
@@ -442,72 +478,86 @@ fun SegmentItem(
                                 drag(down.id) { change ->
                                     change.consume()
                                     val l = textLayoutResult ?: return@drag
+                                    val lLen = l.layoutInput.text.length
                                     val newOffset = l.getOffsetForPosition(change.position)
-                                        .coerceIn(0, segment.text.length)
+                                        .coerceIn(0, lLen)
                                     if (draggingStart) {
                                         dragStart = newOffset.coerceAtMost((dragEnd - 1).coerceAtLeast(0))
                                     } else {
-                                        dragEnd = newOffset.coerceAtLeast(dragStart + 1)
-                                            .coerceAtMost(segment.text.length)
+                                        dragEnd = newOffset.coerceAtLeast(dragStart + 1).coerceAtMost(lLen)
                                     }
                                     latestOnHandleDragUpdate?.invoke(dragStart, dragEnd)
                                 }
-                                val finalStart = dragStart.coerceAtLeast(0)
-                                val finalEnd = dragEnd.coerceAtMost(segment.text.length)
-                                if (finalEnd > finalStart) {
-                                    val draggedText = segment.text.substring(finalStart, finalEnd).trim()
-                                    if (draggedText.isNotBlank()) latestOnHandleDragEnd?.invoke(draggedText)
-                                }
+                                isDraggingSelection = false
                             } else {
-                                // Check if touch landed inside the active temp selection
-                                val curStart = latestTempStart
-                                val curEnd = latestTempEnd
-                                val tapOffset = layout?.getOffsetForPosition(down.position)
-                                    ?.coerceIn(0, (segment.text.length - 1).coerceAtLeast(0)) ?: -1
-                                val insideSelection = curStart >= 0 && curEnd > curStart &&
-                                    tapOffset >= curStart && tapOffset < curEnd
-
-                                if (insideSelection) {
-                                    // Tap on active selection → open popup
-                                    latestOnSelectionTapped?.invoke()
-                                } else {
-                                    // Long press → detect word or existing highlight
-                                    val longPress = awaitLongPressOrCancellation(down.id)
-                                    if (longPress != null) {
-                                        val l = textLayoutResult ?: return@awaitEachGesture
-                                        val charOffset = l.getOffsetForPosition(down.position)
-                                            .coerceIn(0, (segment.text.length - 1).coerceAtLeast(0))
-                                        val existing = textHighlights.find { h ->
-                                            h.segmentId == segment.id &&
-                                            charOffset >= h.startOffset &&
-                                            charOffset < h.endOffset
+                                // Manual long-press detection: a marker distinguishes
+                                // quick-tap (clear selection) from cancellation (scroll).
+                                // Every action lives on the floating toolbar, so a plain
+                                // tap — inside or outside the selection — just dismisses.
+                                val upOrCancel = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                    waitForUpOrCancellation() ?: CancelledGesture
+                                }
+                                when {
+                                        upOrCancel === CancelledGesture -> { /* scroll took over */ }
+                                        upOrCancel != null -> {
+                                            // Quick tap: dismiss any active selection.
+                                            if (latestHasActiveSelection) latestOnClearSelection?.invoke()
                                         }
-                                        if (existing != null) {
-                                            onTextSelected(existing.text, existing.startOffset, existing.endOffset, segment.id, displayIndex, existing.id)
-                                        } else {
-                                            val rawText = segment.text
-                                            val boundary = l.getWordBoundary(charOffset)
-                                            val wordText = rawText.substring(
-                                                boundary.start.coerceAtLeast(0),
-                                                boundary.end.coerceAtMost(rawText.length)
-                                            ).trim()
-                                            if (wordText.isNotBlank()) {
-                                                onTextSelected(wordText, boundary.start, boundary.end, segment.id, displayIndex, null)
+                                        else -> {
+                                            // Long press: select word / highlight, then keep
+                                            // dragging in the SAME gesture to extend — the
+                                            // standard Android selection feel.
+                                            val l = textLayoutResult ?: return@awaitEachGesture
+                                            val lt = l.layoutInput.text.text
+                                            if (lt.isEmpty()) return@awaitEachGesture
+                                            val charOffset = l.getOffsetForPosition(down.position)
+                                                .coerceIn(0, lt.length - 1)
+                                            val existing = textHighlights.find { h ->
+                                                h.segmentId == segment.id &&
+                                                charOffset >= h.startOffset &&
+                                                charOffset < h.endOffset
+                                            }
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            if (existing != null) {
+                                                onTextSelected(existing.text, existing.startOffset, existing.endOffset, segment.id, displayIndex, existing.id)
+                                            } else {
+                                                val boundary = l.getWordBoundary(charOffset)
+                                                val wStart = boundary.start.coerceAtLeast(0)
+                                                val wEnd = boundary.end.coerceAtMost(lt.length)
+                                                val wordText = lt.substring(wStart, wEnd).trim()
+                                                if (wordText.isNotBlank()) {
+                                                    onTextSelected(wordText, wStart, wEnd, segment.id, displayIndex, null)
+                                                    // Drag-to-extend from the initial word.
+                                                    isDraggingSelection = true
+                                                    latestOnHandleDragStart?.invoke()
+                                                    drag(down.id) { change ->
+                                                        change.consume()
+                                                        val ll = textLayoutResult ?: return@drag
+                                                        val llLen = ll.layoutInput.text.length
+                                                        val o = ll.getOffsetForPosition(change.position).coerceIn(0, llLen)
+                                                        val (s, e) = if (o < wStart) o to wEnd
+                                                        else wStart to o.coerceAtLeast(wStart + 1)
+                                                        latestOnHandleDragUpdate?.invoke(s, e)
+                                                    }
+                                                    isDraggingSelection = false
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
                 } else Modifier
             )
     ) {
         if (hasLinks) {
-            // For ClickableText, we can't get onTextLayout directly
             ClickableText(
                 text = annotatedText,
                 style = textStyle,
+                onTextLayout = { result ->
+                    // Selection needs the layout on link segments too.
+                    textLayoutResult = result
+                },
                 onClick = { offset ->
                     // Check if click is on a link
                     annotatedText.getStringAnnotations(
@@ -573,8 +623,8 @@ fun SegmentItem(
                 Canvas(modifier = Modifier.matchParentSize()) {
                     val handleRadius = 8.dp.toPx()
                     val stemWidth = 2.dp.toPx()
-                    val handleColor = Color(0xFF1976D2)
-                    val selectionColor = Color(0x331976D2)
+                    val handleColor = selectionAccent
+                    val selectionColor = selectionAccent.copy(alpha = 0.25f)
 
                     // Draw selection background line by line
                     val startLine = layout.getLineForOffset(safeStart)
@@ -601,8 +651,119 @@ fun SegmentItem(
                     drawLine(color = handleColor, start = Offset(endRect.right, endRect.top), end = Offset(endRect.right, endRect.bottom + handleRadius), strokeWidth = stemWidth)
                     drawCircle(color = handleColor, radius = handleRadius, center = Offset(endRect.right, endRect.bottom + handleRadius))
                 }
+
+                // Floating action toolbar near the selection (hidden while dragging).
+                // Replaces the old auto-opening bottom sheet: adjust handles freely,
+                // then Copy / Highlight / More without a modal in the way.
+                if (!isDraggingSelection &&
+                    (onQuickCopy != null || onQuickHighlight != null || onQuickDictionary != null || onQuickNote != null)
+                ) {
+                    val layoutTextStr = layout.layoutInput.text.text
+                    val selText = layoutTextStr
+                        .substring(safeStart, safeEndCursor.coerceAtLeast(safeStart))
+                        .trim()
+                    if (selText.isNotBlank()) {
+                        val density = LocalDensity.current
+                        val startLine = layout.getLineForOffset(safeStart)
+                        val endLine = layout.getLineForOffset(safeEndChar)
+                        val anchorX = ((layout.getCursorRect(safeStart).left +
+                                layout.getCursorRect(safeEndCursor).right) / 2f).roundToInt()
+                        val topY = layout.getLineTop(startLine).roundToInt()
+                        val bottomY = (layout.getLineBottom(endLine) +
+                                with(density) { 20.dp.toPx() }).roundToInt()
+                        SelectionToolbar(
+                            anchorX = anchorX,
+                            anchorTopY = topY,
+                            anchorBottomY = bottomY,
+                            onCopy = onQuickCopy?.let { cb -> { cb(selText) } },
+                            onHighlight = onQuickHighlight?.let { cb -> { cb(selText) } },
+                            onDictionary = onQuickDictionary?.let { cb -> { cb(selText) } },
+                            onNote = onQuickNote?.let { cb -> { cb(selText) } }
+                        )
+                    }
+                }
             }
         }
+    }
+}
+
+/** Marker distinguishing a scroll-cancelled gesture from a long-press timeout. */
+private val CancelledGesture = Any()
+
+@Composable
+private fun SelectionToolbar(
+    anchorX: Int,
+    anchorTopY: Int,
+    anchorBottomY: Int,
+    onCopy: (() -> Unit)?,
+    onHighlight: (() -> Unit)?,
+    onDictionary: (() -> Unit)?,
+    onNote: (() -> Unit)?
+) {
+    val density = LocalDensity.current
+    val marginPx = with(density) { 12.dp.roundToPx() }
+    val positionProvider = remember(anchorX, anchorTopY, anchorBottomY, marginPx) {
+        object : PopupPositionProvider {
+            override fun calculatePosition(
+                anchorBounds: IntRect,
+                windowSize: IntSize,
+                layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+                popupContentSize: IntSize
+            ): IntOffset {
+                val x = (anchorBounds.left + anchorX - popupContentSize.width / 2)
+                    .coerceIn(marginPx, (windowSize.width - popupContentSize.width - marginPx).coerceAtLeast(marginPx))
+                // Prefer above the selection; flip below when clipped by the top.
+                val above = anchorBounds.top + anchorTopY - popupContentSize.height - marginPx
+                val y = if (above >= marginPx) above else anchorBounds.top + anchorBottomY + marginPx
+                return IntOffset(
+                    x,
+                    y.coerceIn(marginPx, (windowSize.height - popupContentSize.height - marginPx).coerceAtLeast(marginPx))
+                )
+            }
+        }
+    }
+
+    Popup(popupPositionProvider = positionProvider) {
+        Surface(
+            shape = AppShape.large,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shadowElevation = 6.dp,
+            tonalElevation = 3.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (onCopy != null) {
+                    SelectionToolbarButton(Icons.Outlined.ContentCopy, "Copy", onCopy)
+                }
+                if (onHighlight != null) {
+                    SelectionToolbarButton(Icons.Outlined.Colorize, "Highlight", onHighlight)
+                }
+                if (onDictionary != null) {
+                    SelectionToolbarButton(Icons.Outlined.Search, "Dictionary", onDictionary)
+                }
+                if (onNote != null) {
+                    SelectionToolbarButton(Icons.Outlined.EditNote, "Add note", onNote)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SelectionToolbarButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

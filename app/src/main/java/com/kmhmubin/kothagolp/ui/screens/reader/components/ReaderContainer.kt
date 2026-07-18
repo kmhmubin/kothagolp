@@ -24,8 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -71,6 +73,19 @@ fun ReaderContainer(
     var selectionSegmentId by remember { mutableStateOf<String?>(null) }
     var selectionStart by remember { mutableStateOf(-1) }
     var selectionEnd by remember { mutableStateOf(-1) }
+
+    var dictionaryMode by remember { mutableStateOf(false) }
+    var noteMode by remember { mutableStateOf(false) }
+
+    val clipboard = LocalClipboardManager.current
+    val clearSelection: () -> Unit = {
+        pendingSelectionText = null
+        selectionSegmentId = null
+        selectionStart = -1
+        selectionEnd = -1
+        dictionaryMode = false
+        noteMode = false
+    }
 
     // Pre-group highlights by segmentId: O(1) lookup per item instead of O(n) filter per item
     val highlightsBySegment = remember(uiState.textHighlights) {
@@ -413,7 +428,8 @@ fun ReaderContainer(
                                                     val existing = uiState.textHighlights.find { it.id == existingId }
                                                     pendingSelectionText = existing?.text ?: text
                                                 }
-                                                // New word: only show handles; popup opens on tap or drag-end
+                                                // New word: handles + floating toolbar; the sheet
+                                                // opens only from More / tapping the selection.
                                             },
                                             tempSelectionStart = if (item.segment.id == selectionSegmentId) selectionStart else -1,
                                             tempSelectionEnd = if (item.segment.id == selectionSegmentId) selectionEnd else -1,
@@ -424,14 +440,29 @@ fun ReaderContainer(
                                                 selectionStart = s
                                                 selectionEnd = e
                                             } else null,
-                                            onHandleDragEnd = if (item.segment.id == selectionSegmentId) { text ->
-                                                pendingSelectionText = text
+                                            hasActiveSelection = selectionSegmentId != null,
+                                            onClearSelection = clearSelection,
+                                            onQuickCopy = if (item.segment.id == selectionSegmentId) { text ->
+                                                clipboard.setText(AnnotatedString(text))
+                                                clearSelection()
                                             } else null,
-                                            onSelectionTapped = if (item.segment.id == selectionSegmentId) {
-                                                {
-                                                    val s = selectionStart.coerceAtLeast(0)
-                                                    val e = selectionEnd.coerceAtMost(item.segment.text.length)
-                                                    if (e > s) pendingSelectionText = item.segment.text.substring(s, e).trim()
+                                            onQuickHighlight = if (item.segment.id == selectionSegmentId) { text ->
+                                                onAddHighlight?.invoke(text, DEFAULT_HIGHLIGHT_COLOR)
+                                                clearSelection()
+                                            } else null,
+                                            onQuickDictionary = if (item.segment.id == selectionSegmentId) { text ->
+                                                if (text.isNotBlank()) {
+                                                    dictionaryMode = true
+                                                    pendingSelectionText = text
+                                                }
+                                            } else null,
+                                            onQuickNote = if (item.segment.id == selectionSegmentId) { text ->
+                                                if (text.isNotBlank()) {
+                                                    // A note lives on a highlight, so create one
+                                                    // first, then open the sheet in the editor.
+                                                    onAddHighlight?.invoke(text, DEFAULT_HIGHLIGHT_COLOR)
+                                                    noteMode = true
+                                                    pendingSelectionText = text
                                                 }
                                             } else null
                                         )
@@ -494,11 +525,15 @@ fun ReaderContainer(
                 TextSelectionPopup(
                     selectedText = text,
                     existingHighlight = existingHighlight,
+                    startInDictionary = dictionaryMode,
+                    startInNoteEdit = noteMode,
                     onDismiss = {
                         pendingSelectionText = null
                         selectionSegmentId = null
                         selectionStart = -1
                         selectionEnd = -1
+                        dictionaryMode = false
+                        noteMode = false
                     },
                     onHighlight = { color ->
                         if (existingHighlight != null) {
@@ -550,3 +585,6 @@ private fun mapFontWeight(readerFontWeight: com.kmhmubin.kothagolp.domain.model.
         com.kmhmubin.kothagolp.domain.model.FontWeight.BLACK -> FontWeight.Black
     }
 }
+
+/** Default color for the toolbar's one-tap Highlight action. */
+private const val DEFAULT_HIGHLIGHT_COLOR = "#FFD54F"
