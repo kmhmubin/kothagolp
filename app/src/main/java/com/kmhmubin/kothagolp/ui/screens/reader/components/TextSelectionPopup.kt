@@ -86,6 +86,8 @@ private data class DictMeaning(val partOfSpeech: String, val definitions: List<S
 fun TextSelectionPopup(
     selectedText: String,
     existingHighlight: TextHighlight? = null,
+    /** Open straight into the dictionary lookup instead of the actions view. */
+    startInDictionary: Boolean = false,
     onDismiss: () -> Unit,
     onSelectAll: (() -> Unit)? = null,
     onHighlight: (color: String) -> Unit,
@@ -96,7 +98,9 @@ fun TextSelectionPopup(
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
 
-    var view by remember { mutableStateOf<SheetView>(SheetView.Actions) }
+    var view by remember {
+        mutableStateOf<SheetView>(if (startInDictionary) SheetView.DictLoading else SheetView.Actions)
+    }
     var noteText by remember { mutableStateOf(existingHighlight?.userNote ?: "") }
 
     val dismiss: () -> Unit = {
@@ -135,6 +139,10 @@ fun TextSelectionPopup(
                 withContext(Dispatchers.Main) { view = SheetView.DictError("No definition found for \"$word\"") }
             }
         }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (startInDictionary) fetchDictionary(firstWord)
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {

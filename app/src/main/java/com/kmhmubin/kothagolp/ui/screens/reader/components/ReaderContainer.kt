@@ -74,12 +74,15 @@ fun ReaderContainer(
     var selectionStart by remember { mutableStateOf(-1) }
     var selectionEnd by remember { mutableStateOf(-1) }
 
+    var dictionaryMode by remember { mutableStateOf(false) }
+
     val clipboard = LocalClipboardManager.current
     val clearSelection: () -> Unit = {
         pendingSelectionText = null
         selectionSegmentId = null
         selectionStart = -1
         selectionEnd = -1
+        dictionaryMode = false
     }
 
     // Pre-group highlights by segmentId: O(1) lookup per item instead of O(n) filter per item
@@ -447,6 +450,12 @@ fun ReaderContainer(
                                             onQuickHighlight = if (item.segment.id == selectionSegmentId) { text ->
                                                 onAddHighlight?.invoke(text, DEFAULT_HIGHLIGHT_COLOR)
                                                 clearSelection()
+                                            } else null,
+                                            onQuickDictionary = if (item.segment.id == selectionSegmentId) { text ->
+                                                if (text.isNotBlank()) {
+                                                    dictionaryMode = true
+                                                    pendingSelectionText = text
+                                                }
                                             } else null
                                         )
                                     }
@@ -508,11 +517,13 @@ fun ReaderContainer(
                 TextSelectionPopup(
                     selectedText = text,
                     existingHighlight = existingHighlight,
+                    startInDictionary = dictionaryMode,
                     onDismiss = {
                         pendingSelectionText = null
                         selectionSegmentId = null
                         selectionStart = -1
                         selectionEnd = -1
+                        dictionaryMode = false
                     },
                     onHighlight = { color ->
                         if (existingHighlight != null) {

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -199,7 +200,8 @@ fun SegmentItem(
     hasActiveSelection: Boolean = false,
     onClearSelection: (() -> Unit)? = null,
     onQuickCopy: ((text: String) -> Unit)? = null,
-    onQuickHighlight: ((text: String) -> Unit)? = null
+    onQuickHighlight: ((text: String) -> Unit)? = null,
+    onQuickDictionary: ((text: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val segment = item.segment
@@ -671,7 +673,7 @@ fun SegmentItem(
                 // Replaces the old auto-opening bottom sheet: adjust handles freely,
                 // then Copy / Highlight / More without a modal in the way.
                 if (!isDraggingSelection &&
-                    (onQuickCopy != null || onQuickHighlight != null || onSelectionTapped != null)
+                    (onQuickCopy != null || onQuickHighlight != null || onQuickDictionary != null || onSelectionTapped != null)
                 ) {
                     val layoutTextStr = layout.layoutInput.text.text
                     val selText = layoutTextStr
@@ -692,6 +694,7 @@ fun SegmentItem(
                             anchorBottomY = bottomY,
                             onCopy = onQuickCopy?.let { cb -> { cb(selText) } },
                             onHighlight = onQuickHighlight?.let { cb -> { cb(selText) } },
+                            onDictionary = onQuickDictionary?.let { cb -> { cb(selText) } },
                             onMore = onSelectionTapped?.let { cb -> { cb(selText) } }
                         )
                     }
@@ -711,6 +714,7 @@ private fun SelectionToolbar(
     anchorBottomY: Int,
     onCopy: (() -> Unit)?,
     onHighlight: (() -> Unit)?,
+    onDictionary: (() -> Unit)?,
     onMore: (() -> Unit)?
 ) {
     val density = LocalDensity.current
@@ -752,6 +756,9 @@ private fun SelectionToolbar(
                 }
                 if (onHighlight != null) {
                     SelectionToolbarButton(Icons.Outlined.Colorize, "Highlight", onHighlight)
+                }
+                if (onDictionary != null) {
+                    SelectionToolbarButton(Icons.Outlined.Search, "Dictionary", onDictionary)
                 }
                 if (onMore != null) {
                     SelectionToolbarButton(Icons.Outlined.MoreHoriz, "More actions", onMore)
