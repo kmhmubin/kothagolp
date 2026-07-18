@@ -88,6 +88,8 @@ fun TextSelectionPopup(
     existingHighlight: TextHighlight? = null,
     /** Open straight into the dictionary lookup instead of the actions view. */
     startInDictionary: Boolean = false,
+    /** Open straight into the note editor (used right after creating a highlight). */
+    startInNoteEdit: Boolean = false,
     onDismiss: () -> Unit,
     onSelectAll: (() -> Unit)? = null,
     onHighlight: (color: String) -> Unit,
@@ -99,7 +101,13 @@ fun TextSelectionPopup(
     val clipboard = LocalClipboardManager.current
 
     var view by remember {
-        mutableStateOf<SheetView>(if (startInDictionary) SheetView.DictLoading else SheetView.Actions)
+        mutableStateOf<SheetView>(
+            when {
+                startInDictionary -> SheetView.DictLoading
+                startInNoteEdit -> SheetView.NoteEdit
+                else -> SheetView.Actions
+            }
+        )
     }
     var noteText by remember { mutableStateOf(existingHighlight?.userNote ?: "") }
 

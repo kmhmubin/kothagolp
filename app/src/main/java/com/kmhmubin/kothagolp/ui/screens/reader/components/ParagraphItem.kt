@@ -26,9 +26,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -196,12 +196,12 @@ fun SegmentItem(
     tempSelectionEnd: Int = -1,
     onHandleDragStart: (() -> Unit)? = null,
     onHandleDragUpdate: ((start: Int, end: Int) -> Unit)? = null,
-    onSelectionTapped: ((text: String) -> Unit)? = null,
     hasActiveSelection: Boolean = false,
     onClearSelection: (() -> Unit)? = null,
     onQuickCopy: ((text: String) -> Unit)? = null,
     onQuickHighlight: ((text: String) -> Unit)? = null,
-    onQuickDictionary: ((text: String) -> Unit)? = null
+    onQuickDictionary: ((text: String) -> Unit)? = null,
+    onQuickNote: ((text: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val segment = item.segment
@@ -399,7 +399,6 @@ fun SegmentItem(
     val latestTempEnd by rememberUpdatedState(tempSelectionEnd)
     val latestOnHandleDragStart by rememberUpdatedState(onHandleDragStart)
     val latestOnHandleDragUpdate by rememberUpdatedState(onHandleDragUpdate)
-    val latestOnSelectionTapped by rememberUpdatedState(onSelectionTapped)
     val latestHasActiveSelection by rememberUpdatedState(hasActiveSelection)
     val latestOnClearSelection by rememberUpdatedState(onClearSelection)
 
@@ -491,29 +490,14 @@ fun SegmentItem(
                                 }
                                 isDraggingSelection = false
                             } else {
-                                val tapOffset = layout?.getOffsetForPosition(down.position)
-                                    ?.coerceIn(0, (layoutText.length - 1).coerceAtLeast(0)) ?: -1
-                                val insideSelection = curTempStart >= 0 && curTempEnd > curTempStart &&
-                                    tapOffset >= curTempStart && tapOffset < curTempEnd
-
-                                if (insideSelection) {
-                                    // Open actions only on a real tap (finger UP without
-                                    // scrolling) — a scroll started on the selection must
-                                    // scroll, not pop the sheet.
-                                    val up = waitForUpOrCancellation()
-                                    if (up != null) {
-                                        up.consume()
-                                        val s = curTempStart.coerceIn(0, layoutText.length)
-                                        val e = curTempEnd.coerceIn(0, layoutText.length)
-                                        if (e > s) latestOnSelectionTapped?.invoke(layoutText.substring(s, e).trim())
-                                    }
-                                } else {
-                                    // Manual long-press detection: a marker distinguishes
-                                    // quick-tap (clear selection) from cancellation (scroll).
-                                    val upOrCancel = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                                        waitForUpOrCancellation() ?: CancelledGesture
-                                    }
-                                    when {
+                                // Manual long-press detection: a marker distinguishes
+                                // quick-tap (clear selection) from cancellation (scroll).
+                                // Every action lives on the floating toolbar, so a plain
+                                // tap — inside or outside the selection — just dismisses.
+                                val upOrCancel = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                    waitForUpOrCancellation() ?: CancelledGesture
+                                }
+                                when {
                                         upOrCancel === CancelledGesture -> { /* scroll took over */ }
                                         upOrCancel != null -> {
                                             // Quick tap: dismiss any active selection.
@@ -563,7 +547,6 @@ fun SegmentItem(
                                 }
                             }
                         }
-                    }
                 } else Modifier
             )
     ) {
@@ -673,7 +656,7 @@ fun SegmentItem(
                 // Replaces the old auto-opening bottom sheet: adjust handles freely,
                 // then Copy / Highlight / More without a modal in the way.
                 if (!isDraggingSelection &&
-                    (onQuickCopy != null || onQuickHighlight != null || onQuickDictionary != null || onSelectionTapped != null)
+                    (onQuickCopy != null || onQuickHighlight != null || onQuickDictionary != null || onQuickNote != null)
                 ) {
                     val layoutTextStr = layout.layoutInput.text.text
                     val selText = layoutTextStr
@@ -695,7 +678,7 @@ fun SegmentItem(
                             onCopy = onQuickCopy?.let { cb -> { cb(selText) } },
                             onHighlight = onQuickHighlight?.let { cb -> { cb(selText) } },
                             onDictionary = onQuickDictionary?.let { cb -> { cb(selText) } },
-                            onMore = onSelectionTapped?.let { cb -> { cb(selText) } }
+                            onNote = onQuickNote?.let { cb -> { cb(selText) } }
                         )
                     }
                 }
@@ -715,7 +698,7 @@ private fun SelectionToolbar(
     onCopy: (() -> Unit)?,
     onHighlight: (() -> Unit)?,
     onDictionary: (() -> Unit)?,
-    onMore: (() -> Unit)?
+    onNote: (() -> Unit)?
 ) {
     val density = LocalDensity.current
     val marginPx = with(density) { 12.dp.roundToPx() }
@@ -760,8 +743,8 @@ private fun SelectionToolbar(
                 if (onDictionary != null) {
                     SelectionToolbarButton(Icons.Outlined.Search, "Dictionary", onDictionary)
                 }
-                if (onMore != null) {
-                    SelectionToolbarButton(Icons.Outlined.MoreHoriz, "More actions", onMore)
+                if (onNote != null) {
+                    SelectionToolbarButton(Icons.Outlined.EditNote, "Add note", onNote)
                 }
             }
         }

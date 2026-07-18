@@ -75,6 +75,7 @@ fun ReaderContainer(
     var selectionEnd by remember { mutableStateOf(-1) }
 
     var dictionaryMode by remember { mutableStateOf(false) }
+    var noteMode by remember { mutableStateOf(false) }
 
     val clipboard = LocalClipboardManager.current
     val clearSelection: () -> Unit = {
@@ -83,6 +84,7 @@ fun ReaderContainer(
         selectionStart = -1
         selectionEnd = -1
         dictionaryMode = false
+        noteMode = false
     }
 
     // Pre-group highlights by segmentId: O(1) lookup per item instead of O(n) filter per item
@@ -438,9 +440,6 @@ fun ReaderContainer(
                                                 selectionStart = s
                                                 selectionEnd = e
                                             } else null,
-                                            onSelectionTapped = if (item.segment.id == selectionSegmentId) { text ->
-                                                if (text.isNotBlank()) pendingSelectionText = text
-                                            } else null,
                                             hasActiveSelection = selectionSegmentId != null,
                                             onClearSelection = clearSelection,
                                             onQuickCopy = if (item.segment.id == selectionSegmentId) { text ->
@@ -454,6 +453,15 @@ fun ReaderContainer(
                                             onQuickDictionary = if (item.segment.id == selectionSegmentId) { text ->
                                                 if (text.isNotBlank()) {
                                                     dictionaryMode = true
+                                                    pendingSelectionText = text
+                                                }
+                                            } else null,
+                                            onQuickNote = if (item.segment.id == selectionSegmentId) { text ->
+                                                if (text.isNotBlank()) {
+                                                    // A note lives on a highlight, so create one
+                                                    // first, then open the sheet in the editor.
+                                                    onAddHighlight?.invoke(text, DEFAULT_HIGHLIGHT_COLOR)
+                                                    noteMode = true
                                                     pendingSelectionText = text
                                                 }
                                             } else null
@@ -518,12 +526,14 @@ fun ReaderContainer(
                     selectedText = text,
                     existingHighlight = existingHighlight,
                     startInDictionary = dictionaryMode,
+                    startInNoteEdit = noteMode,
                     onDismiss = {
                         pendingSelectionText = null
                         selectionSegmentId = null
                         selectionStart = -1
                         selectionEnd = -1
                         dictionaryMode = false
+                        noteMode = false
                     },
                     onHighlight = { color ->
                         if (existingHighlight != null) {
