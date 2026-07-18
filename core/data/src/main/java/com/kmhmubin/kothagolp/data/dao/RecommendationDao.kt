@@ -120,7 +120,7 @@ interface RecommendationDao {
     @Query(
         """
         SELECT url, readingStatus, 
-               (SELECT COUNT(*) FROM read_chapters WHERE novelUrl = library.url) as readCount
+               (SELECT COUNT(*) FROM read_chapters WHERE novelUrl = library.url AND unreadAt IS NULL) as readCount
         FROM library
     """
     )

@@ -118,7 +118,9 @@ data class HistoryBackup(
 data class ReadChapterBackup(
     val chapterUrl: String,
     val novelUrl: String,
-    val readAt: Long
+    val readAt: Long,
+    /** Unread tombstone; non-null = marked unread at this time. See ReadChapterEntity. */
+    val unreadAt: Long? = null
 )
 
 @Serializable

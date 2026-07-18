@@ -2,6 +2,7 @@ package com.kmhmubin.kothagolp.data.sync
 
 import com.kmhmubin.kothagolp.data.backup.BackupData
 import com.kmhmubin.kothagolp.data.backup.LibraryBackup
+import com.kmhmubin.kothagolp.data.backup.ReadChapterBackup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -48,6 +49,40 @@ class SyncBackupMergerTest {
             BackupData(library = local, appVersion = "test", deviceInfo = "test"),
             BackupData(library = remote, appVersion = "test", deviceInfo = "test")
         ).library
+
+    private fun mergeRead(
+        local: List<ReadChapterBackup>,
+        remote: List<ReadChapterBackup>
+    ): List<ReadChapterBackup> =
+        SyncBackupMerger.merge(
+            BackupData(readChapters = local, appVersion = "test", deviceInfo = "test"),
+            BackupData(readChapters = remote, appVersion = "test", deviceInfo = "test")
+        ).readChapters
+
+    private fun read(url: String = "ch-1", readAt: Long = 0, unreadAt: Long? = null) =
+        ReadChapterBackup(chapterUrl = url, novelUrl = "novel", readAt = readAt, unreadAt = unreadAt)
+
+    // ------------------------------------------------- bug: unread not syncing
+
+    @Test
+    fun `unread after read wins when it happened later`() {
+        // Both devices read the chapter; one then marked it unread.
+        val readCopy = read(readAt = 1_000)
+        val unreadCopy = read(readAt = 1_000, unreadAt = 2_000)
+
+        assertNotNull(mergeRead(listOf(readCopy), listOf(unreadCopy)).single().unreadAt)
+        assertNotNull(mergeRead(listOf(unreadCopy), listOf(readCopy)).single().unreadAt)
+    }
+
+    @Test
+    fun `re-reading after an unread clears the tombstone`() {
+        // Marked unread at 2000, then read again at 3000 (which clears unreadAt).
+        val unreadCopy = read(readAt = 1_000, unreadAt = 2_000)
+        val rereadCopy = read(readAt = 3_000, unreadAt = null)
+
+        assertNull(mergeRead(listOf(unreadCopy), listOf(rereadCopy)).single().unreadAt)
+        assertNull(mergeRead(listOf(rereadCopy), listOf(unreadCopy)).single().unreadAt)
+    }
 
     // ---------------------------------------------------------------- bug 1
 

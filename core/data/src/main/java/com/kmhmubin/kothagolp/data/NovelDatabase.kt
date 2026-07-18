@@ -97,7 +97,7 @@ class DatabaseConverters {
         BlockedAuthorEntity::class,
         AuthorPreferenceEntity::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
@@ -142,7 +142,8 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_12_13,
                         MIGRATION_13_14,
                         MIGRATION_14_15,
-                        MIGRATION_15_16
+                        MIGRATION_15_16,
+                        MIGRATION_16_17
                     )
                     // No fallbackToDestructiveMigration() on purpose.
                     //
@@ -548,6 +549,18 @@ abstract class NovelDatabase : RoomDatabase() {
          * upgrading falls back to the timestamp rules that were already in use,
          * rather than claiming every existing book changed locally.
          */
+        /**
+         * Adds the unread tombstone to `read_chapters`. Marking a chapter unread
+         * used to delete its row, so the unread state vanished on sync and the
+         * chapter came back read from the other device's copy.
+         */
+        @VisibleForTesting
+        internal val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE `read_chapters` ADD COLUMN `unreadAt` INTEGER DEFAULT NULL")
+            }
+        }
+
         @VisibleForTesting
         internal val MIGRATION_15_16 = object : Migration(15, 16) {
             override fun migrate(database: SupportSQLiteDatabase) {

@@ -571,7 +571,8 @@ private fun HistoryEntity.toBackup() = HistoryBackup(
 private fun ReadChapterEntity.toBackup() = ReadChapterBackup(
     chapterUrl = chapterUrl,
     novelUrl = novelUrl,
-    readAt = readAt
+    readAt = readAt,
+    unreadAt = unreadAt
 )
 
 private fun ReadingStatsEntity.toBackup() = ReadingStatsBackup(
@@ -857,7 +858,8 @@ private fun HistoryBackup.toEntity() = HistoryEntity(
 private fun ReadChapterBackup.toEntity() = ReadChapterEntity(
     chapterUrl = chapterUrl,
     novelUrl = novelUrl,
-    readAt = readAt
+    readAt = readAt,
+    unreadAt = unreadAt
 )
 
 private fun ReadingStatsBackup.toEntity() = ReadingStatsEntity(

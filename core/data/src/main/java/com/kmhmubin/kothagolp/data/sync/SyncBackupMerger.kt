@@ -149,7 +149,12 @@ object SyncBackupMerger {
         return (local + remote)
             .groupBy { it.chapterUrl }
             .map { (_, entries) ->
-                entries.maxByOrNull { it.readAt } ?: entries.first()
+                // Read and unread are competing actions on the same chapter.
+                // The winner is whichever happened last: readAt vs unreadAt.
+                // A row without an unread tombstone dates from readAt; a
+                // tombstoned row's action time is unreadAt.
+                entries.maxByOrNull { maxOf(it.readAt, it.unreadAt ?: Long.MIN_VALUE) }
+                    ?: entries.first()
             }
             .sortedByDescending { it.readAt }
     }
