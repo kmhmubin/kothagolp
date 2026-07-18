@@ -56,6 +56,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kmhmubin.kothagolp.domain.model.Chapter
@@ -111,7 +113,7 @@ fun DetailsScreen(
     novelUrl: String,
     providerName: String,
     onBack: () -> Unit,
-    onChapterClick: (String, String, String) -> Unit,
+    onChapterClick: (chapterUrl: String, novelUrl: String, providerName: String, resume: Boolean) -> Unit,
     onNovelClick: (String, String) -> Unit = { _, _ -> },
     onOpenInWebView: (String, String) -> Unit = { _, _ -> },
     onNavigateToDownloads: () -> Unit = {},
@@ -176,6 +178,11 @@ fun DetailsScreen(
     // Load novel on first composition
     LaunchedEffect(novelUrl, providerName) {
         viewModel.loadNovel(novelUrl, providerName)
+    }
+
+    // Returning from the reader: refresh the per-chapter "N%" progress hints.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshChapterProgress()
     }
 
     // Reset scroll position when page changes in paginated mode
@@ -567,7 +574,7 @@ private fun DetailsContent(
     novelUrl: String,
     providerName: String,
     onBack: () -> Unit,
-    onChapterClick: (String, String, String) -> Unit,
+    onChapterClick: (chapterUrl: String, novelUrl: String, providerName: String, resume: Boolean) -> Unit,
     onNovelClick: (String, String) -> Unit,
     onOpenInWebView: (String, String) -> Unit,
     onNavigateToDownloads: () -> Unit,
@@ -636,7 +643,7 @@ private fun DetailsContent(
                 onRead = {
                     val chapterUrl = viewModel.getChapterToOpen()
                     if (chapterUrl != null) {
-                        onChapterClick(chapterUrl, novelUrl, providerName)
+                        onChapterClick(chapterUrl, novelUrl, providerName, true)
                     }
                 },
                 onDownload = { viewModel.showDownloadMenu() },
@@ -769,7 +776,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.chaptersTabContent(
     displayedChapters: List<Chapter>,
     novelUrl: String,
     providerName: String,
-    onChapterClick: (String, String, String) -> Unit,
+    onChapterClick: (chapterUrl: String, novelUrl: String, providerName: String, resume: Boolean) -> Unit,
     onHapticFeedback: (HapticFeedbackType) -> Unit,
     viewModel: DetailsViewModel,
     scope: CoroutineScope,
@@ -863,7 +870,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.chaptersTabContent(
                         onHapticFeedback(HapticFeedbackType.TextHandleMove)
                         viewModel.toggleChapterSelection(actualIndex, chapter.url)
                     } else {
-                        onChapterClick(chapter.url, novelUrl, providerName)
+                        onChapterClick(chapter.url, novelUrl, providerName, false)
                     }
                 }
             }
@@ -895,6 +902,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.chaptersTabContent(
                 isLastRead = chapter.url == uiState.lastReadChapterUrl,
                 isSelectionMode = uiState.isSelectionMode,
                 isSelected = uiState.selectedChapters.contains(chapter.url),
+                progressPercent = uiState.chapterProgress[chapter.url],
                 onTap = onTap,
                 onLongPress = onLongPress,
                 onSwipeToRead = onSwipeToRead,

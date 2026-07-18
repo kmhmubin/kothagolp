@@ -89,6 +89,7 @@ fun ReaderScreen(
     chapterUrl: String,
     novelUrl: String,
     providerName: String,
+    resume: Boolean = false,
     onBack: () -> Unit,
     onNavigateToSettings: () -> Unit,
     viewModel: ReaderViewModel = viewModel()
@@ -224,7 +225,7 @@ fun ReaderScreen(
 
     // Load chapter on first composition
     LaunchedEffect(chapterUrl, novelUrl, providerName) {
-        viewModel.loadChapter(chapterUrl, novelUrl, providerName)
+        viewModel.loadChapter(chapterUrl, novelUrl, providerName, resume)
     }
 
     // Restore scroll position when content is loaded and ready

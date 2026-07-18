@@ -270,7 +270,28 @@ class DetailsViewModel : ViewModel() {
                 .collect { read ->
                     _uiState.update { it.copy(readChapters = read) }
                     recomputeFilteredChapters()
+                    refreshChapterProgress()
                 }
+        }
+    }
+
+    /**
+     * Reads the device-local per-chapter scroll progress for the "N%" hint on
+     * partially-read chapters. Not reactive (SharedPreferences), so callers
+     * invoke it when the read set changes and when the screen resumes.
+     */
+    fun refreshChapterProgress() {
+        viewModelScope.launch(Dispatchers.Default) {
+            val chapters = _uiState.value.novelDetails?.chapters ?: return@launch
+            val read = _uiState.value.readChapters
+            val map = HashMap<String, Int>()
+            for (ch in chapters) {
+                if (read.contains(ch.url)) continue
+                val progress = preferencesManager.getReadingPosition(ch.url)?.progress ?: continue
+                val pct = (progress * 100).toInt()
+                if (pct in 1..99) map[ch.url] = pct
+            }
+            _uiState.update { it.copy(chapterProgress = map) }
         }
     }
 

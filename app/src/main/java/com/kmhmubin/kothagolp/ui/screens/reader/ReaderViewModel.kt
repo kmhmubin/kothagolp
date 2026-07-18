@@ -1542,10 +1542,9 @@ class ReaderViewModel : ViewModel() {
                 NavigationSource.TTS_AUTO -> false
             }
 
-            if (!shouldRestorePosition) {
-                Log.d(TAG, "Clearing saved position for $chapterUrl (source: $source)")
-                preferencesManager.clearReadingPosition(chapterUrl)
-            }
+            // Note: when not restoring we open at the top but must NOT wipe the
+            // saved position — the chapter-list progress indicator reads it, and
+            // a user peeking at a chapter shouldn't lose their place there.
 
             _uiState.update {
                 it.copy(
@@ -1618,9 +1617,13 @@ class ReaderViewModel : ViewModel() {
     fun loadChapter(
         chapterUrl: String,
         novelUrl: String,
-        providerName: String
+        providerName: String,
+        resume: Boolean = false
     ) {
-        loadChapterInternal(chapterUrl, novelUrl, providerName, NavigationSource.CONTINUE)
+        // resume = restore the saved scroll position ("Continue"); otherwise open
+        // at the top of the chapter the user explicitly picked from the list.
+        val source = if (resume) NavigationSource.CONTINUE else NavigationSource.CHAPTER_LIST
+        loadChapterInternal(chapterUrl, novelUrl, providerName, source)
     }
 
     private fun startInitialLoad(
@@ -2218,13 +2221,20 @@ class ReaderViewModel : ViewModel() {
     }
 
     private fun saveStablePosition(position: StableScrollPosition) {
-        val chapter = _uiState.value.allChapters.getOrNull(position.chapterIndex) ?: return
+        val state = _uiState.value
+        val chapter = state.allChapters.getOrNull(position.chapterIndex) ?: return
+
+        // Fraction through the chapter, for the chapter-list progress indicator.
+        val totalSegments = state.loadedChapters[position.chapterIndex]?.segments?.size ?: 0
+        val progress = if (totalSegments > 1) {
+            (position.segmentIndex.toFloat() / (totalSegments - 1)).coerceIn(0f, 1f)
+        } else 0f
 
         preferencesManager.saveReadingPosition(
             chapterUrl = chapter.url,
             segmentId = "seg-${position.segmentIndex}",
             segmentIndex = position.segmentIndex,
-            progress = 0f,
+            progress = progress,
             offset = position.pixelOffset,
             chapterIndex = position.chapterIndex
         )

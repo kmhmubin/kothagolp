@@ -74,6 +74,8 @@ fun ChapterItem(
     isLastRead: Boolean,
     isSelectionMode: Boolean,
     isSelected: Boolean,
+    /** 1..99 = partially read (shows a "N%" hint); null/0/100 shows nothing. */
+    progressPercent: Int? = null,
     onTap: () -> Unit,
     onLongPress: () -> Unit,
     onSwipeToRead: (() -> Unit)? = null,
@@ -274,6 +276,7 @@ fun ChapterItem(
                         chapter = chapter,
                         isLastRead = isLastRead,
                         isSelectionMode = isSelectionMode,
+                        progressPercent = progressPercent.takeIf { !isRead },
                         textColor = textColor,
                         secondaryTextColor = secondaryTextColor
                     )
@@ -462,10 +465,12 @@ private fun ChapterInfo(
     chapter: Chapter,
     isLastRead: Boolean,
     isSelectionMode: Boolean,
+    progressPercent: Int?,
     textColor: Color,
     secondaryTextColor: Color,
     modifier: Modifier = Modifier
 ) {
+    val showProgress = !isSelectionMode && progressPercent != null && progressPercent in 1..99
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -483,13 +488,30 @@ private fun ChapterInfo(
 
         // Fixed-height secondary row — always reserves 16dp so all items have consistent
         // height, preventing LazyList from re-measuring items during scroll.
-        val hasSecondaryInfo = chapter.dateOfRelease != null || (isLastRead && !isSelectionMode)
+        val hasSecondaryInfo = chapter.dateOfRelease != null || (isLastRead && !isSelectionMode) || showProgress
         Box(modifier = Modifier.height(16.dp)) {
             if (hasSecondaryInfo) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // In-progress hint ("read 50%") for a started-but-unfinished chapter
+                    if (showProgress) {
+                        Text(
+                            text = "$progressPercent%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                        if (chapter.dateOfRelease != null || (isLastRead && !isSelectionMode)) {
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = secondaryTextColor
+                            )
+                        }
+                    }
+
                     // Release date with icon
                     chapter.dateOfRelease?.let { date ->
                         Row(
