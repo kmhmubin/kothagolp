@@ -378,6 +378,8 @@ fun DetailsScreen(
                                     onSelectAll = { viewModel.selectAll() },
                                     onSelectAllUnread = { viewModel.selectAllUnread() },
                                     onSelectAllNotDownloaded = { viewModel.selectAllNotDownloaded() },
+                                    onSelectAbove = { viewModel.selectAbove() },
+                                    onSelectBelow = { viewModel.selectBelow() },
                                     onDeselectAll = { viewModel.deselectAll() },
                                     onInvertSelection = { viewModel.invertSelection() },
                                     onCancel = { viewModel.disableSelectionMode() },

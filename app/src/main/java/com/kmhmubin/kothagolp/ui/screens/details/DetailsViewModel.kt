@@ -725,6 +725,36 @@ class DetailsViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Extend the selection to every chapter shown *above* the anchor (the last
+     * chapter tapped), inclusive. "Above/below" is visual list order, so it
+     * matches whatever sort the user is viewing — e.g. with newest-first,
+     * "below" chapter 50 is 49→1. Pairs with Mark Read/Unread/Download.
+     */
+    fun selectAbove() = extendSelectionFromAnchor(toStart = true)
+
+    /** Extend the selection to every chapter shown *below* the anchor, inclusive. */
+    fun selectBelow() = extendSelectionFromAnchor(toStart = false)
+
+    private fun extendSelectionFromAnchor(toStart: Boolean) {
+        val state = _uiState.value
+        val chapters = state.filteredChapters
+        // Prefer the tap anchor; entering selection via long-press leaves it -1,
+        // so fall back to the sole selected chapter's position.
+        val anchor = state.lastSelectedIndex.takeIf { it >= 0 }
+            ?: state.selectedChapters.singleOrNull()
+                ?.let { url -> chapters.indexOfFirst { it.url == url } }
+            ?: return
+        if (anchor < 0 || anchor >= chapters.size) return
+
+        val range = if (toStart) chapters.subList(0, anchor + 1)
+        else chapters.subList(anchor, chapters.size)
+
+        _uiState.update {
+            it.copy(selectedChapters = it.selectedChapters + range.map { ch -> ch.url })
+        }
+    }
+
     fun setLastReadToSelected() {
         val novelUrl = currentNovelUrl ?: return
         val selected = _uiState.value.selectedChapters.firstOrNull() ?: return
