@@ -6,6 +6,18 @@ plugins {
 
 android {
     namespace = "com.kmhmubin.kothagolp.core.data"
+
+    // The Google auth libraries each ship their own META-INF/INDEX.LIST, which
+    // collides when the androidTest APK is packaged. :app already excludes these.
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/INDEX.LIST",
+                "META-INF/DEPENDENCIES",
+                "META-INF/io.netty.versions.properties"
+            )
+        }
+    }
 }
 
 dependencies {

@@ -216,8 +216,15 @@ class LibraryRepository(
         novel: Novel,
         status: ReadingStatus = ReadingStatus.READING
     ) = withContext(Dispatchers.IO) {
-        val entity = LibraryEntity.fromNovel(novel, status)
+        // Preserve the local-change counter across re-add. insert(REPLACE)
+        // would reset it to 0; clearTombstone then bumps to 1 — the exact value
+        // a synced tombstone already carries, so the merge can't tell the re-add
+        // apart from the deletion and resurrects it. Carrying the old version
+        // forward makes the re-add's version strictly greater.
+        val priorVersion = libraryDao.getVersion(novel.url) ?: 0
+        val entity = LibraryEntity.fromNovel(novel, status).copy(version = priorVersion)
         libraryDao.insert(entity)
+        libraryDao.clearTombstone(novel.url)
     }
 
     suspend fun addToLibraryWithDetails(
@@ -227,11 +234,14 @@ class LibraryRepository(
     ) = withContext(Dispatchers.IO) {
         val chapterCount = details.chapters.size
 
+        val priorVersion = libraryDao.getVersion(novel.url) ?: 0
         val entity = LibraryEntity.fromNovel(novel, status, chapterCount).copy(
             latestChapter = details.chapters.lastOrNull()?.name,
-            lastCheckedAt = System.currentTimeMillis()
+            lastCheckedAt = System.currentTimeMillis(),
+            version = priorVersion  // see addToLibrary: keep re-add ahead of a synced tombstone
         )
         libraryDao.insert(entity)
+        libraryDao.clearTombstone(novel.url)
 
         offlineDao.saveNovelDetails(NovelDetailsEntity.fromNovelDetails(details))
         offlineDao.saveNovel(
@@ -243,17 +253,25 @@ class LibraryRepository(
         )
     }
 
+    /**
+     * Soft-delete so the removal can beat a stale remote copy at sync time
+     * instead of the book reappearing on the next merge.
+     */
     suspend fun removeFromLibrary(url: String) = withContext(Dispatchers.IO) {
-        libraryDao.delete(url)
+        libraryDao.softDelete(url)
     }
 
     suspend fun toggleFavorite(novel: Novel): Boolean = withContext(Dispatchers.IO) {
         val exists = libraryDao.exists(novel.url)
         if (exists) {
-            libraryDao.delete(novel.url)
+            libraryDao.softDelete(novel.url)
             false
         } else {
-            libraryDao.insert(LibraryEntity.fromNovel(novel))
+            // Re-adding clears any tombstone from a previous removal, keeping
+            // the version ahead of it (see addToLibrary).
+            val priorVersion = libraryDao.getVersion(novel.url) ?: 0
+            libraryDao.insert(LibraryEntity.fromNovel(novel).copy(version = priorVersion))
+            libraryDao.clearTombstone(novel.url)
             true
         }
     }
@@ -268,7 +286,8 @@ class LibraryRepository(
         chapterUrl: String,
         chapterName: String,
         scrollIndex: Int = 0,
-        scrollOffset: Int = 0
+        scrollOffset: Int = 0,
+        chapterIndex: Int
     ) = withContext(Dispatchers.IO) {
         libraryDao.updateReadingPosition(
             novelUrl = novelUrl,
@@ -276,7 +295,8 @@ class LibraryRepository(
             chapterName = chapterName,
             timestamp = System.currentTimeMillis(),
             scrollIndex = scrollIndex,
-            scrollOffset = scrollOffset
+            scrollOffset = scrollOffset,
+            chapterIndex = chapterIndex
         )
     }
 

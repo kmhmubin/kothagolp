@@ -109,12 +109,23 @@ sealed class NavRoutes(val route: String) {
         }
     }
 
-    object Reader : NavRoutes("reader/{chapterUrl}/{novelUrl}/{providerName}") {
-        fun createRoute(chapterUrl: String, novelUrl: String, providerName: String): String {
+    object Reader : NavRoutes("reader/{chapterUrl}/{novelUrl}/{providerName}?resume={resume}") {
+        /**
+         * @param resume true = restore the saved scroll position ("Continue"
+         *   affordances); false (default) = open at the top of the chapter.
+         *   Tapping a chapter in the list must not force-scroll to where the
+         *   reader last was, so it navigates with resume = false.
+         */
+        fun createRoute(
+            chapterUrl: String,
+            novelUrl: String,
+            providerName: String,
+            resume: Boolean = false
+        ): String {
             val encodedChapterUrl = encodeUrl(chapterUrl)
             val encodedNovelUrl = encodeUrl(novelUrl)
             val encodedProvider = encodeUrl(providerName)
-            return "reader/$encodedChapterUrl/$encodedNovelUrl/$encodedProvider"
+            return "reader/$encodedChapterUrl/$encodedNovelUrl/$encodedProvider?resume=$resume"
         }
     }
 

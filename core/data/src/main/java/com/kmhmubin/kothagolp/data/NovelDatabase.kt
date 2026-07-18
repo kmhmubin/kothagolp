@@ -4,6 +4,7 @@ package com.kmhmubin.kothagolp.data.local
  * Type converters for Room database
  */
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -96,7 +97,7 @@ class DatabaseConverters {
         BlockedAuthorEntity::class,
         AuthorPreferenceEntity::class,
     ],
-    version = 14,
+    version = 17,
     exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
@@ -139,9 +140,28 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_10_11,
                         MIGRATION_11_12,
                         MIGRATION_12_13,
-                        MIGRATION_13_14
+                        MIGRATION_13_14,
+                        MIGRATION_14_15,
+                        MIGRATION_15_16,
+                        MIGRATION_16_17
                     )
-                    .fallbackToDestructiveMigration()
+                    // No fallbackToDestructiveMigration() on purpose.
+                    //
+                    // It silently DELETES the entire library whenever a schema
+                    // change lacks a correct migration — no exception, no
+                    // warning; the user simply opens the app to an empty
+                    // collection, unrecoverably.
+                    //
+                    // Without it, a missing or broken migration throws on open
+                    // instead. That is a loud, ugly failure, but the data is
+                    // still on disk: shipping the correct migration restores
+                    // access. A wipe cannot be undone. Losing a reading
+                    // collection is far worse than a crash that we can fix.
+                    //
+                    // The cost: every future schema change MUST ship a
+                    // migration (and a downgrade — installing an older APK —
+                    // will fail to open until the newer build is reinstalled,
+                    // which leaves the data intact).
                     .build()
                 INSTANCE = instance
                 instance
@@ -513,6 +533,49 @@ abstract class NovelDatabase : RoomDatabase() {
          * UNIQUE INDEX, causing Room's schema validator to crash the app on every launch.
          * This migration recreates the table with the schema Room actually expects.
          */
+        /**
+         * Adds the soft-delete tombstone to `library`.
+         *
+         * Removing a book used to delete the row outright, so the deletion was
+         * represented as absence — and the other device's surviving copy simply
+         * restored it on the next sync merge. The tombstone lets a removal
+         * propagate as state and win a newest-wins comparison.
+         */
+        /**
+         * Adds the local-change counter and its last-synced baseline.
+         *
+         * Existing rows start at version 0 / syncedVersion 0, i.e. "unchanged
+         * since the last sync". That is the safe default: the first sync after
+         * upgrading falls back to the timestamp rules that were already in use,
+         * rather than claiming every existing book changed locally.
+         */
+        /**
+         * Adds the unread tombstone to `read_chapters`. Marking a chapter unread
+         * used to delete its row, so the unread state vanished on sync and the
+         * chapter came back read from the other device's copy.
+         */
+        @VisibleForTesting
+        internal val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE `read_chapters` ADD COLUMN `unreadAt` INTEGER DEFAULT NULL")
+            }
+        }
+
+        @VisibleForTesting
+        internal val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE `library` ADD COLUMN `version` INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE `library` ADD COLUMN `syncedVersion` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        @VisibleForTesting
+        internal val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE `library` ADD COLUMN `deletedAt` INTEGER DEFAULT NULL")
+            }
+        }
+
         private val MIGRATION_13_14 = object : Migration(13, 14) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("""

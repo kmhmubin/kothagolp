@@ -108,13 +108,35 @@ class HistoryDaoTest {
     }
 
     @Test
-    fun markChapterUnread_removesEntry() = runTest {
+    fun markChapterUnread_tombstonesButKeepsRowForSync() = runTest {
         val novelUrl = "https://novel.test"
         val chapterUrl = "https://ch1.test"
         dao.markChapterRead(ReadChapterEntity(chapterUrl, novelUrl))
         assertEquals(1, dao.getReadChapterUrls(novelUrl).size)
+
         dao.markChapterUnread(novelUrl, chapterUrl)
+
+        // Read queries hide it, but the row survives (tombstone) so the unread
+        // action can propagate through backup/sync instead of being resurrected.
         assertTrue(dao.getReadChapterUrls(novelUrl).isEmpty())
+        assertEquals(0, dao.getReadChapterCount(novelUrl))
+        val all = dao.getAllReadChapters()
+        assertEquals(1, all.size)
+        assertNotNull(all.single().unreadAt)
+    }
+
+    @Test
+    fun markChapterRead_clearsAnExistingUnreadTombstone() = runTest {
+        val novelUrl = "https://novel.test"
+        val chapterUrl = "https://ch1.test"
+        dao.markChapterRead(ReadChapterEntity(chapterUrl, novelUrl))
+        dao.markChapterUnread(novelUrl, chapterUrl)
+        assertNotNull(dao.getAllReadChapters().single().unreadAt)
+
+        // Reading it again must clear the tombstone (REPLACE writes unreadAt = null).
+        dao.markChapterRead(ReadChapterEntity(chapterUrl, novelUrl))
+        assertEquals(1, dao.getReadChapterUrls(novelUrl).size)
+        assertNull(dao.getAllReadChapters().single().unreadAt)
     }
 
     @Test

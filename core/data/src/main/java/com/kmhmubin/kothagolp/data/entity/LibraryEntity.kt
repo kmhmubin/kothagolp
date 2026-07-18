@@ -35,7 +35,38 @@ data class LibraryEntity(
     val unreadChapterCount: Int = 0,
 
     //Custom Cover
-    val customCoverUrl: String? = null
+    val customCoverUrl: String? = null,
+
+    /**
+     * Soft-delete tombstone. Non-null = removed from the library at this time.
+     *
+     * Removal must survive as *state*, not absence: a deleted row that simply
+     * vanished from the sync payload gets resurrected by the other device's
+     * surviving copy on the next merge. The row stays here (and in backups) so
+     * the deletion can win a newest-wins comparison, then is filtered out of
+     * every library query.
+     */
+    val deletedAt: Long? = null,
+
+    /**
+     * Monotonic counter bumped on every *local* change (see LibraryDao). Writes
+     * that merely apply synced data must NOT bump it — otherwise received data
+     * looks locally authored and this device wins every future comparison.
+     *
+     * Used to detect "did this row change locally", independent of device
+     * clocks. It counts edits, not progress, so it decides metadata conflicts
+     * only — the reading position is still resolved by recency, because a device
+     * that edited more often is not the device that read further.
+     */
+    val version: Long = 0,
+
+    /**
+     * The [version] this row had when it last agreed with Drive: the common
+     * ancestor for a 3-way merge. `version > syncedVersion` means "changed here
+     * since the last sync". Without this baseline every difference looks like a
+     * conflict and has to be guessed at.
+     */
+    val syncedVersion: Long = 0
 ) {
     // Update toNovel() to use custom cover
     fun toNovel(): Novel = Novel(

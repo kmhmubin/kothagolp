@@ -76,6 +76,9 @@ data class DetailsUiState(
     val downloadedChapterUrls: Set<String> = emptySet(),
     val readChapterUrls: Set<String> = emptySet(),
 
+    /** chapterUrl -> percent (1..99) for started-but-unfinished chapters. */
+    val chapterProgress: Map<String, Int> = emptyMap(),
+
     // Chapter sorting & filtering
     val isChapterSortDescending: Boolean = false,
     val isChapterListReversed: Boolean = false,

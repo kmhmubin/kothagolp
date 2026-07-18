@@ -36,17 +36,17 @@ interface HistoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun markChaptersRead(entities: List<ReadChapterEntity>)
 
-    @Query("SELECT chapterUrl FROM read_chapters WHERE novelUrl = :novelUrl")
+    @Query("SELECT chapterUrl FROM read_chapters WHERE novelUrl = :novelUrl AND unreadAt IS NULL")
     suspend fun getReadChapterUrls(novelUrl: String): List<String>
 
-    @Query("SELECT chapterUrl FROM read_chapters WHERE novelUrl = :novelUrl")
+    @Query("SELECT chapterUrl FROM read_chapters WHERE novelUrl = :novelUrl AND unreadAt IS NULL")
     fun getReadChapterUrlsFlow(novelUrl: String): Flow<List<String>>
 
-    @Query("DELETE FROM read_chapters WHERE novelUrl = :novelUrl AND chapterUrl = :chapterUrl")
-    suspend fun markChapterUnread(novelUrl: String, chapterUrl: String)
+    @Query("UPDATE read_chapters SET unreadAt = :unreadAt WHERE novelUrl = :novelUrl AND chapterUrl = :chapterUrl")
+    suspend fun markChapterUnread(novelUrl: String, chapterUrl: String, unreadAt: Long = System.currentTimeMillis())
 
-    @Query("DELETE FROM read_chapters WHERE novelUrl = :novelUrl AND chapterUrl IN (:chapterUrls)")
-    suspend fun markChaptersUnread(novelUrl: String, chapterUrls: List<String>)
+    @Query("UPDATE read_chapters SET unreadAt = :unreadAt WHERE novelUrl = :novelUrl AND chapterUrl IN (:chapterUrls)")
+    suspend fun markChaptersUnread(novelUrl: String, chapterUrls: List<String>, unreadAt: Long = System.currentTimeMillis())
 
     @Query("DELETE FROM read_chapters WHERE novelUrl = :novelUrl")
     suspend fun clearReadChapters(novelUrl: String)
@@ -54,13 +54,14 @@ interface HistoryDao {
     @Query("DELETE FROM read_chapters")
     suspend fun clearAllReadChapters()
 
-    @Query("SELECT COUNT(*) FROM read_chapters WHERE novelUrl = :novelUrl")
+    @Query("SELECT COUNT(*) FROM read_chapters WHERE novelUrl = :novelUrl AND unreadAt IS NULL")
     suspend fun getReadCountForNovel(novelUrl: String): Int
 
+    /** Includes unread-tombstoned rows: backup/sync must carry the unread state. */
     @Query("SELECT * FROM read_chapters")
     suspend fun getAllReadChapters(): List<ReadChapterEntity>
 
-    @Query("SELECT COUNT(*) FROM read_chapters WHERE novelUrl = :novelUrl")
+    @Query("SELECT COUNT(*) FROM read_chapters WHERE novelUrl = :novelUrl AND unreadAt IS NULL")
     suspend fun getReadChapterCount(novelUrl: String): Int
 
     // ============ CUSTOM COVER ============

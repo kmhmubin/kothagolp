@@ -114,8 +114,10 @@ fun KothagolpNavGraph(
                     )
                 },
                 onNavigateToReader = { chapterUrl, novelUrl, providerName ->
+                    // Home surfaces "continue reading" (history / library cards):
+                    // restore the saved position rather than opening at the top.
                     navController.navigate(
-                        NavRoutes.Reader.createRoute(chapterUrl, novelUrl, providerName)
+                        NavRoutes.Reader.createRoute(chapterUrl, novelUrl, providerName, resume = true)
                     )
                 },
                 onNavigateToSettings = {
@@ -231,7 +233,7 @@ fun KothagolpNavGraph(
             val prefsManager = remember { RepositoryProvider.getPreferencesManager() }
             val cacheManager = remember { CacheManager(context, database) }
             val backupManager = remember { BackupManager(context, database, prefsManager) }
-            val syncManager = remember { SyncManager(context, prefsManager, backupManager) }
+            val syncManager = remember { SyncManager(context, prefsManager, database, backupManager) }
 
             StorageScreen(
                 cacheManager = cacheManager,
@@ -463,9 +465,9 @@ fun KothagolpNavGraph(
                 novelUrl = novelUrl,
                 providerName = providerName,
                 onBack = { navController.popBackStack() },
-                onChapterClick = { chapterUrl, nUrl, provider ->
+                onChapterClick = { chapterUrl, nUrl, provider, resume ->
                     navController.navigate(
-                        NavRoutes.Reader.createRoute(chapterUrl, nUrl, provider)
+                        NavRoutes.Reader.createRoute(chapterUrl, nUrl, provider, resume)
                     )
                 },
                 onNovelClick = { relatedNovelUrl, relatedProviderName ->
@@ -567,12 +569,14 @@ fun KothagolpNavGraph(
             arguments = listOf(
                 navArgument("chapterUrl") { type = NavType.StringType },
                 navArgument("novelUrl") { type = NavType.StringType },
-                navArgument("providerName") { type = NavType.StringType }
+                navArgument("providerName") { type = NavType.StringType },
+                navArgument("resume") { type = NavType.BoolType; defaultValue = false }
             )
         ) { backStackEntry ->
             val encodedChapterUrl = backStackEntry.arguments?.getString("chapterUrl") ?: ""
             val encodedNovelUrl = backStackEntry.arguments?.getString("novelUrl") ?: ""
             val encodedProvider = backStackEntry.arguments?.getString("providerName") ?: ""
+            val resume = backStackEntry.arguments?.getBoolean("resume") ?: false
 
             val chapterUrl = NavRoutes.decodeUrl(encodedChapterUrl)
             val novelUrl = NavRoutes.decodeUrl(encodedNovelUrl)
@@ -582,6 +586,7 @@ fun KothagolpNavGraph(
                 chapterUrl = chapterUrl,
                 novelUrl = novelUrl,
                 providerName = providerName,
+                resume = resume,
                 onBack = { navController.popBackStack() },
                 onNavigateToSettings = {
                     navController.navigate(NavRoutes.ReaderSettings.route)
