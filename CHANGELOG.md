@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.12.3] — 2026-07-18
+
+### Fixed
+
+- **Google Drive sync merge** — Complete overhaul so local data is never removed or replaced by the online copy. Every book row now carries a change counter and syncs through a proper 3-way merge: reading positions no longer reset to an old chapter, deleted and migrated books stay deleted instead of reappearing, re-adding a previously deleted book keeps it in the library, and mark-as-unread now propagates to other devices instead of flipping back to read
+- **Forced scroll on chapter open** — Tapping a chapter in the list now opens it at the top; only the Continue button and continue-reading cards restore your saved position
+- **Reading position lost on rotation** — Rotating the device no longer jumps the reader to a random position; the page reflows in place
+- **Library data safety** — A failed database migration can no longer silently wipe the library
+- **Grid badge alignment** — The new-chapter count now sits centered in its badge on library cards
+
+### Added
+
+- **Reader text selection rework** — Selection now feels like native Android: long-press selects a word and dragging in the same gesture extends it, handles grab accurately, and a floating toolbar (Copy / Highlight / Dictionary / Add Note) hovers by the selection instead of a modal sheet interrupting every adjustment. One tap looks a word up in the dictionary or starts a note on the selection; tapping anywhere dismisses
+- **Chapter progress indicator** — Partially read chapters show a "N%" hint in the chapter list
+- **Select above / below** — In chapter selection mode, extend the selection to everything above or below the tapped chapter, then mark read / download in one go
+
 ## [3.12.2] — 2026-07-12
 
 ### Added
