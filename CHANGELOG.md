@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.12.4] — 2026-07-19
+
+### Fixed
+
+- **Reader jumping to the continue position while scrolling with Infinite Scroll on** — Opening a chapter with Infinite Scroll enabled preloads neighboring chapters right after the chapter opens; two separate pieces of code both raced to snap the reader back to the open position as those neighbors loaded, occasionally winning after you'd already started scrolling. Scroll restoration now happens at most once per chapter open.
+
 ## [3.12.3] — 2026-07-18
 
 ### Fixed

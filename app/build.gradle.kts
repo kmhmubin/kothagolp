@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp") version "2.2.10-2.0.2"
+    id("com.google.devtools.ksp") version "2.3.2"
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
@@ -26,8 +26,8 @@ android {
         applicationId = "com.kmhmubin.kothagolp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 40
-        versionName = "3.12.3"
+        versionCode = 41
+        versionName = "3.12.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
