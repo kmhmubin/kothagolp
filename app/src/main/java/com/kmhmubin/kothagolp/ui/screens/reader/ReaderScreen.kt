@@ -228,8 +228,22 @@ fun ReaderScreen(
         viewModel.loadChapter(chapterUrl, novelUrl, providerName, resume)
     }
 
-    // Restore scroll position when content is loaded and ready
-    LaunchedEffect(uiState.stableTargetPosition, uiState.isContentReady, uiState.displayItems.size) {
+    // Restore scroll position when content is loaded and ready.
+    //
+    // Latched to `initialChapterIndex` — set exactly once per real chapter-open
+    // (loadChapter call) and untouched by infinite scroll's own chapter-to-chapter
+    // advancement. `displayItems.size` is NOT a key: with infinite scroll on,
+    // startInitialLoad() keeps preloading neighbor chapters on the ViewModel's own
+    // coroutine right after setting stableTargetPosition, without waiting for the
+    // UI to consume it first. Each preloaded chapter bumps displayItems.size, and
+    // that recomposition used to re-run this whole effect for as long as
+    // stableTargetPosition stayed non-null — repeatedly re-snapping the list to the
+    // open target and stomping any scroll the user had already started. Restoring
+    // at most once per open (regardless of how many times the item list changes
+    // afterward) removes that window entirely.
+    var hasRestoredForThisOpen by remember(uiState.initialChapterIndex) { mutableStateOf(false) }
+    LaunchedEffect(uiState.initialChapterIndex, uiState.isContentReady, uiState.displayItems.size) {
+        if (hasRestoredForThisOpen) return@LaunchedEffect
         val stableTarget = uiState.stableTargetPosition ?: return@LaunchedEffect
         if (!uiState.isContentReady) return@LaunchedEffect
         if (uiState.displayItems.isEmpty()) return@LaunchedEffect
@@ -257,6 +271,7 @@ fun ReaderScreen(
                         listState.scrollToItem(0)
                     } catch (_: Exception) { }
                 }
+                hasRestoredForThisOpen = true
                 viewModel.markScrollRestored()
             }
             is PositionResolution.ChapterNotLoaded -> {
@@ -268,6 +283,7 @@ fun ReaderScreen(
                 try {
                     listState.scrollToItem(0)
                 } catch (_: Exception) { }
+                hasRestoredForThisOpen = true
                 viewModel.markScrollRestored()
             }
         }
@@ -554,7 +570,6 @@ fun ReaderScreen(
         },
         onPrevious = viewModel::navigateToPrevious,
         onNext = viewModel::navigateToNext,
-        onConfirmScrollReset = viewModel::confirmScrollReset,
         onBottomBarSettingsExpandedChange = { bottomBarSettingsExpanded = it },
         onLoadHighlights = viewModel::loadHighlightsForChapter,
         onAddHighlight = viewModel::addHighlightForSelectedText,
@@ -737,7 +752,6 @@ private fun ReaderScreenContent(
     onTTSAutoAdvanceChapterChange: (Boolean) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onConfirmScrollReset: () -> Unit,
     onBottomBarSettingsExpandedChange: (Boolean) -> Unit = {},
     onLoadHighlights: (chapterUrl: String) -> Unit = {},
     onAddHighlight: (text: String, color: String) -> Unit = { _, _ -> },
@@ -748,54 +762,14 @@ private fun ReaderScreenContent(
 ) {
     val tapZones = uiState.settings.tapZones
 
-    // Track if we've completed scroll reset for this content
-    var hasCompletedScrollReset by remember(uiState.currentChapterUrl) {
-        mutableStateOf(false)
-    }
-
-    // Handle scroll reset when content is ready but scroll pending
-    LaunchedEffect(
-        uiState.isContentReady,
-        uiState.pendingScrollReset,
-        uiState.displayItems.size,
-        uiState.stableTargetPosition  // Changed from targetScrollPosition
-    ) {
-        if (uiState.isContentReady &&
-            uiState.pendingScrollReset &&
-            uiState.displayItems.isNotEmpty() &&
-            !hasCompletedScrollReset
-        ) {
-            val stableTarget = uiState.stableTargetPosition
-
-            val (targetIndex, targetOffset) = if (stableTarget != null) {
-                when (val resolution = stableTarget.resolveDisplayIndex(uiState.displayItems)) {
-                    is PositionResolution.Found -> Pair(
-                        resolution.displayIndex.coerceIn(0, uiState.displayItems.size - 1),
-                        resolution.pixelOffset
-                    )
-                    else -> Pair(0, 0)
-                }
-            } else {
-                Pair(0, 0)
-            }
-
-            try {
-                listState.scrollToItem(index = targetIndex, scrollOffset = targetOffset)
-            } catch (e: Exception) {
-                try {
-                    listState.scrollToItem(0)
-                } catch (_: Exception) { }
-            }
-
-            hasCompletedScrollReset = true
-            onConfirmScrollReset()
-        }
-    }
-
-    // Reset the flag when chapter changes
-    LaunchedEffect(uiState.currentChapterUrl) {
-        hasCompletedScrollReset = false
-    }
+    // Scroll restoration is handled once, in the parent ReaderScreen effect
+    // (latched to initialChapterIndex). A second competing implementation used to
+    // live here, gated by a `hasCompletedScrollReset` latch keyed on
+    // currentChapterUrl — which infinite scroll's own chapter-to-chapter tracking
+    // changes as the user reads forward, silently re-arming this latch on every
+    // natural chapter advance. It only stayed harmless because pendingScrollReset
+    // happened to already be false by then; removing the duplicate removes that
+    // fragile coincidence along with the redundant scrollToItem call.
 
     // Load text highlights whenever the current chapter changes
     LaunchedEffect(uiState.currentChapterUrl) {

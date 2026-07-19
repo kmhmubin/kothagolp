@@ -2260,16 +2260,6 @@ class ReaderViewModel : ViewModel() {
 
     fun savePositionOnExit() = saveCurrentPosition()
 
-    fun confirmScrollReset() {
-        _uiState.update {
-            it.copy(
-                pendingScrollReset = false,
-                hasRestoredScroll = true,
-                stableTargetPosition = null
-            )
-        }
-    }
-
     fun markScrollRestored() {
         _uiState.update {
             it.copy(
