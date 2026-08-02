@@ -193,3 +193,21 @@ sealed class ReaderDisplayItem(open val itemId: String) {
         val error: String
     ) : ReaderDisplayItem("error_$chapterIndex")
 }
+
+/**
+ * Index range of [chapterIndex]'s own items within this display list — the
+ * header and everything through its divider. Null if that chapter isn't
+ * currently materialized. Used to scope both progress display and scrubbing
+ * to the one chapter open on screen, not the whole infinite-scroll list.
+ */
+fun List<ReaderDisplayItem>.chapterRange(chapterIndex: Int): IntRange? {
+    var first = -1
+    var last = -1
+    forEachIndexed { index, item ->
+        if (item.chapterIndex == chapterIndex) {
+            if (first == -1) first = index
+            last = index
+        }
+    }
+    return if (first == -1) null else first..last
+}

@@ -64,9 +64,11 @@ import com.kmhmubin.kothagolp.ui.screens.reader.components.KeepScreenOnEffect
 import com.kmhmubin.kothagolp.ui.screens.reader.components.ReaderContainer
 import com.kmhmubin.kothagolp.ui.screens.reader.components.ReaderErrorState
 import com.kmhmubin.kothagolp.ui.screens.reader.components.ReaderTopBar
+import com.kmhmubin.kothagolp.ui.screens.reader.components.VerticalSeekbar
 import com.kmhmubin.kothagolp.ui.screens.reader.components.ScrollUtils
 import com.kmhmubin.kothagolp.ui.screens.reader.model.PositionResolution
 import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderDisplayItem
+import com.kmhmubin.kothagolp.ui.screens.reader.model.chapterRange
 import com.kmhmubin.kothagolp.ui.screens.reader.model.ReaderUiState
 import com.kmhmubin.kothagolp.ui.screens.reader.model.SentenceBoundsInSegment
 import com.kmhmubin.kothagolp.ui.screens.reader.theme.ReaderColors
@@ -552,41 +554,12 @@ private fun calculateChapterProgress(
     displayItems: List<ReaderDisplayItem>,
     currentChapterIndex: Int
 ): Float {
-    if (displayItems.isEmpty()) return 0f
-
-    var chapterFirstIndex = -1
-    var chapterLastIndex = -1
-
-    displayItems.forEachIndexed { index, item ->
-        val itemChapterIndex = when (item) {
-            is ReaderDisplayItem.ChapterHeader -> item.chapterIndex
-            is ReaderDisplayItem.Segment -> item.chapterIndex
-            is ReaderDisplayItem.Image -> item.chapterIndex
-            is ReaderDisplayItem.HorizontalRule -> item.chapterIndex
-            is ReaderDisplayItem.SceneBreak -> item.chapterIndex
-            is ReaderDisplayItem.AuthorNote -> item.chapterIndex
-            is ReaderDisplayItem.ChapterDivider -> item.chapterIndex
-            is ReaderDisplayItem.Table -> item.chapterIndex
-            is ReaderDisplayItem.List -> item.chapterIndex
-            is ReaderDisplayItem.LoadingIndicator -> item.chapterIndex
-            is ReaderDisplayItem.ErrorIndicator -> item.chapterIndex
-        }
-
-        if (itemChapterIndex == currentChapterIndex) {
-            if (chapterFirstIndex == -1) {
-                chapterFirstIndex = index
-            }
-            chapterLastIndex = index
-        }
-    }
-
-    if (chapterFirstIndex == -1 || chapterLastIndex == -1) return 0f
-
-    val chapterItemCount = chapterLastIndex - chapterFirstIndex + 1
+    val range = displayItems.chapterRange(currentChapterIndex) ?: return 0f
+    val chapterItemCount = range.last - range.first + 1
     if (chapterItemCount <= 1) return 0f
 
     val currentIndex = listState.firstVisibleItemIndex
-    val positionInChapter = (currentIndex - chapterFirstIndex).coerceIn(0, chapterItemCount - 1)
+    val positionInChapter = (currentIndex - range.first).coerceIn(0, chapterItemCount - 1)
 
     return (positionInChapter.toFloat() / (chapterItemCount - 1)).coerceIn(0f, 1f)
 }
@@ -832,6 +805,15 @@ private fun ReaderScreenContent(
                         onToggleTTSSettings = onToggleTTSSettings,
                         onBottomBarSettingsExpandedChange = onBottomBarSettingsExpandedChange,
                         onAutoScrollClick = onAutoScrollClick
+                    )
+
+                    VerticalSeekbar(
+                        listState = listState,
+                        displayItems = uiState.displayItems,
+                        currentChapterIndex = uiState.currentChapterIndex,
+                        progress = chapterProgress,
+                        visible = uiState.showControls,
+                        modifier = Modifier.align(Alignment.CenterEnd)
                     )
 
                     // TTS Settings Panel
