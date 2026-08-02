@@ -119,15 +119,18 @@ sealed class ChapterContentItem {
 
 sealed class ReaderDisplayItem(open val itemId: String) {
 
+    /** Which chapter this item belongs to — every variant carries one. */
+    abstract val chapterIndex: Int
+
     data class ChapterHeader(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val chapterName: String,
         val chapterNumber: Int,
         val totalChapters: Int
     ) : ReaderDisplayItem("header_$chapterIndex")
 
     data class Segment(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val chapterUrl: String,
         val segment: ContentSegment,
         val segmentIndexInChapter: Int,
@@ -136,7 +139,7 @@ sealed class ReaderDisplayItem(open val itemId: String) {
     ) : ReaderDisplayItem("segment_${chapterIndex}_${segment.id}")
 
     data class Image(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val chapterUrl: String,
         val image: ContentImage,
         val imageIndexInChapter: Int,
@@ -144,37 +147,37 @@ sealed class ReaderDisplayItem(open val itemId: String) {
     ) : ReaderDisplayItem("image_${chapterIndex}_${image.id}")
 
     data class HorizontalRule(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val rule: ContentHorizontalRule,
         val orderInChapter: Int = 0
     ) : ReaderDisplayItem("rule_${chapterIndex}_${rule.id}")
 
     data class SceneBreak(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val sceneBreak: ContentSceneBreak,
         val orderInChapter: Int = 0
     ) : ReaderDisplayItem("scenebreak_${chapterIndex}_${sceneBreak.id}")
 
     data class AuthorNote(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val authorNote: ContentAuthorNote,
         val orderInChapter: Int = 0
     ) : ReaderDisplayItem("authornote_${chapterIndex}_${authorNote.id}")
 
     data class Table(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val table: ContentTable,
         val orderInChapter: Int = 0
     ) : ReaderDisplayItem("table_${chapterIndex}_${table.id}")
 
     data class List(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val list: ContentList,
         val orderInChapter: Int = 0
     ) : ReaderDisplayItem("list_${chapterIndex}_${list.id}")
 
     data class ChapterDivider(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val chapterName: String,
         val chapterNumber: Int,
         val totalChapters: Int,
@@ -182,11 +185,11 @@ sealed class ReaderDisplayItem(open val itemId: String) {
     ) : ReaderDisplayItem("divider_$chapterIndex")
 
     data class LoadingIndicator(
-        val chapterIndex: Int
+        override val chapterIndex: Int
     ) : ReaderDisplayItem("loading_$chapterIndex")
 
     data class ErrorIndicator(
-        val chapterIndex: Int,
+        override val chapterIndex: Int,
         val error: String
     ) : ReaderDisplayItem("error_$chapterIndex")
 }

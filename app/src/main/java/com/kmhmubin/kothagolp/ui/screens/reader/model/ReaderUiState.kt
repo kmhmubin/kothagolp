@@ -189,7 +189,6 @@ data class ReaderUiState(
 
     // Scroll State - NOW USES STABLE POSITION
     val stableTargetPosition: StableTargetScrollPosition? = null,
-    val hasRestoredScroll: Boolean = false,
     val currentScrollIndex: Int = 0,
     val currentScrollOffset: Int = 0,
 
