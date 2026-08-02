@@ -1545,17 +1545,6 @@ class ReaderViewModel : ViewModel() {
             _sentenceBounds.value = SentenceBoundsInSegment.INVALID
             _ttsShouldEnsureVisible.value = null
 
-            val shouldRestorePosition = when (source) {
-                NavigationSource.CONTINUE -> true
-                NavigationSource.CHAPTER_LIST -> false
-                NavigationSource.NAVIGATION -> false
-                NavigationSource.TTS_AUTO -> false
-            }
-
-            // Note: when not restoring we open at the top but must NOT wipe the
-            // saved position — the chapter-list progress indicator reads it, and
-            // a user peeking at a chapter shouldn't lose their place there.
-
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -1602,7 +1591,7 @@ class ReaderViewModel : ViewModel() {
                 }
 
                 appContext?.let { SyncWorker.triggerNow(it, SyncTrigger.CHAPTER_OPEN) }
-                startInitialLoad(chapterIndex, thisGeneration, shouldRestorePosition)
+                startInitialLoad(chapterIndex, thisGeneration)
 
             }.onFailure { error ->
                 if (thisGeneration == loadGeneration.get()) {
@@ -1637,8 +1626,7 @@ class ReaderViewModel : ViewModel() {
 
     private fun startInitialLoad(
         chapterIndex: Int,
-        generation: Long,
-        shouldRestorePosition: Boolean
+        generation: Long
     ) {
         preloadJob?.cancel()
         preloadJob = viewModelScope.launch {
@@ -1654,12 +1642,16 @@ class ReaderViewModel : ViewModel() {
             val chapter = state.allChapters.getOrNull(chapterIndex)
 
             if (chapter != null) {
-                val stablePosition = if (shouldRestorePosition) {
-                    loadSavedStablePosition(chapter.url, chapterIndex)
-                        ?: StableScrollPosition.chapterStart(chapterIndex)
-                } else {
-                    StableScrollPosition.chapterStart(chapterIndex)
-                }
+                // Resume THIS chapter's own saved position if it has one — whether
+                // it was opened via Continue, the chapter list, or Previous/Next.
+                // loadSavedStablePosition looks up preferencesManager by this exact
+                // chapterUrl first (falling back to the library's synced position
+                // only if that also happens to point at this same chapter), so a
+                // chapter you've never touched still correctly falls through to
+                // chapterStart — opening chapter 206 never drags in chapter 201's
+                // progress just because 201 is the library's last-read chapter.
+                val stablePosition = loadSavedStablePosition(chapter.url, chapterIndex)
+                    ?: StableScrollPosition.chapterStart(chapterIndex)
 
                 desiredScrollPosition = stablePosition
 
