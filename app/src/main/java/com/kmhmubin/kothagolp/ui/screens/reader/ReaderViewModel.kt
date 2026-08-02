@@ -1510,6 +1510,16 @@ class ReaderViewModel : ViewModel() {
 
         chapterLoader.configure(provider)
 
+        // Flush the outgoing chapter's position before tearing down its state.
+        // saveStablePosition below is debounced 500ms behind actual scrolling
+        // (debouncedSavePosition); cancelling that job on navigation — which
+        // happens unconditionally a few lines down — silently dropped whatever
+        // hadn't been written yet. A reader who scrolls and immediately taps a
+        // different chapter in the list (the common case, since nothing else
+        // pauses scrolling for 500ms) lost their entire position in that
+        // chapter, not just the last few percent.
+        saveCurrentPosition()
+
         // Block EVERYTHING
         isTransitioning.set(true)
         blockInfiniteScroll.set(true)
@@ -1535,17 +1545,6 @@ class ReaderViewModel : ViewModel() {
             _sentenceBounds.value = SentenceBoundsInSegment.INVALID
             _ttsShouldEnsureVisible.value = null
 
-            val shouldRestorePosition = when (source) {
-                NavigationSource.CONTINUE -> true
-                NavigationSource.CHAPTER_LIST -> false
-                NavigationSource.NAVIGATION -> false
-                NavigationSource.TTS_AUTO -> false
-            }
-
-            // Note: when not restoring we open at the top but must NOT wipe the
-            // saved position — the chapter-list progress indicator reads it, and
-            // a user peeking at a chapter shouldn't lose their place there.
-
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -1554,7 +1553,6 @@ class ReaderViewModel : ViewModel() {
                     currentChapterUrl = chapterUrl,
                     loadedChapters = emptyMap(),
                     displayItems = emptyList(),
-                    hasRestoredScroll = !shouldRestorePosition,
                     pendingScrollReset = true,
                     currentScrollIndex = 0,
                     currentScrollOffset = 0,
@@ -1593,7 +1591,7 @@ class ReaderViewModel : ViewModel() {
                 }
 
                 appContext?.let { SyncWorker.triggerNow(it, SyncTrigger.CHAPTER_OPEN) }
-                startInitialLoad(chapterIndex, thisGeneration, shouldRestorePosition)
+                startInitialLoad(chapterIndex, thisGeneration)
 
             }.onFailure { error ->
                 if (thisGeneration == loadGeneration.get()) {
@@ -1628,8 +1626,7 @@ class ReaderViewModel : ViewModel() {
 
     private fun startInitialLoad(
         chapterIndex: Int,
-        generation: Long,
-        shouldRestorePosition: Boolean
+        generation: Long
     ) {
         preloadJob?.cancel()
         preloadJob = viewModelScope.launch {
@@ -1645,12 +1642,16 @@ class ReaderViewModel : ViewModel() {
             val chapter = state.allChapters.getOrNull(chapterIndex)
 
             if (chapter != null) {
-                val stablePosition = if (shouldRestorePosition) {
-                    loadSavedStablePosition(chapter.url, chapterIndex)
-                        ?: StableScrollPosition.chapterStart(chapterIndex)
-                } else {
-                    StableScrollPosition.chapterStart(chapterIndex)
-                }
+                // Resume THIS chapter's own saved position if it has one — whether
+                // it was opened via Continue, the chapter list, or Previous/Next.
+                // loadSavedStablePosition looks up preferencesManager by this exact
+                // chapterUrl first (falling back to the library's synced position
+                // only if that also happens to point at this same chapter), so a
+                // chapter you've never touched still correctly falls through to
+                // chapterStart — opening chapter 206 never drags in chapter 201's
+                // progress just because 201 is the library's last-read chapter.
+                val stablePosition = loadSavedStablePosition(chapter.url, chapterIndex)
+                    ?: StableScrollPosition.chapterStart(chapterIndex)
 
                 desiredScrollPosition = stablePosition
 
@@ -2045,51 +2046,6 @@ class ReaderViewModel : ViewModel() {
         )
     }
 
-    private fun resolveStablePosition(position: StableScrollPosition): PositionResolution {
-        val displayItems = _uiState.value.displayItems
-        if (displayItems.isEmpty()) return PositionResolution.NotFound
-
-        if (!_uiState.value.loadedChapters.containsKey(position.chapterIndex)) {
-            return PositionResolution.ChapterNotLoaded(position.chapterIndex)
-        }
-
-        val charMap = characterMaps[position.chapterIndex]
-
-        val targetSegmentIndex = if (position.characterOffset > 0 && charMap != null) {
-            charMap.findSegmentByCharOffset(position.characterOffset)
-        } else {
-            position.segmentIndex
-        }
-
-        val displayIndex = displayItems.indexOfFirst { item ->
-            when (item) {
-                is ReaderDisplayItem.Segment ->
-                    item.chapterIndex == position.chapterIndex &&
-                            item.segmentIndexInChapter >= targetSegmentIndex
-
-                is ReaderDisplayItem.ChapterHeader ->
-                    item.chapterIndex == position.chapterIndex &&
-                            targetSegmentIndex == 0 && position.pixelOffset == 0
-
-                else -> false
-            }
-        }
-
-        return if (displayIndex >= 0) {
-            PositionResolution.Found(displayIndex, position.pixelOffset, 1.0f)
-        } else {
-            val headerIndex = displayItems.indexOfFirst { item ->
-                item is ReaderDisplayItem.ChapterHeader &&
-                        item.chapterIndex == position.chapterIndex
-            }
-            if (headerIndex >= 0) {
-                PositionResolution.Found(headerIndex, 0, 0.5f)
-            } else {
-                PositionResolution.NotFound
-            }
-        }
-    }
-
     private fun displayIndexToStablePosition(
         displayIndex: Int,
         pixelOffset: Int
@@ -2143,26 +2099,33 @@ class ReaderViewModel : ViewModel() {
             )
         }
 
-        val stablePosition = displayIndexToStablePosition(firstVisibleItemIndex, firstVisibleItemScrollOffset)
-        if (stablePosition != null) {
-            desiredScrollPosition = stablePosition
-
-            // Debounced chapter update to prevent feedback loops
-            val detectedChapterIndex = stablePosition.chapterIndex
-            if (detectedChapterIndex != _uiState.value.currentChapterIndex) {
-                chapterUpdateJob?.cancel()
-                chapterUpdateJob = viewModelScope.launch {
-                    delay(chapterUpdateDebounceMs)
-                    // Re-check after debounce
-                    val currentPosition = desiredScrollPosition
-                    if (currentPosition?.chapterIndex == detectedChapterIndex) {
-                        val chapter = _uiState.value.allChapters.getOrNull(detectedChapterIndex)
-                        if (chapter != null) {
-                            updateCurrentChapterInternal(detectedChapterIndex, chapter.url, chapter.name)
-                        }
+        // Chapter-index detection uses the item's own chapterIndex — every display
+        // item type carries one, unlike displayIndexToStablePosition below, which
+        // only resolves for Segment/ChapterHeader/ChapterDivider. Debounced so a
+        // fast fling through many short chapters doesn't spam history writes for
+        // chapters the reader barely glimpsed.
+        val visibleChapterIndex = _uiState.value.displayItems.getOrNull(firstVisibleItemIndex)?.chapterIndex
+        if (visibleChapterIndex != null && visibleChapterIndex != _uiState.value.currentChapterIndex) {
+            chapterUpdateJob?.cancel()
+            chapterUpdateJob = viewModelScope.launch {
+                delay(chapterUpdateDebounceMs)
+                val stillVisible = _uiState.value.displayItems
+                    .getOrNull(_uiState.value.currentScrollIndex)?.chapterIndex
+                if (stillVisible == visibleChapterIndex) {
+                    val chapter = _uiState.value.allChapters.getOrNull(visibleChapterIndex)
+                    if (chapter != null) {
+                        updateCurrentChapterInternal(visibleChapterIndex, chapter.url, chapter.name)
                     }
                 }
             }
+        }
+
+        // Position saving only makes sense for items with a concrete reading
+        // position (Segment/ChapterHeader/ChapterDivider); other item types
+        // (images, tables, etc.) keep the last resolved position in place.
+        val stablePosition = displayIndexToStablePosition(firstVisibleItemIndex, firstVisibleItemScrollOffset)
+        if (stablePosition != null) {
+            desiredScrollPosition = stablePosition
 
             // Only save if not TTS-driven scroll
             if (_ttsShouldEnsureVisible.value == null) {
@@ -2205,11 +2168,6 @@ class ReaderViewModel : ViewModel() {
             addToHistory(chapterUrl, chapterName)
             recordChapterCompleted()
         }
-    }
-
-    // Keep the public version for external calls (like from snapshotFlow)
-    fun updateCurrentChapter(chapterIndex: Int, chapterUrl: String, chapterName: String) {
-        updateCurrentChapterInternal(chapterIndex, chapterUrl, chapterName)
     }
 
     private fun debouncedSavePosition(position: StableScrollPosition) {
@@ -2264,7 +2222,6 @@ class ReaderViewModel : ViewModel() {
         _uiState.update {
             it.copy(
                 stableTargetPosition = null,
-                hasRestoredScroll = true,
                 pendingScrollReset = false
             )
         }
@@ -2319,16 +2276,20 @@ class ReaderViewModel : ViewModel() {
 
     private suspend fun unloadDistantChapters() {
         val state = _uiState.value
-        val center = state.currentChapterIndex
+        // desiredScrollPosition updates on every scroll frame; currentChapterIndex
+        // is debounced 150ms behind it for UI/history purposes. Centering the keep
+        // range on the live value (not the debounced one) means a fast scroller's
+        // actual position is never the stale end of the window.
+        val center = desiredScrollPosition?.chapterIndex ?: state.currentChapterIndex
         val keepRange = (center - preloadBefore - 1)..(center + preloadAfter + 1)
 
         // Protect current chapter and TTS chapter
         val protected = setOf(
+            center,
             state.currentChapterIndex,
             state.currentTTSChapterIndex,
             currentTTSCoordinate.chapterIndex,
-            requestedChapterIndex,
-            desiredScrollPosition?.chapterIndex ?: -1
+            requestedChapterIndex
         ).filter { it >= 0 }
 
         val toUnload = stateMutex.withLock {
@@ -2368,8 +2329,11 @@ class ReaderViewModel : ViewModel() {
     // NAVIGATION
     // =========================================================================
 
+    // loadChapterInternal flushes the outgoing position itself now, so these
+    // don't need to call saveCurrentPosition() before it — one choke point
+    // covers every navigation path (chapter list, Continue, prev/next, TTS
+    // auto-advance) instead of relying on each caller to remember to flush.
     fun navigateToPrevious() {
-        saveCurrentPosition()
         val previous = _uiState.value.previousChapter ?: return
         val novelUrl = currentNovelUrl ?: return
         val provider = currentProvider ?: return
@@ -2377,7 +2341,6 @@ class ReaderViewModel : ViewModel() {
     }
 
     fun navigateToNext() {
-        saveCurrentPosition()
         val next = _uiState.value.nextChapter ?: return
         val provider = currentProvider ?: return
         val novelUrl = currentNovelUrl ?: return

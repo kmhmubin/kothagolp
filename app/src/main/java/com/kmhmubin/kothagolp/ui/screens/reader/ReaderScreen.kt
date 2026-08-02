@@ -76,7 +76,6 @@ import com.kmhmubin.kothagolp.util.ImmersiveModeEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 // =============================================================================
@@ -248,7 +247,26 @@ fun ReaderScreen(
         if (!uiState.isContentReady) return@LaunchedEffect
         if (uiState.displayItems.isEmpty()) return@LaunchedEffect
 
+        // An eager reader can start dragging before this effect even runs (right
+        // after tapping a chapter). Fighting a live gesture with a programmatic
+        // scrollToItem loses the priority race and throws, and even when it
+        // "succeeds" it visibly yanks the list out from under their finger. Once
+        // they've taken the wheel, respect it — a fresh chapter already renders
+        // at the top, which is the sane default for content they're now actively
+        // navigating anyway.
+        if (listState.isScrollInProgress) {
+            hasRestoredForThisOpen = true
+            viewModel.markScrollRestored()
+            return@LaunchedEffect
+        }
+
         delay(100) // Small delay for layout to stabilize
+
+        if (listState.isScrollInProgress) {
+            hasRestoredForThisOpen = true
+            viewModel.markScrollRestored()
+            return@LaunchedEffect
+        }
 
         // Resolve stable position to display index NOW
         val resolution = stableTarget.resolveDisplayIndex(uiState.displayItems)
@@ -266,10 +284,11 @@ fun ReaderScreen(
                     )
                     Log.d("ReaderScreen", "Scroll restored to index $targetIndex with confidence ${resolution.confidence}")
                 } catch (e: Exception) {
+                    // Most commonly a MutatePriority conflict with a gesture that
+                    // started between the check above and this call. Leave the
+                    // list where the user's own scroll put it — do not also try
+                    // scrollToItem(0), which would fight them a second time.
                     Log.e("ReaderScreen", "Failed to restore scroll: ${e.message}")
-                    try {
-                        listState.scrollToItem(0)
-                    } catch (_: Exception) { }
                 }
                 hasRestoredForThisOpen = true
                 viewModel.markScrollRestored()
@@ -279,10 +298,7 @@ fun ReaderScreen(
                 // Don't mark as restored - wait for chapter to load
             }
             PositionResolution.NotFound -> {
-                Log.w("ReaderScreen", "Could not resolve scroll position, scrolling to start")
-                try {
-                    listState.scrollToItem(0)
-                } catch (_: Exception) { }
+                Log.w("ReaderScreen", "Could not resolve scroll position, staying at top")
                 hasRestoredForThisOpen = true
                 viewModel.markScrollRestored()
             }
@@ -300,38 +316,10 @@ fun ReaderScreen(
         }
     }
 
-    // Track current chapter based on visible items - only when content is ready
-    LaunchedEffect(listState, uiState.isContentReady) {
-        if (!uiState.isContentReady) return@LaunchedEffect
-
-        snapshotFlow { listState.firstVisibleItemIndex }
-            .distinctUntilChanged()
-            .collect { firstVisibleIndex ->
-                val displayItems = uiState.displayItems
-                if (displayItems.isEmpty()) return@collect
-
-                val item = displayItems.getOrNull(firstVisibleIndex)
-                val chapterIndex = when (item) {
-                    is ReaderDisplayItem.ChapterHeader -> item.chapterIndex
-                    is ReaderDisplayItem.Segment -> item.chapterIndex
-                    is ReaderDisplayItem.Image -> item.chapterIndex
-                    is ReaderDisplayItem.HorizontalRule -> item.chapterIndex
-                    is ReaderDisplayItem.SceneBreak -> item.chapterIndex
-                    is ReaderDisplayItem.AuthorNote -> item.chapterIndex
-                    is ReaderDisplayItem.ChapterDivider -> item.chapterIndex
-                    is ReaderDisplayItem.Table -> item.chapterIndex
-                    is ReaderDisplayItem.List -> item.chapterIndex
-                    is ReaderDisplayItem.LoadingIndicator -> item.chapterIndex
-                    is ReaderDisplayItem.ErrorIndicator -> item.chapterIndex
-                    null -> return@collect
-                }
-
-                val chapter = uiState.allChapters.getOrNull(chapterIndex)
-                if (chapter != null) {
-                    viewModel.updateCurrentChapter(chapterIndex, chapter.url, chapter.name)
-                }
-            }
-    }
+    // Current-chapter tracking (title, progress, history) lives inside
+    // viewModel.updateCurrentScrollPosition — driven by the same firstVisibleItemIndex
+    // this screen already feeds it above, debounced there against fast-scroll flicker.
+    // A second, undebounced tracker used to live here, duplicating that work.
 
     // Infinite scroll handlers - only when content is ready
     LaunchedEffect(listState, uiState.isContentReady) {
@@ -341,22 +329,8 @@ fun ReaderScreen(
             listState.layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
         }.collect { firstVisibleIndex ->
             if (firstVisibleIndex <= ReaderDefaults.PRELOAD_THRESHOLD_ITEMS) {
-                val displayItems = uiState.displayItems
-                val firstItem = displayItems.getOrNull(firstVisibleIndex)
-                val chapterIndex = when (firstItem) {
-                    is ReaderDisplayItem.ChapterHeader -> firstItem.chapterIndex
-                    is ReaderDisplayItem.Segment -> firstItem.chapterIndex
-                    is ReaderDisplayItem.Image -> firstItem.chapterIndex
-                    is ReaderDisplayItem.HorizontalRule -> firstItem.chapterIndex
-                    is ReaderDisplayItem.SceneBreak -> firstItem.chapterIndex
-                    is ReaderDisplayItem.AuthorNote -> firstItem.chapterIndex
-                    is ReaderDisplayItem.ChapterDivider -> firstItem.chapterIndex
-                    is ReaderDisplayItem.Table -> firstItem.chapterIndex
-                    is ReaderDisplayItem.List -> firstItem.chapterIndex
-                    is ReaderDisplayItem.LoadingIndicator -> firstItem.chapterIndex
-                    is ReaderDisplayItem.ErrorIndicator -> firstItem.chapterIndex
-                    null -> return@collect
-                }
+                val chapterIndex = uiState.displayItems.getOrNull(firstVisibleIndex)?.chapterIndex
+                    ?: return@collect
                 viewModel.onApproachingBeginning(chapterIndex)
             }
         }
@@ -372,22 +346,8 @@ fun ReaderScreen(
             Pair(lastVisibleIndex, totalItems)
         }.collect { (lastVisibleIndex, totalItems) ->
             if (totalItems > 0 && lastVisibleIndex >= totalItems - ReaderDefaults.PRELOAD_THRESHOLD_ITEMS) {
-                val displayItems = uiState.displayItems
-                val lastItem = displayItems.getOrNull(lastVisibleIndex)
-                val chapterIndex = when (lastItem) {
-                    is ReaderDisplayItem.Segment -> lastItem.chapterIndex
-                    is ReaderDisplayItem.Image -> lastItem.chapterIndex
-                    is ReaderDisplayItem.HorizontalRule -> lastItem.chapterIndex
-                    is ReaderDisplayItem.SceneBreak -> lastItem.chapterIndex
-                    is ReaderDisplayItem.AuthorNote -> lastItem.chapterIndex
-                    is ReaderDisplayItem.ChapterDivider -> lastItem.chapterIndex
-                    is ReaderDisplayItem.ChapterHeader -> lastItem.chapterIndex
-                    is ReaderDisplayItem.Table -> lastItem.chapterIndex
-                    is ReaderDisplayItem.List -> lastItem.chapterIndex
-                    is ReaderDisplayItem.LoadingIndicator -> lastItem.chapterIndex
-                    is ReaderDisplayItem.ErrorIndicator -> lastItem.chapterIndex
-                    null -> return@collect
-                }
+                val chapterIndex = uiState.displayItems.getOrNull(lastVisibleIndex)?.chapterIndex
+                    ?: return@collect
                 viewModel.onApproachingEnd(chapterIndex)
             }
         }
