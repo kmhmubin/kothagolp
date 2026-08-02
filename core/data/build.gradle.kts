@@ -1,6 +1,6 @@
 plugins {
     id("kothagolp.android.library")
-    id("com.google.devtools.ksp") version "2.2.10-2.0.2"
+    id("com.google.devtools.ksp") version "2.3.6"
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
