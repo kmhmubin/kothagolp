@@ -1510,6 +1510,16 @@ class ReaderViewModel : ViewModel() {
 
         chapterLoader.configure(provider)
 
+        // Flush the outgoing chapter's position before tearing down its state.
+        // saveStablePosition below is debounced 500ms behind actual scrolling
+        // (debouncedSavePosition); cancelling that job on navigation — which
+        // happens unconditionally a few lines down — silently dropped whatever
+        // hadn't been written yet. A reader who scrolls and immediately taps a
+        // different chapter in the list (the common case, since nothing else
+        // pauses scrolling for 500ms) lost their entire position in that
+        // chapter, not just the last few percent.
+        saveCurrentPosition()
+
         // Block EVERYTHING
         isTransitioning.set(true)
         blockInfiniteScroll.set(true)
@@ -2327,8 +2337,11 @@ class ReaderViewModel : ViewModel() {
     // NAVIGATION
     // =========================================================================
 
+    // loadChapterInternal flushes the outgoing position itself now, so these
+    // don't need to call saveCurrentPosition() before it — one choke point
+    // covers every navigation path (chapter list, Continue, prev/next, TTS
+    // auto-advance) instead of relying on each caller to remember to flush.
     fun navigateToPrevious() {
-        saveCurrentPosition()
         val previous = _uiState.value.previousChapter ?: return
         val novelUrl = currentNovelUrl ?: return
         val provider = currentProvider ?: return
@@ -2336,7 +2349,6 @@ class ReaderViewModel : ViewModel() {
     }
 
     fun navigateToNext() {
-        saveCurrentPosition()
         val next = _uiState.value.nextChapter ?: return
         val provider = currentProvider ?: return
         val novelUrl = currentNovelUrl ?: return
