@@ -223,24 +223,9 @@ private fun ProfileContent(
         contentPadding = PaddingValues(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Zone 1 — right now: who you are + today/current streak
         item(key = "hero") {
             ProfileHeroSection(uiState)
-        }
-
-        uiState.readerType?.let { readerType ->
-            item(key = "reader_type") {
-                ReaderTypeSection(
-                    readerType = readerType,
-                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
-                )
-            }
-        }
-
-        item(key = "quick_stats") {
-            QuickStatsSection(
-                uiState = uiState,
-                modifier = Modifier.padding(horizontal = dimensions.gridPadding)
-            )
         }
 
         item(key = "streak_activity") {
@@ -250,6 +235,7 @@ private fun ProfileContent(
             )
         }
 
+        // Zone 2 — recent habit: this week/month
         item(key = "recap") {
             RecapSection(
                 recap = uiState.recap,
@@ -259,6 +245,14 @@ private fun ProfileContent(
                 onPeriodChange = onRecapPeriodChange,
                 onRangeChange = onRecapRangeChange,
                 onNovelClick = onNovelClick,
+                modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+            )
+        }
+
+        // Zone 3 — all-time archive
+        item(key = "quick_stats") {
+            QuickStatsSection(
+                uiState = uiState,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
         }
@@ -291,6 +285,16 @@ private fun ProfileContent(
             }
         }
 
+        uiState.readerType?.let { readerType ->
+            item(key = "reader_type") {
+                ReaderTypeSection(
+                    readerType = readerType,
+                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+                )
+            }
+        }
+
+        // Zone 4 — reward
         if (uiState.achievements.isNotEmpty()) {
             item(key = "achievements") {
                 AchievementsSection(
@@ -473,8 +477,9 @@ private fun ReaderTraitChip(trait: ReaderTrait, modifier: Modifier = Modifier) {
             text = trait.title,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            lineHeight = 15.sp,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
@@ -1192,7 +1197,7 @@ private fun TopNovelsSection(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionHeader("Your Top Novels", Icons.Rounded.Star)
+        SectionHeader("Your Top Novels · All Time", Icons.Rounded.Star)
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -1498,7 +1503,7 @@ private fun TopGenresSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SectionHeader("Your Top Genres", Icons.Rounded.Category)
+            SectionHeader("Your Top Genres · All Time", Icons.Rounded.Category)
             SegmentedToggle(
                 options = listOf("Titles", "Time"),
                 selectedIndex = if (mode == GenreMode.TITLES) 0 else 1,
