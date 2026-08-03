@@ -113,6 +113,7 @@ private object ProfileColors {
     val ChapterBlue  = Info
     val TimeGreen    = NewChapters
     val AchievementGold = Color(0xFFFFD700)
+    val ReaderTypeAccent = Color(0xFF8B5CF6) // distinct from AchievementGold so Reader Type and Achievements don't read as the same card
 
     fun getLevelColor(level: Int): Color = when (level) {
         1    -> Color(0xFF94A3B8)
@@ -415,7 +416,7 @@ private fun ReaderTypeSection(
         Card(
             shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
-                containerColor = ProfileColors.AchievementGold.copy(alpha = 0.08f)
+                containerColor = ProfileColors.ReaderTypeAccent.copy(alpha = 0.08f)
             )
         ) {
             Column(
@@ -428,11 +429,11 @@ private fun ReaderTypeSection(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = ProfileColors.AchievementGold.copy(alpha = 0.18f),
+                        color = ProfileColors.ReaderTypeAccent.copy(alpha = 0.18f),
                         modifier = Modifier.size(56.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Icon(icon, null, Modifier.size(28.dp), tint = ProfileColors.AchievementGold)
+                            Icon(icon, null, Modifier.size(28.dp), tint = ProfileColors.ReaderTypeAccent)
                         }
                     }
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -441,7 +442,7 @@ private fun ReaderTypeSection(
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
-                            color = ProfileColors.AchievementGold
+                            color = ProfileColors.ReaderTypeAccent
                         )
                         Text(
                             text = readerType.title,
