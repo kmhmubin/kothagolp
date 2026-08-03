@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import com.kmhmubin.kothagolp.data.backup.quicknovel.QuickNovelBackupConverter
+import androidx.room.withTransaction
 import com.kmhmubin.kothagolp.data.local.NovelDatabase
 import com.kmhmubin.kothagolp.data.local.PreferencesManager
 import com.kmhmubin.kothagolp.data.local.entity.BookmarkEntity
@@ -300,6 +301,10 @@ class BackupManager(
         var settingsRestored = false
 
         return try {
+            // One transaction instead of one auto-commit per row — a restore of
+            // a year of stats across dozens of novels used to be thousands of
+            // separate fsync'd commits; this makes it one.
+            database.withTransaction {
             // Clear existing data if not merging
             if (!options.mergeWithExisting) {
                 if (options.restoreLibrary) libraryDao.deleteAll()
@@ -436,6 +441,7 @@ class BackupManager(
                     }
                 }
             }
+            } // end database.withTransaction
 
             // Restore settings
             if (options.restoreSettings) {

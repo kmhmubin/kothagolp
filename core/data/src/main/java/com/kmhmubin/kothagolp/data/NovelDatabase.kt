@@ -97,7 +97,7 @@ class DatabaseConverters {
         BlockedAuthorEntity::class,
         AuthorPreferenceEntity::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = false
 )
 @TypeConverters(DatabaseConverters::class)
@@ -143,7 +143,8 @@ abstract class NovelDatabase : RoomDatabase() {
                         MIGRATION_13_14,
                         MIGRATION_14_15,
                         MIGRATION_15_16,
-                        MIGRATION_16_17
+                        MIGRATION_16_17,
+                        MIGRATION_17_18
                     )
                     // No fallbackToDestructiveMigration() on purpose.
                     //
@@ -554,6 +555,29 @@ abstract class NovelDatabase : RoomDatabase() {
          * used to delete its row, so the unread state vanished on sync and the
          * chapter came back read from the other device's copy.
          */
+        /**
+         * Adds indices for the two hottest unindexed query shapes in the app:
+         * the main library listing (WHERE deletedAt IS NULL ORDER BY lastReadAt
+         * DESC, addedAt DESC — read on essentially every library-tab render) and
+         * history's ORDER BY timestamp DESC. Both were full table scans before
+         * this. Index names must match Room's default naming convention
+         * (index_<table>_<col1>_<col2>...) exactly, or Room's schema validation
+         * flags a mismatch against the @Index annotations on next open.
+         */
+        @VisibleForTesting
+        internal val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_library_deletedAt_lastReadAt_addedAt` " +
+                        "ON `library` (`deletedAt`, `lastReadAt`, `addedAt`)"
+                )
+                database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_history_timestamp` " +
+                        "ON `history` (`timestamp`)"
+                )
+            }
+        }
+
         @VisibleForTesting
         internal val MIGRATION_16_17 = object : Migration(16, 17) {
             override fun migrate(database: SupportSQLiteDatabase) {

@@ -67,6 +67,14 @@ class MetadataBackfillManager(
         var skipped = 0
         var failed = 0
 
+        // One batched url-only query per chunk up front instead of a full-row
+        // getNovelDetails() per novel (chapters/synopsis blobs included) just to
+        // check cache presence. Chunked at 900 to stay under SQLite's default
+        // bound-variable ceiling for large libraries.
+        val alreadyCached = allLibraryEntities.map { it.url }.chunked(900)
+            .flatMap { offlineDao.getExistingNovelDetailsUrls(it) }
+            .toHashSet()
+
         // Process in batches of 10 to balance memory vs concurrency
         allLibraryEntities.chunked(10).forEachIndexed { batchIdx, batch ->
             val tasks = batch.mapIndexed { idx, entity ->
@@ -80,8 +88,7 @@ class MetadataBackfillManager(
 
                     try {
                         // Skip if already cached
-                        val existing = offlineDao.getNovelDetails(entity.url)
-                        if (existing != null) {
+                        if (entity.url in alreadyCached) {
                             skipped++
                             return@async
                         }

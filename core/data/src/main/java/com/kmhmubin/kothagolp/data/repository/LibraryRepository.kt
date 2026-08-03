@@ -11,10 +11,14 @@ import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.NovelDetails
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.provider.MainProvider
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
 
 /**
@@ -66,18 +70,29 @@ class LibraryRepository(
     private val libraryDao: LibraryDao,
     private val offlineDao: OfflineDao
 ) {
+    // Lives for the process, same as this singleton repository — used only to
+    // host the shared library Flow below.
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // ================================================================
     // OBSERVE LIBRARY
     // ================================================================
 
-    fun observeLibrary(): Flow<List<LibraryItem>> {
-        return libraryDao.getAllFlow().map { entities ->
-            entities.map { entity ->
-                entity.toLibraryItem()
-            }
-        }
+    // observeLibrary() is independently collected by several ViewModels
+    // (library tab, home dashboard, browse, notifications, recommendations).
+    // Without sharing, each collector re-runs libraryDao.getAllFlow()'s own
+    // SELECT * FROM library ... — i.e. Room's InvalidationTracker fires the
+    // same query once per collector on every library write. shareIn() runs
+    // it once and replays the latest value to every collector; the 5s
+    // WhileSubscribed keeps it alive briefly across quick screen transitions
+    // instead of re-querying on every recomposition/navigation.
+    private val sharedLibraryFlow: Flow<List<LibraryItem>> by lazy {
+        libraryDao.getAllFlow()
+            .map { entities -> entities.map { it.toLibraryItem() } }
+            .shareIn(repositoryScope, SharingStarted.WhileSubscribed(5000), replay = 1)
     }
+
+    fun observeLibrary(): Flow<List<LibraryItem>> = sharedLibraryFlow
 
     fun observeLibraryUrls(): Flow<Set<String>> {
         return libraryDao.observeLibraryUrls()
