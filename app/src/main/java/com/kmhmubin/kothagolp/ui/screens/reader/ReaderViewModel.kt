@@ -1634,10 +1634,6 @@ class ReaderViewModel : ViewModel() {
 
             _uiState.update { it.copy(isPreloading = true) }
 
-            loadChapterContent(chapterIndex, isInitialLoad = true)
-
-            if (generation != loadGeneration.get()) return@launch
-
             val state = _uiState.value
             val chapter = state.allChapters.getOrNull(chapterIndex)
 
@@ -1650,6 +1646,21 @@ class ReaderViewModel : ViewModel() {
                 // chapter you've never touched still correctly falls through to
                 // chapterStart — opening chapter 206 never drags in chapter 201's
                 // progress just because 201 is the library's last-read chapter.
+                //
+                // Resolved and stored BEFORE loadChapterContent below, not after:
+                // this is a suspend call, and awaiting it after isContentReady had
+                // already flipped true opened a window where ReaderScreen's
+                // scroll-restore effect (keyed on isContentReady) could observe
+                // isContentReady=true with stableTargetPosition still null, bail
+                // out without marking itself restored, and then never get another
+                // chance to run — its other keys (initialChapterIndex,
+                // displayItems.size) don't change again once this chapter is the
+                // only one loaded. With infinite scroll on, the preload loop below
+                // changes displayItems.size a moment later and accidentally
+                // re-armed the effect; with it off (or once neither preloads nor
+                // anything else touches displayItems again), the reader was stuck
+                // showing the loading overlay over fully-loaded content until the
+                // chapter was closed and reopened.
                 val stablePosition = loadSavedStablePosition(chapter.url, chapterIndex)
                     ?: StableScrollPosition.chapterStart(chapterIndex)
 
@@ -1661,6 +1672,10 @@ class ReaderViewModel : ViewModel() {
                     )
                 }
             }
+
+            loadChapterContent(chapterIndex, isInitialLoad = true)
+
+            if (generation != loadGeneration.get()) return@launch
 
             if (state.infiniteScrollEnabled) {
                 val chaptersToPreload = getChaptersToPreload(chapterIndex)
