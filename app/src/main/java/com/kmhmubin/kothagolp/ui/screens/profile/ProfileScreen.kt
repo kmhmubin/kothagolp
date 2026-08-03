@@ -127,6 +127,26 @@ private object ProfileColors {
 }
 
 // ============================================================================
+// Design tokens — one scale for every card on this screen so no two stat
+// tiles, icons, or paddings drift apart from each other again.
+// ============================================================================
+
+private object ProfileMetrics {
+    // Card content padding
+    val cardPadding = 16.dp        // full-width section cards (Recap, Streak&Activity, Genres, Heatmap, Reader Type)
+    val compactCardPadding = 12.dp // grid/list item cards + stat chips (TopNovelCard, Achievement, QuickStatTile, RecapStatChip)
+
+    // Icon sizes
+    val iconInline = 14.dp // icon sitting next to small metadata text (chapters, time, etc.)
+    val iconHeader = 18.dp // section-header / standalone icons
+
+    // Shape tiers, for reference:
+    //   AppShape.extraLarge -> full-width section cards
+    //   AppShape.large       -> compact grid/list item cards (TopNovelCard, AchievementCard)
+    //   AppShape.medium       -> stat chips (QuickStatTile, RecapStatChip, ReaderTraitChip)
+}
+
+// ============================================================================
 // Screen shell
 // ============================================================================
 
@@ -409,12 +429,12 @@ private fun ReaderTypeSection(
             )
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Surface(
                         shape = CircleShape,
@@ -469,10 +489,10 @@ private fun ReaderTraitChip(trait: ReaderTrait, modifier: Modifier = Modifier) {
         modifier = modifier
             .clip(AppShape.medium)
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .padding(10.dp),
+            .padding(ProfileMetrics.compactCardPadding),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Icon(icon, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(icon, null, Modifier.size(ProfileMetrics.iconInline), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
             text = trait.title,
             style = MaterialTheme.typography.labelMedium,
@@ -539,11 +559,11 @@ private fun StreakActivityCard(
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            modifier = Modifier.padding(ProfileMetrics.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Rings + streak headline
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Box(contentAlignment = Alignment.Center) {
                     Canvas(modifier = Modifier.size(64.dp)) {
                         val strokeW = 5.dp.toPx()
@@ -597,7 +617,7 @@ private fun StreakActivityCard(
                     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             text = "$currentStreak",
-                            style = MaterialTheme.typography.displaySmall,
+                            style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = if (isStreakActive) ProfileColors.StreakOrange else MaterialTheme.colorScheme.onSurface
                         )
@@ -783,18 +803,18 @@ private fun QuickStatTile(
     modifier: Modifier = Modifier
 ) {
     Card(
-        shape = AppShape.extraLarge,
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
         modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+            modifier = Modifier.padding(ProfileMetrics.compactCardPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Icon(icon, null, Modifier.size(18.dp), tint = color)
+            Icon(icon, null, Modifier.size(ProfileMetrics.iconInline), tint = color)
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = color
             )
@@ -894,7 +914,7 @@ private fun RecapSection(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(ProfileMetrics.cardPadding)
                     .alpha(if (isLoading) 0.5f else 1f),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -917,6 +937,8 @@ private fun RecapSection(
                         Text(
                             text = "SPENT READING",
                             style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
                         Text(
@@ -1012,7 +1034,7 @@ private fun RecapStatChip(value: String, label: String, modifier: Modifier = Mod
         modifier = modifier
             .clip(AppShape.medium)
             .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f))
-            .padding(horizontal = 10.dp, vertical = 10.dp),
+            .padding(ProfileMetrics.compactCardPadding),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
@@ -1035,7 +1057,7 @@ private fun RecapStatChip(value: String, label: String, modifier: Modifier = Mod
 @Composable
 private fun RecapHighlightRow(icon: ImageVector, tint: Color, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Icon(icon, null, Modifier.size(16.dp), tint = tint)
+        Icon(icon, null, Modifier.size(ProfileMetrics.iconInline), tint = tint)
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
@@ -1226,7 +1248,7 @@ private fun TopNovelCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.compactCardPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Cover
@@ -1269,27 +1291,25 @@ private fun TopNovelCard(
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(Icons.Rounded.Schedule, null, Modifier.size(10.dp), tint = ProfileColors.TimeGreen)
+                    Icon(Icons.Rounded.Schedule, null, Modifier.size(ProfileMetrics.iconInline), tint = ProfileColors.TimeGreen)
                     Text(
                         text = formatMinutes(novel.readingTimeMinutes),
                         style = MaterialTheme.typography.labelSmall,
-                        color = ProfileColors.TimeGreen,
-                        fontSize = 10.sp
+                        color = ProfileColors.TimeGreen
                     )
                 }
                 if (novel.chaptersRead > 0) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Rounded.MenuBook, null, Modifier.size(10.dp), tint = ProfileColors.ChapterBlue)
+                        Icon(Icons.AutoMirrored.Rounded.MenuBook, null, Modifier.size(ProfileMetrics.iconInline), tint = ProfileColors.ChapterBlue)
                         Text(
                             text = "${novel.chaptersRead} ch",
                             style = MaterialTheme.typography.labelSmall,
-                            color = ProfileColors.ChapterBlue,
-                            fontSize = 10.sp
+                            color = ProfileColors.ChapterBlue
                         )
                     }
                 }
@@ -1370,7 +1390,7 @@ private fun ActivityHeatmapSection(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.cardPadding),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val primaryColor = MaterialTheme.colorScheme.primary
@@ -1390,7 +1410,7 @@ private fun ActivityHeatmapSection(
                                 contentAlignment = Alignment.CenterEnd
                             ) {
                                 if (label.isNotEmpty()) {
-                                    Text(label, fontSize = 8.sp, color = labelColor)
+                                    Text(label, fontSize = 9.sp, color = labelColor)
                                 }
                             }
                         }
@@ -1517,8 +1537,8 @@ private fun TopGenresSection(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Segmented bar
                 Row(
@@ -1646,7 +1666,7 @@ private fun AchievementCard(
         )
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.compactCardPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -1704,7 +1724,7 @@ private fun SectionHeader(title: String, icon: ImageVector) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+        Icon(icon, null, Modifier.size(ProfileMetrics.iconHeader), tint = MaterialTheme.colorScheme.primary)
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
