@@ -2,6 +2,7 @@ package com.kmhmubin.kothagolp.ui.screens.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kmhmubin.kothagolp.data.local.dao.NovelReadingTime
 import com.kmhmubin.kothagolp.data.repository.RepositoryProvider
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import kotlinx.coroutines.channels.Channel
@@ -19,6 +20,7 @@ class ProfileViewModel : ViewModel() {
     private val statsRepository = RepositoryProvider.getStatsRepository()
     private val offlineRepository = RepositoryProvider.getOfflineRepository()
     private val libraryRepository = RepositoryProvider.getLibraryRepository()
+    private val historyRepository = RepositoryProvider.getHistoryRepository()
     private val preferencesManager = RepositoryProvider.getPreferencesManager()
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -162,6 +164,12 @@ class ProfileViewModel : ViewModel() {
                 // Use all-time stats for total reading time as primary source
                 val totalReadingTime = allTimeStats?.totalTime ?: 0L
 
+                // Active novels (by reading time), used for both genres and reader type
+                // so we only pay for the per-novel detail lookups once.
+                val activeNovels = statsRepository.getMostReadNovels(limit = 20)
+                val topGenres = loadTopGenres(activeNovels, _uiState.value.genreMode)
+                val readerType = loadReaderType(activeNovels, totalChapters)
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -189,12 +197,18 @@ class ProfileViewModel : ViewModel() {
 
                         achievements = achievements,
                         libraryNovelsCount = libraryCount,
-                        completedNovelsCount = completedCount
+                        completedNovelsCount = completedCount,
+
+                        topGenres = topGenres,
+                        readerType = readerType
                     )
                 }
 
                 // Update reader level with the calculated total
                 updateReaderLevel(totalReadingTime / 3600)
+
+                // Recap has its own period/range toggle, loaded independently
+                loadRecap()
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -203,6 +217,313 @@ class ProfileViewModel : ViewModel() {
             }
         }
     }
+
+    // ============================================================================
+    // Week/Month recap
+    // ============================================================================
+
+    fun setRecapPeriod(period: RecapPeriod) {
+        if (period == _uiState.value.recapPeriod) return
+        _uiState.update { it.copy(recapPeriod = period) }
+        loadRecap()
+    }
+
+    fun setRecapRange(range: RecapRange) {
+        if (range == _uiState.value.recapRange) return
+        _uiState.update { it.copy(recapRange = range) }
+        loadRecap()
+    }
+
+    private fun loadRecap() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRecapLoading = true) }
+
+            val period = _uiState.value.recapPeriod
+            val range = _uiState.value.recapRange
+            val periodLength = if (period == RecapPeriod.WEEK) 7 else 30
+            val today = LocalDate.now()
+
+            // CURRENT week/month ends today; PREVIOUS is the equal-length block
+            // immediately before it — "Last Week"/"Last Month" the way the
+            // inspiration screenshots frame it, not a calendar-boundary month.
+            val end = if (range == RecapRange.CURRENT) today else today.minusDays(periodLength.toLong())
+            val start = end.minusDays((periodLength - 1).toLong())
+
+            val rows = statsRepository.getDailyStats(start.toEpochDay(), end.toEpochDay())
+
+            val totalMinutes = rows.sumOf { it.readingTimeSeconds } / 60
+            val chaptersRead = rows.sumOf { it.chaptersRead }
+            val minutesByDate: Map<Long, Long> = rows.groupBy { it.date }
+                .mapValues { (_, dayRows) -> dayRows.sumOf { it.readingTimeSeconds } / 60 }
+            val daysActive = minutesByDate.count { it.value > 0 }
+            val avgPerDay = if (daysActive > 0) totalMinutes / daysActive else 0L
+
+            val mostActiveEntry = minutesByDate.maxByOrNull { it.value }
+            val mostActiveDay = mostActiveEntry?.let { (epochDay, minutes) ->
+                if (minutes <= 0) null else RecapDayHighlight(
+                    label = LocalDate.ofEpochDay(epochDay)
+                        .format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                    minutes = minutes
+                )
+            }
+
+            val longestStreakDays = longestConsecutiveRun(start, end, minutesByDate)
+
+            val dailyBars = if (period == RecapPeriod.WEEK) {
+                (0 until periodLength).map { offset ->
+                    minutesByDate[start.plusDays(offset.toLong()).toEpochDay()] ?: 0L
+                }
+            } else {
+                emptyList()
+            }
+
+            val topNovels = rows.groupBy { it.novelUrl }
+                .map { (novelUrl, novelRows) ->
+                    novelUrl to Pair(
+                        novelRows.sumOf { it.readingTimeSeconds },
+                        novelRows.sumOf { it.chaptersRead }
+                    )
+                }
+                .sortedByDescending { it.second.first }
+                .take(5)
+                .map { (novelUrl, timeAndChapters) ->
+                    val novelName = rows.first { it.novelUrl == novelUrl }.novelName
+                    enrichNovelStats(novelUrl, novelName, timeAndChapters.first, timeAndChapters.second)
+                }
+
+            val rangeLabel = "${start.format(DateTimeFormatter.ofPattern("MMM d"))} – " +
+                end.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+
+            _uiState.update {
+                it.copy(
+                    isRecapLoading = false,
+                    recap = RecapStats(
+                        rangeLabel = rangeLabel,
+                        totalMinutes = totalMinutes,
+                        chaptersRead = chaptersRead,
+                        daysActive = daysActive,
+                        periodLengthDays = periodLength,
+                        avgMinutesPerDay = avgPerDay,
+                        mostActiveDay = mostActiveDay,
+                        longestStreakDays = longestStreakDays,
+                        dailyBars = dailyBars,
+                        topNovels = topNovels
+                    )
+                )
+            }
+        }
+    }
+
+    /** Longest run of consecutive dates with any reading activity, within [start, end]. */
+    private fun longestConsecutiveRun(
+        start: LocalDate,
+        end: LocalDate,
+        minutesByDate: Map<Long, Long>
+    ): Int {
+        var longest = 0
+        var current = 0
+        var day = start
+        while (!day.isAfter(end)) {
+            if ((minutesByDate[day.toEpochDay()] ?: 0L) > 0) {
+                current += 1
+                longest = maxOf(longest, current)
+            } else {
+                current = 0
+            }
+            day = day.plusDays(1)
+        }
+        return longest
+    }
+
+    private suspend fun enrichNovelStats(
+        novelUrl: String,
+        novelName: String,
+        totalTimeSeconds: Long,
+        chaptersRead: Int
+    ): NovelReadingStats {
+        return try {
+            val libraryItem = libraryRepository.getLibraryItem(novelUrl)
+            val sourceName = libraryItem?.novel?.apiName ?: extractSourceFromUrl(novelUrl)
+            val coverUrl = offlineRepository.getNovelDetails(novelUrl)?.posterUrl
+                ?: libraryItem?.novel?.posterUrl
+
+            NovelReadingStats(
+                novelUrl = novelUrl,
+                novelName = novelName,
+                coverUrl = coverUrl,
+                sourceName = sourceName,
+                readingTimeMinutes = totalTimeSeconds / 60,
+                chaptersRead = chaptersRead
+            )
+        } catch (e: Exception) {
+            NovelReadingStats(
+                novelUrl = novelUrl,
+                novelName = novelName,
+                coverUrl = null,
+                sourceName = extractSourceFromUrl(novelUrl),
+                readingTimeMinutes = totalTimeSeconds / 60,
+                chaptersRead = chaptersRead
+            )
+        }
+    }
+
+    // ============================================================================
+    // Top genres
+    // ============================================================================
+
+    fun setGenreMode(mode: GenreMode) {
+        if (mode == _uiState.value.genreMode) return
+        _uiState.update { it.copy(genreMode = mode) }
+        viewModelScope.launch {
+            val activeNovels = statsRepository.getMostReadNovels(limit = 20)
+            _uiState.update { it.copy(topGenres = loadTopGenres(activeNovels, mode)) }
+        }
+    }
+
+    private suspend fun loadTopGenres(
+        activeNovels: List<NovelReadingTime>,
+        mode: GenreMode
+    ): List<GenreStat> {
+        // Keyed by lowercased tag so sources that disagree on casing (e.g. "Action"
+        // vs "ACTION") aggregate into one genre instead of splitting the count.
+        val tally = mutableMapOf<String, Pair<Int, Long>>() // tagKey -> (titleCount, minutes)
+        val displayNames = mutableMapOf<String, String>() // tagKey -> first-seen casing
+
+        for (novel in activeNovels) {
+            val tags = try {
+                offlineRepository.getNovelDetails(novel.novelUrl)?.tags
+            } catch (e: Exception) {
+                null
+            } ?: continue
+
+            val minutes = novel.totalTime / 60
+            tags.forEach { rawTag ->
+                val tag = rawTag.trim()
+                if (tag.isEmpty()) return@forEach
+                val key = tag.lowercase()
+                displayNames.putIfAbsent(key, tag)
+                val (count, mins) = tally[key] ?: (0 to 0L)
+                tally[key] = (count + 1) to (mins + minutes)
+            }
+        }
+
+        if (tally.isEmpty()) return emptyList()
+
+        val totalTitles = tally.values.sumOf { it.first }
+        val totalMinutes = tally.values.sumOf { it.second }
+
+        return tally.entries
+            .map { (key, countAndMinutes) ->
+                val (titleCount, minutes) = countAndMinutes
+                val percentage = when (mode) {
+                    GenreMode.TITLES -> if (totalTitles > 0) titleCount.toFloat() / totalTitles else 0f
+                    GenreMode.TIME -> if (totalMinutes > 0) minutes.toFloat() / totalMinutes else 0f
+                }
+                GenreStat(name = displayNames[key] ?: key, titleCount = titleCount, minutes = minutes, percentage = percentage)
+            }
+            .sortedByDescending { if (mode == GenreMode.TITLES) it.titleCount else it.minutes.toInt() }
+            .take(8)
+    }
+
+    // ============================================================================
+    // Reader type badge
+    // ============================================================================
+
+    private suspend fun loadReaderType(
+        activeNovels: List<NovelReadingTime>,
+        totalChapters: Int
+    ): ReaderTypeBadge? {
+        if (activeNovels.isEmpty()) return null
+
+        val completionRates = activeNovels.mapNotNull { novel ->
+            try {
+                val chapterCount = offlineRepository.getNovelChapterCount(novel.novelUrl)
+                if (chapterCount <= 0) return@mapNotNull null
+                val readCount = historyRepository.getReadChapterCount(novel.novelUrl)
+                (readCount.toFloat() / chapterCount).coerceIn(0f, 1f)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        if (completionRates.isEmpty()) return null
+
+        val avgCompletion = completionRates.average().toFloat()
+        val state = _uiState.value
+        val chaptersPerDay = state.chaptersPerDay
+        val longestStreak = state.longestStreak
+
+        val (title, tagline, description, icon) = when {
+            avgCompletion >= 0.8f && completionRates.size >= 3 -> ReaderArchetype(
+                "The Completionist",
+                "NEVER LEAVES THINGS UNFINISHED",
+                "Quitting just isn't in your playbook. ${(avgCompletion * 100).toInt()}% of every novel " +
+                    "you've started is done and dusted — almost nothing left hanging.",
+                "trophy"
+            )
+            longestStreak >= 30 -> ReaderArchetype(
+                "The Devoted",
+                "SHOWS UP EVERY SINGLE DAY",
+                "A $longestStreak-day streak isn't luck, it's a habit. Reading is part of your routine now, " +
+                    "not an occasional hobby.",
+                "fire"
+            )
+            chaptersPerDay >= 8f -> ReaderArchetype(
+                "The Speed Reader",
+                "PAGES DON'T STAND A CHANCE",
+                "Averaging ${String.format("%.1f", chaptersPerDay)} chapters a day, you tear through " +
+                    "novels faster than most people can add them to a list.",
+                "trending"
+            )
+            avgCompletion < 0.35f && completionRates.size >= 5 -> ReaderArchetype(
+                "The Collector",
+                "ALWAYS STARTING SOMETHING NEW",
+                "${completionRates.size} novels in rotation and counting. You'd rather sample everything " +
+                    "than commit to finishing one before starting the next.",
+                "book"
+            )
+            else -> ReaderArchetype(
+                "The Explorer",
+                "STILL FINDING YOUR RHYTHM",
+                "You're building your reading habits one chapter at a time — the stats will sharpen up " +
+                    "the more you read.",
+                "book"
+            )
+        }
+
+        val traits = listOf(
+            ReaderTrait(
+                title = "${(avgCompletion * 100).toInt()}% Finished",
+                description = "average progress across novels you've read",
+                iconName = "trophy"
+            ),
+            ReaderTrait(
+                title = "${String.format("%.1f", chaptersPerDay)} ch/day",
+                description = "your average reading pace",
+                iconName = "trending"
+            ),
+            ReaderTrait(
+                title = "${state.libraryNovelsCount} novels",
+                description = "currently in your library",
+                iconName = "book"
+            )
+        )
+
+        return ReaderTypeBadge(
+            title = title,
+            tagline = tagline,
+            description = description,
+            iconName = icon,
+            traits = traits
+        )
+    }
+
+    private data class ReaderArchetype(
+        val title: String,
+        val tagline: String,
+        val description: String,
+        val iconName: String
+    )
 
     private suspend fun loadYearlyActivity(): Map<Long, Long> {
         val today = LocalDate.now()
