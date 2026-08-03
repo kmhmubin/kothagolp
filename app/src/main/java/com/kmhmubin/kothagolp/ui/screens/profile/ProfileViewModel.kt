@@ -277,17 +277,23 @@ class ProfileViewModel : ViewModel() {
                 emptyList()
             }
 
-            val topNovels = rows.groupBy { it.novelUrl }
-                .map { (novelUrl, novelRows) ->
-                    novelUrl to Pair(
-                        novelRows.sumOf { it.readingTimeSeconds },
-                        novelRows.sumOf { it.chaptersRead }
-                    )
+            // Grouped by title, not novelUrl — the same novel read from two
+            // sources (or re-added with different casing) is still one book
+            // to the reader, not two separate "top novels" entries.
+            val topNovels = rows.groupBy { it.novelName.trim().lowercase() }
+                .map { (_, titleRows) ->
+                    val totalTime = titleRows.sumOf { it.readingTimeSeconds }
+                    val totalChapters = titleRows.sumOf { it.chaptersRead }
+                    // Representative url/name: whichever source got the most
+                    // reading time within this title, used for cover + click-through.
+                    val representative = titleRows.groupBy { it.novelUrl }
+                        .maxByOrNull { (_, urlRows) -> urlRows.sumOf { it.readingTimeSeconds } }
+                        ?.value?.first() ?: titleRows.first()
+                    Triple(representative.novelUrl, representative.novelName, totalTime to totalChapters)
                 }
-                .sortedByDescending { it.second.first }
+                .sortedByDescending { it.third.first }
                 .take(5)
-                .map { (novelUrl, timeAndChapters) ->
-                    val novelName = rows.first { it.novelUrl == novelUrl }.novelName
+                .map { (novelUrl, novelName, timeAndChapters) ->
                     enrichNovelStats(novelUrl, novelName, timeAndChapters.first, timeAndChapters.second)
                 }
 

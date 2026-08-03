@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -52,7 +53,6 @@ import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.ui.draw.alpha
 import coil.compose.AsyncImage
@@ -295,16 +295,6 @@ private fun ProfileContent(
             }
         }
 
-        if (uiState.mostReadNovels.isNotEmpty()) {
-            item(key = "top_novels") {
-                TopNovelsSection(
-                    novels   = uiState.mostReadNovels,
-                    onNovelClick = onNovelClick,
-                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
-                )
-            }
-        }
-
         uiState.readerType?.let { readerType ->
             item(key = "reader_type") {
                 ReaderTypeSection(
@@ -470,11 +460,11 @@ private fun ReaderTypeSection(
                 )
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     readerType.traits.forEach { trait ->
-                        ReaderTraitChip(trait = trait, modifier = Modifier.weight(1f))
+                        ReaderTraitChip(trait = trait, modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                 }
             }
@@ -1206,116 +1196,6 @@ private fun formatMinutes(minutes: Long): String = when {
     minutes <= 0   -> "0m"
     minutes < 60   -> "${minutes}m"
     else           -> "${minutes / 60}h ${minutes % 60}m"
-}
-
-// ============================================================================
-// 2e. Top Novels — most-read novels horizontal scroll
-// ============================================================================
-
-@Composable
-private fun TopNovelsSection(
-    novels: List<NovelReadingStats>,
-    onNovelClick: (NovelReadingStats) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionHeader("Your Top Novels · All Time", Icons.Rounded.Star)
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
-        ) {
-            items(novels) { novel ->
-                TopNovelCard(
-                    novel = novel,
-                    onClick = { onNovelClick(novel) },
-                    modifier = Modifier.width(130.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TopNovelCard(
-    novel: NovelReadingStats,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = AppShape.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.compactCardPadding),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Cover
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(90.dp)
-                    .clip(AppShape.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                contentAlignment = Alignment.Center
-            ) {
-                if (!novel.coverUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = novel.coverUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().clip(AppShape.medium),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.MenuBook,
-                        null,
-                        Modifier.size(28.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                    )
-                }
-            }
-
-            // Title
-            Text(
-                text = novel.novelName,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            // Stats
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(Icons.Rounded.Schedule, null, Modifier.size(ProfileMetrics.iconInline), tint = ProfileColors.TimeGreen)
-                    Text(
-                        text = formatMinutes(novel.readingTimeMinutes),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ProfileColors.TimeGreen
-                    )
-                }
-                if (novel.chaptersRead > 0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(Icons.AutoMirrored.Rounded.MenuBook, null, Modifier.size(ProfileMetrics.iconInline), tint = ProfileColors.ChapterBlue)
-                        Text(
-                            text = "${novel.chaptersRead} ch",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = ProfileColors.ChapterBlue
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 // ============================================================================
