@@ -48,7 +48,20 @@ data class ProfileUiState(
 
     // Library counts for achievements
     val libraryNovelsCount: Int = 0,
-    val completedNovelsCount: Int = 0
+    val completedNovelsCount: Int = 0,
+
+    // Week/Month recap
+    val recapPeriod: RecapPeriod = RecapPeriod.WEEK,
+    val recapRange: RecapRange = RecapRange.CURRENT,
+    val recap: RecapStats = RecapStats(),
+    val isRecapLoading: Boolean = false,
+
+    // Top genres
+    val genreMode: GenreMode = GenreMode.TITLES,
+    val topGenres: List<GenreStat> = emptyList(),
+
+    // Reader type badge
+    val readerType: ReaderTypeBadge? = null
 ) {
     // Computed properties
     val todayMinutes: Long get() = todayReadingTime / 60
@@ -86,6 +99,63 @@ data class NovelReadingStats(
     val sourceName: String = "",
     val readingTimeMinutes: Long,
     val chaptersRead: Int
+)
+
+// ============================================================================
+// Week/Month recap ("Your week/month, recapped")
+// ============================================================================
+
+enum class RecapPeriod { WEEK, MONTH }
+enum class RecapRange { PREVIOUS, CURRENT }
+
+data class RecapDayHighlight(
+    val label: String,
+    val minutes: Long
+)
+
+data class RecapStats(
+    val rangeLabel: String = "",
+    val totalMinutes: Long = 0,
+    val chaptersRead: Int = 0,
+    val daysActive: Int = 0,
+    val periodLengthDays: Int = 7,
+    val avgMinutesPerDay: Long = 0,
+    val mostActiveDay: RecapDayHighlight? = null,
+    val longestStreakDays: Int = 0,
+    // Only populated when period == WEEK (7 bars); empty for MONTH.
+    val dailyBars: List<Long> = emptyList(),
+    val topNovels: List<NovelReadingStats> = emptyList()
+)
+
+// ============================================================================
+// Top genres ("Your top genres")
+// ============================================================================
+
+enum class GenreMode { TITLES, TIME }
+
+data class GenreStat(
+    val name: String,
+    val titleCount: Int,
+    val minutes: Long,
+    val percentage: Float
+)
+
+// ============================================================================
+// Reader type badge ("Your reader type")
+// ============================================================================
+
+data class ReaderTrait(
+    val title: String,
+    val description: String,
+    val iconName: String
+)
+
+data class ReaderTypeBadge(
+    val title: String,
+    val tagline: String,
+    val description: String,
+    val iconName: String,
+    val traits: List<ReaderTrait>
 )
 
 data class Achievement(

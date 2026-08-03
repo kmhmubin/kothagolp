@@ -119,6 +119,16 @@ class OfflineRepository(
             offlineDao.getNovelDetails(novelUrl)?.toNovelDetails()
         }
 
+    /**
+     * Total chapter count for a novel, from the entity's own [chapterCount] column —
+     * populated even when the full [chapters] list isn't cached, unlike
+     * `getNovelDetails(...)?.chapters?.size`.
+     */
+    suspend fun getNovelChapterCount(novelUrl: String): Int =
+        withContext(Dispatchers.IO) {
+            offlineDao.getNovelDetails(novelUrl)?.chapterCount ?: 0
+        }
+
     // ================================================================
     // SAVE OFFLINE DATA
     // ================================================================

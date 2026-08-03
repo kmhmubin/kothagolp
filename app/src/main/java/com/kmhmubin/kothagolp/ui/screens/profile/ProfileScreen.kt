@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,9 +45,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.WorkspacePremium
@@ -184,7 +187,13 @@ fun ProfileScreen(
             if (!uiState.hasAnyStats && !uiState.isLoading) {
                 ProfileEmptyState(Modifier.fillMaxSize())
             } else {
-                ProfileContent(uiState = uiState, onNovelClick = { viewModel.onNovelClick(it) })
+                ProfileContent(
+                    uiState = uiState,
+                    onNovelClick = { viewModel.onNovelClick(it) },
+                    onRecapPeriodChange = { viewModel.setRecapPeriod(it) },
+                    onRecapRangeChange = { viewModel.setRecapRange(it) },
+                    onGenreModeChange = { viewModel.setGenreMode(it) }
+                )
             }
         }
     }
@@ -201,7 +210,10 @@ fun ProfileScreen(
 @Composable
 private fun ProfileContent(
     uiState: ProfileUiState,
-    onNovelClick: (NovelReadingStats) -> Unit
+    onNovelClick: (NovelReadingStats) -> Unit,
+    onRecapPeriodChange: (RecapPeriod) -> Unit,
+    onRecapRangeChange: (RecapRange) -> Unit,
+    onGenreModeChange: (GenreMode) -> Unit
 ) {
     val dimensions = KothagolpTheme.dimensions
 
@@ -212,6 +224,15 @@ private fun ProfileContent(
     ) {
         item(key = "hero") {
             ProfileHeroSection(uiState)
+        }
+
+        uiState.readerType?.let { readerType ->
+            item(key = "reader_type") {
+                ReaderTypeSection(
+                    readerType = readerType,
+                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+                )
+            }
         }
 
         item(key = "quick_stats") {
@@ -245,13 +266,16 @@ private fun ProfileContent(
             }
         }
 
-        item(key = "weekly_chart") {
-            WeeklyBarChartSection(
-                weeklyActivity   = uiState.weeklyActivity,
-                weekMinutes      = uiState.weekMinutes,
-                weeklyGoalMinutes = uiState.weeklyGoalMinutes,
-                weekChapters     = uiState.weekChaptersRead,
-                modifier         = Modifier.padding(horizontal = dimensions.gridPadding)
+        item(key = "recap") {
+            RecapSection(
+                recap = uiState.recap,
+                period = uiState.recapPeriod,
+                range = uiState.recapRange,
+                isLoading = uiState.isRecapLoading,
+                onPeriodChange = onRecapPeriodChange,
+                onRangeChange = onRecapRangeChange,
+                onNovelClick = onNovelClick,
+                modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
         }
 
@@ -260,6 +284,17 @@ private fun ProfileContent(
                 yearlyActivity = uiState.yearlyActivity,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
+        }
+
+        if (uiState.topGenres.isNotEmpty()) {
+            item(key = "top_genres") {
+                TopGenresSection(
+                    genres = uiState.topGenres,
+                    mode = uiState.genreMode,
+                    onModeChange = onGenreModeChange,
+                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+                )
+            }
         }
 
         if (uiState.mostReadNovels.isNotEmpty()) {
@@ -362,6 +397,110 @@ private fun ProfileHeroSection(uiState: ProfileUiState) {
                 }
             }
         }
+    }
+}
+
+// ============================================================================
+// 1b. Reader Type — personality badge ("Your reader type")
+// ============================================================================
+
+@Composable
+private fun ReaderTypeSection(
+    readerType: ReaderTypeBadge,
+    modifier: Modifier = Modifier
+) {
+    val icon = remember(readerType.iconName) { getAchievementIcon(readerType.iconName) }
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader("Your Reader Type", Icons.Rounded.Psychology)
+
+        Card(
+            shape = AppShape.extraLarge,
+            colors = CardDefaults.cardColors(
+                containerColor = ProfileColors.AchievementGold.copy(alpha = 0.08f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = ProfileColors.AchievementGold.copy(alpha = 0.18f),
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(icon, null, Modifier.size(28.dp), tint = ProfileColors.AchievementGold)
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = readerType.tagline,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            color = ProfileColors.AchievementGold
+                        )
+                        Text(
+                            text = readerType.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Text(
+                    text = readerType.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    readerType.traits.forEach { trait ->
+                        ReaderTraitChip(trait = trait, modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderTraitChip(trait: ReaderTrait, modifier: Modifier = Modifier) {
+    val icon = remember(trait.iconName) { getAchievementIcon(trait.iconName) }
+    Column(
+        modifier = modifier
+            .clip(AppShape.medium)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(icon, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = trait.title,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = trait.description,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 12.sp
+        )
     }
 }
 
@@ -615,22 +754,242 @@ private fun formatCompact(n: Long): String = when {
 }
 
 // ============================================================================
-// 2d. Weekly Bar Chart — 7-day reading bars + weekly goal
+// 2d. Recap — "Your Week/Month, Recapped" (Trakt-style toggleable recap)
 // ============================================================================
 
 @Composable
-private fun WeeklyBarChartSection(
-    weeklyActivity: List<Long>,
-    weekMinutes: Long,
-    weeklyGoalMinutes: Int,
-    weekChapters: Int,
+private fun SegmentedToggle(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    Row(
+        modifier = modifier
+            .clip(AppShape.pill)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .padding(3.dp)
+    ) {
+        options.forEachIndexed { index, label ->
+            val selected = index == selectedIndex
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(AppShape.pill)
+                    .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                    .clickable { onSelect(index) }
+                    .padding(vertical = 7.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = if (selected) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecapSection(
+    recap: RecapStats,
+    period: RecapPeriod,
+    range: RecapRange,
+    isLoading: Boolean,
+    onPeriodChange: (RecapPeriod) -> Unit,
+    onRangeChange: (RecapRange) -> Unit,
+    onNovelClick: (NovelReadingStats) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val periodWord = if (period == RecapPeriod.WEEK) "Week" else "Month"
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader("Your $periodWord, Recapped", Icons.Rounded.BarChart)
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            SegmentedToggle(
+                options = listOf("Week", "Month"),
+                selectedIndex = if (period == RecapPeriod.WEEK) 0 else 1,
+                onSelect = { onPeriodChange(if (it == 0) RecapPeriod.WEEK else RecapPeriod.MONTH) },
+                modifier = Modifier.weight(1f)
+            )
+            SegmentedToggle(
+                options = listOf("Last $periodWord", "This $periodWord"),
+                selectedIndex = if (range == RecapRange.PREVIOUS) 0 else 1,
+                onSelect = { onRangeChange(if (it == 0) RecapRange.PREVIOUS else RecapRange.CURRENT) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Card(
+            shape = AppShape.extraLarge,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .alpha(if (isLoading) 0.5f else 1f),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (recap.rangeLabel.isNotEmpty()) {
+                    Text(
+                        text = recap.rangeLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                    )
+                }
+
+                // Big headline
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Surface(shape = CircleShape, color = ProfileColors.TimeGreen.copy(alpha = 0.15f), modifier = Modifier.size(40.dp)) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(Icons.Rounded.Schedule, null, Modifier.size(20.dp), tint = ProfileColors.TimeGreen)
+                        }
+                    }
+                    Column {
+                        Text(
+                            text = "SPENT READING",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                        Text(
+                            text = formatMinutes(recap.totalMinutes),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                // Stat chip row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    RecapStatChip(
+                        value = "${recap.chaptersRead}",
+                        label = "Chapters",
+                        modifier = Modifier.weight(1f)
+                    )
+                    RecapStatChip(
+                        value = "${recap.daysActive}/${recap.periodLengthDays}",
+                        label = "Active days",
+                        modifier = Modifier.weight(1f)
+                    )
+                    RecapStatChip(
+                        value = formatMinutes(recap.avgMinutesPerDay),
+                        label = "Avg / day",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Highlights
+                if (recap.mostActiveDay != null || recap.longestStreakDays > 0) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        recap.mostActiveDay?.let { day ->
+                            RecapHighlightRow(
+                                icon = Icons.Rounded.WorkspacePremium,
+                                tint = ProfileColors.AchievementGold,
+                                text = "Busiest day: ${day.label} · ${formatMinutes(day.minutes)}"
+                            )
+                        }
+                        if (recap.longestStreakDays > 1) {
+                            RecapHighlightRow(
+                                icon = Icons.Rounded.LocalFireDepartment,
+                                tint = ProfileColors.StreakOrange,
+                                text = "${recap.longestStreakDays}-day reading streak this $periodWord"
+                            )
+                        }
+                    }
+                }
+
+                // Mini 7-day bar chart (week view only)
+                if (period == RecapPeriod.WEEK && recap.dailyBars.isNotEmpty()) {
+                    RecapWeekBars(recap.dailyBars)
+                }
+
+                // Top novels this period
+                if (recap.topNovels.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Top novels this $periodWord".lowercase().replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        recap.topNovels.forEachIndexed { index, novel ->
+                            RecapNovelRow(
+                                rank = index + 1,
+                                novel = novel,
+                                onClick = { onNovelClick(novel) }
+                            )
+                        }
+                    }
+                }
+
+                if (recap.totalMinutes <= 0) {
+                    Text(
+                        text = "No reading recorded for this period yet.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecapStatChip(value: String, label: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(AppShape.medium)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f))
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun RecapHighlightRow(icon: ImageVector, tint: Color, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Icon(icon, null, Modifier.size(16.dp), tint = tint)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun RecapWeekBars(dailyBars: List<Long>) {
     val today = remember { java.time.LocalDate.now() }
     val dayLabels = remember(today) {
         (0..6).map { i ->
-            val d = today.minusDays((6 - i).toLong())
-            when (d.dayOfWeek) {
+            when (today.minusDays((6 - i).toLong()).dayOfWeek) {
                 java.time.DayOfWeek.MONDAY    -> "M"
                 java.time.DayOfWeek.TUESDAY   -> "T"
                 java.time.DayOfWeek.WEDNESDAY -> "W"
@@ -642,116 +1001,120 @@ private fun WeeklyBarChartSection(
             }
         }
     }
-
-    val maxMinutes = remember(weeklyActivity) { weeklyActivity.maxOrNull()?.coerceAtLeast(1L) ?: 1L }
-    val weeklyGoalProgress = if (weeklyGoalMinutes > 0)
-        (weekMinutes.toFloat() / weeklyGoalMinutes).coerceIn(0f, 1f) else 0f
-    val animProg by animateFloatAsState(weeklyGoalProgress, spring(stiffness = Spring.StiffnessLow), label = "wgoal")
-
+    val maxMinutes = remember(dailyBars) { dailyBars.maxOrNull()?.coerceAtLeast(1L) ?: 1L }
     val primaryColor = MaterialTheme.colorScheme.primary
     val surfaceHigh  = MaterialTheme.colorScheme.surfaceContainerHighest
     val onSurface    = MaterialTheme.colorScheme.onSurfaceVariant
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        val maxBarHeight = 64.dp
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().height(maxBarHeight),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.Bottom
         ) {
-            SectionHeader("This Week", Icons.Rounded.BarChart)
-            Text(
-                text = "$weekChapters chapters · ${formatMinutes(weekMinutes)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-            )
+            dailyBars.forEachIndexed { index, minutes ->
+                val isToday = index == 6
+                val fraction = (minutes.toFloat() / maxMinutes).coerceIn(0f, 1f)
+                val animFrac by animateFloatAsState(fraction, spring(stiffness = Spring.StiffnessLow), label = "bar_$index")
+                val barHeight = (maxBarHeight * animFrac.coerceAtLeast(0.04f))
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(barHeight)
+                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                        .background(
+                            if (isToday) primaryColor
+                            else if (minutes > 0) primaryColor.copy(alpha = 0.45f)
+                            else surfaceHigh
+                        )
+                )
+            }
+        }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            dayLabels.forEachIndexed { index, label ->
+                val isToday = index == 6
+                Text(
+                    text = label,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isToday) primaryColor else onSurface.copy(alpha = 0.55f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecapNovelRow(
+    rank: Int,
+    novel: NovelReadingStats,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(AppShape.medium)
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = if (rank == 1) ProfileColors.AchievementGold.copy(alpha = 0.2f)
+            else MaterialTheme.colorScheme.surfaceContainerHighest,
+            modifier = Modifier.size(22.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Text(
+                    text = "$rank",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (rank == 1) ProfileColors.AchievementGold else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
-        Card(
-            shape = AppShape.extraLarge,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        Box(
+            modifier = Modifier
+                .size(width = 36.dp, height = 48.dp)
+                .clip(AppShape.small)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+            contentAlignment = Alignment.Center
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Bar chart
-                val maxBarHeight = 80.dp
-                Row(
-                    modifier = Modifier.fillMaxWidth().height(maxBarHeight),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    weeklyActivity.forEachIndexed { index, minutes ->
-                        val isToday = index == 6
-                        val fraction = (minutes.toFloat() / maxMinutes).coerceIn(0f, 1f)
-                        val animFrac by animateFloatAsState(fraction, spring(stiffness = Spring.StiffnessLow), label = "bar_$index")
-                        val barHeight = (maxBarHeight * animFrac.coerceAtLeast(0.04f))
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(barHeight)
-                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .background(
-                                    if (isToday) primaryColor
-                                    else if (minutes > 0) primaryColor.copy(alpha = 0.45f)
-                                    else surfaceHigh
-                                )
-                        )
-                    }
-                }
-
-                // Day labels
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    dayLabels.forEachIndexed { index, label ->
-                        val isToday = index == 6
-                        Text(
-                            text = label,
-                            modifier = Modifier.weight(1f),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isToday) primaryColor else onSurface.copy(alpha = 0.55f)
-                        )
-                    }
-                }
-
-                // Weekly goal bar
-                if (weeklyGoalMinutes > 0) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Weekly goal",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = onSurface.copy(alpha = 0.6f)
-                            )
-                            Text(
-                                text = "${formatMinutes(weekMinutes)} / ${formatMinutes(weeklyGoalMinutes.toLong())}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = onSurface.copy(alpha = 0.6f)
-                            )
-                        }
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(6.dp)
-                                .clip(AppShape.extraSmall)
-                                .background(primaryColor.copy(alpha = 0.15f))
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(animProg).height(6.dp)
-                                    .clip(AppShape.extraSmall)
-                                    .background(Brush.horizontalGradient(listOf(primaryColor, primaryColor.copy(alpha = 0.7f))))
-                            )
-                        }
-                    }
-                }
+            if (!novel.coverUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = novel.coverUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize().clip(AppShape.small),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    Icons.AutoMirrored.Rounded.MenuBook, null, Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                )
             }
+        }
+
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(
+                text = novel.novelName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "${novel.chaptersRead} ch · ${formatMinutes(novel.readingTimeMinutes)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+            )
         }
     }
 }
@@ -1051,6 +1414,127 @@ private fun ActivityHeatmapSection(
                     }
                     Spacer(Modifier.width(4.dp))
                     Text("More", fontSize = 9.sp, color = labelColor)
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// 3b. Top Genres — segmented bar, sized by titles or time
+// ============================================================================
+
+private val GenrePalette = listOf(
+    Color(0xFFEF5350), Color(0xFFAB47BC), Color(0xFFFFCA28), Color(0xFFFF7043),
+    Color(0xFF66BB6A), Color(0xFFEC407A), Color(0xFF29B6F6), Color(0xFF26A69A)
+)
+
+@Composable
+private fun TopGenresSection(
+    genres: List<GenreStat>,
+    mode: GenreMode,
+    onModeChange: (GenreMode) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionHeader("Your Top Genres", Icons.Rounded.Category)
+            SegmentedToggle(
+                options = listOf("Titles", "Time"),
+                selectedIndex = if (mode == GenreMode.TITLES) 0 else 1,
+                onSelect = { onModeChange(if (it == 0) GenreMode.TITLES else GenreMode.TIME) },
+                modifier = Modifier.width(140.dp)
+            )
+        }
+
+        Card(
+            shape = AppShape.extraLarge,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Segmented bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(28.dp)
+                        .clip(AppShape.small),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    genres.forEachIndexed { index, genre ->
+                        val animFrac by animateFloatAsState(
+                            genre.percentage.coerceIn(0.01f, 1f),
+                            spring(stiffness = Spring.StiffnessLow),
+                            label = "genre_$index"
+                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(animFrac)
+                                .fillMaxHeight()
+                                .background(GenrePalette[index % GenrePalette.size]),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (genre.percentage >= 0.08f) {
+                                Text(
+                                    text = "${(genre.percentage * 100).toInt()}%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Legend — 2 columns
+                val rows = genres.chunked(2)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    rows.forEach { rowGenres ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowGenres.forEach { genre ->
+                                val index = genres.indexOf(genre)
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(GenrePalette[index % GenrePalette.size])
+                                    )
+                                    Column {
+                                        Text(
+                                            text = genre.name,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = if (mode == GenreMode.TITLES)
+                                                "${genre.titleCount} titles" else formatMinutes(genre.minutes),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+                            }
+                            if (rowGenres.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
