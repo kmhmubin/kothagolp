@@ -189,8 +189,13 @@ data class ReaderUiState(
 
     // Scroll State - NOW USES STABLE POSITION
     val stableTargetPosition: StableTargetScrollPosition? = null,
-    val currentScrollIndex: Int = 0,
-    val currentScrollOffset: Int = 0,
+    // currentScrollIndex/currentScrollOffset intentionally NOT here — they used to
+    // live in this state and get rewritten on every single scroll-frame emission.
+    // Since ReaderUiState is one object read piecemeal by every visible paragraph
+    // composable, that meant scrolling a pixel recomposed the entire visible list.
+    // No composable actually renders from these two values (they're pure ViewModel
+    // bookkeeping for debounced chapter-detection/position-saving), so they now
+    // live as plain private fields on ReaderViewModel instead.
 
     // Reader Settings
     val settings: ReaderSettings = ReaderSettings(),

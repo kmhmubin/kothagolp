@@ -101,8 +101,11 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(appSettings) {
                 AppLoadState.isLoading.set(false) // Exit system splash
 
-                // Show custom splash for a bit, then transition
-                delay(2000) // Show custom splash for 2 seconds
+                // Hold the brand splash just long enough for its own fade-in
+                // (600ms) to register, not as an artificial wait — it used to
+                // block every cold launch for a flat 2s regardless of how
+                // fast the app was actually ready.
+                delay(900)
                 showCustomSplash = false
             }
 

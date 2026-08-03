@@ -207,6 +207,14 @@ class ReaderViewModel : ViewModel() {
     private var chapterUpdateJob: Job? = null
     private val chapterUpdateDebounceMs = 150L
 
+    // Live scroll position — plain fields, not part of ReaderUiState. Nothing
+    // renders from these (pure bookkeeping for debounced chapter-detection,
+    // position-saving, and TTS start-position lookup); keeping them out of the
+    // Compose-observed state avoids recomposing the whole visible paragraph
+    // list on every scroll-frame emission.
+    private var currentScrollIndex = 0
+    private var currentScrollOffset = 0
+
     // Navigation tracking
     private var lastNavigationSource: NavigationSource = NavigationSource.CONTINUE
 
@@ -932,8 +940,8 @@ class ReaderViewModel : ViewModel() {
      * This is more precise than finding just the first visible segment.
      */
     private fun findFirstVisibleSentence(state: ReaderUiState): StableTTSCoordinate {
-        val scrollIndex = state.currentScrollIndex
-        val scrollOffset = state.currentScrollOffset
+        val scrollIndex = currentScrollIndex
+        val scrollOffset = currentScrollOffset
         val displayItems = state.displayItems
 
         // Find the first segment at or after scroll position
@@ -1544,6 +1552,8 @@ class ReaderViewModel : ViewModel() {
             currentSentenceBounds = SentenceBoundsInSegment.INVALID
             _sentenceBounds.value = SentenceBoundsInSegment.INVALID
             _ttsShouldEnsureVisible.value = null
+            currentScrollIndex = 0
+            currentScrollOffset = 0
 
             _uiState.update {
                 it.copy(
@@ -1554,8 +1564,6 @@ class ReaderViewModel : ViewModel() {
                     loadedChapters = emptyMap(),
                     displayItems = emptyList(),
                     pendingScrollReset = true,
-                    currentScrollIndex = 0,
-                    currentScrollOffset = 0,
                     currentSegmentIndex = -1,
                     isTTSActive = false,
                     ttsStatus = TTSStatus.STOPPED,
@@ -2107,12 +2115,12 @@ class ReaderViewModel : ViewModel() {
             return
         }
 
-        _uiState.update {
-            it.copy(
-                currentScrollIndex = firstVisibleItemIndex,
-                currentScrollOffset = firstVisibleItemScrollOffset
-            )
-        }
+        // Plain fields, not _uiState — this fires on every scroll-frame emission,
+        // and ReaderUiState is read piecemeal by every visible paragraph composable,
+        // so routing it through _uiState.update{} recomposed the whole visible list
+        // on every pixel of scroll. See the field declarations above for detail.
+        currentScrollIndex = firstVisibleItemIndex
+        currentScrollOffset = firstVisibleItemScrollOffset
 
         // Chapter-index detection uses the item's own chapterIndex — every display
         // item type carries one, unlike displayIndexToStablePosition below, which
@@ -2125,7 +2133,7 @@ class ReaderViewModel : ViewModel() {
             chapterUpdateJob = viewModelScope.launch {
                 delay(chapterUpdateDebounceMs)
                 val stillVisible = _uiState.value.displayItems
-                    .getOrNull(_uiState.value.currentScrollIndex)?.chapterIndex
+                    .getOrNull(currentScrollIndex)?.chapterIndex
                 if (stillVisible == visibleChapterIndex) {
                     val chapter = _uiState.value.allChapters.getOrNull(visibleChapterIndex)
                     if (chapter != null) {
@@ -2438,7 +2446,7 @@ class ReaderViewModel : ViewModel() {
                     novelUrl = novelUrl,
                     chapterUrl = chapterUrl,
                     chapterName = state.currentChapterName,
-                    position = state.currentScrollIndex,
+                    position = currentScrollIndex,
                     timestamp = System.currentTimeMillis()
                 )
             }
