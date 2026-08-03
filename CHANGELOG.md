@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.12.6] — 2026-08-03
+
+### Fixed
+
+- **Next/Previous chapter stuck on loading** — With Infinite Scroll off, tapping Next or Previous could leave the reader showing the loading overlay forever even though the chapter had fully loaded, only clearing after closing and reopening it. This also explains downloaded chapters occasionally looking "corrupted" or refusing to open — same stuck state, since it wasn't gated on being online
+
 ## [3.12.5] — 2026-08-03
 
 ### Added
