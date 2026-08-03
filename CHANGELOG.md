@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.12.5] — 2026-08-03
+
+### Added
+
+- **Vertical seekbar (reader)** — Thumb-draggable progress bar pinned to the right edge of the reader. Tap or drag to jump anywhere in the current chapter in one gesture instead of flinging through screens; hides and reappears with the rest of the reader controls
+
 ## [3.12.4] — 2026-07-19
 
 ### Fixed
