@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.12.7] — 2026-08-04
+
+### Fixed
+
+- **App performance pass** — Reader scrolling and text-to-speech no longer redraw the whole visible page on every scroll pixel or every sentence; only what actually changed on screen updates now. Fixed a chapter-list bug where sorting or filtering chapters could make the list forget which rows it had already drawn. Removed an artificial ~1.1s wait from every app launch. Added missing database indexes so the library and reading-history screens no longer scan the whole table on every load, and batched several bulk operations (backup restore, offline-data backfill) that were making the database work far harder than necessary. No features changed — everything works the same, just faster and smoother
+
 ## [3.12.6] — 2026-08-03
 
 ### Fixed
