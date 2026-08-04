@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.12.8] — 2026-08-04
+
+### Added
+
+- **Reading Stats redesign** — Streak & Activity is now a single card with a dual-ring gauge (streak progress + today's goal), a weekly checkmark row, and a personal-best bar. Added a Week/Month "recapped" card (toggle Last/This), a Top Genres breakdown (by title count or time), and a Reader Type badge (Completionist, Speed Reader, Devoted, and more) derived from your actual reading habits. Screen reorganized into a clear now → recent → all-time → rewards flow, with consistent sizing and spacing across every card
+
+### Fixed
+
+- Duplicate "top novel" entries when the same book was read from two sources now merge into one
+- Reader Type's stat chips no longer mismatch in size
+
 ## [3.12.7] — 2026-08-04
 
 ### Fixed

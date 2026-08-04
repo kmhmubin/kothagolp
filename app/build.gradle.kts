@@ -26,8 +26,8 @@ android {
         applicationId = "com.kmhmubin.kothagolp"
         minSdk = 26
         targetSdk = 36
-        versionCode = 44
-        versionName = "3.12.7"
+        versionCode = 45
+        versionName = "3.12.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
