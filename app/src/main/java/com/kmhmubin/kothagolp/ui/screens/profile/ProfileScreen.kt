@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -46,12 +47,12 @@ import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.ui.draw.alpha
 import coil.compose.AsyncImage
@@ -112,6 +113,7 @@ private object ProfileColors {
     val ChapterBlue  = Info
     val TimeGreen    = NewChapters
     val AchievementGold = Color(0xFFFFD700)
+    val ReaderTypeAccent = Color(0xFF8B5CF6) // distinct from AchievementGold so Reader Type and Achievements don't read as the same card
 
     fun getLevelColor(level: Int): Color = when (level) {
         1    -> Color(0xFF94A3B8)
@@ -123,6 +125,26 @@ private object ProfileColors {
         7    -> AchievementGold
         else -> Color(0xFFE879F9)
     }
+}
+
+// ============================================================================
+// Design tokens — one scale for every card on this screen so no two stat
+// tiles, icons, or paddings drift apart from each other again.
+// ============================================================================
+
+private object ProfileMetrics {
+    // Card content padding
+    val cardPadding = 16.dp        // full-width section cards (Recap, Streak&Activity, Genres, Heatmap, Reader Type)
+    val compactCardPadding = 12.dp // grid/list item cards + stat chips (TopNovelCard, Achievement, QuickStatTile, RecapStatChip)
+
+    // Icon sizes
+    val iconInline = 14.dp // icon sitting next to small metadata text (chapters, time, etc.)
+    val iconHeader = 18.dp // section-header / standalone icons
+
+    // Shape tiers, for reference:
+    //   AppShape.extraLarge -> full-width section cards
+    //   AppShape.large       -> compact grid/list item cards (TopNovelCard, AchievementCard)
+    //   AppShape.medium       -> stat chips (QuickStatTile, RecapStatChip, ReaderTraitChip)
 }
 
 // ============================================================================
@@ -222,50 +244,19 @@ private fun ProfileContent(
         contentPadding = PaddingValues(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Zone 1 — right now: who you are + today/current streak
         item(key = "hero") {
             ProfileHeroSection(uiState)
         }
 
-        uiState.readerType?.let { readerType ->
-            item(key = "reader_type") {
-                ReaderTypeSection(
-                    readerType = readerType,
-                    modifier = Modifier.padding(horizontal = dimensions.gridPadding)
-                )
-            }
-        }
-
-        item(key = "quick_stats") {
-            QuickStatsSection(
+        item(key = "streak_activity") {
+            StreakActivityCard(
                 uiState = uiState,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
         }
 
-        item(key = "streak_today") {
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = dimensions.gridPadding)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StreakCard(
-                    currentStreak  = uiState.currentStreak,
-                    longestStreak  = uiState.longestStreak,
-                    isStreakActive = uiState.isStreakActive,
-                    modifier       = Modifier.weight(1f)
-                )
-                TodayCard(
-                    todayChapters    = uiState.todayChaptersRead,
-                    todayMinutes     = uiState.todayMinutes,
-                    dailyGoalMinutes = uiState.dailyGoalMinutes,
-                    isStreakActive   = uiState.isStreakActive,
-                    currentStreak    = uiState.currentStreak,
-                    modifier         = Modifier.weight(1f)
-                )
-            }
-        }
-
+        // Zone 2 — recent habit: this week/month
         item(key = "recap") {
             RecapSection(
                 recap = uiState.recap,
@@ -275,6 +266,14 @@ private fun ProfileContent(
                 onPeriodChange = onRecapPeriodChange,
                 onRangeChange = onRecapRangeChange,
                 onNovelClick = onNovelClick,
+                modifier = Modifier.padding(horizontal = dimensions.gridPadding)
+            )
+        }
+
+        // Zone 3 — all-time archive
+        item(key = "quick_stats") {
+            QuickStatsSection(
+                uiState = uiState,
                 modifier = Modifier.padding(horizontal = dimensions.gridPadding)
             )
         }
@@ -297,16 +296,16 @@ private fun ProfileContent(
             }
         }
 
-        if (uiState.mostReadNovels.isNotEmpty()) {
-            item(key = "top_novels") {
-                TopNovelsSection(
-                    novels   = uiState.mostReadNovels,
-                    onNovelClick = onNovelClick,
+        uiState.readerType?.let { readerType ->
+            item(key = "reader_type") {
+                ReaderTypeSection(
+                    readerType = readerType,
                     modifier = Modifier.padding(horizontal = dimensions.gridPadding)
                 )
             }
         }
 
+        // Zone 4 — reward
         if (uiState.achievements.isNotEmpty()) {
             item(key = "achievements") {
                 AchievementsSection(
@@ -417,24 +416,24 @@ private fun ReaderTypeSection(
         Card(
             shape = AppShape.extraLarge,
             colors = CardDefaults.cardColors(
-                containerColor = ProfileColors.AchievementGold.copy(alpha = 0.08f)
+                containerColor = ProfileColors.ReaderTypeAccent.copy(alpha = 0.08f)
             )
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = ProfileColors.AchievementGold.copy(alpha = 0.18f),
+                        color = ProfileColors.ReaderTypeAccent.copy(alpha = 0.18f),
                         modifier = Modifier.size(56.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Icon(icon, null, Modifier.size(28.dp), tint = ProfileColors.AchievementGold)
+                            Icon(icon, null, Modifier.size(28.dp), tint = ProfileColors.ReaderTypeAccent)
                         }
                     }
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -443,7 +442,7 @@ private fun ReaderTypeSection(
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
-                            color = ProfileColors.AchievementGold
+                            color = ProfileColors.ReaderTypeAccent
                         )
                         Text(
                             text = readerType.title,
@@ -462,11 +461,11 @@ private fun ReaderTypeSection(
                 )
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     readerType.traits.forEach { trait ->
-                        ReaderTraitChip(trait = trait, modifier = Modifier.weight(1f))
+                        ReaderTraitChip(trait = trait, modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                 }
             }
@@ -481,16 +480,17 @@ private fun ReaderTraitChip(trait: ReaderTrait, modifier: Modifier = Modifier) {
         modifier = modifier
             .clip(AppShape.medium)
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .padding(10.dp),
+            .padding(ProfileMetrics.compactCardPadding),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Icon(icon, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(icon, null, Modifier.size(ProfileMetrics.iconInline), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
             text = trait.title,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            lineHeight = 15.sp,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
@@ -505,171 +505,243 @@ private fun ReaderTraitChip(trait: ReaderTrait, modifier: Modifier = Modifier) {
 }
 
 // ============================================================================
-// 2a. Streak card
+// 2a. Streak & Activity — multi-ring gauge + weekly circles + personal best
+//    (styled after the GitHub-heatmap-tool inspiration screenshot)
 // ============================================================================
 
 @Composable
-private fun StreakCard(
-    currentStreak: Int,
-    longestStreak: Int,
-    isStreakActive: Boolean,
+private fun StreakActivityCard(
+    uiState: ProfileUiState,
     modifier: Modifier = Modifier
 ) {
-    val streakMsg = when {
-        currentStreak == 0  -> "Start today!"
-        currentStreak < 3   -> "Great start!"
-        currentStreak < 7   -> "Building momentum!"
-        currentStreak < 30  -> "On fire!"
-        currentStreak < 100 -> "Legendary!"
-        else                -> "Unstoppable!"
+    val currentStreak = uiState.currentStreak
+    val longestStreak = uiState.longestStreak
+    val isStreakActive = uiState.isStreakActive
+    val todayMinutes = uiState.todayMinutes
+    val todayChapters = uiState.todayChaptersRead
+
+    val streakToBest = when {
+        longestStreak > 0 -> (currentStreak.toFloat() / longestStreak).coerceIn(0f, 1f)
+        currentStreak > 0 -> 1f
+        else -> 0f
     }
-
-    Card(
-        shape = AppShape.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isStreakActive) ProfileColors.StreakOrange.copy(alpha = 0.1f)
-            else MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = "Streak",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "$currentStreak",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = if (isStreakActive) ProfileColors.StreakOrange else MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "days",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-            }
-            Text(
-                text = streakMsg,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isStreakActive) ProfileColors.StreakOrange.copy(alpha = 0.85f)
-                else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (longestStreak > 0) {
-                Text(
-                    text = "Best: $longestStreak days",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
-                )
-            }
-        }
-    }
-}
-
-// ============================================================================
-// 2b. Today card
-// ============================================================================
-
-@Composable
-private fun TodayCard(
-    todayChapters: Int,
-    todayMinutes: Long,
-    dailyGoalMinutes: Int,
-    isStreakActive: Boolean,
-    currentStreak: Int,
-    modifier: Modifier = Modifier
-) {
-    val dailyProgress = if (dailyGoalMinutes > 0)
-        (todayMinutes.toFloat() / dailyGoalMinutes).coerceIn(0f, 1f) else 0f
-    val animDailyProg by animateFloatAsState(dailyProgress, spring(stiffness = Spring.StiffnessLow), label = "goal")
+    val daysToTie = (longestStreak - currentStreak).coerceAtLeast(0)
 
     val infiniteTransition = rememberInfiniteTransition(label = "fire")
     val fireScale by infiniteTransition.animateFloat(
-        initialValue = 1f, targetValue = 1.18f,
+        initialValue = 1f, targetValue = 1.15f,
         animationSpec = infiniteRepeatable(tween(700, easing = EaseInOutCubic), RepeatMode.Reverse),
         label = "fire_scale"
     )
 
+    val animStreakToBest by animateFloatAsState(streakToBest, spring(stiffness = Spring.StiffnessLow), label = "ring_best")
+    val animGoalProgress by animateFloatAsState(uiState.dailyGoalProgress, spring(stiffness = Spring.StiffnessLow), label = "ring_goal")
+
     val timeStr = remember(todayMinutes) {
         when {
             todayMinutes < 60 -> "${todayMinutes}m"
-            else              -> "${todayMinutes / 60}h ${todayMinutes % 60}m"
+            else -> "${todayMinutes / 60}h ${todayMinutes % 60}m"
         }
     }
 
     Card(
         shape = AppShape.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        modifier = modifier
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier = Modifier.padding(ProfileMetrics.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                Icon(
-                    Icons.Rounded.LocalFireDepartment,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp).then(
-                        if (isStreakActive && currentStreak > 0)
-                            Modifier.graphicsLayer { scaleX = fireScale; scaleY = fireScale }
-                        else Modifier
-                    ),
-                    tint = if (isStreakActive && currentStreak > 0) ProfileColors.StreakOrange
-                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                )
-                Text(
-                    text = "Today",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            // Rings + streak headline
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Canvas(modifier = Modifier.size(64.dp)) {
+                        val strokeW = 5.dp.toPx()
+                        val gap = 3.dp.toPx()
+                        val rOuter = (size.minDimension - strokeW) / 2
+                        val rInner = rOuter - strokeW - gap
+                        val centerOffset = Offset(size.width / 2, size.height / 2)
 
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Icon(Icons.AutoMirrored.Rounded.MenuBook, null, Modifier.size(13.dp), tint = ProfileColors.ChapterBlue)
-                Text(
-                    text = "$todayChapters chapters",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = ProfileColors.ChapterBlue
-                )
-            }
+                        // Outer ring — progress toward personal best streak
+                        drawArc(
+                            color = ProfileColors.StreakOrange.copy(alpha = 0.18f),
+                            startAngle = -90f, sweepAngle = 360f, useCenter = false,
+                            topLeft = Offset(centerOffset.x - rOuter, centerOffset.y - rOuter),
+                            size = Size(rOuter * 2, rOuter * 2), style = Stroke(strokeW, cap = StrokeCap.Round)
+                        )
+                        drawArc(
+                            color = ProfileColors.StreakOrange,
+                            startAngle = -90f, sweepAngle = 360f * animStreakToBest, useCenter = false,
+                            topLeft = Offset(centerOffset.x - rOuter, centerOffset.y - rOuter),
+                            size = Size(rOuter * 2, rOuter * 2), style = Stroke(strokeW, cap = StrokeCap.Round)
+                        )
 
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Icon(Icons.Rounded.Schedule, null, Modifier.size(13.dp), tint = ProfileColors.TimeGreen)
-                Text(
-                    text = timeStr,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = ProfileColors.TimeGreen
-                )
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(4.dp)
-                        .clip(AppShape.extraSmall)
-                        .background(ProfileColors.GoalPrimary.copy(alpha = 0.18f))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(animDailyProg).height(4.dp)
-                            .clip(AppShape.extraSmall)
-                            .background(ProfileColors.GoalPrimary)
+                        // Inner ring — today's reading-goal progress
+                        drawArc(
+                            color = ProfileColors.GoalPrimary.copy(alpha = 0.18f),
+                            startAngle = -90f, sweepAngle = 360f, useCenter = false,
+                            topLeft = Offset(centerOffset.x - rInner, centerOffset.y - rInner),
+                            size = Size(rInner * 2, rInner * 2), style = Stroke(strokeW, cap = StrokeCap.Round)
+                        )
+                        drawArc(
+                            color = ProfileColors.GoalPrimary,
+                            startAngle = -90f, sweepAngle = 360f * animGoalProgress, useCenter = false,
+                            topLeft = Offset(centerOffset.x - rInner, centerOffset.y - rInner),
+                            size = Size(rInner * 2, rInner * 2), style = Stroke(strokeW, cap = StrokeCap.Round)
+                        )
+                    }
+                    Icon(
+                        Icons.Rounded.LocalFireDepartment,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp).then(
+                            if (isStreakActive && currentStreak > 0)
+                                Modifier.graphicsLayer { scaleX = fireScale; scaleY = fireScale }
+                            else Modifier
+                        ),
+                        tint = if (isStreakActive && currentStreak > 0) ProfileColors.StreakOrange
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                     )
                 }
+
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "$currentStreak",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isStreakActive) ProfileColors.StreakOrange else MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "day streak",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                    LegendLine(ProfileColors.StreakOrange, "${(streakToBest * 100).toInt()}% to best")
+                    LegendLine(ProfileColors.GoalPrimary, "$todayChapters ch · $timeStr today")
+                }
+            }
+
+            // Weekly activity circles
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "${(dailyProgress * 100).toInt()}% daily goal",
+                    text = "STREAK & ACTIVITY",
                     style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+                WeekDayCircles(uiState.weeklyActivity)
+            }
+
+            // Personal best bar
+            if (longestStreak > 0) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Icon(Icons.Rounded.WorkspacePremium, null, Modifier.size(14.dp), tint = ProfileColors.AchievementGold)
+                            Text(
+                                text = "Personal best: $longestStreak days",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Text(
+                            text = "${(streakToBest * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(6.dp)
+                            .clip(AppShape.extraSmall)
+                            .background(ProfileColors.AchievementGold.copy(alpha = 0.15f))
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(animStreakToBest).height(6.dp)
+                                .clip(AppShape.extraSmall)
+                                .background(Brush.horizontalGradient(listOf(ProfileColors.AchievementGold, ProfileColors.StreakOrange)))
+                        )
+                    }
+                    Text(
+                        text = if (daysToTie > 0) "$daysToTie day${if (daysToTie == 1) "" else "s"} to tie your best"
+                        else "You're at your personal best!",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegendLine(color: Color, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(color))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun WeekDayCircles(weeklyActivity: List<Long>) {
+    val today = remember { java.time.LocalDate.now() }
+    val dayLabels = remember(today) {
+        (0..6).map { i ->
+            when (today.minusDays((6 - i).toLong()).dayOfWeek) {
+                java.time.DayOfWeek.MONDAY    -> "M"
+                java.time.DayOfWeek.TUESDAY   -> "T"
+                java.time.DayOfWeek.WEDNESDAY -> "W"
+                java.time.DayOfWeek.THURSDAY  -> "T"
+                java.time.DayOfWeek.FRIDAY    -> "F"
+                java.time.DayOfWeek.SATURDAY  -> "S"
+                java.time.DayOfWeek.SUNDAY    -> "S"
+                else -> "?"
+            }
+        }
+    }
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        weeklyActivity.forEachIndexed { index, minutes ->
+            val isToday = index == 6
+            val active = minutes > 0
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(if (active) ProfileColors.StreakOrange else Color.Transparent)
+                        .then(
+                            if (!active) Modifier.border(
+                                1.5.dp,
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                CircleShape
+                            ) else Modifier
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (active) {
+                        Icon(Icons.Rounded.Check, null, Modifier.size(15.dp), tint = Color.White)
+                    }
+                }
+                Text(
+                    text = dayLabels[index],
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isToday) ProfileColors.StreakOrange else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
                 )
             }
         }
@@ -722,18 +794,18 @@ private fun QuickStatTile(
     modifier: Modifier = Modifier
 ) {
     Card(
-        shape = AppShape.extraLarge,
+        shape = AppShape.medium,
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
         modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+            modifier = Modifier.padding(ProfileMetrics.compactCardPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Icon(icon, null, Modifier.size(18.dp), tint = color)
+            Icon(icon, null, Modifier.size(ProfileMetrics.iconInline), tint = color)
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = color
             )
@@ -833,7 +905,7 @@ private fun RecapSection(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(ProfileMetrics.cardPadding)
                     .alpha(if (isLoading) 0.5f else 1f),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -856,6 +928,8 @@ private fun RecapSection(
                         Text(
                             text = "SPENT READING",
                             style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
                         Text(
@@ -951,7 +1025,7 @@ private fun RecapStatChip(value: String, label: String, modifier: Modifier = Mod
         modifier = modifier
             .clip(AppShape.medium)
             .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f))
-            .padding(horizontal = 10.dp, vertical = 10.dp),
+            .padding(ProfileMetrics.compactCardPadding),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
@@ -974,7 +1048,7 @@ private fun RecapStatChip(value: String, label: String, modifier: Modifier = Mod
 @Composable
 private fun RecapHighlightRow(icon: ImageVector, tint: Color, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Icon(icon, null, Modifier.size(16.dp), tint = tint)
+        Icon(icon, null, Modifier.size(ProfileMetrics.iconInline), tint = tint)
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
@@ -1126,118 +1200,6 @@ private fun formatMinutes(minutes: Long): String = when {
 }
 
 // ============================================================================
-// 2e. Top Novels — most-read novels horizontal scroll
-// ============================================================================
-
-@Composable
-private fun TopNovelsSection(
-    novels: List<NovelReadingStats>,
-    onNovelClick: (NovelReadingStats) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionHeader("Your Top Novels", Icons.Rounded.Star)
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
-        ) {
-            items(novels) { novel ->
-                TopNovelCard(
-                    novel = novel,
-                    onClick = { onNovelClick(novel) },
-                    modifier = Modifier.width(130.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TopNovelCard(
-    novel: NovelReadingStats,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = AppShape.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Cover
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(90.dp)
-                    .clip(AppShape.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                contentAlignment = Alignment.Center
-            ) {
-                if (!novel.coverUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = novel.coverUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().clip(AppShape.medium),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
-                } else {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.MenuBook,
-                        null,
-                        Modifier.size(28.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                    )
-                }
-            }
-
-            // Title
-            Text(
-                text = novel.novelName,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            // Stats
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    Icon(Icons.Rounded.Schedule, null, Modifier.size(10.dp), tint = ProfileColors.TimeGreen)
-                    Text(
-                        text = formatMinutes(novel.readingTimeMinutes),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ProfileColors.TimeGreen,
-                        fontSize = 10.sp
-                    )
-                }
-                if (novel.chaptersRead > 0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        Icon(Icons.AutoMirrored.Rounded.MenuBook, null, Modifier.size(10.dp), tint = ProfileColors.ChapterBlue)
-                        Text(
-                            text = "${novel.chaptersRead} ch",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = ProfileColors.ChapterBlue,
-                            fontSize = 10.sp
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ============================================================================
 // 3. Activity Heatmap — 52-week calendar
 //    Fixed 10dp cells (clearly visible). Horizontally scrollable; auto-scrolls
 //    to today so the user sees recent activity immediately on open.
@@ -1309,7 +1271,7 @@ private fun ActivityHeatmapSection(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.cardPadding),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val primaryColor = MaterialTheme.colorScheme.primary
@@ -1329,7 +1291,7 @@ private fun ActivityHeatmapSection(
                                 contentAlignment = Alignment.CenterEnd
                             ) {
                                 if (label.isNotEmpty()) {
-                                    Text(label, fontSize = 8.sp, color = labelColor)
+                                    Text(label, fontSize = 9.sp, color = labelColor)
                                 }
                             }
                         }
@@ -1442,7 +1404,7 @@ private fun TopGenresSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SectionHeader("Your Top Genres", Icons.Rounded.Category)
+            SectionHeader("Your Top Genres · All Time", Icons.Rounded.Category)
             SegmentedToggle(
                 options = listOf("Titles", "Time"),
                 selectedIndex = if (mode == GenreMode.TITLES) 0 else 1,
@@ -1456,8 +1418,8 @@ private fun TopGenresSection(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.cardPadding),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Segmented bar
                 Row(
@@ -1585,7 +1547,7 @@ private fun AchievementCard(
         )
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(ProfileMetrics.compactCardPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -1643,7 +1605,7 @@ private fun SectionHeader(title: String, icon: ImageVector) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+        Icon(icon, null, Modifier.size(ProfileMetrics.iconHeader), tint = MaterialTheme.colorScheme.primary)
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
