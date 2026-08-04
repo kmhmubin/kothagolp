@@ -69,6 +69,15 @@ interface OfflineDao {
     @Query("SELECT * FROM novel_details WHERE url = :url")
     suspend fun getNovelDetails(url: String): NovelDetailsEntity?
 
+    /**
+     * Which of [urls] already have cached details — url-only projection, no
+     * chapters/synopsis blobs, for batched existence checks (e.g. metadata
+     * backfill deciding which novels still need a network fetch) instead of
+     * one full-row `getNovelDetails` call per novel.
+     */
+    @Query("SELECT url FROM novel_details WHERE url IN (:urls)")
+    suspend fun getExistingNovelDetailsUrls(urls: List<String>): List<String>
+
     @Query("DELETE FROM novel_details WHERE url = :url")
     suspend fun deleteNovelDetails(url: String)
 

@@ -211,6 +211,14 @@ fun SegmentItem(
             currentSentenceHighlight != null &&
             currentSentenceHighlight.segmentDisplayIndex == displayIndex
 
+    // Only changes identity for the one item currently being read aloud —
+    // stays a stable null for every other visible item regardless of how
+    // often TTS advances elsewhere. Using the raw currentSentenceHighlight
+    // as a remember/LaunchedEffect key instead of this forced every visible
+    // paragraph to rebuild its AnnotatedString on every sentence tick, not
+    // just the one actually changing.
+    val sentenceHighlightForThisItem = if (hasSentenceHighlight) currentSentenceHighlight else null
+
     val firstLineIndent = if (settings.paragraphIndent > 0f) {
         (settings.fontSize * settings.paragraphIndent).sp
     } else {
@@ -253,7 +261,7 @@ fun SegmentItem(
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
     // Calculate and report sentence bounds when layout is available
-    LaunchedEffect(textLayoutResult, hasSentenceHighlight, currentSentenceHighlight, displayIndex) {
+    LaunchedEffect(textLayoutResult, hasSentenceHighlight, sentenceHighlightForThisItem, displayIndex) {
         if (hasSentenceHighlight &&
             currentSentenceHighlight != null &&
             textLayoutResult != null &&
@@ -300,7 +308,7 @@ fun SegmentItem(
     val annotatedText = remember(
         processedStyledText,
         hasSentenceHighlight,
-        currentSentenceHighlight,
+        sentenceHighlightForThisItem,
         firstLineIndent,
         hyphens,
         lineBreak,
@@ -582,7 +590,7 @@ fun SegmentItem(
             )
 
             // Estimate sentence bounds for ClickableText using line height
-            LaunchedEffect(hasSentenceHighlight, currentSentenceHighlight) {
+            LaunchedEffect(hasSentenceHighlight, sentenceHighlightForThisItem) {
                 if (hasSentenceHighlight && currentSentenceHighlight != null && onSentenceBoundsCalculated != null) {
                     // Estimate: sentence roughly occupies proportional height
                     val totalChars = segment.text.length.coerceAtLeast(1)
@@ -1252,12 +1260,15 @@ fun CodeBlockSegmentItem(
             highlightEnabled &&
             currentSentenceHighlight != null &&
             currentSentenceHighlight.segmentDisplayIndex == displayIndex
+    // See SegmentItem's comment on this pattern — keeps this item's
+    // remember() from re-keying on every TTS tick elsewhere on screen.
+    val sentenceHighlightForThisItem = if (hasSentenceHighlight) currentSentenceHighlight else null
 
     // Build annotated string with TTS highlight support
     val annotatedText = remember(
         segment.styledText,
         hasSentenceHighlight,
-        currentSentenceHighlight,
+        sentenceHighlightForThisItem,
         textColor
     ) {
         buildAnnotatedString {
@@ -1322,12 +1333,13 @@ fun SystemMessageSegmentItem(
             highlightEnabled &&
             currentSentenceHighlight != null &&
             currentSentenceHighlight.segmentDisplayIndex == displayIndex
+    val sentenceHighlightForThisItem = if (hasSentenceHighlight) currentSentenceHighlight else null
 
     // Build annotated string with TTS highlight support
     val annotatedText = remember(
         segment.styledText,
         hasSentenceHighlight,
-        currentSentenceHighlight,
+        sentenceHighlightForThisItem,
         textColor
     ) {
         buildAnnotatedString {

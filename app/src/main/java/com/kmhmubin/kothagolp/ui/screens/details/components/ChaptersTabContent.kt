@@ -284,7 +284,11 @@ private fun ChapterListContent(
         } else {
             itemsIndexed(
                 items = displayedChapters,
-                key = { index, chapter -> "${index}_${chapter.url}" },
+                // url alone — baking the index into the key meant every
+                // sort/filter change renumbered every row's key, so Compose
+                // treated unchanged chapters as brand-new items instead of
+                // reusing their composition.
+                key = { _, chapter -> chapter.url },
                 contentType = { _, _ -> "chapter" }
             ) { displayIndex, chapter ->
                 // Calculate the actual index in the full list

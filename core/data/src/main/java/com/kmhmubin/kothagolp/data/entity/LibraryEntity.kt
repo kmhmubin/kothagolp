@@ -1,6 +1,7 @@
 package com.kmhmubin.kothagolp.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
@@ -8,7 +9,13 @@ import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 /**
  * Database entity for saved library novels with chapter tracking.
  */
-@Entity(tableName = "library")
+@Entity(
+    tableName = "library",
+    // Covers the dominant query shape (WHERE deletedAt IS NULL ORDER BY
+    // lastReadAt DESC, addedAt DESC — the main library listing) as a single
+    // index scan instead of a full table scan on every library render.
+    indices = [Index(value = ["deletedAt", "lastReadAt", "addedAt"])]
+)
 data class LibraryEntity(
     @PrimaryKey
     val url: String,
