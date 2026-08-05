@@ -51,6 +51,17 @@ class OfflineRepository(
         return offlineDao.getDownloadedChapterUrlsFlow(novelUrl).map { it.toSet() }
     }
 
+    /**
+     * Live per-novel download counts — emits on every offline_chapters write, so
+     * the Downloaded shelf updates as soon as a chapter finishes downloading
+     * instead of only refreshing whenever the library table itself changes.
+     */
+    fun observeAllDownloadCounts(): Flow<Map<String, Int>> {
+        return offlineDao.getAllNovelCountsFlow().map { rows ->
+            rows.associate { it.novelUrl to it.count }
+        }
+    }
+
     // ================================================================
     // GET OFFLINE DATA
     // ================================================================

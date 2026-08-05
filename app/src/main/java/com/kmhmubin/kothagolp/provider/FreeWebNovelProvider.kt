@@ -109,7 +109,10 @@ class FreeWebNovelProvider : MainProvider() {
         if (name.isNullOrBlank()) return null
         val href = titleElement.attrOrNull("href") ?: return null
         val novelUrl = fixUrl(deSlash(href)) ?: return null
-        val imgElement = element.selectFirstOrNull("div.pic > a > img")
+        // Descendant selector, not direct-child: the site now wraps <img> in a
+        // <picture> (webp source + fallback), so div.pic > a > img (direct
+        // child) no longer matches and every cover silently failed to load.
+        val imgElement = element.selectFirstOrNull("div.pic a img")
         val posterUrl = fixPosterUrl(imgElement)
         return Novel(name = name, url = novelUrl, posterUrl = posterUrl, apiName = this.name)
     }
@@ -163,7 +166,8 @@ class FreeWebNovelProvider : MainProvider() {
     )
 
     private fun extractMetadata(document: Document): NovelMetadata {
-        val posterUrl = document.selectFirstOrNull("div.pic > img")?.let { fixPosterUrl(it) }
+        // Same <picture>-wrapper issue as the listing page — descendant selector.
+        val posterUrl = document.selectFirstOrNull("div.pic img")?.let { fixPosterUrl(it) }
         val synopsis = document.selectFirstOrNull("div.inner")?.text()?.trim() ?: "No Summary Found"
         val author = document.selectFirstOrNull("span.glyphicon.glyphicon-user")
             ?.nextElementSibling()?.textOrNull()?.trim()
