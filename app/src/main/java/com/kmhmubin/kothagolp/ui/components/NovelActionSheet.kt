@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.rounded.BookmarkAdded
 import androidx.compose.material.icons.rounded.Check
@@ -74,6 +75,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -89,8 +91,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -114,6 +120,7 @@ import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.RatingFormat
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import com.kmhmubin.kothagolp.util.RatingUtils
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // ================================================================
@@ -456,15 +463,7 @@ private fun CompactHeader(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = data.novel.name,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 18.sp
-            )
+            CopiableTitle(title = data.novel.name)
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -583,6 +582,58 @@ private fun CompactHeader(
                 }
             }
         }
+    }
+}
+
+/**
+ * Title + tap-to-copy icon. Convenient when a source goes dead and the
+ * fastest recovery is pasting the exact title into another source's search.
+ */
+@Composable
+private fun CopiableTitle(title: String) {
+    val clipboardManager = LocalClipboardManager.current
+    val haptic = LocalHapticFeedback.current
+    var justCopied by remember { mutableStateOf(false) }
+
+    LaunchedEffect(justCopied) {
+        if (justCopied) {
+            delay(1200)
+            justCopied = false
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .clip(AppShape.extraSmall)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                clipboardManager.setText(AnnotatedString(title))
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                justCopied = true
+            },
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 18.sp,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+        Icon(
+            imageVector = if (justCopied) Icons.Rounded.Check else Icons.Outlined.ContentCopy,
+            contentDescription = "Copy title",
+            modifier = Modifier
+                .size(14.dp)
+                .padding(top = 2.dp),
+            tint = if (justCopied) Success else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        )
     }
 }
 
