@@ -55,7 +55,6 @@ class ProviderSmokeTest {
         PawReadProvider(),
         RoyalRoadProvider(),
         WebnovelProvider()
-        // NovelsOnline skipped: source currently offline
     )
 
     private data class SourceResult(

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -110,16 +111,27 @@ class LibraryViewModel : ViewModel() {
                     )
                 }
 
-                libraryRepository.observeLibrary().collect { items ->
-                    val counts = offlineRepository.getAllDownloadCounts()
-                    _uiState.update { state ->
-                        state.copy(
-                            downloadCounts = counts,
-                            isLoading = false
-                        )
+                // Combined, not nested: downloadCounts used to only refresh
+                // piggybacked on library-table changes (novel added/removed/status
+                // edited). Downloading a chapter writes to offline_chapters, which
+                // never touched the library table, so the Downloaded shelf stayed
+                // stale until something else forced a library re-emit — in
+                // practice, until the app was restarted. Observing both flows and
+                // combining means a chapter finishing download updates the shelf
+                // immediately.
+                combine(
+                    libraryRepository.observeLibrary(),
+                    offlineRepository.observeAllDownloadCounts()
+                ) { items, counts -> items to counts }
+                    .collect { (items, counts) ->
+                        _uiState.update { state ->
+                            state.copy(
+                                downloadCounts = counts,
+                                isLoading = false
+                            )
+                        }
+                        updateVisibleItems(items)
                     }
-                    updateVisibleItems(items)
-                }
             } catch (e: Exception) {
                 Log.e(TAG, "Error initializing library", e)
                 _uiState.update { it.copy(isLoading = false, error = e.message) }

@@ -75,7 +75,6 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             "NovelBin" -> "Diverse selection of light novels & web novels"
             "Webnovel" -> "Premium platform with exclusive titles"
             "LibRead" -> "Free light novel & web novel library"
-            "NovelsOnline" -> "Extensive catalog of translated novels"
             else -> "Novel provider"
         }
     }
@@ -87,7 +86,6 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             "NovelBin" -> "30,000+ novels"
             "Webnovel" -> "100,000+ novels"
             "LibRead" -> "40,000+ novels"
-            "NovelsOnline" -> "20,000+ novels"
             else -> "Many novels"
         }
     }
@@ -99,7 +97,6 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             "NovelBin" -> listOf("Light Novel", "Isekai", "Fantasy")
             "Webnovel" -> listOf("Romance", "Fantasy", "Urban")
             "LibRead" -> listOf("Fantasy", "Romance", "Isekai")
-            "NovelsOnline" -> listOf("Cultivation", "Martial Arts", "Fantasy")
             else -> listOf("Various")
         }
     }

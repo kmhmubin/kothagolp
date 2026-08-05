@@ -120,6 +120,11 @@ class SyncWorker(
         private const val MIN_TRIGGER_SYNC_INTERVAL_MINUTES = 15L
         private const val KEY_TRIGGER = "trigger"
         private val syncMutex = Mutex()
+        // Must cover every value the Settings UI offers (SCHEDULING_SYNC_INTERVALS /
+        // SyncIntervalOption) — anything picked here that ISN'T in this set gets
+        // silently normalized to 0 below and periodic sync is cancelled outright.
+        // 20160 (every 2 weeks) and 43200 (monthly) were missing, so choosing either
+        // of those options in Settings silently turned auto-sync off.
         private val SUPPORTED_PERIODIC_INTERVALS = setOf(
             30,
             60,
@@ -128,7 +133,9 @@ class SyncWorker(
             720,
             1440,
             2880,
-            10080
+            10080,
+            20160,
+            43200
         )
 
         fun isRunning(context: Context): Boolean {

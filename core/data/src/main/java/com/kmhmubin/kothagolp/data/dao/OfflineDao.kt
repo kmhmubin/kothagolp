@@ -32,6 +32,9 @@ interface OfflineDao {
     @Query("SELECT novelUrl, COUNT(*) as count FROM offline_chapters GROUP BY novelUrl")
     suspend fun getAllNovelCounts(): List<NovelChapterCount>
 
+    @Query("SELECT novelUrl, COUNT(*) as count FROM offline_chapters GROUP BY novelUrl")
+    fun getAllNovelCountsFlow(): Flow<List<NovelChapterCount>>
+
     @Query("""
         SELECT novelUrl, 
                COUNT(*) as count, 
