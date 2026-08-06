@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.12.9] — 2026-08-06
+
+### Added
+
+- **Copy title button** — The library's quick-action sheet (long-press a book) now has a tap-to-copy icon next to the title. Handy for pasting the exact title into another source's search when one goes dead
+
+### Fixed
+
+- **NovelsOnline source removed** — this source has been fully down and no longer works
+- **FreeWebNovel cover images** — covers stopped loading after the site changed its markup; fixed
+- **Cloud Sync "Every 2 weeks" / "Monthly" intervals** — picking either of these silently disabled auto-sync entirely instead of scheduling it; fixed
+- **Downloads shelf not updating live** — a title downloading or downloaded didn't appear on the Downloaded shelf until the app was restarted; now updates immediately
+
 ## [3.12.8] — 2026-08-04
 
 ### Added
