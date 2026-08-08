@@ -169,6 +169,40 @@ class ReaderViewModel : ViewModel() {
     private val blockTTSUpdates = AtomicBoolean(true)
     private val blockTTSSync = AtomicBoolean(false)
 
+    // Fed live from ReaderScreen's listState.isScrollInProgress. See
+    // awaitScrollIdle() below for why this exists.
+    private val isUserScrolling = AtomicBoolean(false)
+
+    fun setUserScrolling(scrolling: Boolean) {
+        isUserScrolling.set(scrolling)
+    }
+
+    /**
+     * Waits for an active user scroll/fling to settle before the caller mutates
+     * displayItems. rebuildDisplayItemsInternal() replaces the LazyColumn's
+     * entire backing list — every preload appending a chapter and every
+     * unloadDistantChapters() eviction goes through it. A fling in progress is
+     * a velocity-based animation computed against the CURRENT layout; when the
+     * item count changes underneath it mid-flight (a chapter's worth of items
+     * inserted or removed), Compose keeps driving that same velocity over a
+     * now-different layout and the visual result overshoots — landing on a
+     * random nearby chapter instead of where the gesture was actually headed.
+     * This was the reported "infinite scroll jumps to a random chapter, then
+     * overshoots again scrolling back" bug: both directions are the same root
+     * cause, just triggered by onApproachingEnd's preload vs.
+     * unloadDistantChapters' eviction respectively.
+     *
+     * Bounded wait so a stuck flag (e.g. a fling that never reports settled)
+     * can't stall preloading forever — worst case it applies a bit late rather
+     * than jamming the reader.
+     */
+    private suspend fun awaitScrollIdle(maxWaitMs: Long = 3000L) {
+        val start = System.currentTimeMillis()
+        while (isUserScrolling.get() && System.currentTimeMillis() - start < maxWaitMs) {
+            delay(80)
+        }
+    }
+
     /**
      * FIX #1 — Set to true for the entire duration of stopTTSInternal().
      * Prevents service-side events (segmentChanged, playbackState) that fire
@@ -1736,6 +1770,10 @@ class ReaderViewModel : ViewModel() {
 
         val loadingChapter = chapterLoader.createLoadingChapter(chapter, chapterIndex)
 
+        // Preload/retry paths only — a fresh chapter open has no fling in
+        // flight yet to disturb. See awaitScrollIdle() for why this matters.
+        if (!isInitialLoad) awaitScrollIdle()
+
         stateMutex.withLock {
             _uiState.update {
                 it.copy(loadedChapters = it.loadedChapters + (chapterIndex to loadingChapter))
@@ -1745,6 +1783,8 @@ class ReaderViewModel : ViewModel() {
 
         try {
             val result = chapterLoader.loadChapter(chapter, chapterIndex)
+
+            if (!isInitialLoad) awaitScrollIdle()
 
             when (result) {
                 is ChapterLoadResult.Success -> {
@@ -2298,6 +2338,12 @@ class ReaderViewModel : ViewModel() {
     }
 
     private suspend fun unloadDistantChapters() {
+        // Wait first, then read state — deciding what to evict from a
+        // pre-wait snapshot risks unloading the chapter the user scrolled
+        // *to* while we were waiting. See awaitScrollIdle() for why the wait
+        // itself exists at all (evicting mid-fling causes the overshoot bug).
+        awaitScrollIdle()
+
         val state = _uiState.value
         // desiredScrollPosition updates on every scroll frame; currentChapterIndex
         // is debounced 150ms behind it for UI/history purposes. Centering the keep

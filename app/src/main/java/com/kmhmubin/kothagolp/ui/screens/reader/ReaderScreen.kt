@@ -323,6 +323,17 @@ fun ReaderScreen(
     // this screen already feeds it above, debounced there against fast-scroll flicker.
     // A second, undebounced tracker used to live here, duplicating that work.
 
+    // Feed live scroll/fling state to the ViewModel so preload/unload can
+    // defer mutating displayItems until a gesture settles — see
+    // ReaderViewModel.awaitScrollIdle() for why (mutating the LazyColumn's
+    // backing list mid-fling caused the reader to jump to a random nearby
+    // chapter and overshoot again scrolling back).
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }.collect { inProgress ->
+            viewModel.setUserScrolling(inProgress)
+        }
+    }
+
     // Infinite scroll handlers - only when content is ready
     LaunchedEffect(listState, uiState.isContentReady) {
         if (!uiState.isContentReady) return@LaunchedEffect
