@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.12.10] — 2026-08-08
+
+### Fixed
+
+- **Infinite scroll jumping to a random chapter** — With Infinite Scroll on, reading through chapters could occasionally snap forward or backward to an unrelated chapter mid-scroll, then overshoot again trying to scroll back to where you were. Caused by background chapter preloading/unloading updating the page while a scroll was still in motion; it now waits for scrolling to settle first
+
 ## [3.12.9] — 2026-08-06
 
 ### Added
