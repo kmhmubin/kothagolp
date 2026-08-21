@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.0] — 2026-08-21
+
+### Changed
+
+- **AllNovel moved to NovelFull** (novelfull.com) — old domain was dead; browsing, details, and chapters all work again under the new domain and branding. Existing library entries keep working
+- **Light Novel World moved to Chikari** (chikari.moe) — old domain now serves manga instead of novels; rebuilt against the new site's API. Existing library entries keep working
+
 ## [3.12.10] — 2026-08-08
 
 ### Fixed
