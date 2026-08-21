@@ -13,8 +13,8 @@ import kotlin.math.roundToInt
 
 class AllNovelProvider : MainProvider() {
 
-    override val name = "AllNovel"
-    override val mainUrl = "https://allnovel.org"
+    override val name = "NovelFull"
+    override val mainUrl = "https://novelfull.com"
     override val iconRes = R.drawable.ic_provider_allnovel
     override val hasMainPage = true
 
@@ -77,10 +77,7 @@ class AllNovelProvider : MainProvider() {
         if (imgElement == null) return null
         val rawSrc = imgElement.attrOrNull("data-src") ?: imgElement.attrOrNull("src") ?: return null
         if (rawSrc.isBlank() || rawSrc.contains("data:image")) return null
-        val fixedSrc = rawSrc
-            .replace("fc05345726d3e134d2f7187dc70f047b", "4d27e0af8cf6e971f7ee3c995fc55190")
-            .replace("9798407846f8032e6a88fa71b2c62ce9", "9c3d392ccc7c95187a8c6e37c6bdac6f")
-        val cleanedSrc = deSlash(fixedSrc)
+        val cleanedSrc = deSlash(rawSrc)
         return if (cleanedSrc.startsWith("http")) cleanedSrc else "$mainUrl/$cleanedSrc"
     }
 
@@ -225,7 +222,10 @@ class AllNovelProvider : MainProvider() {
         val document = get(fullUrl).document
         val contentElement = document.selectFirstOrNull("#chapter-content")
             ?: document.selectFirstOrNull("#chr-content") ?: return null
-        contentElement.select(".ads, .adsbygoogle, script, style, .ads-holder, .ads-middle, [id*='ads'], [class*='ads']").remove()
+        contentElement.select(
+            ".ads, .adsbygoogle, script, style, iframe, a[rel*='sponsored'], div[align='left'], " +
+                ".ads-holder, .ads-middle, [id*='ads'], [class*='ads']"
+        ).remove()
         val rawHtml = contentElement.html()
         return cleanChapterHtml(rawHtml)
     }

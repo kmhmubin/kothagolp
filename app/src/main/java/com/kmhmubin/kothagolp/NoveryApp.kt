@@ -96,6 +96,11 @@ class KothagolpApp : Application() {
         MainProvider.register(RoyalRoadProvider())
         MainProvider.register(WebnovelProvider())
 
+        // Old provider names, kept resolvable after site rebrands/domain moves
+        // so existing library entries still find their provider.
+        MainProvider.registerAlias("AllNovel", "NovelFull")
+        MainProvider.registerAlias("Light Novel World", "Chikari")
+
         // Create notification channels
         NotificationHelper.createNotificationChannels(this)
 
