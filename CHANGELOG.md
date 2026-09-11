@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.14.1] — 2026-09-11
+
+### Fixed
+
+- **ReChapters chapter titles** — Some chapters showed a garbled "StartStart reading" title instead of the real chapter name. Caused by the site's own "Start reading" button getting scraped as if it were a chapter title; fixed to only read titles from actual chapter rows
+
 ## [3.14.0] — 2026-09-11
 
 ### Added
