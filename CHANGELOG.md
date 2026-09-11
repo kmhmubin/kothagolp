@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.14.0] — 2026-09-11
+
+### Added
+
+- **NovelNice source** (novelnice.com) — browse, search, and read
+- **NovelCool source** (novelcool.com) — browse, search, and read. The site cloaks its own in-page chapter links to a normal browser (redirecting through an ad domain instead of the real chapter); this source requests pages the same way a search-engine crawler does, which the site serves the real links to
+- **ReChapters source** (rechapters.com) — browse by genre and read; search falls back to the site's own book index since the site doesn't offer a public search page
+- **Import from LNReader** — Storage & Backup → Restore now also accepts an LNReader backup export, carrying over your library, reading progress, and history. Since LNReader doesn't store which website each book came from in a way this app can resolve automatically, imported books land with a "Find on other sources" prompt to reconnect them to a live source here
+
+### Fixed
+
+- **NovelBin** — the site rebuilt its frontend from scratch; browsing, details, and chapters all work again. Also added novel-bin.net and novelbin.cc as automatic backup domains if novel-bin.com goes down
+
 ## [3.13.0] — 2026-08-21
 
 ### Changed
