@@ -285,8 +285,12 @@ data class BackupMetadata(
     val readChaptersCount: Int = 0,
     val hasSettings: Boolean,
     val hasStatistics: Boolean,
-    val sourceApp: String = "Kothagolp" // "Kothagolp" or "QuickNovel"
+    val sourceApp: String = "Kothagolp" // "Kothagolp", "QuickNovel", or "LNReader"
 ) {
     val isQuickNovelBackup: Boolean
         get() = sourceApp == "QuickNovel"
+
+    /** True for any converted 3rd-party import (QuickNovel, LNReader, ...), not a native backup. */
+    val isThirdPartyImport: Boolean
+        get() = sourceApp != "Kothagolp"
 }

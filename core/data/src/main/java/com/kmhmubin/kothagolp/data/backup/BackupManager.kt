@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp.data.backup
 import android.content.Context
 import android.net.Uri
 import android.os.Build
+import com.kmhmubin.kothagolp.data.backup.lnreader.LNReaderBackupConverter
 import com.kmhmubin.kothagolp.data.backup.quicknovel.QuickNovelBackupConverter
 import androidx.room.withTransaction
 import com.kmhmubin.kothagolp.data.local.NovelDatabase
@@ -59,6 +60,9 @@ class BackupManager(
 
     // QuickNovel backup converter
     private val quickNovelConverter = QuickNovelBackupConverter()
+
+    // LNReader backup converter (zip, not plain JSON — detected/handled separately)
+    private val lnReaderConverter = LNReaderBackupConverter()
 
     // ================================================================
     // CREATE BACKUP
@@ -173,6 +177,24 @@ class BackupManager(
      */
     suspend fun parseBackupMetadata(uri: Uri): Result<BackupMetadata> = withContext(Dispatchers.IO) {
         try {
+            // LNReader backups are a zip, not text — must be checked before any text read.
+            if (lnReaderConverter.isLNReaderBackup(context, uri)) {
+                val converted = lnReaderConverter.convert(context, uri)
+                return@withContext Result.success(BackupMetadata(
+                    version = converted.version,
+                    createdAt = converted.createdAt,
+                    appVersion = "LNReader Import",
+                    deviceInfo = converted.deviceInfo,
+                    libraryCount = converted.library.size,
+                    bookmarkCount = converted.bookmarks.size,
+                    historyCount = converted.history.size,
+                    readChaptersCount = converted.readChapters.size,
+                    hasSettings = false,
+                    hasStatistics = false,
+                    sourceApp = "LNReader"
+                ))
+            }
+
             val backupJson = readFromUri(uri)
                 ?: return@withContext Result.failure(Exception("Could not read backup file"))
 
@@ -224,6 +246,19 @@ class BackupManager(
         options: RestoreOptions = RestoreOptions()
     ): RestoreResult = withContext(Dispatchers.IO) {
         try {
+            // LNReader backups are a zip, not text — handled before any text read.
+            if (lnReaderConverter.isLNReaderBackup(context, uri)) {
+                val backup = try {
+                    lnReaderConverter.convert(context, uri)
+                } catch (e: Exception) {
+                    return@withContext RestoreResult(
+                        success = false,
+                        error = "Invalid LNReader backup: ${e.message}"
+                    )
+                }
+                return@withContext restoreBackupData(backup, options)
+            }
+
             val backupJson = readFromUri(uri)
                 ?: return@withContext RestoreResult(
                     success = false,
@@ -246,6 +281,7 @@ class BackupManager(
 
             // Validate version (only for native Kothagolp backups)
             if (backup.appVersion != "QuickNovel Import" &&
+                backup.appVersion != "LNReader Import" &&
                 backup.version > BackupData.CURRENT_VERSION) {
                 return@withContext RestoreResult(
                     success = false,

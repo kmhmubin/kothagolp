@@ -719,7 +719,7 @@ fun StorageScreen(
                         isRestoring = false
                         if (result.success) {
                             val action =
-                                if (backupMetadata?.isQuickNovelBackup == true) "Imported"
+                                if (backupMetadata?.isThirdPartyImport == true) "Imported"
                                 else "Restored"
                             snackbarHostState.showSnackbar(
                                 "$action ${result.totalItemsRestored} items successfully"
@@ -793,7 +793,7 @@ private fun BackupRestoreCard(
         ) {
             Text(
                 text = "Backup includes your library, bookmarks, reading history, " +
-                        "statistics, and settings. You can also import backups from QuickNovel.",
+                        "statistics, and settings. You can also import backups from QuickNovel or LNReader.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1321,7 +1321,7 @@ private fun RestoreOptionsDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                if (metadata.isQuickNovelBackup) "Import from QuickNovel"
+                if (metadata.isThirdPartyImport) "Import from ${metadata.sourceApp}"
                 else "Restore Backup"
             )
         },
@@ -1344,14 +1344,14 @@ private fun RestoreOptionsDialog(
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            if (metadata.isQuickNovelBackup) {
+                            if (metadata.isThirdPartyImport) {
                                 Spacer(Modifier.width(8.dp))
                                 Surface(
                                     color = MaterialTheme.colorScheme.primaryContainer,
                                     shape = AppShape.extraSmall
                                 ) {
                                     Text(
-                                        text = "QuickNovel",
+                                        text = metadata.sourceApp,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                                         modifier = Modifier.padding(
@@ -1364,15 +1364,15 @@ private fun RestoreOptionsDialog(
                         }
                         Spacer(Modifier.height(6.dp))
                         InfoRow("Created", dateFormat.format(Date(metadata.createdAt)))
-                        if (!metadata.isQuickNovelBackup) {
+                        if (!metadata.isThirdPartyImport) {
                             InfoRow("Version", metadata.appVersion)
                         }
                         InfoRow("Device", metadata.deviceInfo)
                     }
                 }
 
-                // QuickNovel import notice
-                if (metadata.isQuickNovelBackup) {
+                // Third-party import notice
+                if (metadata.isThirdPartyImport) {
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(
@@ -1553,7 +1553,7 @@ private fun RestoreOptionsDialog(
                 onClick = onConfirm,
                 enabled = hasAnySelected
             ) {
-                Text(if (metadata.isQuickNovelBackup) "Import" else "Restore")
+                Text(if (metadata.isThirdPartyImport) "Import" else "Restore")
             }
         },
         dismissButton = {
