@@ -174,7 +174,11 @@ class ReChaptersProvider : MainProvider() {
         val bookId = bookIdOf(novelUrl)
         val bookPathPrefix = novelUrl.trimEnd('/').substringAfterLast("/book/").let { "/book/$it/" }
         val scrapedNames = mutableMapOf<String, String>()
-        for (link in document.select("a[href^=$bookPathPrefix]")) {
+        // Chapter rows are "<li><a>"; the page also has a standalone
+        // "Start reading" CTA anchor whose href matches the same book path
+        // prefix but whose nested responsive spans ("Start" + "Start
+        // reading") would otherwise get scraped together as a fake title.
+        for (link in document.select("li > a[href^=$bookPathPrefix]")) {
             val href = link.attrOrNull("href") ?: continue
             val chapterId = href.substringAfterLast("/").takeIf { it.isNotBlank() } ?: continue
             val title = link.selectFirstOrNull("span")?.textOrNull()?.trim() ?: continue
