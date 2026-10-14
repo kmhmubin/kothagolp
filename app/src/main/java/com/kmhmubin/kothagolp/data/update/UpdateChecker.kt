@@ -146,8 +146,11 @@ class UpdateChecker(private val context: Context) {
      */
     private fun isNewerVersion(current: String, latest: String): Boolean {
         try {
-            val currentParts = current.split(".").map { it.toIntOrNull() ?: 0 }
-            val latestParts = latest.split(".").map { it.toIntOrNull() ?: 0 }
+            // Drop build suffixes ("3.14.1-debug", "3.14.1+5") so "1-debug" isn't parsed as 0
+            fun parts(v: String) = v.substringBefore('-').substringBefore('+')
+                .split(".").map { it.toIntOrNull() ?: 0 }
+            val currentParts = parts(current)
+            val latestParts = parts(latest)
 
             // Pad to same length
             val maxLength = maxOf(currentParts.size, latestParts.size)

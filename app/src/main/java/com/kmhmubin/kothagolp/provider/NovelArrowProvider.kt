@@ -10,7 +10,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * NovelArrow (novelarrow.com) — a Next.js site with a JSON API under /api-web.
+ * NovelArrow — rebranded/moved to novelping.com (novelarrow.com now sits behind an
+ * interactive Cloudflare challenge and redirects there). Same JSON API under /api-web.
  *
  * API map (all GET, JSON):
  *  - browse/search: /api-web/novels?page=N[&keyword=][&genre=][&status=]
@@ -18,12 +19,12 @@ import org.json.JSONObject
  *  - chapter list:  /api-web/novels/{id}/chapters?sort=asc -> items[]
  *  - content:       /api-web/novels/{id}/chapters/{chapterId}
  *                   -> item.chapterInfo.chapter_content (HTML)
- *  - covers:        https://images.novelarrow.com/novel/{id}.jpg
+ *  - covers:        https://images.novelping.com/novel/{id}.jpg
  */
 class NovelArrowProvider : MainProvider() {
 
     override val name = "NovelArrow"
-    override val mainUrl = "https://novelarrow.com"
+    override val mainUrl = "https://novelping.com"
     override val iconRes = R.drawable.ic_provider_novelarrow
     override val hasMainPage = true
 
@@ -81,7 +82,14 @@ class NovelArrowProvider : MainProvider() {
         FilterOption("Completed", "completed")
     )
 
-    private fun coverUrl(novelId: String) = "https://images.novelarrow.com/novel/$novelId.jpg"
+    /** Site and image host sit behind a Cloudflare challenge; throw so the UI offers WebView verification. */
+    private suspend fun api(url: String): JSONObject {
+        val response = get(url, jsonHeaders)
+        if (response.isCloudflareBlocked) throw Exception("Cloudflare challenge on $name — open in WebView to verify")
+        return JSONObject(response.text)
+    }
+
+    private fun coverUrl(novelId: String) = "https://images.novelping.com/novel/$novelId.jpg"
 
     private fun parseNovels(items: JSONArray): List<Novel> {
         val novels = mutableListOf<Novel>()
@@ -110,24 +118,18 @@ class NovelArrowProvider : MainProvider() {
             tag?.takeIf { it.isNotBlank() }?.let { append("&genre=$it") }
         }
         val url = "$apiBase/novels?$params"
-        return try {
-            val json = JSONObject(get(url, jsonHeaders).text)
-            val novels = parseNovels(json.optJSONArray("items") ?: JSONArray())
-            val pagination = json.optJSONObject("pagination")
-            val hasNext = pagination != null &&
-                pagination.optInt("page", page) < pagination.optInt("totalPages", page)
-            MainPageResult(url = url, novels = novels, hasNextPage = hasNext)
-        } catch (_: Throwable) {
-            MainPageResult(url = url, novels = emptyList())
-        }
+        val json = api(url)
+        val novels = parseNovels(json.optJSONArray("items") ?: JSONArray())
+        val pagination = json.optJSONObject("pagination")
+        val hasNext = pagination != null &&
+            pagination.optInt("page", page) < pagination.optInt("totalPages", page)
+        return MainPageResult(url = url, novels = novels, hasNextPage = hasNext)
     }
 
     override suspend fun search(query: String): List<Novel> {
         val encoded = java.net.URLEncoder.encode(query.trim(), "UTF-8")
-        return try {
-            val json = JSONObject(get("$apiBase/novels?keyword=$encoded&page=1", jsonHeaders).text)
-            parseNovels(json.optJSONArray("items") ?: JSONArray())
-        } catch (_: Throwable) { emptyList() }
+        val json = api("$apiBase/novels?keyword=$encoded&page=1")
+        return parseNovels(json.optJSONArray("items") ?: JSONArray())
     }
 
     /** Novel id is the last path segment of /novel/{id} (or a legacy URL). */
@@ -137,14 +139,16 @@ class NovelArrowProvider : MainProvider() {
     override suspend fun load(url: String): NovelDetails? {
         val novelId = novelIdFromUrl(url)
         if (novelId.isBlank()) return null
-        val json = try {
-            JSONObject(get("$apiBase/novels/$novelId", jsonHeaders).text)
-        } catch (_: Throwable) { return null }
+        val json = api("$apiBase/novels/$novelId")
         val info = json.optJSONObject("item")?.optJSONObject("novelInfo") ?: return null
 
         val title = info.optString("novel_name", null) ?: return null
         val author = info.optString("novel_author", null)?.takeIf { it.isNotBlank() }
-        val synopsis = info.optString("novel_desc", null)?.takeIf { it.isNotBlank() }
+        // novel_desc is HTML (<p><b>…); flatten to paragraphs of plain text
+        val synopsis = info.optString("novel_desc", null)?.takeIf { it.isNotBlank() }?.let { html ->
+            val body = org.jsoup.Jsoup.parse(html).body()
+            body.select("p").joinToString("\n\n") { it.text() }.ifBlank { body.text() }
+        }?.takeIf { it.isNotBlank() }
         // Verified against the status filter: ?status=ongoing -> 0, ?status=completed -> 1
         val status = when (info.optInt("novel_status", -1)) {
             0 -> "Ongoing"
@@ -177,7 +181,7 @@ class NovelArrowProvider : MainProvider() {
 
     private suspend fun loadChapters(novelId: String): List<Chapter> {
         return try {
-            val json = JSONObject(get("$apiBase/novels/$novelId/chapters?sort=asc", jsonHeaders).text)
+            val json = api("$apiBase/novels/$novelId/chapters?sort=asc")
             val items = json.optJSONArray("items") ?: JSONArray()
             (0 until items.length()).mapNotNull { i ->
                 val obj = items.optJSONObject(i) ?: return@mapNotNull null
@@ -196,15 +200,11 @@ class NovelArrowProvider : MainProvider() {
         if (segments.size < 3 || segments[0] != "chapter") return null
         val novelId = segments[1]
         val chapterId = segments[2]
-        return try {
-            val json = JSONObject(
-                get("$apiBase/novels/$novelId/chapters/$chapterId", jsonHeaders).text
-            )
-            json.optJSONObject("item")
-                ?.optJSONObject("chapterInfo")
-                ?.optString("chapter_content", null)
-                ?.trim()
-                ?.takeIf { it.isNotBlank() }
-        } catch (_: Throwable) { null }
+        return api("$apiBase/novels/$novelId/chapters/$chapterId")
+            .optJSONObject("item")
+            ?.optJSONObject("chapterInfo")
+            ?.optString("chapter_content", null)
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
     }
 }

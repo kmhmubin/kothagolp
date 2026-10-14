@@ -60,22 +60,31 @@ class NovelBinProvider : MainProvider() {
         } catch (_: Exception) { url }
     }
 
+    private val throttleBackoffMs = listOf(1_500L, 2_500L, 4_000L, 8_000L)
+
     /** Tries [activeDomain] first, then the remaining domains, sticking with whichever works. */
     private suspend fun fetch(path: String, headers: Map<String, String> = emptyMap()): NetworkClient.NetworkResponse {
         val order = listOf(activeDomain) + domains.filter { it != activeDomain }
         var lastError: Exception? = null
         for (domain in order) {
             val fullUrl = "$domain${adaptPath(path, domain)}"
-            try {
-                val response = get(fullUrl, headers)
-                if (response.isSuccessful) {
-                    activeDomain = domain
-                    return response
-                }
-                lastError = NetworkException("HTTP ${response.code} from $fullUrl")
-            } catch (e: Exception) {
+            var response = try { get(fullUrl, headers) } catch (e: NetworkException) {
                 lastError = e
+                continue
             }
+            // Origin throttles uncached chapters with 429, shared across all mirrors so
+            // hopping domains doesn't help; backoff usually clears it within ~15s.
+            for (wait in throttleBackoffMs) {
+                if (response.code != 429) break
+                kotlinx.coroutines.delay(wait)
+                response = try { get(fullUrl, headers) } catch (e: NetworkException) { break }
+            }
+            if (response.isSuccessful) {
+                activeDomain = domain
+                return response
+            }
+            if (response.code == 429) throw NetworkException("NovelBin rate limited (HTTP 429), try again shortly")
+            lastError = NetworkException("HTTP ${response.code} from $fullUrl")
         }
         throw lastError ?: NetworkException("NovelBin unreachable on all known domains")
     }
@@ -198,13 +207,43 @@ class NovelBinProvider : MainProvider() {
         val status = document.selectFirstOrNull("meta[property=og:novel:status]")
             ?.attrOrNull("content")?.let { parseStatus(it) }
 
-        val chapters = parseChapters(document, url)
+        val chapters = loadChapterList(url) ?: parseChapters(document, url)
 
         return NovelDetails(
             url = url, name = name, chapters = chapters, author = author,
             posterUrl = posterUrl, synopsis = synopsis,
             tags = tagsList.ifEmpty { null }, status = status
         )
+    }
+
+    /**
+     * Full table of contents (real titles for every chapter) from the endpoint the
+     * reader's TOC drawer uses. Null on failure so the caller falls back to scraping.
+     */
+    // Site titles repeat the number: "Chapter 1: 1. Prologue", "Chapter 193 193 The Lair"
+    private val dupChapterNumber = Regex("""^(Chapter (\d+))\s*:?\s*\2\b\s*[.:\-]?\s*""", RegexOption.IGNORE_CASE)
+
+    private suspend fun loadChapterList(novelUrl: String): List<Chapter>? {
+        val base = novelUrl.trimEnd('/')
+        val slug = base.substringAfterLast('/')
+        return try {
+            val items = JSONObject(fetch("/ajax/chapter-list?slug=$slug").text).optJSONArray("chapters")
+                ?: return null
+            (0 until items.length()).mapNotNull { i ->
+                val obj = items.optJSONObject(i) ?: return@mapNotNull null
+                val chapterSlug = obj.optString("url").trimEnd('/').substringAfterLast('/')
+                    .takeIf { it.startsWith("chapter-") } ?: return@mapNotNull null
+                Chapter(
+                    name = obj.optString("title").replace(dupChapterNumber, "$1: ").trimEnd(' ', ':')
+                        .ifBlank { "Chapter ${obj.optInt("index", i + 1)}" },
+                    url = "$base/$chapterSlug"
+                )
+            }.takeIf { it.isNotEmpty() }
+        } catch (e: NetworkException) {
+            null
+        } catch (e: org.json.JSONException) {
+            null
+        }
     }
 
     /**

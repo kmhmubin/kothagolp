@@ -42,19 +42,12 @@ class LightNovelTranslationsProvider : MainProvider() {
         var lastUrl = ""
         var hasNext = false
         for (i in range) {
-            val url = "$mainUrl/read/page/$i?sortby=$sort&status=$status"
+            val url = "$mainUrl/browse/?paged=$i&sortby=$sort&status=$status"
             lastUrl = url
             val document = get(url).document
-            novels.addAll(document.select("div.read_list-story-item").mapNotNull { el ->
-                val link = el.selectFirstOrNull(".item_thumb a") ?: return@mapNotNull null
-                val href = link.attrOrNull("href") ?: return@mapNotNull null
-                val title = link.attrOrNull("title")?.ifBlank { null } ?: link.textOrNull() ?: return@mapNotNull null
-                val posterUrl = fixUrl(el.selectFirstOrNull(".item_thumb img")?.attrOrNull("src"))
-                Novel(name = title, url = fixUrl(href) ?: href, posterUrl = posterUrl, apiName = this.name)
-            })
+            novels.addAll(parseList(document))
             if (i == range.last) {
-                hasNext = document.selectFirstOrNull("a.next.page-numbers, a:contains(Next), a.page-link[rel=next]") != null
-                    || novels.size >= 18
+                hasNext = document.selectFirstOrNull("a.next.page-numbers") != null
             }
         }
 
@@ -62,23 +55,23 @@ class LightNovelTranslationsProvider : MainProvider() {
     }
 
     override suspend fun search(query: String): List<Novel> {
-        val response = post("$mainUrl/read", data = mapOf("field-search" to query.trim()))
-        return response.document.select("div.read_list-story-item").mapNotNull { el ->
-            val link = el.selectFirstOrNull(".item_thumb a") ?: return@mapNotNull null
+        val q = java.net.URLEncoder.encode(query.trim(), "UTF-8")
+        return parseList(get("$mainUrl/browse/?field-search=$q").document)
+    }
+
+    private fun parseList(document: org.jsoup.nodes.Document): List<Novel> =
+        document.select(".read_list-story-item").mapNotNull { el ->
+            val link = el.selectFirstOrNull("h3 a, .item_thumb a") ?: return@mapNotNull null
             val href = link.attrOrNull("href") ?: return@mapNotNull null
-            val title = link.attrOrNull("title")?.ifBlank { null } ?: link.textOrNull() ?: return@mapNotNull null
+            val title = link.textOrNull()?.trim()?.ifBlank { null }
+                ?: link.attrOrNull("aria-label") ?: return@mapNotNull null
             val posterUrl = fixUrl(el.selectFirstOrNull(".item_thumb img")?.attrOrNull("src"))
             Novel(name = title, url = fixUrl(href) ?: href, posterUrl = posterUrl, apiName = this.name)
         }
-    }
 
     override suspend fun load(url: String): NovelDetails? {
-        // Chapters are on ?tab=table_contents; synopsis+genres on the base overview URL
-        val chaptersUrl = if (url.contains("?tab=")) url
-            else if (url.contains("?")) "$url&tab=table_contents"
-            else "$url?tab=table_contents"
-        val fullUrl = if (chaptersUrl.startsWith("http")) chaptersUrl else "$mainUrl$chaptersUrl"
-        val overviewUrl = fullUrl.substringBefore("?")
+        // Overview page now carries chapters, synopsis and genres together
+        val fullUrl = (if (url.startsWith("http")) url else "$mainUrl$url").substringBefore("?")
 
         val document = get(fullUrl).document
         val name = document.selectFirstOrNull("div.novel_title h3")?.textOrNull()?.trim()
@@ -90,7 +83,7 @@ class LightNovelTranslationsProvider : MainProvider() {
                 ?.let { it.attrOrNull("src") ?: it.attrOrNull("data-src") }
         )
         val author = document.selectFirstOrNull("div.novel_detail_info li:contains(Author)")
-            ?.textOrNull()?.substringAfter("Author")?.replace(":", "")?.trim()
+            ?.textOrNull()?.substringAfter("Author:")?.trim()
         val status = document.selectFirstOrNull("div.novel_status")?.textOrNull()?.trim()
 
         val chapters = document.select("li.chapter-item.unlock > a, li.chapter-item.unlock a").mapNotNull { link ->
@@ -100,18 +93,11 @@ class LightNovelTranslationsProvider : MainProvider() {
             Chapter(name = chapterName, url = chapterUrl)
         }
 
-        // Second request for synopsis and genres (on overview tab, not chapters tab)
-        var synopsis: String? = null
-        var tags: List<String>? = null
-        try {
-            val overviewDoc = get(overviewUrl).document
-            synopsis = overviewDoc.selectFirstOrNull("div.novel_text p, div.novel_detail_body p")
-                ?.textOrNull()?.trim()
-            tags = overviewDoc.select("div.novel_detail_info li:contains(Genre) a, div.novel_detail_info li:contains(Categories) a, div.novel_tags a")
-                .mapNotNull { it.textOrNull()?.trim() }
-                .filter { it.isNotBlank() }
-                .ifEmpty { null }
-        } catch (_: Exception) {}
+        val synopsis = document.select("div.novel_text p").joinToString("\n\n") { it.text().trim() }
+            .ifBlank { null }
+        val tags = document.select("div.novel_tags_item span, div.novel_tags a")
+            .mapNotNull { it.textOrNull()?.trim()?.ifBlank { null } }
+            .ifEmpty { null }
 
         return NovelDetails(
             url = fullUrl, name = name, chapters = chapters,
