@@ -14,6 +14,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import com.kmhmubin.kothagolp.ui.screens.details.components.DetailsSkeleton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -69,7 +70,6 @@ import com.kmhmubin.kothagolp.recommendation.TagNormalizer
 import com.kmhmubin.kothagolp.service.DownloadServiceManager
 import com.kmhmubin.kothagolp.service.DownloadState
 import com.kmhmubin.kothagolp.ui.components.DuplicateLibraryDialog
-import com.kmhmubin.kothagolp.ui.components.FullScreenLoading
 import com.kmhmubin.kothagolp.ui.screens.details.components.ActionButtonsRow
 import com.kmhmubin.kothagolp.ui.screens.details.components.ChapterItem
 import com.kmhmubin.kothagolp.ui.screens.details.components.ChapterListHeader
@@ -254,7 +254,7 @@ fun DetailsScreen(
     ) {
         when {
             uiState.isLoading && !uiState.isRefreshing -> {
-                FullScreenLoading(message = "Loading novel...")
+                DetailsSkeleton(onBack = onBack)
             }
 
             uiState.error != null && uiState.novelDetails == null -> {
