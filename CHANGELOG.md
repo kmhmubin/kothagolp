@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.14.2] — 2026-10-14
+
+### Fixed
+
+- **Cyrisia** — Covers show again in the feed. Web novels (most of the catalog) now list and read their chapters instead of showing 0 chapters. Light novel volumes no longer appear twice, the synopsis shows, and browsing/search is much faster after the first load. Image-only comics are hidden
+- **Light Novel Translations** — Updated for the site redesign; feed, search, details and chapters load again
+- **NovelArrow** — The site moved to novelping.com; the source now loads again with covers, and synopses no longer show raw HTML tags
+- **NovelBin** — Chapters that failed with "Too Many Requests" now retry automatically, and every chapter shows its real title instead of a generic "Chapter N"
+- **Update check** — Debug builds no longer show a false "Update Available" prompt
+
+### Changed
+
+- **Novel details** — Shows a loading skeleton instead of a blank screen while details load
+
 ## [3.14.1] — 2026-09-11
 
 ### Fixed
