@@ -25,7 +25,6 @@ class LibReadProvider : MainProvider() {
     private val lastSearchTime = AtomicLong(0)
     private val noPagesPaths = listOf("sort/most-popular")
     private val alertRegex = Regex("alert\\(['\"]?(.*?)['\"]?\\)")
-    private val aidRegex = Regex("([0-9]+)s\\.jpg")
 
     override val tags = listOf(
         FilterOption("All", ""),
@@ -198,8 +197,8 @@ class LibReadProvider : MainProvider() {
         val html = response.text
         val name = document.selectFirst(listOf("h1.tit", "div.m-desc h1", "div.books h1"))
             ?.textOrNull()?.trim() ?: "Unknown"
-        var chapters = loadChaptersViaApi(html, trimmedUrl)
-        if (chapters.isEmpty()) chapters = loadChaptersFromHtml(document, trimmedUrl)
+        val chapters = loadChaptersPaginated(trimmedUrl, parseTotalChapters(html))
+            .ifEmpty { loadChaptersFromHtml(document, trimmedUrl) }
         val metadata = extractMetadata(document)
         return NovelDetails(
             url = url, name = name, chapters = chapters,
@@ -261,26 +260,45 @@ class LibReadProvider : MainProvider() {
         return NovelMetadata(author, posterUrl, synopsis, tags, rating, peopleVoted, status)
     }
 
-    private suspend fun loadChaptersViaApi(html: String, baseUrl: String): List<Chapter> {
-        val aidMatch = aidRegex.find(html)
-        val aid = aidMatch?.groupValues?.getOrNull(1) ?: return emptyList()
-        val chapters = mutableListOf<Chapter>()
-        try {
-            val chapterResponse = post("$mainUrl/api/chapterlist.php", data = mapOf("aid" to aid))
-            val cleanText = chapterResponse.text.replace("\\", "")
-            val chapterDoc = Jsoup.parse(cleanText)
-            val prefix = baseUrl.removeSuffix(".html")
-            chapterDoc.select("option").forEach { option ->
-                val value = option.attrOrNull("value") ?: return@forEach
-                if (value.isBlank() || value == "#" || value == "0") return@forEach
-                val lastPart = value.split("/").lastOrNull() ?: return@forEach
-                val chapterUrl = "$prefix/$lastPart"
-                val chapterName = option.textOrNull()?.trim()?.takeIf { it.isNotBlank() }
-                    ?: "Chapter ${chapters.size + 1}"
-                chapters.add(Chapter(name = chapterName, url = chapterUrl))
+    /** Reads totalChapters from the inline `window.chapterPagination` script. */
+    private fun parseTotalChapters(html: String): Int? =
+        Regex("totalChapters\\s*:\\s*(\\d+)").find(html)?.groupValues?.getOrNull(1)?.toIntOrNull()
+
+    /**
+     * The details page only carries the first 40 chapters and api/chapterlist.php
+     * now returns nothing, so walk the site's own pagination endpoint
+     * (`<novelUrl>?ajax=chapters&page=N&pageSize=200`, JSON `{code, html}`).
+     * Server caps pageSize at 200 and repeats the last page past the end, hence the dedupe.
+     */
+    // ponytail: same loader as FreeWebNovelProvider (same site engine); share it if a third source needs it
+    private suspend fun loadChaptersPaginated(novelUrl: String, totalChapters: Int?): List<Chapter> {
+        return try {
+            val pageSize = 200
+            val maxPages = totalChapters?.let { (it + pageSize - 1) / pageSize } ?: 100
+            val chapters = mutableListOf<Chapter>()
+            val seenUrls = mutableSetOf<String>()
+            for (page in 1..maxPages) {
+                val responseText = get("$novelUrl?ajax=chapters&page=$page&pageSize=$pageSize").text
+                val html = try {
+                    org.json.JSONObject(responseText).optString("html", "")
+                } catch (_: Exception) {
+                    responseText
+                }
+                if (html.isBlank()) break
+                var added = false
+                for (link in Jsoup.parse(html).select("a[href*=chapter]")) {
+                    val chapterUrl = fixUrl(link.attrOrNull("href")) ?: continue
+                    if (!seenUrls.add(chapterUrl)) continue
+                    val chapterName = link.attrOrNull("title")?.takeIf { it.isNotBlank() }
+                        ?: link.textOrNull()?.trim()?.takeIf { it.isNotBlank() }
+                        ?: "Chapter ${chapters.size + 1}"
+                    chapters.add(Chapter(name = chapterName, url = chapterUrl))
+                    added = true
+                }
+                if (!added) break
             }
-        } catch (_: Exception) {}
-        return chapters
+            chapters
+        } catch (_: Exception) { emptyList() }
     }
 
     private fun loadChaptersFromHtml(document: Document, baseUrl: String): List<Chapter> {
