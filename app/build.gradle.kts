@@ -20,7 +20,7 @@ if (hasKeystore) {
 
 android {
     namespace = "com.kmhmubin.kothagolp"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.kmhmubin.kothagolp"

@@ -44,11 +44,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -77,7 +77,13 @@ fun PaginationControls(
     var showJumpDialog by remember { mutableStateOf(false) }
 
     // Slider state
-    var sliderValue by remember(currentPage) { mutableFloatStateOf(currentPage.toFloat()) }
+    val sliderState = remember(currentPage, totalPages) {
+        SliderState(
+            value = currentPage.toFloat(),
+            steps = (totalPages - 2).coerceAtLeast(0),
+            trackRange = 1f..totalPages.coerceAtLeast(2).toFloat()
+        )
+    }
     var isSliding by remember { mutableStateOf(false) }
 
     Surface(
@@ -138,17 +144,12 @@ fun PaginationControls(
             if (totalPages > 3) {
                 Column {
                     Slider(
-                        value = sliderValue,
-                        onValueChange = {
-                            sliderValue = it
-                            isSliding = true
-                        },
+                        state = sliderState,
+                        onValueChange = { isSliding = true },
                         onValueChangeFinished = {
                             isSliding = false
-                            onPageChange(sliderValue.toInt().coerceIn(1, totalPages))
+                            onPageChange(sliderState.value.toInt().coerceIn(1, totalPages))
                         },
-                        valueRange = 1f..totalPages.toFloat(),
-                        steps = totalPages - 2,
                         modifier = Modifier.fillMaxWidth(),
                         colors = SliderDefaults.colors(
                             thumbColor = MaterialTheme.colorScheme.primary,
@@ -172,7 +173,7 @@ fun PaginationControls(
                                     exit = scaleOut() + fadeOut()
                                 ) {
                                     Text(
-                                        text = sliderValue.toInt().toString(),
+                                        text = sliderState.value.toInt().toString(),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onPrimary,
                                         fontWeight = FontWeight.Bold
