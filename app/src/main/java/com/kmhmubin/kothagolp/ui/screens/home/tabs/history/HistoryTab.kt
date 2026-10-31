@@ -49,6 +49,7 @@ fun HistoryTab(
     onNavigateToReader: (chapterUrl: String, novelUrl: String, providerName: String) -> Unit,
     onNavigateToBrowse: () -> Unit,
     onSearchAllSources: (query: String) -> Unit,
+    isActive: Boolean = true,
     viewModel: HistoryViewModel = viewModel(),
 ) {
     MaterialTheme(
@@ -57,7 +58,7 @@ fun HistoryTab(
         shapes = MaterialTheme.shapes,
         typography = MaterialTheme.typography,
     ) {
-        HistoryContent(onNavigateToDetails, onNavigateToReader, onNavigateToBrowse, onSearchAllSources, viewModel)
+        HistoryContent(onNavigateToDetails, onNavigateToReader, onNavigateToBrowse, onSearchAllSources, isActive, viewModel)
     }
 }
 
@@ -68,6 +69,7 @@ private fun HistoryContent(
     onNavigateToReader: (String, String, String) -> Unit,
     onNavigateToBrowse: () -> Unit,
     onSearchAllSources: (String) -> Unit,
+    isActive: Boolean,
     viewModel: HistoryViewModel,
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
@@ -82,7 +84,8 @@ private fun HistoryContent(
         sheetUrl?.let { url -> ui.groups.firstNotNullOfOrNull { g -> g.rows.find { it.item.novel.url == url } } }
     }
 
-    BackHandler(enabled = ui.isSelecting || ui.isSearchOpen) {
+    // All home tabs stay composed: only take Back while History is the visible tab.
+    BackHandler(enabled = isActive && (ui.isSelecting || ui.isSearchOpen)) {
         if (ui.isSelecting) viewModel.stopSelecting() else viewModel.closeSearch()
     }
 
@@ -95,7 +98,9 @@ private fun HistoryContent(
             is HistorySnack.AddedToLibrary -> HistoryCopy.ADDED_TO_LIBRARY to HistoryCopy.UNDO
             HistorySnack.TitleCopied -> HistoryCopy.TITLE_COPIED to null
         }
-        val result = snackbar.showSnackbar(message, action, duration = SnackbarDuration.Short)
+        // Long for "Added to your library": it shows inside the open sheet, where the user is still looking.
+        val duration = if (s is HistorySnack.AddedToLibrary) SnackbarDuration.Long else SnackbarDuration.Short
+        val result = snackbar.showSnackbar(message, action, duration = duration)
         if (result == SnackbarResult.ActionPerformed) {
             when (s) {
                 is HistorySnack.Removed -> viewModel.undoRemove(s.items)
@@ -110,19 +115,20 @@ private fun HistoryContent(
 
     sheetRow?.let { row ->
         val novel = row.item.novel
-        fun act(action: () -> Unit): () -> Unit = { sheetUrl = null; action() }
+        // The sheet slides down itself, then calls onDismiss and the action.
         HistorySheet(
             row = row,
             onDismiss = { sheetUrl = null },
-            onContinue = act { onNavigateToReader(row.item.chapterUrl, novel.url, novel.apiName) },
-            onNovelPage = act { onNavigateToDetails(novel.url, novel.apiName) },
+            onContinue = { onNavigateToReader(row.item.chapterUrl, novel.url, novel.apiName) },
+            onNovelPage = { onNavigateToDetails(novel.url, novel.apiName) },
             onAddToLibrary = { viewModel.addToLibrary(novel) },
-            onCopyTitle = act {
+            onCopyTitle = {
                 clipboard.setText(AnnotatedString(row.title))
                 viewModel.titleCopied()
             },
-            onSelect = act { viewModel.startSelecting(novel.url) },
-            onRemove = act { viewModel.remove(listOf(novel.url)) },
+            onSelect = { viewModel.startSelecting(novel.url) },
+            onRemove = { viewModel.remove(listOf(novel.url)) },
+            snackbarHostState = snackbar,
         )
     }
 
@@ -145,7 +151,8 @@ private fun HistoryContent(
                 scrollBehavior = scrollBehavior,
             )
         },
-        snackbarHost = { SnackbarHost(snackbar) },
+        // While the sheet is open its own host shows the snackbar (the sheet is a window above this one).
+        snackbarHost = { if (sheetRow == null) SnackbarHost(snackbar) },
         contentWindowInsets = WindowInsets(0.dp),
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {

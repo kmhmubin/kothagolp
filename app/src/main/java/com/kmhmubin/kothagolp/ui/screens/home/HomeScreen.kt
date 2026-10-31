@@ -253,7 +253,8 @@ private fun PersistentTabContent(
                 onNavigateToReader = onNavigateToReader,
                 onNavigateToBrowse = { onSwitchTab(HomeTabs.BROWSE) },
                 // Global search takes the query as a route arg; fall back to the Browse tab if not wired.
-                onSearchAllSources = { q -> onNavigateToGlobalSearch?.invoke(q) ?: onSwitchTab(HomeTabs.BROWSE) }
+                onSearchAllSources = { q -> onNavigateToGlobalSearch?.invoke(q) ?: onSwitchTab(HomeTabs.BROWSE) },
+                isActive = currentTab == HomeTabs.HISTORY
             )
             HomeTabs.MORE -> MoreTab(
                 onNavigateToProfile = onNavigateToProfile,

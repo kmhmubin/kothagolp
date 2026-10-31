@@ -53,7 +53,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -205,8 +207,15 @@ private fun RowContent(row: HistoryRowModel, isSelecting: Boolean, selected: Boo
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .background(bg)
             // combinedClickable performs the long-press haptic itself (hapticFeedbackEnabled defaults to true).
-            .combinedClickable(interactionSource = interaction, indication = ripple(), onLongClick = onLongClick, onClick = onClick)
-            .then(if (isSelecting) Modifier.semantics { this.selected = selected } else Modifier)
+            .combinedClickable(
+                interactionSource = interaction,
+                indication = ripple(),
+                role = if (isSelecting) Role.Checkbox else null,
+                onLongClick = onLongClick,
+                onClick = onClick,
+            )
+            // TalkBack announces checked / not checked in select mode.
+            .then(if (isSelecting) Modifier.semantics { toggleableState = ToggleableState(selected) } else Modifier)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,

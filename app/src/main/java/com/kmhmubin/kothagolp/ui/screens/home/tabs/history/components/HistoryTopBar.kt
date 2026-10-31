@@ -52,7 +52,8 @@ fun HistoryTopBar(
 ) {
     val motion = MaterialTheme.motionScheme
     AnimatedContent(
-        targetState = isSearchOpen,
+        // Selecting (e.g. from the sheet while searching) shows the "N selected" bar over search.
+        targetState = isSearchOpen && !isSelecting,
         transitionSpec = {
             if (targetState) {
                 (fadeIn(motion.defaultEffectsSpec()) +
