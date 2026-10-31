@@ -1,13 +1,11 @@
 package com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,14 +13,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.TrendingUp
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -31,44 +33,54 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kmhmubin.kothagolp.data.local.entity.TagFilterType
+import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.recommendation.TagNormalizer
+import com.kmhmubin.kothagolp.recommendation.model.LibrarySourceNovel
+import com.kmhmubin.kothagolp.recommendation.model.OnboardingGenres
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
-import com.kmhmubin.kothagolp.recommendation.model.RecommendationType
-import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.AiRecommendationSection
-import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.EmptyRecommendations
+import com.kmhmubin.kothagolp.ui.screens.home.shared.RecommendationNavigationHelper
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.AiNoticeRow
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.AiOffRow
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.ForYouCarousel
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.ForYouCoverRow
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.ForYouFirstLoad
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.ForYouFirstTime
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.ForYouLoading
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.ForYouMenu
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.ForYouRowHeader
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.GenrePreferencesSheet
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.GenreShapes
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.MoreLikeHeader
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.NovelActionMenu
-import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.ProfileHeader
-import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.RecommendationSection
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.RecommendationSettingsSheet
-import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.SourceRecommendationsSection
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.SeeAllSheet
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.TagFilterSheet
-import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.TagNovelsSection
-import com.kmhmubin.kothagolp.ui.theme.AppShape
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+private fun Recommendation.toCoverItem() =
+    ForYouItem(novel.url, novel.name, novel.posterUrl, novel.apiName, novel.apiName, this)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RecommendationTab(
     onNavigateToDetails: (novelUrl: String, providerName: String) -> Unit = { _, _ -> },
@@ -81,17 +93,16 @@ fun RecommendationTab(
     val tagFilters by viewModel.tagFilters.collectAsStateWithLifecycle()
     val hiddenNovels by viewModel.hiddenNovels.collectAsStateWithLifecycle()
     val blockedAuthors by viewModel.blockedAuthors.collectAsStateWithLifecycle()
-    val favoriteAuthors by viewModel.favoriteAuthors.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var showFilterSheet by remember { mutableStateOf(false) }
-    var showSettingsSheet by remember { mutableStateOf(false) }
+    var showHiddenSheet by remember { mutableStateOf(false) }
     var showGenrePrefsSheet by remember { mutableStateOf(false) }
     var selectedRecommendation by remember { mutableStateOf<Recommendation?>(null) }
-    var lastHiddenNovel by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var seeAll by remember { mutableStateOf<Pair<String, List<ForYouItem>>?>(null) }
 
     LaunchedEffect("init") {
         viewModel.checkGeminiKey()
@@ -112,31 +123,14 @@ fun RecommendationTab(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // Check for pending tag filter from navigation
+    // A genre tapped elsewhere in the app: show more of it and open "Show more or less".
     LaunchedEffect(Unit) {
-        val pendingTag = com.kmhmubin.kothagolp.ui.screens.home.shared.RecommendationNavigationHelper
-            .consumePendingTag()
-
-        if (pendingTag != null) {
-            // Apply the tag filter with BOOSTED type to prioritize novels with this tag
-            viewModel.setTagFilter(pendingTag, com.kmhmubin.kothagolp.data.local.entity.TagFilterType.BOOSTED)
-
-            // Show the filter sheet so user can see what's filtered
+        RecommendationNavigationHelper.consumePendingTag()?.let { tag ->
+            viewModel.setTagFilter(tag, TagFilterType.BOOSTED)
             showFilterSheet = true
-
-            // Show a snackbar to inform the user
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = "Showing novels with: ${com.kmhmubin.kothagolp.recommendation.TagNormalizer.getDisplayName(pendingTag)}",
-                    duration = SnackbarDuration.Short
-                )
-            }
+            snackbarHostState.showSnackbar(ForYouCopy.showingMore(TagNormalizer.getDisplayName(tag)), duration = SnackbarDuration.Short)
         }
     }
-
-    val hasSettingsChanges = hiddenNovels.isNotEmpty() ||
-            blockedAuthors.isNotEmpty() ||
-            uiState.showCrossProvider
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
@@ -145,261 +139,108 @@ fun RecommendationTab(
         }
     }
 
+    LaunchedEffect(uiState.message) {
+        uiState.message?.let { msg ->
+            viewModel.clearMessage()
+            snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Short)
+        }
+    }
+
+    fun open(url: String, apiName: String) {
+        viewModel.onRecommendationClicked(url)
+        onNavigateToDetails(url, apiName)
+    }
+
+    fun notForMe(rec: Recommendation) {
+        viewModel.hideNovel(rec.novel.url, rec.novel.name)
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                ForYouCopy.notForMeToast(rec.novel.name), ForYouCopy.UNDO, duration = SnackbarDuration.Short
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.unhideNovel(rec.novel.url)
+        }
+    }
+
+    val sections = remember(uiState) {
+        val genres = (uiState.topPreferences.mapNotNull(TagNormalizer::normalize) +
+            OnboardingGenres.mainGenres.map { it.category }).distinct()
+        buildForYouSections(uiState, genres)
+    }
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(ForYouCopy.SCREEN_TITLE, fontWeight = FontWeight.SemiBold) },
+                subtitle = {
+                    when {
+                        uiState.isSeeding || uiState.isLoading -> Text(ForYouCopy.LOADING_SUBTITLE)
+                        uiState.librarySourceNovels.isNotEmpty() -> Text(ForYouCopy.leadPickedFrom(uiState.librarySourceNovels.size))
+                    }
+                },
+                actions = {
+                    ForYouMenu(
+                        hiddenNovels = hiddenNovels.size,
+                        hiddenAuthors = blockedAuthors.size,
+                        useAllSources = uiState.showCrossProvider,
+                        aiOn = uiState.hasGeminiKey,
+                        onRefresh = { viewModel.refresh() },
+                        onTaste = { showGenrePrefsSheet = true },
+                        onShowMoreLess = { showFilterSheet = true },
+                        onHidden = { showHiddenSheet = true },
+                        onToggleAllSources = { viewModel.toggleCrossProvider() },
+                        onAiPicks = onNavigateToSettings
+                    )
+                },
+                windowInsets = WindowInsets(0.dp),
+                scrollBehavior = scrollBehavior
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = WindowInsets(0.dp)
-    ) { paddingValues ->
+    ) { padding ->
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = { viewModel.refresh() },
-            state = pullToRefreshState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier = Modifier.fillMaxSize().padding(padding)
         ) {
             when {
-                uiState.isSeeding -> {
-                    SeedingScreen(
-                        progress = uiState.seedingProgress,
-                        modifier = Modifier
-                    )
+                uiState.isSeeding -> Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    ForYouFirstLoad(uiState.seedingProgress)
                 }
-
-                uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(48.dp),
-                                strokeWidth = 4.dp
-                            )
-                            Text(
-                                text = "Loading recommendations...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                uiState.isLoading -> Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    ForYouLoading()
                 }
-
-                !uiState.hasRecommendations && !uiState.hasLibrarySources -> {
-                    EmptyRecommendations(
-                        profileMaturity = uiState.profileMaturity,
-                        novelsInProfile = uiState.novelsInProfile,
-                        poolSize = uiState.poolSize,
-                        onBrowseClick = onNavigateToBrowse,
-                        modifier = Modifier
-                    )
-                }
-
-                else -> {
-                    // Filter out BECAUSE_YOU_READ from regular groups since we handle it separately
-                    val regularGroups = remember(uiState.recommendationGroups) {
-                        uiState.recommendationGroups
-                            .filter { it.type != RecommendationType.BECAUSE_YOU_READ }
-                            .distinctBy { it.type }
-                    }
-
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            top = 0.dp,
-                            bottom = 100.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(28.dp)
-                    ) {
-                        // Profile Header
-                        item(key = "header") {
-                            ProfileHeader(
-                                profileMaturity = uiState.profileMaturity,
-                                topPreferences = uiState.topPreferences,
-                                onFilterClick = { showFilterSheet = true },
-                                onSettingsClick = { showSettingsSheet = true },
-                                hasActiveFilters = tagFilters.isNotEmpty(),
-                                filterCount = tagFilters.size,
-                                settingsIndicator = hasSettingsChanges,
-                                favoriteAuthors = favoriteAuthors
-                            )
-                        }
-
-                        // Explore Your Taste — genre tag chips
-                        if (uiState.topPreferences.isNotEmpty()) {
-                            item(key = "explore_genres") {
-                                ExploreByGenreSection(
-                                    preferences = uiState.topPreferences,
-                                    onTagClick = { tagName ->
-                                        val category = com.kmhmubin.kothagolp.recommendation.TagNormalizer.normalize(tagName)
-                                        if (category != null) onNavigateToTagExplorer(category)
-                                    }
+                else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 100.dp)) {
+                    sections.forEach { section ->
+                        forYouSection(
+                            section = section,
+                            uiState = uiState,
+                            onOpen = { open(it.url, it.apiName) },
+                            onOpenRec = { open(it.novel.url, it.novel.apiName) },
+                            onLongPress = { selectedRecommendation = it },
+                            onSeeAll = { title, items -> seeAll = title to items },
+                            onSelectSource = { novel ->
+                                viewModel.selectSourceNovel(
+                                    uiState.librarySourceNovels.find { it.novel.url == novel.url }
+                                        ?: LibrarySourceNovel(novel, lastReadAt = 0L, chaptersRead = 0, totalChapters = 0, readingProgress = 0f)
                                 )
-                            }
-                        }
-
-                        // Tag-curated section
-                        item(key = "tag_novels") {
-                            TagNovelsSection(
-                                topPreferences = uiState.topPreferences,
-                                selectedTag = uiState.selectedTagCategory,
-                                tagNovels = uiState.novelsForSelectedTag,
-                                isLoadingTagNovels = uiState.isLoadingTagNovels,
-                                onTagClick = { tag -> viewModel.selectTagForSection(tag) },
-                                onNovelClick = { novelUrl, providerName ->
-                                    viewModel.onRecommendationClicked(novelUrl)
-                                    onNavigateToDetails(novelUrl, providerName)
-                                }
-                            )
-                        }
-
-                        // === Library-Based "Because You Read" Section ===
-                        if (uiState.hasLibrarySources) {
-                            item(key = "source_recommendations") {
-                                SourceRecommendationsSection(
-                                    selectedSource = uiState.selectedSourceNovel,
-                                    otherSources = uiState.otherSourceNovels,
-                                    recommendations = uiState.sourceNovelRecommendations,
-                                    isExpanded = uiState.isSourceSelectorExpanded,
-                                    isLoading = uiState.isLoadingSourceRecommendations,
-                                    onToggleExpanded = { viewModel.toggleSourceSelector() },
-                                    onSelectSource = { source -> viewModel.selectSourceNovel(source) },
-                                    onNovelClick = { novelUrl, providerName ->
-                                        viewModel.onRecommendationClicked(novelUrl)
-                                        onNavigateToDetails(novelUrl, providerName)
-                                    },
-                                    onNovelLongClick = { recommendation ->
-                                        selectedRecommendation = recommendation
-                                    },
-                                    onQuickDismiss = { recommendation ->
-                                        lastHiddenNovel = recommendation.novel.url to recommendation.novel.name
-                                        viewModel.hideNovel(recommendation.novel.url, recommendation.novel.name)
-
-                                        scope.launch {
-                                            val result = snackbarHostState.showSnackbar(
-                                                message = "Hidden: ${recommendation.novel.name}",
-                                                actionLabel = "Undo",
-                                                duration = SnackbarDuration.Short
-                                            )
-                                            if (result == SnackbarResult.ActionPerformed) {
-                                                lastHiddenNovel?.let { (url, _) ->
-                                                    viewModel.unhideNovel(url)
-                                                }
-                                            }
-                                        }
-                                    }
-                                )
-                            }
-                        }
-
-                        // Regular recommendation sections
-                        // Inside RecommendationTab, update each RecommendationSection call:
-
-                        itemsIndexed(
-                            items = regularGroups,
-                            key = { index, group -> "group_${group.type.name}_$index" },
-                            contentType = { _, _ -> "recommendation_group" }
-                        ) { _, group ->
-                            RecommendationSection(
-                                group = group,
-                                onNovelClick = { novelUrl, providerName ->
-                                    viewModel.onRecommendationClicked(novelUrl)
-                                    onNavigateToDetails(novelUrl, providerName)
-                                },
-                                onNovelLongClick = { recommendation ->
-                                    selectedRecommendation = recommendation
-                                },
-                                onQuickDismiss = { recommendation ->
-                                    lastHiddenNovel = recommendation.novel.url to recommendation.novel.name
-                                    viewModel.hideNovel(recommendation.novel.url, recommendation.novel.name)
-
-                                    scope.launch {
-                                        val result = snackbarHostState.showSnackbar(
-                                            message = "Hidden: ${recommendation.novel.name}",
-                                            actionLabel = "Undo",
-                                            duration = SnackbarDuration.Short
-                                        )
-                                        if (result == SnackbarResult.ActionPerformed) {
-                                            lastHiddenNovel?.let { (url, _) ->
-                                                viewModel.unhideNovel(url)
-                                            }
-                                        }
-                                    }
-                                },
-                                onSeeAllClick = { tagCategory ->
-                                    onNavigateToTagExplorer(tagCategory)
-                                }
-                            )
-                        }
-
-                        // AI: Based on Your Reading
-                        item(key = "ai_history_recommendations") {
-                            AiRecommendationSection(
-                                title = "AI Picks for You",
-                                subtitle = "AI-chosen from novels on your sources",
-                                hasApiKey = uiState.hasGeminiKey,
-                                isLoading = uiState.isLoadingAiRecs,
-                                recommendations = uiState.aiRecommendations,
-                                error = uiState.aiRecsError,
-                                emptyMessage = if (!uiState.hasReadingHistory) "Add a few novels to your library so the AI knows your taste" else null,
-                                onNavigateToSettings = onNavigateToSettings,
-                                onRefresh = { viewModel.loadAiRecommendations(force = true) },
-                                onNovelClick = { novelUrl, providerName ->
-                                    viewModel.onRecommendationClicked(novelUrl)
-                                    onNavigateToDetails(novelUrl, providerName)
-                                }
-                            )
-                        }
-
-                        // AI: Trending Now
-                        item(key = "ai_trending_recommendations") {
-                            AiRecommendationSection(
-                                title = "AI Discovery",
-                                subtitle = "Popular novels the AI found on your sources",
-                                hasApiKey = uiState.hasGeminiKey,
-                                isLoading = uiState.isLoadingTrending,
-                                recommendations = uiState.aiTrendingRecommendations,
-                                error = uiState.trendingError,
-                                emptyMessage = null,
-                                onNavigateToSettings = onNavigateToSettings,
-                                onRefresh = { viewModel.loadAiTrendingRecommendations(force = true) },
-                                onNovelClick = { novelUrl, providerName ->
-                                    viewModel.onRecommendationClicked(novelUrl)
-                                    onNavigateToDetails(novelUrl, providerName)
-                                }
-                            )
-                        }
-
-                        // Footer
-                        item(key = "footer") {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Surface(
-                                    shape = AppShape.medium,
-                                    color = MaterialTheme.colorScheme.surfaceContainerLow
-                                ) {
-                                    Text(
-                                        text = "${uiState.totalRecommendations} recommendations • ${uiState.poolSize} novels indexed",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-                                    )
-                                }
-                            }
-                        }
+                            },
+                            onDismissHint = { viewModel.dismissLongPressHint() },
+                            onAiSettings = onNavigateToSettings,
+                            onAiRetry = {
+                                viewModel.loadAiRecommendations(force = true)
+                                viewModel.loadAiTrendingRecommendations(force = true)
+                            },
+                            onGenre = onNavigateToTagExplorer,
+                            onFindNovels = onNavigateToBrowse
+                        )
                     }
                 }
             }
         }
     }
 
-    // Tag Filter Sheet
     if (showFilterSheet) {
         TagFilterSheet(
             tagFilters = tagFilters,
@@ -408,26 +249,30 @@ fun RecommendationTab(
         )
     }
 
-    // Settings Sheet
-    if (showSettingsSheet) {
+    if (showHiddenSheet) {
         RecommendationSettingsSheet(
-            showCrossProvider = uiState.showCrossProvider,
-            onCrossProviderChange = { viewModel.toggleCrossProvider() },
             hiddenNovels = hiddenNovels,
             blockedAuthors = blockedAuthors,
             onUnhideNovel = { viewModel.unhideNovel(it) },
             onUnblockAuthor = { viewModel.unblockAuthor(it) },
             onClearAllHidden = { viewModel.clearAllHiddenNovels() },
             onClearAllBlocked = { viewModel.clearAllBlockedAuthors() },
-            onEditPreferences = { showGenrePrefsSheet = true },
-            onDismiss = { showSettingsSheet = false }
+            onDismiss = { showHiddenSheet = false }
         )
     }
 
-    // Novel Action Menu
-    selectedRecommendation?.let { recommendation ->
-        var authorInfo by remember { mutableStateOf<Pair<String, String>?>(null) }
+    seeAll?.let { (title, items) ->
+        SeeAllSheet(
+            title = title,
+            items = items,
+            onOpen = { seeAll = null; open(it.url, it.apiName) },
+            onLongPress = { selectedRecommendation = it.recommendation },
+            onDismiss = { seeAll = null }
+        )
+    }
 
+    selectedRecommendation?.let { recommendation ->
+        var authorInfo by remember(recommendation.novel.url) { mutableStateOf<Pair<String, String>?>(null) }
         LaunchedEffect(recommendation.novel.url) {
             authorInfo = viewModel.getAuthorForNovel(recommendation.novel.url)
         }
@@ -435,37 +280,20 @@ fun RecommendationTab(
         NovelActionMenu(
             recommendation = recommendation,
             onDismiss = { selectedRecommendation = null },
-            onNotInterested = {
-                lastHiddenNovel = recommendation.novel.url to recommendation.novel.name
-                viewModel.hideNovel(recommendation.novel.url, recommendation.novel.name)
-
-                scope.launch {
-                    val result = snackbarHostState.showSnackbar(
-                        message = "Hidden: ${recommendation.novel.name}",
-                        actionLabel = "Undo",
-                        duration = SnackbarDuration.Short
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        lastHiddenNovel?.let { (url, _) ->
-                            viewModel.unhideNovel(url)
-                        }
-                    }
-                }
-            },
+            onNotInterested = { notForMe(recommendation) },
             onBlockAuthor = authorInfo?.let { (normalized, display) ->
                 {
                     viewModel.blockAuthor(normalized, display)
                     scope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Blocked author: $display",
-                            duration = SnackbarDuration.Short
+                        val result = snackbarHostState.showSnackbar(
+                            ForYouCopy.hideAuthorToast(display), ForYouCopy.UNDO, duration = SnackbarDuration.Short
                         )
+                        if (result == SnackbarResult.ActionPerformed) viewModel.unblockAuthor(normalized)
                     }
                 }
             },
-            onViewDetails = {
-                onNavigateToDetails(recommendation.novel.url, recommendation.novel.apiName)
-            }
+            onViewDetails = { open(recommendation.novel.url, recommendation.novel.apiName) },
+            onAddToLibrary = { viewModel.addToLibrary(recommendation) }
         )
     }
 
@@ -477,148 +305,116 @@ fun RecommendationTab(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ExploreByGenreSection(
-    preferences: List<String>,
-    onTagClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+private fun LazyListScope.forYouSection(
+    section: ForYouSection,
+    uiState: RecommendationUiState,
+    onOpen: (ForYouItem) -> Unit,
+    onOpenRec: (Recommendation) -> Unit,
+    onLongPress: (Recommendation) -> Unit,
+    onSeeAll: (String, List<ForYouItem>) -> Unit,
+    onSelectSource: (Novel) -> Unit,
+    onDismissHint: () -> Unit,
+    onAiSettings: () -> Unit,
+    onAiRetry: () -> Unit,
+    onGenre: (TagNormalizer.TagCategory) -> Unit,
+    onFindNovels: () -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Text(
-            text = "Explore Your Taste",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            preferences.take(8).forEach { pref ->
-                Surface(
-                    onClick = { onTagClick(pref) },
-                    shape = AppShape.extraLarge,
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.TrendingUp,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Text(
-                            text = pref,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+    val longPressItem: (ForYouItem) -> Unit = { it.recommendation?.let(onLongPress) }
+    when (section) {
+        is ForYouSection.Carousel -> {
+            item(key = section.key) { ForYouCarousel(section.items, onOpenRec, onLongPress) }
+            if (uiState.showLongPressHint) item(key = "hint") { LongPressHint(onDismissHint) }
+        }
+
+        is ForYouSection.MoreLike -> {
+            item(key = "${section.key}_header") {
+                MoreLikeHeader(section.source, section.options, onSelectSource)
+            }
+            item(key = section.key) {
+                when {
+                    uiState.isLoadingSourceRecommendations ->
+                        Box(Modifier.fillMaxWidth().height(156.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
+                    section.items.isEmpty() -> EmptyNote(ForYouCopy.nothingLike(section.source.name), ForYouCopy.NOTHING_LIKE_BODY)
+                    else -> ForYouCoverRow(section.items.map { it.toCoverItem() }, onOpen, longPressItem)
                 }
             }
+        }
+
+        is ForYouSection.Row -> {
+            item(key = "${section.key}_header") {
+                ForYouRowHeader(
+                    title = section.title,
+                    subtitle = section.subtitle,
+                    onSeeAll = section.seeAllTag?.let { tag -> { onGenre(tag) } }
+                        ?: { onSeeAll(section.title, section.items) }
+                )
+            }
+            item(key = section.key) { ForYouCoverRow(section.items, onOpen, longPressItem) }
+        }
+
+        is ForYouSection.AiRow -> {
+            item(key = "${section.key}_header") {
+                ForYouRowHeader(
+                    title = ForYouCopy.PICKED_BY_AI,
+                    subtitle = null,
+                    onSeeAll = if (section.items.isNotEmpty()) ({ onSeeAll(ForYouCopy.PICKED_BY_AI, section.items) }) else null,
+                    leading = {
+                        Icon(
+                            Icons.Rounded.AutoAwesome, null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.padding(end = 8.dp).size(20.dp)
+                        )
+                    }
+                )
+            }
+            item(key = section.key) {
+                when {
+                    section.items.isNotEmpty() -> ForYouCoverRow(section.items, onOpen, longPressItem)
+                    section.state == AiState.Off -> AiOffRow(onAiSettings)
+                    section.state == AiState.Loading -> AiNoticeRow(ForYouCopy.AI_LOADING, null, {})
+                    else -> AiNoticeRow(
+                        uiState.aiRecsError ?: uiState.trendingError ?: ForYouCopy.AI_UNREADABLE,
+                        ForYouCopy.TRY_AGAIN,
+                        onAiRetry
+                    )
+                }
+            }
+        }
+
+        is ForYouSection.BrowseGenres -> {
+            item(key = "${section.key}_header") { ForYouRowHeader(ForYouCopy.BROWSE_BY_GENRE, null, null) }
+            item(key = section.key) { GenreShapes(section.tags, onGenre) }
+        }
+
+        ForYouSection.FirstTimeEmpty -> item(key = section.key) { ForYouFirstTime(onFindNovels) }
+    }
+}
+
+@Composable
+private fun LongPressHint(onDismiss: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp)
+    ) {
+        Row(Modifier.padding(start = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.TouchApp, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                ForYouCopy.HINT_LONG_PRESS,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+            )
+            TextButton(onClick = onDismiss) { Text(ForYouCopy.HINT_DISMISS, fontWeight = FontWeight.SemiBold) }
         }
     }
 }
 
 @Composable
-private fun SeedingScreen(
-    progress: SeedingProgress?,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(40.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            Surface(
-                shape = AppShape.extraLarge,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                tonalElevation = 4.dp,
-                modifier = Modifier.size(110.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(52.dp),
-                        strokeWidth = 5.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Text(
-                text = "Building Your Recommendations",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            progress?.let { p ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Discovering novels from ${p.currentProvider}...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Surface(
-                        shape = AppShape.medium,
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            LinearProgressIndicator(
-                                progress = { p.currentIndex.toFloat() / p.totalProviders.coerceAtLeast(1) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(10.dp)
-                                    .clip(AppShape.extraSmall),
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-
-                            Text(
-                                text = "${p.currentIndex} of ${p.totalProviders} sources",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "This only happens once. We're indexing novels from all your sources to find the best recommendations for you.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.3
-            )
-        }
+private fun EmptyNote(title: String, body: String) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

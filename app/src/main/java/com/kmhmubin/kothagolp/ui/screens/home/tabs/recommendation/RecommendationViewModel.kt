@@ -684,6 +684,7 @@ class RecommendationViewModel : ViewModel() {
                 Log.d(TAG, "Discovered $newCount new novels")
 
                 if (newCount > 0) {
+                    _uiState.update { it.copy(message = ForYouCopy.foundNewNovels(newCount)) }
                     val enhancementResult = tagEnhancementManager.enhanceNovelsWithSynopsis()
                     Log.d(TAG, "Enhanced ${enhancementResult.novelsEnhanced} new novels")
                 }

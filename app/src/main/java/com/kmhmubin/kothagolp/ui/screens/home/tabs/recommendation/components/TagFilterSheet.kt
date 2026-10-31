@@ -1,5 +1,8 @@
 package com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.ForYouCopy
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -42,11 +45,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -163,7 +164,7 @@ fun TagFilterSheet(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Filter by Tags",
+                        text = ForYouCopy.MENU_SHOW_MORE_LESS,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -175,7 +176,7 @@ fun TagFilterSheet(
                             if (blockedCount > 0) {
                                 FilterCountChip(
                                     count = blockedCount,
-                                    label = "blocked",
+                                    label = ForYouCopy.COUNT_NEVER,
                                     color = MaterialTheme.colorScheme.error,
                                     containerColor = MaterialTheme.colorScheme.errorContainer
                                 )
@@ -183,7 +184,7 @@ fun TagFilterSheet(
                             if (reducedCount > 0) {
                                 FilterCountChip(
                                     count = reducedCount,
-                                    label = "reduced",
+                                    label = ForYouCopy.COUNT_LESS,
                                     color = MaterialTheme.colorScheme.tertiary,
                                     containerColor = MaterialTheme.colorScheme.tertiaryContainer
                                 )
@@ -191,7 +192,7 @@ fun TagFilterSheet(
                             if (boostedCount > 0) {
                                 FilterCountChip(
                                     count = boostedCount,
-                                    label = "boosted",
+                                    label = ForYouCopy.COUNT_MORE,
                                     color = MaterialTheme.colorScheme.primary,
                                     containerColor = MaterialTheme.colorScheme.primaryContainer
                                 )
@@ -206,7 +207,7 @@ fun TagFilterSheet(
                             onSetFilter(tag, TagFilterType.NEUTRAL)
                         }
                     }) {
-                        Text("Clear All", fontWeight = FontWeight.Medium)
+                        Text(ForYouCopy.RESET_ALL, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -219,7 +220,7 @@ fun TagFilterSheet(
                 onValueChange = { searchQuery = it },
                 placeholder = {
                     Text(
-                        "Search tags...",
+                        ForYouCopy.SEARCH_GENRES,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 },
@@ -233,7 +234,7 @@ fun TagFilterSheet(
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Rounded.Clear, "Clear")
+                            Icon(Icons.Rounded.Clear, ForYouCopy.CLOSE)
                         }
                     }
                 },
@@ -252,7 +253,7 @@ fun TagFilterSheet(
 
             // Quick filter chips - now scroll to section
             Text(
-                text = "Jump to section",
+                text = ForYouCopy.JUMP_TO,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -294,17 +295,17 @@ fun TagFilterSheet(
                     LegendItem(
                         color = MaterialTheme.colorScheme.error,
                         icon = Icons.Rounded.Block,
-                        label = "Hide"
+                        label = ForYouCopy.FILTER_NEVER
                     )
                     LegendItem(
                         color = MaterialTheme.colorScheme.tertiary,
                         icon = Icons.Rounded.KeyboardArrowDown,
-                        label = "Show less"
+                        label = ForYouCopy.FILTER_LESS
                     )
                     LegendItem(
                         color = MaterialTheme.colorScheme.primary,
                         icon = Icons.AutoMirrored.Rounded.TrendingUp,
-                        label = "Boost"
+                        label = ForYouCopy.FILTER_MORE
                     )
                 }
             }
@@ -488,7 +489,7 @@ private fun TagFilterRow(
                             if (currentFilter == TagFilterType.BLOCKED) TagFilterType.NEUTRAL else TagFilterType.BLOCKED
                         )
                     },
-                    contentDescription = "Block ${TagNormalizer.getDisplayName(tag)}"
+                    contentDescription = ForYouCopy.neverShow(TagNormalizer.getDisplayName(tag))
                 )
 
                 // Reduce button
@@ -501,7 +502,7 @@ private fun TagFilterRow(
                             if (currentFilter == TagFilterType.REDUCED) TagFilterType.NEUTRAL else TagFilterType.REDUCED
                         )
                     },
-                    contentDescription = "Reduce ${TagNormalizer.getDisplayName(tag)}"
+                    contentDescription = ForYouCopy.showLess(TagNormalizer.getDisplayName(tag))
                 )
 
                 // Boost button
@@ -514,7 +515,7 @@ private fun TagFilterRow(
                             if (currentFilter == TagFilterType.BOOSTED) TagFilterType.NEUTRAL else TagFilterType.BOOSTED
                         )
                     },
-                    contentDescription = "Boost ${TagNormalizer.getDisplayName(tag)}"
+                    contentDescription = ForYouCopy.showMore(TagNormalizer.getDisplayName(tag))
                 )
             }
         }
