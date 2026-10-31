@@ -5,6 +5,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Favorite
@@ -29,6 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.ForYouCopy
 
+// Fixed width + capped supporting text: the long "Off: ..." line used to push the Switch off the menu edge.
+private val MENU_WIDTH = 300.dp
+
 /** ⋮ button + Expressive grouped vertical menu. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -52,17 +58,17 @@ fun ForYouMenu(
         DropdownMenuPopup(expanded = open, onDismissRequest = { open = false }) {
             fun close(action: () -> Unit) = { open = false; action() }
 
-            DropdownMenuGroup(shapes = MenuDefaults.groupShape(0, 3)) {
+            DropdownMenuGroup(modifier = Modifier.width(MENU_WIDTH), shapes = MenuDefaults.groupShape(0, 3)) {
                 Item(0, 1, Icons.Rounded.Refresh, ForYouCopy.MENU_REFRESH, onClick = close(onRefresh))
             }
             Spacer(Modifier.height(MenuDefaults.GroupSpacing))
-            DropdownMenuGroup(shapes = MenuDefaults.groupShape(1, 3)) {
+            DropdownMenuGroup(modifier = Modifier.width(MENU_WIDTH), shapes = MenuDefaults.groupShape(1, 3)) {
                 Item(0, 3, Icons.Rounded.Favorite, ForYouCopy.MENU_TASTE, ForYouCopy.MENU_TASTE_SUPPORTING, close(onTaste))
                 Item(1, 3, Icons.Rounded.Tune, ForYouCopy.MENU_SHOW_MORE_LESS, ForYouCopy.MENU_SHOW_MORE_LESS_SUPPORTING, close(onShowMoreLess))
                 Item(2, 3, Icons.Rounded.VisibilityOff, ForYouCopy.MENU_HIDDEN, ForYouCopy.menuHiddenSupporting(hiddenNovels, hiddenAuthors), close(onHidden))
             }
             Spacer(Modifier.height(MenuDefaults.GroupSpacing))
-            DropdownMenuGroup(shapes = MenuDefaults.groupShape(2, 3)) {
+            DropdownMenuGroup(modifier = Modifier.width(MENU_WIDTH), shapes = MenuDefaults.groupShape(2, 3)) {
                 Item(
                     0, 2, Icons.Rounded.Layers, ForYouCopy.MENU_USE_ALL_SOURCES,
                     supporting = if (useAllSources) null else ForYouCopy.MENU_USE_ALL_SOURCES_OFF,
@@ -94,5 +100,5 @@ private fun Item(
     shape = MenuDefaults.itemShape(i, n).shape,
     leadingIcon = { Icon(icon, null) },
     trailingContent = trailing,
-    supportingText = supporting?.let { { Text(it) } }
+    supportingText = supporting?.let { { Text(it, if (trailing != null) Modifier.widthIn(max = 160.dp) else Modifier) } }
 )
