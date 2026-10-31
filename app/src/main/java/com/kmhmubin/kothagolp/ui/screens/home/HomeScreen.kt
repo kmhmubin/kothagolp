@@ -249,9 +249,11 @@ private fun PersistentTabContent(
                 onNavigateToSettings = onNavigateToForYouSettings
             )
             HomeTabs.HISTORY -> HistoryTab(
-                appSettings = appSettings,
                 onNavigateToDetails = onNavigateToDetails,
-                onNavigateToReader = onNavigateToReader
+                onNavigateToReader = onNavigateToReader,
+                onNavigateToBrowse = { onSwitchTab(HomeTabs.BROWSE) },
+                // Global search takes the query as a route arg; fall back to the Browse tab if not wired.
+                onSearchAllSources = { q -> onNavigateToGlobalSearch?.invoke(q) ?: onSwitchTab(HomeTabs.BROWSE) }
             )
             HomeTabs.MORE -> MoreTab(
                 onNavigateToProfile = onNavigateToProfile,

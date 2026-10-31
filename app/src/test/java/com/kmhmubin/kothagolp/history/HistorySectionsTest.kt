@@ -9,6 +9,7 @@ import com.kmhmubin.kothagolp.ui.screens.home.tabs.history.sheetMeta
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.history.shortTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -121,6 +122,8 @@ class HistorySectionsTest {
     @Test fun copy() {
         assertEquals("1 novel you've opened", HistoryCopy.subtitle(1))
         assertEquals("3 novels you've opened", HistoryCopy.subtitle(3))
+        assertTrue(HistoryCopy.clearBody(1).startsWith("This removes the 1 novel from History."))
+        assertTrue(HistoryCopy.clearBody(4).startsWith("This removes all 4 novels from History."))
     }
 
     private fun groupAndTime(ts: Long, nowMs: Long, h24: Boolean = false): Pair<String, String> {

@@ -35,7 +35,7 @@ object HistoryCopy {
     const val CLEAR_MENU = "Clear history…"
     const val CLEAR_TITLE = "Clear your history?"
     fun clearBody(n: Int) =
-        "This removes all $n novels from History. Your library, downloads and reading progress stay as they are."
+        "This removes ${if (n == 1) "the 1 novel" else "all $n novels"} from History. Your library, downloads and reading progress stay as they are."
     const val CANCEL = "Cancel"
     const val CLEAR_CONFIRM = "Clear history"
 
@@ -50,4 +50,11 @@ object HistoryCopy {
 
     fun percentRead(p: Int) = "$p% read"
     fun chapterOf(n: Int, total: Int) = "Ch. $n of $total"
+
+    // Accessibility labels for icon-only controls.
+    const val CD_SEARCH = "Search history"
+    const val CD_MORE = "More options"
+    const val CD_DONE_SELECTING = "Done selecting"
+    const val CD_BACK = "Back"
+    const val CD_CLEAR_QUERY = "Clear search"
 }
