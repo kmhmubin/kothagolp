@@ -327,6 +327,111 @@ class DiscoveryManager(
     }
 
     // ================================================================
+    // TASTE-DRIVEN DISCOVERY (For You)
+    // ================================================================
+
+    @Volatile private var lastTasteDiscoveryAt = 0L
+    @Volatile private var lastTasteTags: List<TagNormalizer.TagCategory> = emptyList()
+
+    /**
+     * Grows the pool with novels the user is likely to want, instead of only
+     * front-page browse results:
+     *  1. each enabled source's genre listing for the user's top taste tags,
+     *  2. the sources' "related novels" for library seeds whose cached details lack them,
+     *  3. full details (tags + synopsis) for related/taste novels that have none yet.
+     * Budgeted per source and throttled to once per [minIntervalMs]. Returns novels added.
+     */
+    suspend fun discoverForTaste(
+        topTags: List<TagNormalizer.TagCategory>,
+        seeds: List<Novel>,
+        disabledProviders: Set<String> = emptySet(),
+        minIntervalMs: Long = 6 * 60 * 60 * 1000L
+    ): Int = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        // Throttle, but re-run early when the taste itself shifted (e.g. after a library backfill).
+        if (now - lastTasteDiscoveryAt < minIntervalMs && topTags == lastTasteTags) return@withContext 0
+        lastTasteDiscoveryAt = now
+        lastTasteTags = topTags
+
+        val before = recommendationDao.getDiscoveredNovelCount()
+        val providers = novelRepository.getProviders().filter { it.name !in disabledProviders }
+        val sessionId = networkBudgetManager.createSessionId()
+        try {
+            supervisorScope {
+                // 1. Genre listings, one page per (source, tag), sources in parallel.
+                providers.forEach { provider ->
+                    launch {
+                        withTimeoutOrNull(30_000L) {
+                            val options = provider.tags.filter { opt ->
+                                opt.value.isNotBlank() && TagNormalizer.normalize(opt.label) in topTags
+                            }.take(2)
+                            for (opt in options) {
+                                if (!networkBudgetManager.waitForSlot(provider.name)) break
+                                try {
+                                    val page = provider.loadMainPage(1, orderBy = null, tag = opt.value)
+                                    networkBudgetManager.recordRequest(provider.name)
+                                    recommendationDao.insertDiscoveredNovels(
+                                        page.novels.map { DiscoveredNovelEntity.fromNovel(it, source = "taste") }
+                                    )
+                                } catch (e: Exception) {
+                                    if (e is kotlinx.coroutines.CancellationException) throw e
+                                    Log.w(TAG, "Taste fetch failed: ${provider.name}/${opt.label}", e)
+                                    networkBudgetManager.recordFailure(provider.name)
+                                    break
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 2. Related lists for library seeds whose cached details predate related-novel storage.
+                launch {
+                    for (seed in seeds.take(8)) {
+                        val cached = offlineDao.getNovelDetails(seed.url) ?: continue
+                        if (!cached.relatedNovelsJson.isNullOrBlank() && cached.relatedNovelsJson != "[]") continue
+                        val provider = novelRepository.getProvider(seed.apiName.ifBlank { cached.apiName }) ?: continue
+                        if (provider.name in disabledProviders || !networkBudgetManager.waitForSlot(provider.name)) continue
+                        try {
+                            val related = withTimeoutOrNull(20_000L) { provider.load(seed.url) }?.relatedNovels
+                            networkBudgetManager.recordRequest(provider.name)
+                            if (related.isNullOrEmpty()) continue
+                            // Only touch the related column: keep the library row's custom cover, chapters, etc.
+                            offlineDao.saveNovelDetails(
+                                cached.copy(relatedNovelsJson = NovelDetailsEntity.serializeRelatedNovels(related))
+                            )
+                            cacheRelatedNovelsWithLimit(related, provider.name, sessionId, depth = 1)
+                        } catch (e: Exception) {
+                            if (e is kotlinx.coroutines.CancellationException) throw e
+                            Log.w(TAG, "Related refresh failed for ${seed.name}", e)
+                        }
+                    }
+                }
+            }
+
+            // 3. Enrich the most promising bare entries so they can be matched on tags/synopsis.
+            val bare = recommendationDao.getAllDiscoveredNovels()
+                .filter { it.source in setOf("taste", "related") && it.tagsString.isNullOrBlank() }
+                .groupBy { it.apiName }
+            supervisorScope {
+                bare.forEach { (apiName, entities) ->
+                    val provider = novelRepository.getProvider(apiName) ?: return@forEach
+                    if (provider.name in disabledProviders) return@forEach
+                    launch {
+                        withTimeoutOrNull(45_000L) {
+                            enrichNovels(provider, entities.take(4).map { it.toNovel() }, sessionId)
+                        }
+                    }
+                }
+            }
+        } finally {
+            networkBudgetManager.clearSession(sessionId)
+        }
+        (recommendationDao.getDiscoveredNovelCount() - before).also {
+            Log.d(TAG, "Taste discovery added $it novels for ${topTags.joinToString()}")
+        }
+    }
+
+    // ================================================================
     // INCREMENTAL DISCOVERY WITH LIMITS
     // ================================================================
 

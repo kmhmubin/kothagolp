@@ -5,6 +5,16 @@ import androidx.room.PrimaryKey
 import com.kmhmubin.kothagolp.domain.model.Chapter
 import com.kmhmubin.kothagolp.domain.model.Novel
 import com.kmhmubin.kothagolp.domain.model.NovelDetails
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 /**
  * Cached novel details for offline access.
@@ -81,15 +91,32 @@ data class NovelDetailsEntity(
             )
         }
 
-        private fun parseRelatedNovels(json: String): List<Novel>? {
-            // Implement JSON parsing
-            return null
-        }
+        // JSON tree API rather than Gson: no reflection, so R8 can't strip the field names.
+        internal fun parseRelatedNovels(json: String): List<Novel>? =
+            Json.parseToJsonElement(json).jsonArray.mapNotNull { element ->
+                val o = element as? JsonObject ?: return@mapNotNull null
+                val url = o["url"]?.jsonPrimitive?.contentOrNull?.ifBlank { null } ?: return@mapNotNull null
+                Novel(
+                    name = o["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    url = url,
+                    posterUrl = o["posterUrl"]?.jsonPrimitive?.contentOrNull,
+                    rating = o["rating"]?.jsonPrimitive?.intOrNull,
+                    apiName = o["apiName"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                )
+            }
 
-        private fun serializeRelatedNovels(novels: List<Novel>): String {
-            // Implement JSON serialization
-            return "[]"
-        }
+        internal fun serializeRelatedNovels(novels: List<Novel>): String =
+            buildJsonArray {
+                novels.forEach { n ->
+                    add(buildJsonObject {
+                        put("name", n.name)
+                        put("url", n.url)
+                        n.posterUrl?.let { put("posterUrl", it) }
+                        n.rating?.let { put("rating", it) }
+                        put("apiName", n.apiName)
+                    })
+                }
+            }.toString()
     }
 }
 

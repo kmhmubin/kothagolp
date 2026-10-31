@@ -10,7 +10,7 @@ apply(plugin = "org.jetbrains.kotlin.android")
 apply(plugin = "org.jetbrains.kotlin.plugin.compose")
 
 configure<BaseAppModuleExtension> {
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26

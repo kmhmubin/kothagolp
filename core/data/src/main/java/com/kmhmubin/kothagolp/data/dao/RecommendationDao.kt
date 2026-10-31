@@ -66,7 +66,12 @@ interface RecommendationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDiscoveredNovel(novel: DiscoveredNovelEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /**
+     * Bulk inserts come from browse/seed/related listings that only carry name + cover.
+     * IGNORE so they never wipe tags/synopsis already enriched for the same URL
+     * (enrichment writes through [insertDiscoveredNovel], which replaces).
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertDiscoveredNovels(novels: List<DiscoveredNovelEntity>)
 
     @Query("SELECT * FROM discovered_novels ORDER BY discoveredAt DESC")

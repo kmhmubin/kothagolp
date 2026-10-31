@@ -143,7 +143,8 @@ object RepositoryProvider {
             offlineDao = getDatabase().offlineDao(),
             recommendationDao = getDatabase().recommendationDao(),
             userFilterManager = getUserFilterManager(),
-            authorPreferenceManager = getAuthorPreferenceManager()  // ADD THIS
+            authorPreferenceManager = getAuthorPreferenceManager(),
+            historyDao = getDatabase().historyDao()
         ).also { recommendationEngine = it }
     }
 

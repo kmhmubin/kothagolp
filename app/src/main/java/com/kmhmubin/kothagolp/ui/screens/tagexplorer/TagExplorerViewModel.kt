@@ -38,7 +38,7 @@ class TagExplorerViewModel : ViewModel() {
                 val counts = mutableMapOf<TagNormalizer.TagCategory, Int>()
 
                 // Count from NovelDetailsEntity
-                val detailsNovels = offlineDao.getAllNovelDetails()
+                val detailsNovels = offlineDao.getAllNovelDetailsWithoutChapters()
                 detailsNovels.forEach { entity ->
                     val tags = entity.tags?.let { TagNormalizer.normalizeAll(it) } ?: emptySet()
                     tags.forEach { tag ->
@@ -80,7 +80,7 @@ class TagExplorerViewModel : ViewModel() {
                 val seenUrls = mutableSetOf<String>()
 
                 // Load from NovelDetailsEntity first (higher quality data)
-                offlineDao.getAllNovelDetails().forEach { entity ->
+                offlineDao.getAllNovelDetailsWithoutChapters().forEach { entity ->
                     val entityTags = entity.tags?.let { TagNormalizer.normalizeAll(it) } ?: emptySet()
 
                     if (tagCategory in entityTags && entity.url !in seenUrls) {

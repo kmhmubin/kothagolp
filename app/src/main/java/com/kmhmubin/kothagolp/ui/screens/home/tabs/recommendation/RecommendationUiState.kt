@@ -13,6 +13,9 @@ data class RecommendationUiState(
     val isRefreshing: Boolean = false,
     val isSeeding: Boolean = false,
     val error: String? = null,
+    /** One-shot confirmation for a snackbar (e.g. "Added to your library"); cleared via clearMessage(). */
+    val message: String? = null,
+    val showLongPressHint: Boolean = false,
 
     // Seeding progress
     val seedingProgress: SeedingProgress? = null,
@@ -32,6 +35,8 @@ data class RecommendationUiState(
     // UI state
     val preferredProvider: String? = null,
     val showCrossProvider: Boolean = true,
+    /** "Not for me" novels; AI rows (built outside the engine) are filtered by it. */
+    val hiddenNovelUrls: Set<String> = emptySet(),
 
     // Track disabled provider count for UI messaging
     val disabledProviderCount: Int = 0,

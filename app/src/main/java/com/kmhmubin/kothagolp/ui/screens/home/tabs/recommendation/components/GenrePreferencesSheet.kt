@@ -1,5 +1,7 @@
 package com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components
 
+import kotlinx.coroutines.launch
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.ForYouCopy
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
@@ -20,9 +22,8 @@ import com.kmhmubin.kothagolp.recommendation.model.GenreOption
 import com.kmhmubin.kothagolp.recommendation.model.OnboardingGenres
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.RecommendationViewModel
 import com.kmhmubin.kothagolp.ui.theme.AppShape
-import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun GenrePreferencesSheet(
     viewModel: RecommendationViewModel,
@@ -69,13 +70,13 @@ fun GenrePreferencesSheet(
             ) {
                 Column {
                     Text(
-                        text = "Edit Preferences",
+                        text = ForYouCopy.TASTE_TITLE,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Update your taste to improve recommendations",
+                        text = ForYouCopy.TASTE_BODY,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -87,13 +88,13 @@ fun GenrePreferencesSheet(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                     )
                 ) {
-                    Icon(Icons.Rounded.Close, "Close", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Rounded.Close, ForYouCopy.CLOSE, modifier = Modifier.size(18.dp))
                 }
             }
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             } else {
                 LazyColumn(
@@ -104,8 +105,8 @@ fun GenrePreferencesSheet(
                     // Genre sections
                     item {
                         GenrePrefSectionHeader(
-                            title = "Core Genres",
-                            subtitle = "Tap once to like, twice to dislike, again to clear"
+                            title = ForYouCopy.TASTE_CORE,
+                            subtitle = ForYouCopy.TASTE_LEGEND
                         )
                     }
                     item {
@@ -131,7 +132,7 @@ fun GenrePreferencesSheet(
                     }
                     item {
                         GenrePrefSectionHeader(
-                            title = "Web Novel Genres",
+                            title = ForYouCopy.TASTE_WEB,
                             subtitle = null
                         )
                     }
@@ -162,28 +163,28 @@ fun GenrePreferencesSheet(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     }
                     item {
-                        GenrePrefSectionHeader(title = "Content Filters", subtitle = null)
+                        GenrePrefSectionHeader(title = ForYouCopy.TASTE_CONTENT_SECTION, subtitle = null)
                     }
                     item {
                         ContentFilterCard(
-                            title = "Mature Content",
-                            subtitle = "Adult, NSFW, Smut",
+                            title = ForYouCopy.TASTE_CONTENT,
+                            subtitle = ForYouCopy.TASTE_CONTENT_BODY,
                             enabled = includeMature,
                             onToggle = { includeMature = it }
                         )
                     }
                     item {
                         ContentFilterCard(
-                            title = "Boys Love (BL)",
-                            subtitle = "Yaoi, M/M romance",
+                            title = ForYouCopy.TASTE_BL,
+                            subtitle = ForYouCopy.TASTE_BL_BODY,
                             enabled = includeBL,
                             onToggle = { includeBL = it }
                         )
                     }
                     item {
                         ContentFilterCard(
-                            title = "Girls Love (GL)",
-                            subtitle = "Yuri, F/F romance",
+                            title = ForYouCopy.TASTE_GL,
+                            subtitle = ForYouCopy.TASTE_GL_BODY,
                             enabled = includeGL,
                             onToggle = { includeGL = it }
                         )
@@ -215,7 +216,7 @@ fun GenrePreferencesSheet(
                     ) {
                         Icon(Icons.Rounded.Check, null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Save Preferences", style = MaterialTheme.typography.labelLarge)
+                        Text(ForYouCopy.TASTE_DONE, style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
