@@ -145,7 +145,10 @@ fun PaginationControls(
                 Column {
                     Slider(
                         state = sliderState,
-                        onValueChange = { isSliding = true },
+                        onValueChange = {
+                            sliderState.value = it
+                            isSliding = true
+                        },
                         onValueChangeFinished = {
                             isSliding = false
                             onPageChange(sliderState.value.toInt().coerceIn(1, totalPages))
