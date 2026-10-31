@@ -103,6 +103,8 @@ class HistoryViewModel : ViewModel() {
     // ---- library / copy ----
 
     fun addToLibrary(novel: Novel) {
+        // Already in library: do nothing, so Undo can never remove a pre-existing entry.
+        if (library[novel.url]?.inLibrary == true) return
         viewModelScope.launch {
             libraryRepository.addToLibrary(novel)
             _uiState.update { it.copy(snackbar = HistorySnack.AddedToLibrary(novel)) }
@@ -126,7 +128,8 @@ class HistoryViewModel : ViewModel() {
     fun stopSelecting() = _uiState.update { it.copy(isSelecting = false, selectedUrls = emptySet()) }
 
     fun toggle(url: String) = _uiState.update {
-        it.copy(selectedUrls = if (url in it.selectedUrls) it.selectedUrls - url else it.selectedUrls + url)
+        val next = if (url in it.selectedUrls) it.selectedUrls - url else it.selectedUrls + url
+        it.copy(selectedUrls = next, isSelecting = next.isNotEmpty())
     }
 
     fun selectAll() = _uiState.update { s ->

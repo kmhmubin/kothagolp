@@ -14,6 +14,7 @@ class HistoryRestoreTest {
 
     private class FakeHistoryDao : HistoryDao {
         val inserted = mutableListOf<HistoryEntity>()
+        val existing = mutableMapOf<String, HistoryEntity>()
         var readMarks = 0
         override suspend fun insert(entity: HistoryEntity) { inserted += entity }
         override suspend fun markChapterRead(entity: ReadChapterEntity) { readMarks++ }
@@ -21,7 +22,7 @@ class HistoryRestoreTest {
 
         override fun getAllFlow(): Flow<List<HistoryEntity>> = TODO()
         override suspend fun getAll(): List<HistoryEntity> = TODO()
-        override suspend fun getByNovelUrl(novelUrl: String): HistoryEntity? = TODO()
+        override suspend fun getByNovelUrl(novelUrl: String): HistoryEntity? = existing[novelUrl]
         override suspend fun deleteByNovelUrl(novelUrl: String) = TODO()
         override suspend fun deleteAll() = TODO()
         override suspend fun getReadChapterUrls(novelUrl: String): List<String> = TODO()
@@ -41,6 +42,7 @@ class HistoryRestoreTest {
         chapterName = "Chapter $n",
         chapterUrl = "https://x/n$n/c$n",
         timestamp = ts,
+        customCoverUrl = "https://x/cover$n.jpg",
     )
 
     @Test
@@ -53,6 +55,20 @@ class HistoryRestoreTest {
         assertEquals("https://x/n1/c1", dao.inserted[0].chapterUrl)
         assertEquals("Novel 2", dao.inserted[1].novelName)
         assertEquals("https://x/p2.jpg", dao.inserted[1].posterUrl)
+        assertEquals(listOf("https://x/cover1.jpg", "https://x/cover2.jpg"), dao.inserted.map { it.customCoverUrl })
         assertTrue("restore must not touch read chapters", dao.readMarks == 0)
+    }
+
+    @Test
+    fun restoreSkipsNovelReopenedSinceRemove() = runTest {
+        val dao = FakeHistoryDao()
+        val old = item(1, 1_000L)
+        dao.existing[old.novel.url] = HistoryEntity(
+            novelUrl = old.novel.url, novelName = old.novel.name, posterUrl = old.novel.posterUrl,
+            chapterName = "Newer", chapterUrl = "u", apiName = old.novel.apiName, timestamp = 5_000L,
+        )
+        HistoryRepository(dao).restore(listOf(old, item(2, 2_000L)))
+
+        assertEquals(listOf("https://x/n2"), dao.inserted.map { it.novelUrl })
     }
 }
