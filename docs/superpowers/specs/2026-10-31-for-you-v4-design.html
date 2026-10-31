@@ -1,0 +1,284 @@
+<style>
+  :root{--bg:#121318;--sc:#1a1c22;--sch:#22252c;--schh:#2c2f37;--on:#e3e2e9;--onv:#c4c6d0;--out:#8e9099;--pri:#aac7ff;--onpri:#0a305f;--pc:#284777;--onpc:#d6e3ff;--ter:#e1bbdc;--tc:#5a3d58;--ontc:#ffd7f5;--sec:#bec6dc;--secc:#3e4759}
+  .phones{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+  .ph{display:flex;flex-direction:column;align-items:center}
+  .phone{width:330px;height:700px;border-radius:44px;background:var(--bg);border:10px solid #2a2a30;overflow:hidden;position:relative;color:var(--on);font-family:"Google Sans Flex","Google Sans",Roboto,system-ui,sans-serif}
+  .scr{height:100%;overflow-y:auto;padding:40px 0 96px}.scr::-webkit-scrollbar{display:none}
+  .pad{padding:0 16px}
+  .bar{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 16px 4px}
+  .bar h1{font-size:36px;font-weight:600;letter-spacing:-.6px;margin:0;line-height:1.1}
+  .lead{font-size:14px;color:var(--onv);margin:4px 0 0}
+  .ib{width:44px;height:44px;border-radius:50%;background:var(--sch);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--onv)}
+  .sh{display:flex;align-items:center;justify-content:space-between;margin:30px 16px 12px}
+  .sh h3{margin:0;font-size:20px;font-weight:600;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sub{font-size:13px;color:var(--onv);margin:-8px 16px 12px}
+  .arrow{width:36px;height:36px;border-radius:50%;background:var(--sch);display:flex;align-items:center;justify-content:center;color:var(--on);flex:0 0 36px}
+  .chip{display:inline-flex;align-items:center;gap:4px;background:var(--secc);color:var(--on);border-radius:10px;padding:4px 10px;font-size:15px;font-weight:600}
+  .row{display:flex;gap:10px;overflow:hidden;padding:0 16px}
+  .bk{flex:0 0 106px}
+  .cv{height:156px;border-radius:16px}
+  .t{font-size:14px;font-weight:500;margin-top:8px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .s{font-size:12px;color:var(--onv);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  /* M3 multi-browse carousel: large + medium + small items, 28dp masks */
+  .car{display:flex;gap:8px;padding:0 16px;height:270px;margin-top:14px}
+  .ci{border-radius:28px;position:relative;overflow:hidden}
+  .ci .cv{position:absolute;inset:0;border-radius:0;height:auto}
+  .ci .fade{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.85))}
+  .ci .in{position:absolute;left:16px;right:16px;bottom:16px}
+  .eye{font-size:12px;font-weight:600;color:#fff;opacity:.85}
+  .ht{font-size:22px;font-weight:600;color:#fff;line-height:1.15;margin-top:4px}
+  .hint{display:flex;align-items:center;gap:8px;margin:14px 16px 0;background:var(--sc);border-radius:16px;padding:10px 12px;font-size:13px;color:var(--onv)}
+  .hint b{margin-left:auto;color:var(--pri);font-weight:600}
+  /* Genre shapes (MaterialShapes) */
+  .gg{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,96px);grid-auto-columns:96px;gap:12px;overflow:hidden;padding:0 16px}
+  .gs{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;font-weight:500}
+  .shape{width:70px;height:70px;display:flex;align-items:center;justify-content:center;font-size:26px}
+  .cookie{border-radius:42% 58% 46% 54%/52% 44% 56% 48%}
+  .clover{clip-path:polygon(50% 0,64% 18%,86% 14%,82% 36%,100% 50%,82% 64%,86% 86%,64% 82%,50% 100%,36% 82%,14% 86%,18% 64%,0 50%,18% 36%,14% 14%,36% 18%)}
+  .sunny{clip-path:polygon(50% 0,61% 12%,77% 7%,81% 23%,96% 30%,89% 45%,100% 58%,86% 67%,88% 83%,72% 85%,63% 99%,50% 90%,37% 99%,28% 85%,12% 83%,14% 67%,0 58%,11% 45%,4% 30%,19% 23%,23% 7%,39% 12%)}
+  .pill{border-radius:35px}.arch{border-radius:35px 35px 12px 12px}.gem{clip-path:polygon(50% 0,100% 38%,82% 100%,18% 100%,0 38%)}
+  .tab{position:absolute;left:0;right:0;bottom:0;height:80px;background:var(--sc);display:flex;justify-content:space-around;align-items:center;font-size:12px;color:var(--onv)}
+  .tab div{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .tab .on span:first-child{background:var(--secc);border-radius:16px;padding:4px 20px;color:var(--on)}
+  .ai{color:var(--ter)}
+  .c1{background:linear-gradient(160deg,#6d4aa3,#22183a)}.c2{background:linear-gradient(160deg,#2f6a83,#0f1e26)}.c3{background:linear-gradient(160deg,#9a4545,#2a1010)}.c4{background:linear-gradient(160deg,#477c56,#0f2215)}.c5{background:linear-gradient(160deg,#8c6a32,#24190a)}.c6{background:linear-gradient(160deg,#4756a0,#121630)}
+  .g1{background:var(--pc);color:var(--onpc)}.g2{background:var(--tc);color:var(--ontc)}.g3{background:var(--secc);color:var(--on)}.g4{background:#3b4a2f;color:#d4ecc0}.g5{background:#5b3a2e;color:#ffdbcf}.g6{background:#2d4a4f;color:#cdeef4}
+  /* menu (M3E vertical menu, grouped) */
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+  .menu{position:absolute;right:14px;top:96px;width:250px;display:flex;flex-direction:column;gap:4px}
+  .mg{background:var(--schh);border-radius:20px;padding:6px}
+  .mi{display:flex;gap:12px;align-items:center;padding:11px 12px;border-radius:14px;font-size:15px}
+  .mi i{font-style:normal;width:20px;text-align:center;color:var(--onv)}
+  .mi.sel{background:var(--secc)}
+  .mi small{display:block;color:var(--onv);font-size:12px}
+  .sw{margin-left:auto;width:40px;height:24px;border-radius:12px;background:var(--pri);position:relative}.sw:after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--onpri)}
+  /* bottom sheet (existing long-press menu, restyled) */
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sc);border-radius:28px 28px 0 0;padding:10px 16px 24px}
+  .handle{width:32px;height:4px;border-radius:2px;background:var(--out);margin:0 auto 14px}
+  .shd{display:flex;gap:14px}
+  .shd .cv{flex:0 0 76px;height:112px}
+  .why{background:var(--sch);border-radius:20px;padding:12px 14px;margin:14px 0 10px}
+  .why h4{margin:0 0 4px;font-size:14px}
+  .bar2{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--onv);margin-top:8px}
+  .bar2 .tr{flex:1;height:6px;border-radius:3px;background:var(--schh);overflow:hidden}.bar2 .tr span{display:block;height:100%;background:var(--pri);border-radius:3px}
+  .acts{display:flex;flex-direction:column;gap:2px;border-radius:20px;overflow:hidden}
+  .act{background:var(--sch);padding:14px;font-size:15px;display:flex;gap:12px}
+  .act.err{color:#ffb4ab}
+  .bgrp{display:flex;gap:4px;margin-top:12px}.bgrp div{flex:1;text-align:center;padding:12px;border-radius:20px;background:var(--pri);color:var(--onpri);font-weight:600}.bgrp div+div{background:var(--secc);color:var(--on);border-radius:12px 20px 20px 12px}.bgrp div:first-child{border-radius:20px 12px 12px 20px}
+  /* states */
+  .wavy{width:48px;height:48px;margin:0 auto}
+  .sk{background:var(--sc);border-radius:16px}
+  .empty{text-align:center;padding:40px 24px}
+  .empty .shape{margin:0 auto 18px;width:96px;height:96px}
+  .btn{display:inline-block;margin-top:16px;background:var(--pri);color:var(--onpri);border-radius:24px;padding:12px 22px;font-weight:600}
+  .quiet{display:flex;gap:12px;align-items:center;background:var(--sc);border-radius:20px;padding:14px;margin:0 16px;font-size:14px}
+  .quiet b{color:var(--pri);margin-left:auto;font-weight:600;white-space:nowrap}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}td,th{padding:7px 10px;border-bottom:1px solid #2a2a30;text-align:left;vertical-align:top}th{color:#a1a1aa;font-weight:600}
+  td:first-child{color:#8e8e93;text-decoration:line-through;text-decoration-color:#555}
+  .deck{max-width:900px;margin:34px auto 0}
+  .rules li{margin:4px 0}
+</style>
+
+<h2>For You v4: Apple UX × Material 3 Expressive</h2>
+<p class="subtitle">Same structure as v3, built with Material 3 Expressive parts. Your current long-press menu is kept, with clearer wording. A full copy deck is below.</p>
+
+<div class="phones">
+<!-- MAIN -->
+<div class="ph"><div class="phone"><div class="scr">
+  <div class="bar"><div><h1>For You</h1><div class="lead">Picked from 243 novels you've read</div></div><div class="ib">⋮</div></div>
+
+  <div class="car">
+    <div class="ci" style="flex:0 0 200px"><div class="cv c1"></div><div class="fade"></div><div class="in">
+      <div class="eye">Because you liked Trash of the Count's Family</div>
+      <div class="ht">Mirror King, Book Two</div></div></div>
+    <div class="ci" style="flex:0 0 74px"><div class="cv c2"></div></div>
+    <div class="ci" style="flex:0 0 24px"><div class="cv c3"></div></div>
+  </div>
+  <div class="hint">☝ Press and hold a novel to see why it's here <b>Got it</b></div>
+
+  <div class="sh"><h3>More like <span class="chip">Shadow Slave ▾</span></h3></div>
+  <div class="row">
+    <div class="bk"><div class="cv c2"></div><div class="t">Lord of the Mysteries</div><div class="s">NovelFire</div></div>
+    <div class="bk"><div class="cv c6"></div><div class="t">Throne of Time</div><div class="s">Royal Road</div></div>
+    <div class="bk"><div class="cv c3"></div><div class="t">Timeless Assassin</div><div class="s">NovelFire</div></div></div>
+
+  <div class="sh"><h3>By authors you like</h3><div class="arrow">→</div></div>
+  <div class="row">
+    <div class="bk"><div class="cv c6"></div><div class="t">Reverend Insanity</div><div class="s">Gu Zhen Ren</div></div>
+    <div class="bk"><div class="cv c4"></div><div class="t">Infinite Thought</div><div class="s">Gu Zhen Ren</div></div></div>
+
+  <div class="sh"><h3><span class="ai">✦</span> Picked by AI</h3><div class="arrow">→</div></div>
+  <div class="row">
+    <div class="bk"><div class="cv c4"></div><div class="t">Clan Prosperity</div><div class="s">Cultivation and a big cast, like your favourites</div></div>
+    <div class="bk"><div class="cv c5"></div><div class="t">Mushoku Tensei</div><div class="s">A slow, rich isekai you can sink into</div></div>
+    <div class="bk"><div class="cv c1"></div><div class="t">Lust Knight</div><div class="s">Isekai knight with mature themes</div></div></div>
+
+  <div class="sh"><h3>Top fantasy for you</h3><div class="arrow">→</div></div>
+  <div class="row">
+    <div class="bk"><div class="cv c3"></div><div class="t">The Years of Apocalypse</div><div class="s">Royal Road</div></div>
+    <div class="bk"><div class="cv c2"></div><div class="t">My Clocking In System</div><div class="s">LibRead</div></div>
+    <div class="bk"><div class="cv c5"></div><div class="t">Unsheathed</div><div class="s">NovelFull</div></div></div>
+
+  <div class="sh"><h3>Something different</h3><div class="arrow">→</div></div>
+  <div class="sub">Drama you might enjoy</div>
+  <div class="row">
+    <div class="bk"><div class="cv c6"></div><div class="t">Predatory Marriage</div><div class="s">NovelBin</div></div>
+    <div class="bk"><div class="cv c4"></div><div class="t">Songstress of Schwarzwald</div><div class="s">NovelFire</div></div>
+    <div class="bk"><div class="cv c3"></div><div class="t">Cradles of Gravity</div><div class="s">Royal Road</div></div></div>
+
+  <div class="sh"><h3>Just added</h3><div class="arrow">→</div></div>
+  <div class="row">
+    <div class="bk"><div class="cv c1"></div><div class="t">Lost and Found</div><div class="s">Royal Road</div></div>
+    <div class="bk"><div class="cv c2"></div><div class="t">Harem in the Fantasy World Dungeon</div><div class="s">LNT</div></div></div>
+
+  <div class="sh"><h3>Browse by genre</h3><div class="arrow">→</div></div>
+  <div class="gg">
+    <div class="gs"><div class="shape cookie g1">🗡</div>Fantasy</div>
+    <div class="gs"><div class="shape sunny g2">♥</div>Romance</div>
+    <div class="gs"><div class="shape clover g3">✦</div>Cultivation</div>
+    <div class="gs"><div class="shape pill g4">⚔</div>Action</div>
+    <div class="gs"><div class="shape arch g5">♛</div>Harem</div>
+    <div class="gs"><div class="shape gem g6">◈</div>Sci-fi</div>
+  </div>
+</div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div class="on"><span>✦</span>For You</div><div><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>1 · For You</h3></div>
+
+<!-- MENU -->
+<div class="ph"><div class="phone"><div class="scr" style="filter:blur(2px)">
+  <div class="bar"><div><h1>For You</h1><div class="lead">Picked from 243 novels you've read</div></div><div class="ib">⋮</div></div>
+  <div class="car"><div class="ci" style="flex:0 0 200px"><div class="cv c1"></div></div><div class="ci" style="flex:0 0 74px"><div class="cv c2"></div></div></div>
+</div><div class="scrim"></div>
+<div class="menu">
+  <div class="mg"><div class="mi"><i>↻</i>Refresh picks</div></div>
+  <div class="mg">
+    <div class="mi"><i>♡</i><div>Your taste<small>Genres you like and avoid</small></div></div>
+    <div class="mi"><i>⇅</i><div>Show more or less<small>Boost or mute a genre</small></div></div>
+    <div class="mi"><i>⊘</i><div>Hidden<small>3 novels · 1 author</small></div></div>
+  </div>
+  <div class="mg">
+    <div class="mi"><i>⧉</i>Use all my sources<span class="sw"></span></div>
+    <div class="mi"><i class="ai">✦</i><div>AI picks<small>On · Free model</small></div></div>
+  </div>
+</div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div class="on"><span>✦</span>For You</div><div><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>2 · ⋮ menu (grouped)</h3></div>
+
+<!-- LONG PRESS (kept) -->
+<div class="ph"><div class="phone"><div class="scr" style="filter:blur(2px);opacity:.6">
+  <div class="bar"><div><h1>For You</h1></div></div>
+  <div class="car"><div class="ci" style="flex:0 0 200px"><div class="cv c1"></div></div></div>
+</div><div class="scrim"></div>
+<div class="sheet">
+  <div class="handle"></div>
+  <div class="shd"><div class="cv c3"></div><div>
+    <div style="font-size:18px;font-weight:600">The Years of Apocalypse</div>
+    <div class="s">Royal Road · ★ 4.8 · Fantasy, Time loop</div>
+    <div class="s" style="margin-top:6px;color:var(--pri)">Strong match for you</div></div></div>
+  <div class="why"><h4>Why it's here</h4>
+    <div class="s" style="-webkit-line-clamp:4">You finish time-loop progression stories, and readers of Shadow Slave read this too.</div>
+    <div class="bar2">Your genres<div class="tr"><span style="width:82%"></span></div></div>
+    <div class="bar2">Like your favourites<div class="tr"><span style="width:64%"></span></div></div>
+    <div class="bar2">Reader rating<div class="tr"><span style="width:90%"></span></div></div>
+  </div>
+  <div class="bgrp"><div>Open</div><div>＋ Library</div></div>
+  <div class="acts" style="margin-top:10px">
+    <div class="act">⊘ Not for me</div>
+    <div class="act err">✕ Hide everything by this author</div></div>
+</div></div>
+<h3>3 · Long-press (your current menu, kept)</h3></div>
+
+<!-- STATES -->
+<div class="ph"><div class="phone"><div class="scr">
+  <div class="bar"><div><h1>For You</h1><div class="lead">Getting to know your taste…</div></div><div class="ib">⋮</div></div>
+  <div style="padding:30px 0 6px;text-align:center">
+    <svg class="wavy" viewBox="0 0 48 48"><path fill="#aac7ff" d="M24 4c3 0 4 3 7 3s5-2 7 0 0 5 1 7 4 4 3 7-3 4-3 7 2 5 0 7-5 0-7 1-4 4-7 4-4-3-7-3-5 2-7 0 0-5-1-7-4-4-3-7 3-4 3-7-2-5 0-7 5 0 7-1 4-4 7-4z"/></svg>
+    <div class="s" style="margin-top:8px">Finding novels for you</div></div>
+  <div class="row" style="margin-top:10px"><div class="sk" style="flex:0 0 200px;height:150px;border-radius:28px"></div><div class="sk" style="flex:0 0 74px;height:150px;border-radius:28px"></div></div>
+  <div class="sh" style="margin-top:28px"><h3><span class="ai">✦</span> Picked by AI</h3></div>
+  <div class="quiet">Get picks chosen by AI. It's free. <b>Turn on</b></div>
+  <div class="empty">
+    <div class="shape cookie g1">✦</div>
+    <div style="font-size:20px;font-weight:600">Your picks will show up here</div>
+    <div class="s" style="-webkit-line-clamp:3;margin-top:6px">Add a few novels to your library and For You will learn what you enjoy.</div>
+    <div class="btn">Find novels</div></div>
+</div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div class="on"><span>✦</span>For You</div><div><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>4 · Loading · AI off · first time</h3></div>
+</div>
+
+<div class="deck">
+<h3>Material 3 Expressive parts used</h3>
+<ul class="rules">
+  <li><b>Carousel:</b> M3 multi-browse carousel. Large, medium and small items with 28dp rounded masks that morph as you swipe.</li>
+  <li><b>Top bar:</b> large, flexible app bar with an emphasized headline and a subtitle; it collapses on scroll.</li>
+  <li><b>Covers:</b> 16dp rounded corners on covers; no badges on them.</li>
+  <li><b>Genres:</b> Material shapes (cookie, sunny, clover, pill, arch, gem) in tonal colors.</li>
+  <li><b>Row titles:</b> a filled tonal arrow button for "see all"; the "More like" switcher is a tonal chip with a dropdown.</li>
+  <li><b>⋮ menu:</b> the Expressive grouped vertical menu, with a switch and supporting text.</li>
+  <li><b>Long-press:</b> your current menu, restyled as a bottom sheet with a connected button group (Open | ＋ Library).</li>
+  <li><b>Loading:</b> the morphing wavy loading indicator, plus skeletons shaped like the real carousel and rows.</li>
+  <li><b>Motion:</b> the Expressive spring motion scheme for the carousel, the sheet and pressed states.</li>
+</ul>
+
+<h3>Copy rules</h3>
+<ul class="rules">
+  <li>Sentence case everywhere ("Not for me", not "Not Interested").</li>
+  <li>Reader words only: "sources", "novels", "genres". Never "pool", "indexed", "seeding", "providers", "budget", "tags", "match %".</li>
+  <li>One name per action: "Not for me" hides one novel; "Hide everything by this author" hides an author; "Hidden" is where to undo both.</li>
+  <li>Every error says what happened and what to do: "Couldn't reach the AI. Check your connection and try again."</li>
+  <li>Row titles say what's inside in 2–4 words; a subtitle appears only when the title can't carry it.</li>
+</ul>
+
+<h3>Copy deck: old → new</h3>
+<table>
+<tr><th>Today</th><th>New</th></tr>
+<tr><td>Getting started / Learning your taste (pill)</td><td>Picked from 243 novels you've read</td></tr>
+<tr><td>Top Picks for You · "Ranked from what you read and finish"</td><td>(carousel, no title) · each card says why: "Because you liked …"</td></tr>
+<tr><td>TOP PICK · Matches your Adult &amp; Smut</td><td>Because you liked … / "Matches your love of fantasy and action"</td></tr>
+<tr><td>Because you read X · Similar stories you might enjoy</td><td>More like [X ▾]</td></tr>
+<tr><td>From Authors You Love / From Your Favorite Authors</td><td>By authors you like</td></tr>
+<tr><td>AI Picks for You · AI-chosen from novels on your sources</td><td>✦ Picked by AI</td></tr>
+<tr><td>AI Discovery · Popular novels the AI found on your sources</td><td>(merged into ✦ Picked by AI)</td></tr>
+<tr><td>Best in Fantasy · Top-rated Fantasy, ordered for your taste</td><td>Top fantasy for you</td></tr>
+<tr><td>Try Something New: Drama · A genre you haven't read…</td><td>Something different · "Drama you might enjoy"</td></tr>
+<tr><td>New Arrivals · Recently discovered, matched to your taste</td><td>Just added</td></tr>
+<tr><td>Browse by Genre / Explore Your Taste / Your interests</td><td>Browse by genre</td></tr>
+<tr><td>Readers of X also read · Off your usual path · New for you · Drama</td><td>Readers of X read this too · "Something new: drama" · (no label on genre rows)</td></tr>
+<tr><td>24% match (badge)</td><td>(removed; long-press shows "Strong match for you")</td></tr>
+<tr><td>Not interested / Not Interested / Hide / Hide from recommendations</td><td>Not for me</td></tr>
+<tr><td>Block Author / Hide all novels by this author</td><td>Hide everything by this author</td></tr>
+<tr><td>Hidden: [title] · Undo</td><td>Got it, you won't see "[title]" again · Undo</td></tr>
+<tr><td>Blocked author: X</td><td>You won't see novels by X · Undo</td></tr>
+<tr><td>Why This? / Why we think you'll like this / Match Breakdown / Overall Match</td><td>Why it's here</td></tr>
+<tr><td>Tag Similarity / Author Match / Source Bonus / Rating</td><td>Your genres · Like your favourites · Readers of your novels · Reader rating</td></tr>
+<tr><td>View Details / See full novel information</td><td>Open</td></tr>
+<tr><td>Recommendation Settings · Filter by Tags · Manage Filters · Content Filters</td><td>(⋮ menu) Your taste · Show more or less · Hidden</td></tr>
+<tr><td>Cross-Source Discovery · "When enabled, we'll recommend novels from all your added sources…"</td><td>Use all my sources · "Off: only show novels from the source you read most"</td></tr>
+<tr><td>Boost X / Reduce X / Block X</td><td>Show more X / Show less X / Never show X</td></tr>
+<tr><td>Hidden Novels · Blocked Authors · Unhide · Unblock · Clear All Hidden · Unblock All</td><td>Hidden novels · Hidden authors · Show again · Show all again</td></tr>
+<tr><td>No hidden novels · "Novels you mark as 'Not Interested' will appear here…"</td><td>Nothing hidden · "Novels you mark Not for me show up here, so you can bring them back."</td></tr>
+<tr><td>Edit Preferences / Redo Preference Setup / Setup Preferences · "Update your liked/disliked genres…"</td><td>Your taste · "Tap a genre once to like it, twice to avoid it."</td></tr>
+<tr><td>Tap once to like, twice to dislike, again to clear</td><td>Tap once to like · twice to avoid · again to reset</td></tr>
+<tr><td>Save Preferences</td><td>Done</td></tr>
+<tr><td>Building Your Library / Building Your Recommendations · "This only happens once. We're indexing novels…"</td><td>Finding novels for you · "This takes a minute, only the first time."</td></tr>
+<tr><td>Discovering novels from X…</td><td>Looking through X…</td></tr>
+<tr><td>Loading recommendations...</td><td>(skeleton + wavy loader) Finding novels for you</td></tr>
+<tr><td>Read some novels from your library or browse new ones. We'll learn your preferences…</td><td>Your picks will show up here · "Add a few novels to your library and For You will learn what you enjoy." · Find novels</td></tr>
+<tr><td>No similar novels found · We couldn't find novels similar to "X"…</td><td>Nothing like "X" yet · "Try another novel, or check back after more novels are found."</td></tr>
+<tr><td>No novels found for this genre yet. Browse more to build your pool.</td><td>No [genre] novels yet · "Browse a source to find some."</td></tr>
+<tr><td>Enable AI Picks · Add your free OpenRouter key in Settings · Set Up</td><td>Get picks chosen by AI. It's free. · Turn on</td></tr>
+<tr><td>AI is picking novels for you...</td><td>The AI is choosing novels for you…</td></tr>
+<tr><td>The AI's answer couldn't be read. Try again or switch model.</td><td>The AI's answer didn't come through. Try again.</td></tr>
+<tr><td>Rate limit reached. Switch to a different model or wait a moment.</td><td>The free AI is busy right now. Try again in a minute.</td></tr>
+<tr><td>Daily free limit reached for this model…</td><td>You've used today's free AI picks. They'll be back tomorrow.</td></tr>
+<tr><td>Invalid API key. Check your OpenRouter key in Settings → For You.</td><td>That AI key didn't work. Check it in AI picks.</td></tr>
+<tr><td>Couldn't reach OpenRouter: …</td><td>Couldn't reach the AI. Check your connection and try again.</td></tr>
+<tr><td>None of the AI's suggestions were found on your sources…</td><td>(silent: the AI row shows only what it found)</td></tr>
+<tr><td>Not enough novels indexed yet. Browse a few sources first.</td><td>Browse a few novels first so the AI has something to choose from.</td></tr>
+<tr><td>Failed to load recommendations / Refresh failed: …</td><td>Couldn't load your picks. Pull down to try again.</td></tr>
+<tr><td>Discovered N new novels · Disabled providers changed, refreshing…</td><td>Found N new novels for you · (silent)</td></tr>
+<tr><td>91 recommendations • 1418 novels indexed (footer)</td><td>(removed)</td></tr>
+<tr><td>Network Budget · Cooldown · Discovery (settings)</td><td>(removed from For You; internal only)</td></tr>
+</table>
+</div>
