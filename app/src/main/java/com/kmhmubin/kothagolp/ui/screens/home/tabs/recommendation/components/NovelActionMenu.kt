@@ -108,10 +108,13 @@ fun NovelActionMenu(
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
-                    WhyBar(ForYouCopy.WHY_YOUR_GENRES, b.tagSimilarity)
-                    WhyBar(ForYouCopy.WHY_LIKE_FAVOURITES, b.authorMatch)
-                    if (b.providerBoost > 0f) WhyBar(ForYouCopy.WHY_READERS, b.providerBoost)
-                    WhyBar(ForYouCopy.WHY_RATING, b.ratingScore)
+                    // AI picks carry no score breakdown: show the reason only.
+                    if (b.tagSimilarity + b.authorMatch + b.providerBoost + b.ratingScore > 0f) {
+                        WhyBar(ForYouCopy.WHY_YOUR_GENRES, b.tagSimilarity)
+                        WhyBar(ForYouCopy.WHY_LIKE_FAVOURITES, b.authorMatch)
+                        if (b.providerBoost > 0f) WhyBar(ForYouCopy.WHY_READERS, b.providerBoost)
+                        WhyBar(ForYouCopy.WHY_RATING, b.ratingScore)
+                    }
                 }
             }
 

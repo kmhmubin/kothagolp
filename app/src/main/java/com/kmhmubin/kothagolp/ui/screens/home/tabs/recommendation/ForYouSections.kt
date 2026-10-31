@@ -6,6 +6,7 @@ import com.kmhmubin.kothagolp.recommendation.TagNormalizer.TagCategory
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
 import com.kmhmubin.kothagolp.recommendation.model.RecommendationGroup
 import com.kmhmubin.kothagolp.recommendation.model.RecommendationType
+import com.kmhmubin.kothagolp.recommendation.model.ScoreBreakdown
 
 enum class AiState { Off, Loading, Ready, Error }
 
@@ -36,6 +37,7 @@ sealed interface ForYouSection {
 }
 
 private const val CAROUSEL_SIZE = 5
+private const val AI_SCORE = 0.75f
 
 private fun Recommendation.toItem() =
     ForYouItem(novel.url, novel.name, novel.posterUrl, novel.apiName, novel.apiName, this)
@@ -51,7 +53,10 @@ fun buildForYouSections(state: RecommendationUiState, allGenres: List<TagCategor
         .filter { it.matchedNovelUrl != null }
         .distinctBy { it.matchedNovelUrl }
         .map {
-            ForYouItem(it.matchedNovelUrl!!, it.title, it.matchedPosterUrl, it.matchedApiName.orEmpty(), it.reason, null)
+            val novel = Novel(it.title, it.matchedNovelUrl!!, it.matchedPosterUrl, apiName = it.matchedApiName.orEmpty())
+            // Lets AI covers open the long-press sheet like every other cover.
+            val rec = Recommendation(novel, AI_SCORE, RecommendationType.FOR_YOU, it.reason, ScoreBreakdown())
+            ForYouItem(novel.url, it.title, it.matchedPosterUrl, novel.apiName, it.reason, rec)
         }
     val aiState = when {
         !state.hasGeminiKey -> AiState.Off

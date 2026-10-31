@@ -141,8 +141,8 @@ fun RecommendationTab(
 
     LaunchedEffect(uiState.message) {
         uiState.message?.let { msg ->
-            viewModel.clearMessage()
             snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Short)
+            viewModel.clearMessage()
         }
     }
 

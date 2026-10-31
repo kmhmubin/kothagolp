@@ -71,7 +71,7 @@ fun ForYouMenu(
                 )
                 Item(
                     1, 2, Icons.Rounded.AutoAwesome, ForYouCopy.MENU_AI_PICKS,
-                    if (aiOn) ForYouCopy.MENU_ON else ForYouCopy.MENU_OFF, close(onAiPicks)
+                    if (aiOn) ForYouCopy.MENU_AI_ON_FREE else ForYouCopy.MENU_OFF, close(onAiPicks)
                 )
             }
         }

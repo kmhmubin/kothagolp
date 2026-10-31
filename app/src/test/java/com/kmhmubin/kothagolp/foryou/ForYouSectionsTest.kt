@@ -66,6 +66,9 @@ class ForYouSectionsTest {
         val row = rows(s).filterIsInstance<ForYouSection.AiRow>().single()
         assertEquals(listOf("u/A", "u/B", "u/C"), row.items.map { it.url })
         assertEquals(AiState.Ready, row.state)
+        // Long-press needs a Recommendation on every AI cover, carrying the AI's reason.
+        assertEquals(listOf("whyA", "whyB", "whyC"), row.items.map { it.recommendation!!.reason })
+        assertEquals("apiA", row.items.first().recommendation!!.novel.apiName)
     }
 
     @Test fun aiOffWhenNoKey() {
