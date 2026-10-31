@@ -108,7 +108,7 @@ fun buildHistoryGroups(
             progressPercent = pct,
             inLibrary = info?.inLibrary == true,
             titleMatch = match,
-            readChapter = if (total > 0) info!!.lastReadChapterIndex + 1 else 0,
+            readChapter = if (total > 0 && info!!.lastReadChapterIndex >= 0) (info.lastReadChapterIndex + 1).coerceAtMost(total) else 0,
             totalChapters = total,
         )
     }
@@ -131,7 +131,7 @@ fun buildHistoryGroups(
 /** (line 1, optional line 2) for the press-and-hold sheet header. */
 fun sheetMeta(row: HistoryRowModel): Pair<String, String?> {
     val source = row.item.novel.apiName
-    val first = if (row.totalChapters > 0) "${HistoryCopy.chapterOf(row.readChapter, row.totalChapters)} · $source"
+    val first = if (row.totalChapters > 0 && row.readChapter > 0) "${HistoryCopy.chapterOf(row.readChapter, row.totalChapters)} · $source"
     else "${row.chapterLine} · $source"
     val second = row.progressPercent?.let { "${HistoryCopy.percentRead(it)} · ${row.time}" } ?: row.time
     return first to second

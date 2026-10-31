@@ -88,6 +88,8 @@ class HistorySectionsTest {
         assertEquals("LibRead", rows[1].metaLine)
         assertNull(rows[1].progressPercent)
         assertEquals(100, rows[2].progressPercent)
+        assertEquals("LibRead", rows[3].metaLine)
+        assertNull(rows[3].progressPercent)
         assertEquals(false, rows[3].inLibrary)
         assertEquals(true, rows[0].inLibrary)
     }
@@ -119,5 +121,41 @@ class HistorySectionsTest {
     @Test fun copy() {
         assertEquals("1 novel you've opened", HistoryCopy.subtitle(1))
         assertEquals("3 novels you've opened", HistoryCopy.subtitle(3))
+    }
+
+    private fun groupAndTime(ts: Long, nowMs: Long, h24: Boolean = false): Pair<String, String> {
+        val g = buildHistoryGroups(listOf(item("x", ts)), emptyMap(), "", nowMs, zone, h24)
+        return g.single().key to shortTime(ts, nowMs, zone, h24)
+    }
+
+    @Test fun midnightEdges() {
+        val n = at(2026, 10, 31, 0, 30)
+        assertEquals("yesterday" to "11:59 pm", groupAndTime(at(2026, 10, 30, 23, 59), n))
+        assertEquals("today" to "Just now", groupAndTime(at(2026, 10, 31, 0, 1) + 30_000, at(2026, 10, 31, 0, 2)))
+        assertEquals("today" to "29m ago", groupAndTime(at(2026, 10, 31, 0, 1), n))
+    }
+
+    @Test fun weekMondayAndMonthEdges() {
+        val thu = at(2026, 11, 5, 12, 0) // Mon is 2 Nov
+        assertEquals("yesterday" to "4:00 pm", groupAndTime(at(2026, 11, 4, 16, 0), thu))
+        assertEquals("week" to "Mon", groupAndTime(at(2026, 11, 2, 0, 0), thu))
+        assertEquals("month" to "1 Nov", groupAndTime(at(2026, 11, 1, 23, 59), thu))
+        assertEquals("earlier" to "31 Oct", groupAndTime(at(2026, 10, 31, 23, 59), thu))
+        assertEquals("earlier" to "30 Oct", groupAndTime(at(2026, 10, 30, 12, 0), thu)) // 6 days ago
+        assertEquals("earlier" to "28 Oct", groupAndTime(at(2026, 10, 28, 12, 0), thu)) // 8 days ago
+        val thu2 = at(2026, 10, 22, 12, 0) // Mon is 19 Oct
+        assertEquals("week" to "Tue", groupAndTime(at(2026, 10, 20, 12, 0), thu2))
+        assertEquals("month" to "18 Oct", groupAndTime(at(2026, 10, 18, 12, 0), thu2)) // last Sunday
+        assertEquals("month" to "14 Oct", groupAndTime(at(2026, 10, 14, 12, 0), thu2)) // 8 days ago
+    }
+
+    @Test fun chapterNumberClamped() {
+        val lib = mapOf(
+            "hi" to LibraryInfo(true, 500, 100),
+            "neg" to LibraryInfo(true, -1, 100),
+        )
+        val rows = groups(listOf(item("hi", now - 1000, source = "S"), item("neg", now - 2000, chapter = "Chapter 3", source = "S")), lib)[0].rows
+        assertEquals("Ch. 100 of 100 · S", sheetMeta(rows[0]).first)
+        assertEquals("Ch. 3 · S", sheetMeta(rows[1]).first)
     }
 }
