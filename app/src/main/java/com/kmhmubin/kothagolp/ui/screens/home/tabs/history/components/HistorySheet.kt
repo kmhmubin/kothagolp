@@ -39,6 +39,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,8 +82,12 @@ fun HistorySheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     // Slide the sheet down first, then leave composition and run the action.
+    var hiding by remember { mutableStateOf(false) }
     fun hideThen(action: () -> Unit): () -> Unit = {
-        scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss(); action() }
+        if (!hiding) {
+            hiding = true
+            scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss(); action() }
+        }
     }
 
     ModalBottomSheet(

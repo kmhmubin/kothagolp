@@ -8,10 +8,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSearchBarState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -37,25 +36,28 @@ fun HistorySearchBar(query: String, onQueryChange: (String) -> Unit, onClose: ()
         focus.requestFocus()
         keyboard?.show()
     }
-    SearchBar(
-        state = rememberSearchBarState(),
+    // A collapsed SearchBar swallows IME input (EditorInfo inputType=0, keyboard never shows), so wrap the field ourselves.
+    Surface(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-        inputField = {
-            SearchBarDefaults.InputField(
-                query = query,
-                onQueryChange = onQueryChange,
-                onSearch = { focusManager.clearFocus() },
-                expanded = false,
-                onExpandedChange = {},
-                modifier = Modifier.focusRequester(focus),
-                placeholder = { Text(HistoryCopy.SEARCH_HINT) },
-                leadingIcon = {
-                    IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, HistoryCopy.CD_BACK) }
-                },
-                trailingIcon = if (query.isEmpty()) null else {
-                    { IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Rounded.Close, HistoryCopy.CD_CLEAR_QUERY) } }
-                },
-            )
-        },
-    )
+        shape = SearchBarDefaults.inputFieldShape,
+        color = SearchBarDefaults.colors().containerColor,
+        tonalElevation = SearchBarDefaults.TonalElevation,
+        shadowElevation = SearchBarDefaults.ShadowElevation,
+    ) {
+        SearchBarDefaults.InputField(
+            query = query,
+            onQueryChange = onQueryChange,
+            onSearch = { focusManager.clearFocus() },
+            expanded = false,
+            onExpandedChange = {},
+            modifier = Modifier.focusRequester(focus),
+            placeholder = { Text(HistoryCopy.SEARCH_HINT) },
+            leadingIcon = {
+                IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, HistoryCopy.CD_BACK) }
+            },
+            trailingIcon = if (query.isEmpty()) null else {
+                { IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Rounded.Close, HistoryCopy.CD_CLEAR_QUERY) } }
+            },
+        )
+    }
 }

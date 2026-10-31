@@ -33,15 +33,18 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.LocalSaveableStateRegistry
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -135,7 +138,12 @@ private fun HistoryRow(
     val bottom = if (last) CardRadius else 0.dp
 
     // "Past halfway, the row slides away."
-    val dismiss = rememberSwipeToDismissBoxState(positionalThreshold = { it * 0.5f })
+    // Not saveable: lazy items restore rememberSaveable state by key, so an Undo-restored row would
+    // come back already dismissed and remove itself again.
+    lateinit var dismiss: SwipeToDismissBoxState
+    CompositionLocalProvider(LocalSaveableStateRegistry provides null) {
+        dismiss = rememberSwipeToDismissBoxState(positionalThreshold = { it * 0.5f })
+    }
     var width by remember { mutableIntStateOf(1) }
     val pastThreshold = dismiss.targetValue == SwipeToDismissBoxValue.EndToStart
     val pop = remember { Animatable(1f) }
