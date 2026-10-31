@@ -6,6 +6,7 @@ import com.kmhmubin.kothagolp.data.local.dao.OfflineDao
 import com.kmhmubin.kothagolp.data.repository.LibraryRepository
 import com.kmhmubin.kothagolp.domain.model.ReadingStatus
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -52,6 +53,34 @@ class MetadataBackfillManager(
 
     fun cancelBackfill() {
         backfillJob?.cancel()
+    }
+
+    /**
+     * Quiet, capped backfill for For You: caches details for up to [limit] library
+     * novels that have none, most recently read first. Returns how many were cached.
+     */
+    suspend fun backfillMissing(limit: Int = 40, parallelism: Int = 6): Int = withContext(Dispatchers.IO) {
+        val library = libraryDao.getAll()
+        val cached = library.map { it.url }.chunked(900)
+            .flatMap { offlineDao.getExistingNovelDetailsUrls(it) }
+            .toHashSet()
+        val missing = library.filter { it.url !in cached }
+            .sortedWith(compareBy<com.kmhmubin.kothagolp.data.local.entity.LibraryEntity> {
+                if (it.readingStatus == ReadingStatus.READING.name) 0 else 1
+            }.thenByDescending { it.lastReadAt ?: it.addedAt })
+            .take(limit)
+        if (missing.isEmpty()) return@withContext 0
+        val gate = kotlinx.coroutines.sync.Semaphore(parallelism)
+        missing.map { entity ->
+            async {
+                gate.withPermit {
+                    withTimeoutOrNull(25_000L) {
+                        runCatching { libraryRepository.fetchAndCacheNovelDetails(entity.url) }
+                    }
+                }
+            }
+        }.awaitAll()
+        offlineDao.getExistingNovelDetailsUrls(missing.map { it.url }).size
     }
 
     private suspend fun performBackfill() = withContext(Dispatchers.IO) {

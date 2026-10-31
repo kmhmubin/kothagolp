@@ -43,7 +43,9 @@ data class NovelVector(
     val synopsis: String? = null,
 
     /** When this novel was first added to discovery pool (epoch ms, 0 for offline cache) */
-    val discoveredAt: Long = 0L
+    val discoveredAt: Long = 0L,
+    /** Vote count behind [rating], when the source reports it */
+    val peopleVoted: Int? = null
 ) {
 
     /**

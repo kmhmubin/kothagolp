@@ -135,13 +135,25 @@ fun RecommendationSection(
             }
         }
 
+        // For You leads with one hero pick; the rest scroll below it.
+        val topPick = group.recommendations.firstOrNull()?.takeIf { group.type == RecommendationType.FOR_YOU }
+        if (topPick != null) {
+            TopPickCard(
+                recommendation = topPick,
+                onClick = { onNovelClick(topPick.novel.url, topPick.novel.apiName) },
+                onLongClick = { onNovelLongClick(topPick) },
+                onNotInterested = { onQuickDismiss(topPick) },
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+
         // Horizontal scroll of cards
         LazyRow(
             contentPadding = PaddingValues(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(
-                items = group.recommendations,
+                items = if (topPick != null) group.recommendations.drop(1) else group.recommendations,
                 key = { it.novel.url }
             ) { recommendation ->
                 RecommendationCard(
@@ -172,7 +184,7 @@ private fun getSectionIcon(type: RecommendationType): ImageVector {
         RecommendationType.FROM_AUTHORS_YOU_LIKE -> Icons.Rounded.Person
         RecommendationType.TOP_RATED_FOR_YOU -> Icons.Rounded.Star
         RecommendationType.NEW_FOR_YOU -> Icons.Rounded.NewReleases
-        RecommendationType.DISCOVER_NEW_SOURCE -> Icons.Rounded.Explore
+        RecommendationType.DISCOVER_NEW_SOURCE, RecommendationType.EXPLORE_GENRE -> Icons.Rounded.Explore
     }
 }
 
@@ -188,6 +200,6 @@ private fun getSectionColor(type: RecommendationType): Color {
         RecommendationType.FROM_AUTHORS_YOU_LIKE -> Color(0xFF9C27B0) // Purple
         RecommendationType.TOP_RATED_FOR_YOU -> Color(0xFFFF9800) // Orange
         RecommendationType.NEW_FOR_YOU -> Color(0xFFE91E63) // Pink
-        RecommendationType.DISCOVER_NEW_SOURCE -> Color(0xFF00ACC1) // Cyan
+        RecommendationType.DISCOVER_NEW_SOURCE, RecommendationType.EXPLORE_GENRE -> Color(0xFF00ACC1) // Cyan
     }
 }

@@ -32,5 +32,8 @@ enum class RecommendationType {
     NEW_FOR_YOU,
 
     /** Cross-provider discovery */
-    DISCOVER_NEW_SOURCE
+    DISCOVER_NEW_SOURCE,
+
+    /** A genre the user hasn't read yet that sits close to their taste */
+    EXPLORE_GENRE
 }

@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 private const val TAG = "RecommendationViewModel"
@@ -214,15 +215,23 @@ class RecommendationViewModel : ViewModel() {
         try {
             val disabledProviders = getDisabledProviders()
 
-            val recommendations = recommendationEngine.getSimilarTo(
+            suspend fun similar() = recommendationEngine.getSimilarTo(
                 novelUrl = novelUrl,
                 limit = 15,
                 excludeLibrary = true,
                 disabledProviders = disabledProviders
             )
+            var recommendations = similar()
+            // Restored/imported novels have no cached details to compare against: fetch once, retry.
+            if (recommendations.isEmpty() &&
+                RepositoryProvider.getDatabase().offlineDao().getNovelDetails(novelUrl) == null
+            ) {
+                runCatching { libraryRepository.fetchAndCacheNovelDetails(novelUrl) }
+                recommendations = similar()
+            }
 
-            // Cache the results
-            sourceRecommendationCache[novelUrl] = recommendations
+            // Cache only real results so an empty one gets retried later
+            if (recommendations.isNotEmpty()) sourceRecommendationCache[novelUrl] = recommendations
 
             _uiState.update { it.copy(
                 sourceNovelRecommendations = recommendations,
@@ -633,6 +642,7 @@ class RecommendationViewModel : ViewModel() {
                 }
 
                 loadUserProfile()
+                launchTasteDiscovery(config)
 
                 // Also refresh source recommendations if we have a selected source
                 _uiState.value.selectedSourceNovel?.let { source ->
@@ -937,6 +947,39 @@ class RecommendationViewModel : ViewModel() {
     // ================================================================
     // HELPERS
     // ================================================================
+
+    private var tasteDiscoveryJob: Job? = null
+
+    /**
+     * Background: fetch more novels matching the user's top tags plus the sources'
+     * related lists, then quietly re-rank. Throttled inside DiscoveryManager.
+     */
+    private fun launchTasteDiscovery(config: RecommendationEngine.RecommendationConfig) {
+        if (tasteDiscoveryJob?.isActive == true) return
+        tasteDiscoveryJob = viewModelScope.launch {
+            try {
+                // Restored/imported libraries have no cached details, so the engine can't
+                // see their tags yet: fill in a batch first (capped, recent reads first).
+                val backfilled = RepositoryProvider.getMetadataBackfillManager().backfillMissing()
+                val topTags = recommendationEngine.topTasteTags()
+                val seeds = libraryRepository.getLibrary()
+                    .sortedByDescending { it.lastReadPosition?.timestamp ?: it.addedAt }
+                    .map { it.novel }
+                if (topTags.isEmpty() && seeds.isEmpty()) return@launch
+                val added = discoveryManager.discoverForTaste(topTags, seeds, config.disabledProviders)
+                if (added <= 0 && backfilled <= 0 && seeds.isEmpty()) return@launch
+                val groups = recommendationEngine.generateRecommendations(config)
+                if (groups.isNotEmpty()) {
+                    _uiState.update {
+                        it.copy(recommendationGroups = groups, poolSize = discoveryManager.getPoolSize())
+                    }
+                }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                Log.w(TAG, "Taste discovery failed", e)
+            }
+        }
+    }
 
     private fun getDisabledProviders(): Set<String> {
         return preferencesManager.appSettings.value.disabledProviders
