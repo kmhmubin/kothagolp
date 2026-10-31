@@ -35,7 +35,8 @@ class OpenRouterService {
         internal fun errorMessage(code: Int, detail: String): String = when (code) {
             429 -> if (detail.contains("day", ignoreCase = true)) ForYouCopy.AI_DAILY_LIMIT else ForYouCopy.AI_BUSY
             401, 403 -> ForYouCopy.AI_BAD_KEY
-            402, 503 -> ForYouCopy.AI_BUSY
+            402 -> ForYouCopy.AI_NEEDS_CREDITS
+            503 -> ForYouCopy.AI_BUSY
             else -> ForYouCopy.AI_UNREADABLE
         }
     }

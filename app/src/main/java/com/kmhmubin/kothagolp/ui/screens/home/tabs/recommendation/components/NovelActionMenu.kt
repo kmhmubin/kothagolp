@@ -3,6 +3,8 @@ package com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components
 import androidx.compose.runtime.getValue
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,7 +66,7 @@ fun NovelActionMenu(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
-        Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 24.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 CoverImage(novel.posterUrl, novel.name, Modifier.width(76.dp).height(112.dp))
                 Column {
@@ -111,10 +113,12 @@ fun NovelActionMenu(
                         )
                     }
                     // AI picks carry no score breakdown: show the reason only.
-                    if (b.tagSimilarity + b.authorMatch + b.providerBoost + b.ratingScore > 0f) {
+                    // Engine fields: synopsisMatch = closeness to a favourite, popularityScore = sources' related lists.
+                    val favourites = maxOf(b.synopsisMatch, b.authorMatch)
+                    if (b.tagSimilarity + favourites + b.popularityScore + b.ratingScore > 0f) {
                         WhyBar(ForYouCopy.WHY_YOUR_GENRES, b.tagSimilarity)
-                        WhyBar(ForYouCopy.WHY_LIKE_FAVOURITES, b.authorMatch)
-                        if (b.providerBoost > 0f) WhyBar(ForYouCopy.WHY_READERS, b.providerBoost)
+                        WhyBar(ForYouCopy.WHY_LIKE_FAVOURITES, favourites)
+                        if (b.popularityScore > 0f) WhyBar(ForYouCopy.WHY_READERS, b.popularityScore)
                         WhyBar(ForYouCopy.WHY_RATING, b.ratingScore)
                     }
                 }

@@ -19,4 +19,9 @@ class AiErrorCopyTest {
         "That AI key didn't work. Check it in AI picks.",
         OpenRouterService.errorMessage(401, "No auth credentials found")
     )
+
+    @Test fun needsCredits() = assertEquals(
+        "This model needs OpenRouter credits. Pick a free model in AI picks.",
+        OpenRouterService.errorMessage(402, "Insufficient credits")
+    )
 }

@@ -120,6 +120,7 @@ object ForYouCopy {
     const val AI_BUSY = "The free AI is busy right now. Try again in a minute."
     const val AI_DAILY_LIMIT = "You've used today's free AI picks. They'll be back tomorrow."
     const val AI_BAD_KEY = "That AI key didn't work. Check it in AI picks."
+    const val AI_NEEDS_CREDITS = "This model needs OpenRouter credits. Pick a free model in AI picks."
     const val AI_NETWORK = "Couldn't reach the AI. Check your connection and try again."
     const val AI_NEED_BROWSE = "Browse a few novels first so the AI has something to choose from."
 
