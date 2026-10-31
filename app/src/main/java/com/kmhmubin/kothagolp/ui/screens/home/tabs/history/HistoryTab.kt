@@ -77,25 +77,16 @@ fun HistoryTab(
     val useCompactLayout = appSettings.uiDensity == UiDensity.COMPACT
 
     // Handle back press in selection mode
-    if (uiState.isSelectionMode) {
-        BackHandler { viewModel.exitSelectionMode() }
+    if (uiState.isSelecting) {
+        BackHandler { viewModel.stopSelecting() }
     }
 
     // Clear all confirmation dialog
-    if (uiState.showClearConfirmation) {
+    if (uiState.showClearDialog) {
         ClearHistoryConfirmationDialog(
             itemCount = uiState.totalCount,
-            onConfirm = viewModel::confirmClearHistory,
-            onDismiss = viewModel::dismissClearConfirmation
-        )
-    }
-
-    // Delete selected confirmation dialog
-    if (uiState.showDeleteSelectedConfirmation) {
-        DeleteSelectedConfirmationDialog(
-            count = uiState.selectedItems.size,
-            onConfirm = viewModel::confirmDeleteSelected,
-            onDismiss = viewModel::dismissDeleteSelectedConfirmation
+            onConfirm = viewModel::confirmClear,
+            onDismiss = viewModel::dismissClear
         )
     }
 
@@ -105,28 +96,28 @@ fun HistoryTab(
             .padding()
     ) {
         // Header: crossfade between normal and selection headers
-        if (uiState.totalCount > 0 || uiState.isSelectionMode) {
+        if (uiState.totalCount > 0 || uiState.isSelecting) {
             Crossfade(
-                targetState = uiState.isSelectionMode,
+                targetState = uiState.isSelecting,
                 label = "header_crossfade"
             ) { selectionMode ->
                 if (selectionMode) {
-                    val allVisibleSelected = remember(uiState.groupedItems, uiState.selectedItems) {
+                    val allVisibleSelected = remember(uiState.groups, uiState.selectedUrls) {
                         val visibleUrls =
-                            uiState.groupedItems.values.flatten().map { it.novel.url }.toSet()
-                        visibleUrls.isNotEmpty() && visibleUrls.all { it in uiState.selectedItems }
+                            uiState.groups.flatMap { g -> g.rows.map { it.item.novel.url } }.toSet()
+                        visibleUrls.isNotEmpty() && visibleUrls.all { it in uiState.selectedUrls }
                     }
                     SelectionHeader(
-                        selectedCount = uiState.selectedItems.size,
+                        selectedCount = uiState.selectedUrls.size,
                         allVisibleSelected = allVisibleSelected,
-                        onClose = viewModel::exitSelectionMode,
-                        onSelectAll = viewModel::selectAllVisible,
-                        onDeleteSelected = viewModel::requestDeleteSelected
+                        onClose = viewModel::stopSelecting,
+                        onSelectAll = viewModel::selectAll,
+                        onDeleteSelected = { viewModel.remove(uiState.selectedUrls.toList()) }
                     )
                 } else {
                     HistoryHeader(
                         itemCount = uiState.totalCount,
-                        onClearHistory = viewModel::requestClearHistory
+                        onClearHistory = viewModel::requestClear
                     )
                 }
             }
@@ -139,8 +130,8 @@ fun HistoryTab(
             exit = fadeOut() + slideOutVertically()
         ) {
             HistorySearchBar(
-                query = uiState.searchQuery,
-                onQueryChange = viewModel::updateSearchQuery,
+                query = uiState.query,
+                onQueryChange = viewModel::setQuery,
                 modifier = Modifier.padding(
                     horizontal = dimensions.gridPadding,
                     vertical = 8.dp
@@ -158,34 +149,34 @@ fun HistoryTab(
                 EmptyHistoryState()
             }
 
-            uiState.filteredCount == 0 && uiState.searchQuery.isNotBlank() -> {
-                NoResultsState(query = uiState.searchQuery)
+            uiState.groups.isEmpty() && uiState.query.isNotBlank() -> {
+                NoResultsState(query = uiState.query)
             }
 
             else -> {
                 GroupedHistoryList(
-                    groupedItems = uiState.groupedItems,
+                    groupedItems = legacyGroups(uiState.groups),
                     useCompactLayout = useCompactLayout,
-                    isSelectionMode = uiState.isSelectionMode,
-                    selectedItems = uiState.selectedItems,
+                    isSelectionMode = uiState.isSelecting,
+                    selectedItems = uiState.selectedUrls,
                     onContinueReading = { item ->
                         onNavigateToReader(item.chapterUrl, item.novel.url, item.novel.apiName)
                     },
                     onRemoveFromHistory = { item ->
-                        viewModel.removeFromHistory(item.novel.url)
+                        viewModel.remove(listOf(item.novel.url))
                     },
                     onNovelClick = { item ->
-                        if (uiState.isSelectionMode) {
-                            viewModel.toggleSelection(item.novel.url)
+                        if (uiState.isSelecting) {
+                            viewModel.toggle(item.novel.url)
                         } else {
                             onNavigateToDetails(item.novel.url, item.novel.apiName)
                         }
                     },
                     onLongClick = { item ->
-                        if (!uiState.isSelectionMode) {
-                            viewModel.enterSelectionMode(item.novel.url)
+                        if (!uiState.isSelecting) {
+                            viewModel.startSelecting(item.novel.url)
                         } else {
-                            viewModel.toggleSelection(item.novel.url)
+                            viewModel.toggle(item.novel.url)
                         }
                     }
                 )
@@ -725,52 +716,23 @@ private fun ClearHistoryConfirmationDialog(
     )
 }
 
-@Composable
-private fun DeleteSelectedConfirmationDialog(
-    count: Int,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(28.dp)
-            )
-        },
-        title = {
-            Text(
-                text = "Remove Selected?",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-        },
-        text = {
-            Text(
-                text = "Remove $count ${if (count == 1) "entry" else "entries"} from your reading history?",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("Remove")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = AppShape.extraLarge
-    )
+// Legacy shim until Task 3 replaces this screen: map new groups back to the old enum buckets.
+private fun legacyGroups(groups: List<HistoryGroup>): Map<HistoryDateGroup, List<HistoryItem>> =
+    groups.associate { g ->
+        val d = when (g.key) {
+            "today" -> HistoryDateGroup.TODAY
+            "yesterday" -> HistoryDateGroup.YESTERDAY
+            "week", "results" -> HistoryDateGroup.THIS_WEEK
+            "month" -> HistoryDateGroup.THIS_MONTH
+            else -> HistoryDateGroup.EARLIER
+        }
+        d to g.rows.map { it.item }
+    }
+
+enum class HistoryDateGroup(val displayName: String) {
+    TODAY("Today"),
+    YESTERDAY("Yesterday"),
+    THIS_WEEK("This Week"),
+    THIS_MONTH("This Month"),
+    EARLIER("Earlier")
 }

@@ -160,6 +160,23 @@ class HistoryRepository(
         historyDao.deleteByNovelUrl(novelUrl)
     }
 
+    /** Undo of a remove: re-inserts rows with their original timestamps; read chapters are untouched. */
+    suspend fun restore(items: List<HistoryItem>) = withContext(Dispatchers.IO) {
+        items.forEach { item ->
+            historyDao.insert(
+                HistoryEntity(
+                    novelUrl = item.novel.url,
+                    novelName = item.novel.name,
+                    posterUrl = item.novel.posterUrl,
+                    chapterName = item.chapterName,
+                    chapterUrl = item.chapterUrl,
+                    apiName = item.novel.apiName,
+                    timestamp = item.timestamp
+                )
+            )
+        }
+    }
+
     // ================================================================
     // CLEAR HISTORY
     // ================================================================

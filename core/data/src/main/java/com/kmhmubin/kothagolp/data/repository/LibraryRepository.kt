@@ -44,6 +44,7 @@ data class LibraryItem(
 
     // New chapter tracking
     val totalChapterCount: Int = 0,
+    val lastReadChapterIndex: Int = -1,
     val newChapterCount: Int = 0,
     val unreadChapterCount: Int = 0,
     val hasNewChapters: Boolean = false,
@@ -593,6 +594,7 @@ class LibraryRepository(
                 )
             } else null,
             totalChapterCount = totalChapterCount,
+            lastReadChapterIndex = lastReadChapterIndex,
             newChapterCount = newChapterCount,
             unreadChapterCount = unreadChapterCount,
             hasNewChapters = hasNewChapters,
