@@ -93,5 +93,6 @@ object ForYouCopy {
 
     // Errors / toasts
     const val LOAD_ERROR = "Couldn't load your picks. Pull down to try again."
+    const val ADDED_TO_LIBRARY = "Added to your library"
     fun foundNewNovels(count: Int) = "Found $count new novels for you"
 }

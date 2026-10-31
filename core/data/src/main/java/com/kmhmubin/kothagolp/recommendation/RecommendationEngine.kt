@@ -312,7 +312,7 @@ class RecommendationEngine(
         }
         return RecommendationGroup(
             type = RecommendationType.FOR_YOU,
-            title = if (hasTaste) "Top Picks for You" else "Popular Right Now",
+            title = if (hasTaste) "Top picks" else "Popular right now",
             subtitle = if (hasTaste) "Ranked from what you read and finish" else "Read a few novels and this learns your taste",
             recommendations = recs
         )
@@ -333,15 +333,15 @@ class RecommendationEngine(
             val shared = TasteModel.sharedFeatures(seed.features, ctx.f(n), "t:", 2).map(::tagName)
             recommendation(ctx, n, RecommendationType.BECAUSE_YOU_READ, score,
                 reason = when {
-                    listed -> "Readers of this also read it"
-                    shared.isNotEmpty() -> "Also ${shared.joinToString(" & ")}"
-                    else -> "Similar story"
+                    listed -> "Readers of ${seed.name.ellipsize(22)} read this too"
+                    shared.isNotEmpty() -> "Because you liked ${seed.name.ellipsize(26)}"
+                    else -> "Because you liked ${seed.name.ellipsize(26)}"
                 },
                 sourceNovelUrl = seed.url, sourceNovelName = seed.name)
         }
         return RecommendationGroup(
             type = RecommendationType.BECAUSE_YOU_READ,
-            title = "Because you read ${seed.name.ellipsize(25)}",
+            title = "More like ${seed.name.ellipsize(25)}",
             subtitle = "Similar stories you might enjoy",
             recommendations = recs,
             sourceNovel = Novel(name = seed.name, url = seed.url)
@@ -358,12 +358,12 @@ class RecommendationEngine(
         val name = TagNormalizer.getDisplayName(tag)
         val recs = TasteModel.diversify(scored, ctx::f, config.maxPerGroup).map { (n, score) ->
             recommendation(ctx, n, RecommendationType.TRENDING_IN_YOUR_GENRES, score,
-                reason = n.rating?.let { "%.1f★ %s".format(it / 200f, name) } ?: "Top $name")
+                reason = "Top ${name.lowercase()} for you")
         }
         return RecommendationGroup(
             type = RecommendationType.TRENDING_IN_YOUR_GENRES,
-            title = "Best in $name",
-            subtitle = "Top-rated $name, ordered for your taste",
+            title = name, // bare genre name: ForYouSections builds the visible title from it
+            subtitle = "Top ${name.lowercase()} for you",
             recommendations = recs
         )
     }
@@ -385,12 +385,12 @@ class RecommendationEngine(
         val scored = byTag.getValue(tag).map { it to 0.6f * ctx.quality(it) + 0.4f * ctx.taste(it) }
         val name = TagNormalizer.getDisplayName(tag)
         val recs = TasteModel.diversify(scored, ctx::f, config.maxPerGroup).map { (n, score) ->
-            recommendation(ctx, n, RecommendationType.EXPLORE_GENRE, score, reason = "New for you · $name")
+            recommendation(ctx, n, RecommendationType.EXPLORE_GENRE, score, reason = "Something new: ${name.lowercase()}")
         }
         return RecommendationGroup(
             type = RecommendationType.EXPLORE_GENRE,
-            title = "Try Something New: $name",
-            subtitle = "A genre you haven't read, picked to sit close to your taste",
+            title = name,
+            subtitle = "$name you might enjoy",
             recommendations = recs
         )
     }
@@ -402,12 +402,12 @@ class RecommendationEngine(
             .map { it to 0.6f * ctx.taste(it) + 0.4f * ctx.quality(it) - 0.3f * ctx.dislike(it) }
         if (fresh.size < 3) return null
         val recs = TasteModel.diversify(fresh, ctx::f, config.maxPerGroup).map { (n, score) ->
-            recommendation(ctx, n, RecommendationType.NEW_FOR_YOU, score, reason = "Recently added")
+            recommendation(ctx, n, RecommendationType.NEW_FOR_YOU, score, reason = "Just added")
         }
         return RecommendationGroup(
             type = RecommendationType.NEW_FOR_YOU,
-            title = "New Arrivals",
-            subtitle = "Recently discovered, matched to your taste",
+            title = "Just added",
+            subtitle = "Recently found, matched to your taste",
             recommendations = recs
         )
     }
@@ -417,18 +417,17 @@ class RecommendationEngine(
     // ================================================================
 
     private fun forYouReason(ctx: Context, n: NovelVector): String {
-        ctx.relatedBy[n.url]?.maxByOrNull { it.weight }?.let { return "Readers of ${it.name.ellipsize(22)} also read" }
+        ctx.relatedBy[n.url]?.maxByOrNull { it.weight }?.let { return "Readers of ${it.name.ellipsize(22)} read this too" }
         val (seed, sim) = ctx.bestSeed(n)
-        if (seed != null && sim >= 0.3f) return "Like ${seed.name.ellipsize(26)}"
+        if (seed != null && sim >= 0.3f) return "Because you liked ${seed.name.ellipsize(26)}"
         val shared = TasteModel.sharedFeatures(ctx.profile, ctx.f(n), "t:", 2).map(::tagName)
-        if (shared.isNotEmpty()) return "Matches your ${shared.joinToString(" & ")}"
-        return n.rating?.let { "%.1f★ on %s".format(it / 200f, n.providerName) } ?: "Recommended for you"
+        if (shared.isNotEmpty()) return "Matches your love of ${shared.joinToString(" and ") { it.lowercase() }}"
+        return n.rating?.let { "Rated %.1f on %s".format(it / 200f, n.providerName) } ?: "Recommended for you"
     }
 
     private fun wildcardReason(ctx: Context, n: NovelVector): String {
         val tag = n.tags.firstOrNull { (ctx.profile["t:${it.name}"] ?: 0f) < 0.05f } ?: n.tags.first()
-        val rating = n.rating?.let { "%.1f★ ".format(it / 200f) } ?: ""
-        return "Off your usual path · $rating${TagNormalizer.getDisplayName(tag)}"
+        return "Something new: ${TagNormalizer.getDisplayName(tag).lowercase()}"
     }
 
     private fun tagName(key: String): String =
@@ -681,30 +680,16 @@ class RecommendationEngine(
                 ),
                 score = breakdown.total,
                 type = RecommendationType.FROM_AUTHORS_YOU_LIKE,
-                reason = "By $authorName",
+                reason = authorName, // bare name: the authors row shows it as the caption
                 scoreBreakdown = breakdown,
                 isCrossProvider = false
             )
         }
 
-        val authorCount = novelsByLikedAuthors
-            .mapNotNull { it.authorNormalized }
-            .distinct()
-            .size
-
-        val title = when {
-            authorCount == 1 -> {
-                val author = authorDisplayNames[novelsByLikedAuthors.first().authorNormalized]
-                "More from $author"
-            }
-            authorCount <= 3 -> "From Authors You Love"
-            else -> "From Your Favorite Authors"
-        }
-
         return RecommendationGroup(
             type = RecommendationType.FROM_AUTHORS_YOU_LIKE,
-            title = title,
-            subtitle = "Other works by authors you've enjoyed",
+            title = "By authors you like",
+            subtitle = "More from authors you've enjoyed",
             recommendations = recommendations
         )
     }

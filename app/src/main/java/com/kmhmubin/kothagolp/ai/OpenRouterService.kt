@@ -1,6 +1,7 @@
 package com.kmhmubin.kothagolp.ai
 
 import com.kmhmubin.kothagolp.recommendation.model.AiBrief
+import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.ForYouCopy
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -30,6 +31,13 @@ class OpenRouterService {
         private const val BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
         /** OpenRouter's free router: resolves to whichever free model is live. */
         const val DEFAULT_MODEL = "openrouter/free"
+
+        internal fun errorMessage(code: Int, detail: String): String = when (code) {
+            429 -> if (detail.contains("day", ignoreCase = true)) ForYouCopy.AI_DAILY_LIMIT else ForYouCopy.AI_BUSY
+            401, 403 -> ForYouCopy.AI_BAD_KEY
+            402, 503 -> ForYouCopy.AI_BUSY
+            else -> ForYouCopy.AI_UNREADABLE
+        }
     }
 
     data class Pick(val id: String, val reason: String)
@@ -60,10 +68,10 @@ Choose the $count candidates this reader is most likely to love and finish. Pref
             json.optJSONArray("picks").objects()
                 .mapNotNull { o ->
                     val id = o.optString("id").trim()
-                    if (id !in ids) null else Pick(id, o.optString("reason").trim().ifBlank { "Picked for you" })
+                    if (id !in ids) null else Pick(id, o.optString("reason").trim().ifBlank { ForYouCopy.PICKED_BY_AI })
                 }
                 .distinctBy { it.id }
-                .ifEmpty { throw Exception("The AI didn't return any usable picks. Try again.") }
+                .ifEmpty { throw Exception(ForYouCopy.AI_UNREADABLE) }
         }
     }
 
@@ -86,7 +94,7 @@ Suggest $count real, well-known web novels or light novels (translated Chinese/K
                 val author = o.optString("author").trim()
                     .takeUnless { it.isBlank() || it.lowercase() in setOf("author", "unknown", "n/a", "none") }
                 Suggestion(title, author, o.optString("reason").trim())
-            }.ifEmpty { throw Exception("The AI didn't suggest anything. Try again.") }
+            }.ifEmpty { throw Exception(ForYouCopy.AI_UNREADABLE) }
         }
     }
 
@@ -157,7 +165,7 @@ Not interested in: ${brief.disliked.joinToString("; ").ifBlank { "nothing noted"
                 client.newCall(request).execute().use { it.code to (it.body?.string() ?: "") }
             } catch (e: Exception) {
                 Log.w(TAG, "$currentModel failed after ${System.currentTimeMillis() - started}ms", e)
-                return@withContext Result.failure(Exception("Couldn't reach OpenRouter: ${e.message?.take(80)}"))
+                return@withContext Result.failure(Exception(ForYouCopy.AI_NETWORK))
             }
             Log.d(TAG, "$currentModel schema=$useSchema -> $code in ${System.currentTimeMillis() - started}ms" +
                     if (code !in 200..299) ": ${text.take(200)}" else "")
@@ -181,7 +189,7 @@ Not interested in: ${brief.disliked.joinToString("; ").ifBlank { "nothing noted"
                 else -> return@withContext Result.failure(Exception(errorMessage(code, detail)))
             }
         }
-        Result.failure(Exception("The AI's answer couldn't be read. Try again or switch model."))
+        Result.failure(Exception(ForYouCopy.AI_UNREADABLE))
     }
 
     private fun parseContent(responseText: String): JSONObject? = runCatching {
@@ -191,21 +199,6 @@ Not interested in: ${brief.disliked.joinToString("; ").ifBlank { "nothing noted"
         val end = content.lastIndexOf('}')
         if (start < 0 || end <= start) null else JSONObject(content.substring(start, end + 1))
     }.getOrNull()
-
-    private fun errorMessage(code: Int, detail: String): String = when (code) {
-        429 -> when {
-            detail.contains("day", ignoreCase = true) ->
-                "Daily free limit reached for this model. Switch to a different model or try tomorrow."
-            detail.contains("minute", ignoreCase = true) || detail.contains("RPM", ignoreCase = true) ->
-                "Too many requests per minute. Wait 60 seconds and retry."
-            else -> "Rate limit reached. Switch to a different model or wait a moment."
-        }
-        401 -> "Invalid API key. Check your OpenRouter key in Settings → For You."
-        402 -> "This model needs OpenRouter credits. Pick a free model in Settings → For You."
-        403 -> "Access denied. Ensure your OpenRouter key has the right permissions."
-        503 -> "OpenRouter service temporarily unavailable. Try again shortly."
-        else -> "OpenRouter error $code: ${detail.take(120)}"
-    }
 
     private fun JSONArray?.objects(): List<JSONObject> =
         if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }

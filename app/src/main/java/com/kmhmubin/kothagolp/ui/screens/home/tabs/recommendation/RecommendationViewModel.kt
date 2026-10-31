@@ -116,6 +116,7 @@ class RecommendationViewModel : ViewModel() {
             }
         }
 
+        _uiState.update { it.copy(showLongPressHint = !preferencesManager.isForYouHintDismissed()) }
         checkAndSeed()
         checkGeminiKey()
     }
@@ -281,7 +282,7 @@ class RecommendationViewModel : ViewModel() {
             } catch (e: Exception) {
                 Log.e(TAG, "Error in checkAndSeed", e)
                 _uiState.update {
-                    it.copy(isLoading = false, error = "Failed to initialize: ${e.message}")
+                    it.copy(isLoading = false, error = ForYouCopy.LOAD_ERROR)
                 }
             }
         }
@@ -346,7 +347,7 @@ class RecommendationViewModel : ViewModel() {
                     isSeeding = false,
                     isLoading = false,
                     seedingProgress = null,
-                    error = "Failed to discover novels: ${e.message}"
+                    error = ForYouCopy.LOAD_ERROR
                 )
             }
         }
@@ -409,7 +410,7 @@ class RecommendationViewModel : ViewModel() {
             } catch (e: Exception) {
                 Log.e(TAG, "Error in force tag enhancement", e)
                 _uiState.update {
-                    it.copy(isRefreshing = false, error = "Enhancement failed: ${e.message}")
+                    it.copy(isRefreshing = false, error = ForYouCopy.LOAD_ERROR)
                 }
             }
         }
@@ -661,7 +662,7 @@ class RecommendationViewModel : ViewModel() {
                     it.copy(
                         isLoading = false,
                         isRefreshing = false,
-                        error = e.message ?: "Failed to load recommendations"
+                        error = ForYouCopy.LOAD_ERROR
                     )
                 }
             }
@@ -696,7 +697,7 @@ class RecommendationViewModel : ViewModel() {
             } catch (e: Exception) {
                 Log.e(TAG, "Error refreshing discovery pool", e)
                 _uiState.update {
-                    it.copy(isRefreshing = false, error = "Refresh failed: ${e.message}")
+                    it.copy(isRefreshing = false, error = ForYouCopy.LOAD_ERROR)
                 }
             }
         }
@@ -834,7 +835,7 @@ class RecommendationViewModel : ViewModel() {
                     isLoadingAiRecs = false,
                     hasReadingHistory = result.getOrNull() != null || result.isFailure,
                     aiRecommendations = result.getOrNull() ?: it.aiRecommendations,
-                    aiRecsError = result.exceptionOrNull()?.let { e -> e.message ?: "AI request failed" },
+                    aiRecsError = result.exceptionOrNull()?.let { e -> e.message ?: ForYouCopy.AI_UNREADABLE },
                     aiRecsLastUpdated = System.currentTimeMillis(),
                     lastLoadedAiModel = model
                 )
@@ -879,18 +880,17 @@ class RecommendationViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingTrending = true, trendingError = null, hasGeminiKey = true) }
             val result = runCatching {
-                val brief = recommendationEngine.aiBrief(aiConfig()) ?: error("Not enough novels indexed yet. Browse a few sources first.")
+                val brief = recommendationEngine.aiBrief(aiConfig()) ?: error(ForYouCopy.AI_NEED_BROWSE)
                 val library = libraryRepository.getLibrary()
                 val known = library.map { it.novel.name } + brief.candidates.map { it.recommendation.novel.name }
                 val suggestions = openRouterService.suggestTitles(apiKey, brief, known, model).getOrThrow()
                 verifyOnSources(suggestions, library.map { normalizeTitle(it.novel.name) }.toSet())
-                    .ifEmpty { error("None of the AI's suggestions were found on your sources. Try again or switch model.") }
             }
             _uiState.update {
                 it.copy(
                     isLoadingTrending = false,
                     aiTrendingRecommendations = result.getOrNull() ?: it.aiTrendingRecommendations,
-                    trendingError = result.exceptionOrNull()?.let { e -> e.message ?: "AI request failed" },
+                    trendingError = result.exceptionOrNull()?.let { e -> e.message ?: ForYouCopy.AI_UNREADABLE },
                     trendingLastUpdated = System.currentTimeMillis(),
                     lastLoadedTrendingModel = model
                 )
@@ -994,6 +994,22 @@ class RecommendationViewModel : ViewModel() {
                 ?.key
         } catch (e: Exception) {
             null
+        }
+    }
+
+    fun clearMessage() {
+        _uiState.update { it.copy(message = null) }
+    }
+
+    fun dismissLongPressHint() {
+        preferencesManager.setForYouHintDismissed()
+        _uiState.update { it.copy(showLongPressHint = false) }
+    }
+
+    fun addToLibrary(rec: Recommendation) {
+        viewModelScope.launch {
+            libraryRepository.addToLibrary(rec.novel)
+            _uiState.update { it.copy(message = ForYouCopy.ADDED_TO_LIBRARY) }
         }
     }
 

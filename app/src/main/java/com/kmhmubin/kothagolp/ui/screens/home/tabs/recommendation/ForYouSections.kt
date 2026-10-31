@@ -77,7 +77,11 @@ fun buildForYouSections(state: RecommendationUiState, allGenres: List<TagCategor
             add(ForYouSection.MoreLike(source, options, items))
         }
 
-        first(RecommendationType.FROM_AUTHORS_YOU_LIKE)?.let { add(row("authors", ForYouCopy.BY_AUTHORS, null, it)) }
+        first(RecommendationType.FROM_AUTHORS_YOU_LIKE)?.let {
+            add(row("authors", ForYouCopy.BY_AUTHORS, null, it).let { r ->
+                r.copy(items = r.items.map { i -> i.copy(caption = i.recommendation?.reason?.takeIf(String::isNotBlank) ?: i.apiName) })
+            })
+        }
 
         if (aiItems.isNotEmpty() || aiState != AiState.Ready) add(ForYouSection.AiRow(aiItems, aiState))
 

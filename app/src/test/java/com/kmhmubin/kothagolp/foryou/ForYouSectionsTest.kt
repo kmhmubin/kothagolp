@@ -20,7 +20,7 @@ import org.junit.Test
 class ForYouSectionsTest {
     private fun novel(n: String) = Novel(name = n, url = "u/$n", apiName = "api$n")
     private fun rec(n: String, type: RecommendationType) =
-        Recommendation(novel(n), 0.5f, type, "r", ScoreBreakdown())
+        Recommendation(novel(n), 0.5f, type, if (type == RecommendationType.FROM_AUTHORS_YOU_LIKE) "Author $n" else "r", ScoreBreakdown())
     private fun group(type: RecommendationType, title: String, vararg names: String, source: Novel? = null) =
         RecommendationGroup(type, title, null, names.map { rec(it, type) }, source)
     private fun lib(n: String) = LibrarySourceNovel(novel(n), 0L, 1, 10, 0.1f)
@@ -31,8 +31,8 @@ class ForYouSectionsTest {
         group(RecommendationType.FOR_YOU, "t", "a", "b"),
         group(RecommendationType.BECAUSE_YOU_READ, "t", "c", source = novel("S")),
         group(RecommendationType.FROM_AUTHORS_YOU_LIKE, "t", "d"),
-        group(RecommendationType.TRENDING_IN_YOUR_GENRES, "Best in Fantasy", "e"),
-        group(RecommendationType.EXPLORE_GENRE, "Try Something New: Drama", "f"),
+        group(RecommendationType.TRENDING_IN_YOUR_GENRES, "Fantasy", "e"),
+        group(RecommendationType.EXPLORE_GENRE, "Drama", "f"),
         group(RecommendationType.NEW_FOR_YOU, "t", "g"),
     )
     private val fullState = RecommendationUiState(
@@ -80,7 +80,7 @@ class ForYouSectionsTest {
         val aiRow = sections.filterIsInstance<ForYouSection.AiRow>().single()
         assertEquals("whyx", aiRow.items.single().caption)
         val authors = sections.filterIsInstance<ForYouSection.Row>().first { it.key == "authors" }
-        assertEquals("apid", authors.items.single().caption)
+        assertEquals("Author d", authors.items.single().caption)
         val other = sections.filterIsInstance<ForYouSection.Row>().first { it.key == "just_added" }
         assertEquals("apig", other.items.single().caption)
     }
