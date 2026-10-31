@@ -504,7 +504,7 @@ class RecommendationEngine(
         }
 
         // Priority 1: NovelDetailsEntity (full details, richer data)
-        offlineDao.getAllNovelDetails().forEach { entity ->
+        offlineDao.getAllNovelDetailsWithoutChapters().forEach { entity ->
             if (entity.url !in excludeUrls) {
                 entityToVector(entity)?.let { tryAdd(it) }
             }

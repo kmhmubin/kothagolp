@@ -95,6 +95,11 @@ interface OfflineDao {
     @Query("SELECT * FROM novel_details")
     suspend fun getAllNovelDetails(): List<NovelDetailsEntity>
 
+    /** Every row with chapters left out: chapter lists are huge and loading them all runs out of memory. */
+    @Query("""SELECT url, name, author, posterUrl, synopsis, tags, rating, peopleVoted, status, views,
+        relatedNovelsJson, NULL AS chapters, apiName, chapterCount, cachedAt, customCoverUrl FROM novel_details""")
+    suspend fun getAllNovelDetailsWithoutChapters(): List<NovelDetailsEntity>
+
     @Query("SELECT * FROM offline_chapters")
     suspend fun getAllChapters(): List<OfflineChapterEntity>
 
