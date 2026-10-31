@@ -337,15 +337,15 @@ fun RecommendationTab(
                         // AI: Based on Your Reading
                         item(key = "ai_history_recommendations") {
                             AiRecommendationSection(
-                                title = "Based on Your Reading",
-                                subtitle = "Personalized AI picks",
+                                title = "AI Picks for You",
+                                subtitle = "AI-chosen from novels on your sources",
                                 hasApiKey = uiState.hasGeminiKey,
                                 isLoading = uiState.isLoadingAiRecs,
                                 recommendations = uiState.aiRecommendations,
                                 error = uiState.aiRecsError,
-                                emptyMessage = if (!uiState.hasReadingHistory) "Read some novels first to get personalized picks" else null,
+                                emptyMessage = if (!uiState.hasReadingHistory) "Add a few novels to your library so the AI knows your taste" else null,
                                 onNavigateToSettings = onNavigateToSettings,
-                                onRefresh = { viewModel.loadAiRecommendations() },
+                                onRefresh = { viewModel.loadAiRecommendations(force = true) },
                                 onNovelClick = { novelUrl, providerName ->
                                     viewModel.onRecommendationClicked(novelUrl)
                                     onNavigateToDetails(novelUrl, providerName)
@@ -356,15 +356,15 @@ fun RecommendationTab(
                         // AI: Trending Now
                         item(key = "ai_trending_recommendations") {
                             AiRecommendationSection(
-                                title = "Trending AI Picks",
-                                subtitle = "What readers love right now",
+                                title = "AI Discovery",
+                                subtitle = "Popular novels the AI found on your sources",
                                 hasApiKey = uiState.hasGeminiKey,
                                 isLoading = uiState.isLoadingTrending,
                                 recommendations = uiState.aiTrendingRecommendations,
                                 error = uiState.trendingError,
                                 emptyMessage = null,
                                 onNavigateToSettings = onNavigateToSettings,
-                                onRefresh = { viewModel.loadAiTrendingRecommendations() },
+                                onRefresh = { viewModel.loadAiTrendingRecommendations(force = true) },
                                 onNovelClick = { novelUrl, providerName ->
                                     viewModel.onRecommendationClicked(novelUrl)
                                     onNavigateToDetails(novelUrl, providerName)

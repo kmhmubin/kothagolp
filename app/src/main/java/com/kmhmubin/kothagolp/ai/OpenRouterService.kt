@@ -1,6 +1,7 @@
 package com.kmhmubin.kothagolp.ai
 
-import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.AiRecommendedNovel
+import com.kmhmubin.kothagolp.recommendation.model.AiBrief
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -11,241 +12,201 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
+/**
+ * OpenRouter calls for For You. The AI never invents the list on its own:
+ * [rerank] chooses among real novels the engine already found, and
+ * [suggestTitles] only proposes titles that the caller then verifies on the sources.
+ */
+private const val TAG = "OpenRouter"
+
 class OpenRouterService {
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(90, TimeUnit.SECONDS)
         .build()
 
     companion object {
         private const val BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
-        // Stable, always-available free model as default
-        const val DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct:free"
+        /** OpenRouter's free router: resolves to whichever free model is live. */
+        const val DEFAULT_MODEL = "openrouter/free"
     }
 
-    suspend fun getRecommendations(
-        apiKey: String,
-        readHistory: List<ReadHistoryItem>,
-        likedGenres: List<String>,
-        dislikedGenres: List<String>,
-        model: String = DEFAULT_MODEL
-    ): Result<List<AiRecommendedNovel>> = withContext(Dispatchers.IO) {
-        try {
-            val prompt = buildPrompt(readHistory, likedGenres, dislikedGenres)
+    data class Pick(val id: String, val reason: String)
+    data class Suggestion(val title: String, val author: String?, val reason: String)
 
-            val requestJson = JSONObject().apply {
-                put("model", model)
+    /** Pick and explain the best [count] of the brief's candidates for this reader. */
+    suspend fun rerank(apiKey: String, brief: AiBrief, model: String, count: Int = 8): Result<List<Pick>> {
+        val candidates = brief.candidates.joinToString("\n") { c ->
+            buildString {
+                append("${c.id} | ${c.recommendation.novel.name}")
+                if (c.tags.isNotEmpty()) append(" | ${c.tags.joinToString()}")
+                c.recommendation.novel.rating?.let { append(" | %.1f★".format(it / 200f)) }
+                c.synopsis?.let { append(" | $it") }
+            }
+        }
+        val user = """${readerProfile(brief)}
+
+Candidate novels (id | title | genres | rating | synopsis):
+$candidates
+
+Choose the $count candidates this reader is most likely to love and finish. Prefer clear fits with their favourites; include at most one bolder pick. For each, write one specific sentence (max 20 words) on why it fits THIS reader, naming a favourite or trait when you can. Use only ids from the list."""
+        val schema = picksSchema(
+            "picks",
+            mapOf("id" to "Candidate id from the list", "reason" to "Why it fits this reader")
+        )
+        return chatJson(apiKey, model, user, schema).mapCatching { json ->
+            val ids = brief.candidates.map { it.id }.toSet()
+            json.optJSONArray("picks").objects()
+                .mapNotNull { o ->
+                    val id = o.optString("id").trim()
+                    if (id !in ids) null else Pick(id, o.optString("reason").trim().ifBlank { "Picked for you" })
+                }
+                .distinctBy { it.id }
+                .ifEmpty { throw Exception("The AI didn't return any usable picks. Try again.") }
+        }
+    }
+
+    /** Ask for well-known novels outside the candidate pool; caller must verify each on the sources. */
+    suspend fun suggestTitles(
+        apiKey: String, brief: AiBrief, exclude: List<String>, model: String, count: Int = 10
+    ): Result<List<Suggestion>> {
+        val user = """${readerProfile(brief)}
+
+Already known to the reader (do NOT suggest): ${exclude.take(60).joinToString("; ")}
+
+Suggest $count real, well-known web novels or light novels (translated Chinese/Korean/Japanese, or English originals like Royal Road) that this reader would love. Use the exact English title readers search for. Only suggest novels you are sure exist. For each, one sentence (max 20 words) on why it fits this reader."""
+        val schema = picksSchema(
+            "suggestions",
+            mapOf("title" to "Exact English title", "author" to "Author, or empty if unsure", "reason" to "Why it fits this reader")
+        )
+        return chatJson(apiKey, model, user, schema).mapCatching { json ->
+            json.optJSONArray("suggestions").objects().mapNotNull { o ->
+                val title = o.optString("title").trim().ifBlank { return@mapNotNull null }
+                val author = o.optString("author").trim()
+                    .takeUnless { it.isBlank() || it.lowercase() in setOf("author", "unknown", "n/a", "none") }
+                Suggestion(title, author, o.optString("reason").trim())
+            }.ifEmpty { throw Exception("The AI didn't suggest anything. Try again.") }
+        }
+    }
+
+    private fun readerProfile(brief: AiBrief) = """Reader profile:
+Favourite novels (strongest first): ${brief.liked.joinToString("; ").ifBlank { "none yet" }}
+Top genres: ${brief.topTags.joinToString().ifBlank { "unknown" }}
+Not interested in: ${brief.disliked.joinToString("; ").ifBlank { "nothing noted" }}"""
+
+    /** {"<key>": [ {field: string, ...} ]} with every field required. */
+    private fun picksSchema(key: String, fields: Map<String, String>): JSONObject {
+        val props = JSONObject().apply {
+            fields.forEach { (name, desc) -> put(name, JSONObject().put("type", "string").put("description", desc)) }
+        }
+        val item = JSONObject()
+            .put("type", "object")
+            .put("properties", props)
+            .put("required", JSONArray(fields.keys.toList()))
+            .put("additionalProperties", false)
+        return JSONObject()
+            .put("type", "object")
+            .put("properties", JSONObject().put(key, JSONObject().put("type", "array").put("items", item)))
+            .put("required", JSONArray(listOf(key)))
+            .put("additionalProperties", false)
+    }
+
+    /**
+     * One chat call that must come back as a JSON object.
+     * Up to 3 attempts: falls back to the free router if the chosen model is gone, drops
+     * the schema if the model rejects it (then parses leniently), and retries empty answers.
+     */
+    private suspend fun chatJson(
+        apiKey: String, model: String, user: String, schema: JSONObject
+    ): Result<JSONObject> = withContext(Dispatchers.IO) {
+        var currentModel = model
+        var useSchema = true
+        repeat(3) {
+            val body = JSONObject().apply {
+                put("model", currentModel)
                 put("messages", JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("role", "user")
-                        put("content", prompt)
-                    })
+                    put(JSONObject().put("role", "system").put("content",
+                        "You are a web novel recommendation expert. Reply with JSON only, matching the requested shape."))
+                    put(JSONObject().put("role", "user").put("content",
+                        if (useSchema) user else "$user\n\nReply with ONLY this JSON shape: ${schema}"))
                 })
-                put("temperature", 0.8)
-                put("max_tokens", 2048)
+                put("temperature", 0.4)
+                // The free router often lands on reasoning models, which spend max_tokens on
+                // thinking and return empty content: cap the thinking, leave room for the answer.
+                put("max_tokens", 6000)
+                put("reasoning", JSONObject().put("max_tokens", 1024).put("exclude", true))
+                if (useSchema) {
+                    put("response_format", JSONObject()
+                        .put("type", "json_schema")
+                        .put("json_schema", JSONObject().put("name", "result").put("strict", true).put("schema", schema)))
+                    // Only route to endpoints that actually honour the schema.
+                    put("provider", JSONObject().put("require_parameters", true))
+                }
             }.toString()
-
-            val body = requestJson.toRequestBody("application/json".toMediaType())
             val request = Request.Builder()
                 .url(BASE_URL)
-                .post(body)
+                .post(body.toRequestBody("application/json".toMediaType()))
                 .addHeader("Authorization", "Bearer $apiKey")
-                .addHeader("Content-Type", "application/json")
                 .addHeader("HTTP-Referer", "https://github.com/kmhmubin/kothagolp")
                 .addHeader("X-Title", "Kothagolp")
                 .build()
 
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    val errorBody = response.body?.string() ?: ""
-                    val message = when (response.code) {
-                        429 -> {
-                            val detail = try {
-                                JSONObject(errorBody).optJSONObject("error")?.optString("message") ?: ""
-                            } catch (_: Exception) { "" }
-                            when {
-                                detail.contains("daily", ignoreCase = true) ||
-                                detail.contains("day", ignoreCase = true) ->
-                                    "Daily free limit reached for this model. Switch to a different model or try tomorrow."
-                                detail.contains("RPM", ignoreCase = true) ||
-                                detail.contains("per minute", ignoreCase = true) ||
-                                detail.contains("minute", ignoreCase = true) ->
-                                    "Too many requests per minute. Wait 60 seconds and retry."
-                                else -> "Rate limit reached. Switch to a different model or wait a moment."
-                            }
-                        }
-                        401 -> "Invalid API key. Check your OpenRouter key in Settings → For You."
-                        403 -> "Access denied. Ensure your OpenRouter key has the right permissions."
-                        400 -> "Bad request — the model may be unavailable. Try again."
-                        503 -> "OpenRouter service temporarily unavailable. Try again shortly."
-                        else -> "OpenRouter error ${response.code}: ${errorBody.take(120)}"
-                    }
-                    return@withContext Result.failure(Exception(message))
+            val started = System.currentTimeMillis()
+            val (code, text) = try {
+                client.newCall(request).execute().use { it.code to (it.body?.string() ?: "") }
+            } catch (e: Exception) {
+                Log.w(TAG, "$currentModel failed after ${System.currentTimeMillis() - started}ms", e)
+                return@withContext Result.failure(Exception("Couldn't reach OpenRouter: ${e.message?.take(80)}"))
+            }
+            Log.d(TAG, "$currentModel schema=$useSchema -> $code in ${System.currentTimeMillis() - started}ms" +
+                    if (code !in 200..299) ": ${text.take(200)}" else "")
+            if (code in 200..299) {
+                parseContent(text)?.let { return@withContext Result.success(it) }
+                runCatching {
+                    val root = JSONObject(text)
+                    val choice = root.optJSONArray("choices")?.optJSONObject(0)
+                    Log.w(TAG, "Unreadable answer from ${root.optString("model")}, finish=${choice?.optString("finish_reason")}: " +
+                            choice?.optJSONObject("message")?.toString()?.take(400))
                 }
-
-                val responseText = response.body?.string()
-                    ?: return@withContext Result.failure(Exception("Empty response from OpenRouter"))
-
-                val novels = parseResponse(responseText)
-                if (novels.isEmpty()) {
-                    Result.failure(Exception("No recommendations returned. Try again."))
-                } else {
-                    Result.success(novels)
-                }
+                return@repeat // empty/cut-off answer: try again (the free router picks another model)
             }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getTrendingRecommendations(
-        apiKey: String,
-        likedGenres: List<String>,
-        model: String = DEFAULT_MODEL
-    ): Result<List<AiRecommendedNovel>> = withContext(Dispatchers.IO) {
-        try {
-            val prompt = buildTrendingPrompt(likedGenres)
-            val requestJson = JSONObject().apply {
-                put("model", model)
-                put("messages", JSONArray().apply {
-                    put(JSONObject().apply {
-                        put("role", "user")
-                        put("content", prompt)
-                    })
-                })
-                put("temperature", 0.7)
-                put("max_tokens", 2048)
-            }.toString()
-
-            val body = requestJson.toRequestBody("application/json".toMediaType())
-            val request = Request.Builder()
-                .url(BASE_URL)
-                .post(body)
-                .addHeader("Authorization", "Bearer $apiKey")
-                .addHeader("Content-Type", "application/json")
-                .addHeader("HTTP-Referer", "https://github.com/kmhmubin/kothagolp")
-                .addHeader("X-Title", "Kothagolp")
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    val errorBody = response.body?.string() ?: ""
-                    val message = when (response.code) {
-                        429 -> {
-                            val detail = try {
-                                JSONObject(errorBody).optJSONObject("error")?.optString("message") ?: ""
-                            } catch (_: Exception) { "" }
-                            when {
-                                detail.contains("daily", ignoreCase = true) || detail.contains("day", ignoreCase = true) ->
-                                    "Daily free limit reached. Switch model or try tomorrow."
-                                detail.contains("RPM", ignoreCase = true) || detail.contains("minute", ignoreCase = true) ->
-                                    "Too many requests per minute. Wait 60s and retry."
-                                else -> "Rate limit reached. Switch model or wait a moment."
-                            }
-                        }
-                        401 -> "Invalid API key. Check your OpenRouter key in Settings → For You."
-                        else -> "OpenRouter error ${response.code}"
-                    }
-                    return@withContext Result.failure(Exception(message))
-                }
-                val responseText = response.body?.string()
-                    ?: return@withContext Result.failure(Exception("Empty response from OpenRouter"))
-                val novels = parseResponse(responseText)
-                if (novels.isEmpty()) Result.failure(Exception("No trending results. Try again."))
-                else Result.success(novels)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    private fun buildTrendingPrompt(likedGenres: List<String>): String {
-        val genresText = if (likedGenres.isEmpty()) "any genre" else likedGenres.take(5).joinToString(", ")
-        return """You are a web novel recommendation expert. Recommend 8 currently popular and trending web novels that readers worldwide love right now. Mix subgenres for variety.
-
-User's preferred genres (match some): $genresText
-
-Return ONLY a valid JSON array with exactly 8 objects, no other text. Each object must have:
-- "title": string
-- "author": string or null
-- "reason": string (1-2 sentences why it's popular/trending)
-- "genres": array of 2-4 genre strings
-
-Example: [{"title":"Novel Title","author":"Author Name","reason":"Trending for its unique magic system.","genres":["Fantasy","Adventure"]}]"""
-    }
-
-    private fun buildPrompt(
-        history: List<ReadHistoryItem>,
-        likedGenres: List<String>,
-        dislikedGenres: List<String>
-    ): String {
-        val historyText = if (history.isEmpty()) {
-            "No reading history yet."
-        } else {
-            history.take(20).joinToString("\n") { "- ${it.title}" +
-                if (it.genres.isNotEmpty()) " (${it.genres.take(3).joinToString(", ")})" else ""
+            val detail = runCatching { JSONObject(text).optJSONObject("error")?.optString("message") }.getOrNull().orEmpty()
+            when {
+                (code == 400 || code == 404) && currentModel != DEFAULT_MODEL &&
+                    Regex("model|endpoint", RegexOption.IGNORE_CASE).containsMatchIn(detail) &&
+                    !Regex("response_format|structured|json", RegexOption.IGNORE_CASE).containsMatchIn(detail) ->
+                    currentModel = DEFAULT_MODEL
+                code == 400 && useSchema -> useSchema = false
+                else -> return@withContext Result.failure(Exception(errorMessage(code, detail)))
             }
         }
-        val likedText = if (likedGenres.isEmpty()) "not specified" else likedGenres.joinToString(", ")
-        val dislikedText = if (dislikedGenres.isEmpty()) "none" else dislikedGenres.joinToString(", ")
-
-        return """You are a web novel recommendation expert. Based on the user's reading history and preferences, recommend exactly 8 web novels or light novels they would enjoy.
-
-User's reading history:
-$historyText
-
-Liked genres: $likedText
-Disliked genres: $dislikedText
-
-Return ONLY a valid JSON array with exactly 8 objects, no other text. Each object must have:
-- "title": string
-- "author": string or null
-- "reason": string (1-2 sentences why it matches their taste)
-- "genres": array of 2-4 genre strings
-
-Example: [{"title":"Novel Title","author":"Author Name","reason":"Matches your love of action.","genres":["Action","Fantasy"]}]"""
+        Result.failure(Exception("The AI's answer couldn't be read. Try again or switch model."))
     }
 
-    private fun parseResponse(responseText: String): List<AiRecommendedNovel> {
-        return try {
-            val root = JSONObject(responseText)
-            val choices = root.optJSONArray("choices") ?: return emptyList()
-            val firstChoice = choices.optJSONObject(0) ?: return emptyList()
-            val message = firstChoice.optJSONObject("message") ?: return emptyList()
-            val text = message.optString("content").takeIf { it.isNotBlank() } ?: return emptyList()
+    private fun parseContent(responseText: String): JSONObject? = runCatching {
+        val content = JSONObject(responseText).optJSONArray("choices")?.optJSONObject(0)
+            ?.optJSONObject("message")?.optString("content").orEmpty()
+        val start = content.indexOf('{')
+        val end = content.lastIndexOf('}')
+        if (start < 0 || end <= start) null else JSONObject(content.substring(start, end + 1))
+    }.getOrNull()
 
-            val jsonText = text.trim()
-                .removePrefix("```json").removePrefix("```")
-                .removeSuffix("```").trim()
-
-            val startIdx = jsonText.indexOf('[')
-            val endIdx = jsonText.lastIndexOf(']')
-            if (startIdx < 0 || endIdx < 0) return emptyList()
-
-            val jsonArray = JSONArray(jsonText.substring(startIdx, endIdx + 1))
-            (0 until jsonArray.length()).mapNotNull { i ->
-                val obj = jsonArray.optJSONObject(i) ?: return@mapNotNull null
-                val title = obj.optString("title").takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                val genresArr = obj.optJSONArray("genres")
-                val genres = if (genresArr != null) {
-                    (0 until genresArr.length()).map { genresArr.optString(it) }.filter { it.isNotBlank() }
-                } else emptyList()
-
-                AiRecommendedNovel(
-                    title = title,
-                    author = obj.optString("author").takeIf { it.isNotBlank() },
-                    reason = obj.optString("reason").takeIf { it.isNotBlank() } ?: "Recommended for you",
-                    genres = genres
-                )
-            }
-        } catch (_: Exception) {
-            emptyList()
+    private fun errorMessage(code: Int, detail: String): String = when (code) {
+        429 -> when {
+            detail.contains("day", ignoreCase = true) ->
+                "Daily free limit reached for this model. Switch to a different model or try tomorrow."
+            detail.contains("minute", ignoreCase = true) || detail.contains("RPM", ignoreCase = true) ->
+                "Too many requests per minute. Wait 60 seconds and retry."
+            else -> "Rate limit reached. Switch to a different model or wait a moment."
         }
+        401 -> "Invalid API key. Check your OpenRouter key in Settings → For You."
+        402 -> "This model needs OpenRouter credits. Pick a free model in Settings → For You."
+        403 -> "Access denied. Ensure your OpenRouter key has the right permissions."
+        503 -> "OpenRouter service temporarily unavailable. Try again shortly."
+        else -> "OpenRouter error $code: ${detail.take(120)}"
     }
 
-    data class ReadHistoryItem(
-        val title: String,
-        val genres: List<String> = emptyList()
-    )
+    private fun JSONArray?.objects(): List<JSONObject> =
+        if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
 }

@@ -26,6 +26,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
 
 private const val TAG = "RecommendationViewModel"
 private const val CACHE_DURATION_MS = 30 * 60 * 1000L // 30 minutes
@@ -781,92 +787,57 @@ class RecommendationViewModel : ViewModel() {
     }
 
     // ================================================================
-    // AI RECOMMENDATIONS (GEMINI)
+    // AI RECOMMENDATIONS (OpenRouter)
     // ================================================================
 
     private val openRouterService = OpenRouterService()
 
-    fun loadAiRecommendations() {
+    private fun aiConfig() = RecommendationEngine.RecommendationConfig(disabledProviders = getDisabledProviders())
+
+    /**
+     * "AI Picks": the engine hands the model its 40 best real candidates plus a taste
+     * summary; the model chooses and explains. Every card opens a novel on a source.
+     */
+    fun loadAiRecommendations(force: Boolean = false) {
         val apiKey = preferencesManager.getGeminiApiKey()
         if (apiKey.isNullOrBlank()) {
             _uiState.update { it.copy(hasGeminiKey = false) }
             return
         }
-
-        if (_uiState.value.isLoadingAiRecs) return
-
-        val currentModel = preferencesManager.getSelectedAiModel()
-        val modelChanged = currentModel != _uiState.value.lastLoadedAiModel && _uiState.value.lastLoadedAiModel.isNotBlank()
-
-        val now = System.currentTimeMillis()
-        val cacheAge = now - _uiState.value.aiRecsLastUpdated
-        // 30-min cache when results exist; 60-second cooldown on error — both bypassed when model changes
-        if (!modelChanged && cacheAge < 30 * 60 * 1000L && _uiState.value.aiRecommendations.isNotEmpty()) return
-        if (!modelChanged && cacheAge < 60 * 1000L && _uiState.value.aiRecsLastUpdated > 0) return
+        val state = _uiState.value
+        if (state.isLoadingAiRecs) return
+        val model = preferencesManager.getSelectedAiModel()
+        val age = System.currentTimeMillis() - state.aiRecsLastUpdated
+        if (!force && model == state.lastLoadedAiModel) {
+            // 30-min cache for results, 60-s cooldown after an error
+            if (state.aiRecommendations.isNotEmpty() && age < 30 * 60_000L) return
+            if (state.aiRecsLastUpdated > 0 && age < 60_000L) return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingAiRecs = true, aiRecsError = null, hasGeminiKey = true) }
-
-            try {
-                // Build reading history
-                val history = historyRepository.getHistory().take(30).map { item ->
-                    val tags = RepositoryProvider.getDatabase().recommendationDao()
-                        .getDiscoveredNovel(item.novel.url)?.tags ?: emptyList()
-                    OpenRouterService.ReadHistoryItem(title = item.novel.name, genres = tags)
+            val result = runCatching {
+                val brief = recommendationEngine.aiBrief(aiConfig())
+                if (brief == null || brief.liked.isEmpty() || brief.candidates.size < 8) return@runCatching null
+                val byId = brief.candidates.associateBy { it.id }
+                openRouterService.rerank(apiKey, brief, model).getOrThrow().mapNotNull { pick ->
+                    val c = byId[pick.id] ?: return@mapNotNull null
+                    val novel = c.recommendation.novel
+                    AiRecommendedNovel(
+                        title = novel.name, reason = pick.reason, genres = c.tags.take(3),
+                        matchedNovelUrl = novel.url, matchedPosterUrl = novel.posterUrl, matchedApiName = novel.apiName
+                    )
                 }
-
-                // Guard: no history → can't make personalized picks
-                if (history.isEmpty()) {
-                    _uiState.update { it.copy(isLoadingAiRecs = false, hasReadingHistory = false) }
-                    return@launch
-                }
-                _uiState.update { it.copy(hasReadingHistory = true) }
-
-                val boostedTags = userFilterManager.getBoostedTags()
-                    .map { TagNormalizer.getDisplayName(it) }
-                val reducedTags = userFilterManager.getFilterState().blockedTags
-                    .filter { it !in listOf(TagCategory.MATURE, TagCategory.ADULT, TagCategory.SMUT, TagCategory.GORE, TagCategory.BL, TagCategory.GL) }
-                    .map { TagNormalizer.getDisplayName(it) }
-
-                val result = openRouterService.getRecommendations(
-                    apiKey = apiKey,
-                    readHistory = history,
-                    likedGenres = boostedTags,
-                    dislikedGenres = reducedTags,
-                    model = currentModel
+            }
+            _uiState.update {
+                it.copy(
+                    isLoadingAiRecs = false,
+                    hasReadingHistory = result.getOrNull() != null || result.isFailure,
+                    aiRecommendations = result.getOrNull() ?: it.aiRecommendations,
+                    aiRecsError = result.exceptionOrNull()?.let { e -> e.message ?: "AI request failed" },
+                    aiRecsLastUpdated = System.currentTimeMillis(),
+                    lastLoadedAiModel = model
                 )
-
-                result.fold(
-                    onSuccess = { novels ->
-                        // Try to match against discovery pool
-                        val enriched = novels.map { novel ->
-                            try {
-                                val match = RepositoryProvider.getDatabase().recommendationDao()
-                                    .getAllDiscoveredNovels()
-                                    .firstOrNull { it.name.lowercase().contains(novel.title.lowercase().take(10)) }
-                                novel.copy(
-                                    matchedNovelUrl = match?.url,
-                                    matchedPosterUrl = match?.posterUrl,
-                                    matchedApiName = match?.apiName
-                                )
-                            } catch (_: Exception) { novel }
-                        }
-                        _uiState.update {
-                            it.copy(
-                                aiRecommendations = enriched,
-                                isLoadingAiRecs = false,
-                                aiRecsError = null,
-                                aiRecsLastUpdated = System.currentTimeMillis(),
-                                lastLoadedAiModel = currentModel
-                            )
-                        }
-                    },
-                    onFailure = { error ->
-                        _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = error.message ?: "Unknown error", aiRecsLastUpdated = System.currentTimeMillis(), lastLoadedAiModel = currentModel) }
-                    }
-                )
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoadingAiRecs = false, aiRecsError = "Error: ${e.message?.take(80)}", aiRecsLastUpdated = System.currentTimeMillis(), lastLoadedAiModel = currentModel) }
             }
         }
     }
@@ -886,63 +857,89 @@ class RecommendationViewModel : ViewModel() {
         _uiState.update { it.copy(aiRecsError = null) }
     }
 
-    fun loadAiTrendingRecommendations() {
+    /**
+     * "AI Discovery": the model suggests well-known novels outside the pool from its own
+     * knowledge; each title is verified on the user's sources and unverified ones dropped.
+     */
+    fun loadAiTrendingRecommendations(force: Boolean = false) {
         val apiKey = preferencesManager.getGeminiApiKey()
-        if (apiKey.isNullOrBlank()) return
-        if (_uiState.value.isLoadingTrending) return
-
-        val currentModel = preferencesManager.getSelectedAiModel()
-        val modelChanged = currentModel != _uiState.value.lastLoadedTrendingModel && _uiState.value.lastLoadedTrendingModel.isNotBlank()
-
-        val now = System.currentTimeMillis()
-        val cacheAge = now - _uiState.value.trendingLastUpdated
-        if (!modelChanged && cacheAge < 30 * 60 * 1000L && _uiState.value.aiTrendingRecommendations.isNotEmpty()) return
-        if (!modelChanged && cacheAge < 60 * 1000L && _uiState.value.trendingLastUpdated > 0) return
+        if (apiKey.isNullOrBlank()) {
+            _uiState.update { it.copy(hasGeminiKey = false) }
+            return
+        }
+        val state = _uiState.value
+        if (state.isLoadingTrending) return
+        val model = preferencesManager.getSelectedAiModel()
+        val age = System.currentTimeMillis() - state.trendingLastUpdated
+        if (!force && model == state.lastLoadedTrendingModel) {
+            if (state.aiTrendingRecommendations.isNotEmpty() && age < 30 * 60_000L) return
+            if (state.trendingLastUpdated > 0 && age < 60_000L) return
+        }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingTrending = true, trendingError = null) }
-            try {
-                val likedGenres = userFilterManager.getBoostedTags()
-                    .map { TagNormalizer.getDisplayName(it) }
-
-                val result = openRouterService.getTrendingRecommendations(
-                    apiKey = apiKey,
-                    likedGenres = likedGenres,
-                    model = currentModel
+            _uiState.update { it.copy(isLoadingTrending = true, trendingError = null, hasGeminiKey = true) }
+            val result = runCatching {
+                val brief = recommendationEngine.aiBrief(aiConfig()) ?: error("Not enough novels indexed yet. Browse a few sources first.")
+                val library = libraryRepository.getLibrary()
+                val known = library.map { it.novel.name } + brief.candidates.map { it.recommendation.novel.name }
+                val suggestions = openRouterService.suggestTitles(apiKey, brief, known, model).getOrThrow()
+                verifyOnSources(suggestions, library.map { normalizeTitle(it.novel.name) }.toSet())
+                    .ifEmpty { error("None of the AI's suggestions were found on your sources. Try again or switch model.") }
+            }
+            _uiState.update {
+                it.copy(
+                    isLoadingTrending = false,
+                    aiTrendingRecommendations = result.getOrNull() ?: it.aiTrendingRecommendations,
+                    trendingError = result.exceptionOrNull()?.let { e -> e.message ?: "AI request failed" },
+                    trendingLastUpdated = System.currentTimeMillis(),
+                    lastLoadedTrendingModel = model
                 )
-                result.fold(
-                    onSuccess = { novels ->
-                        val enriched = novels.map { novel ->
-                            try {
-                                val match = RepositoryProvider.getDatabase().recommendationDao()
-                                    .getAllDiscoveredNovels()
-                                    .firstOrNull { it.name.lowercase().contains(novel.title.lowercase().take(10)) }
-                                novel.copy(
-                                    matchedNovelUrl = match?.url,
-                                    matchedPosterUrl = match?.posterUrl,
-                                    matchedApiName = match?.apiName
-                                )
-                            } catch (_: Exception) { novel }
-                        }
-                        _uiState.update {
-                            it.copy(
-                                aiTrendingRecommendations = enriched,
-                                isLoadingTrending = false,
-                                trendingError = null,
-                                trendingLastUpdated = System.currentTimeMillis(),
-                                lastLoadedTrendingModel = currentModel
-                            )
-                        }
-                    },
-                    onFailure = { error ->
-                        _uiState.update { it.copy(isLoadingTrending = false, trendingError = error.message ?: "Unknown error", trendingLastUpdated = System.currentTimeMillis(), lastLoadedTrendingModel = currentModel) }
-                    }
-                )
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoadingTrending = false, trendingError = "Error: ${e.message?.take(80)}", trendingLastUpdated = System.currentTimeMillis(), lastLoadedTrendingModel = currentModel) }
             }
         }
     }
+
+    /** Find each suggestion in the pool, else search the user's most-used sources. */
+    private suspend fun verifyOnSources(
+        suggestions: List<OpenRouterService.Suggestion>,
+        libraryTitles: Set<String>
+    ): List<AiRecommendedNovel> = coroutineScope {
+        val pool = RepositoryProvider.getDatabase().recommendationDao().getAllDiscoveredNovels()
+            .associateBy { normalizeTitle(it.name) }
+        val disabled = getDisabledProviders()
+        val novelRepository = RepositoryProvider.getNovelRepository()
+        val providers = libraryRepository.getLibrary()
+            .groupingBy { it.novel.apiName }.eachCount().entries
+            .sortedByDescending { it.value }
+            .mapNotNull { novelRepository.getProvider(it.key) }
+            .filter { it.name !in disabled }
+            .take(3)
+        val gate = Semaphore(4)
+        suggestions.filter { normalizeTitle(it.title) !in libraryTitles }.map { s ->
+            async {
+                gate.withPermit {
+                    val key = normalizeTitle(s.title)
+                    val found = pool[key]?.toNovel() ?: providers.firstNotNullOfOrNull { provider ->
+                        withTimeoutOrNull(15_000L) {
+                            novelRepository.searchInProvider(provider, s.title).getOrNull()
+                                ?.firstOrNull { titlesMatch(key, normalizeTitle(it.name)) }
+                                ?.let { it.copy(apiName = it.apiName.ifBlank { provider.name }) }
+                        }
+                    } ?: return@withPermit null
+                    AiRecommendedNovel(
+                        title = found.name, author = s.author, reason = s.reason,
+                        matchedNovelUrl = found.url, matchedPosterUrl = found.posterUrl, matchedApiName = found.apiName
+                    )
+                }
+            }
+        }.awaitAll().filterNotNull().distinctBy { it.matchedNovelUrl }
+    }
+
+    private fun normalizeTitle(title: String) =
+        title.lowercase().replace(Regex("[^a-z0-9]+"), " ").trim()
+
+    /** Exact, or one title contains the other (subtitle/translation variants), never on short fragments. */
+    private fun titlesMatch(a: String, b: String) =
+        a == b || (minOf(a.length, b.length) >= 8 && (a.contains(b) || b.contains(a)))
 
     // ================================================================
     // HELPERS

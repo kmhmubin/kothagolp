@@ -160,7 +160,7 @@ fun AiRecommendationSection(
                 contentPadding = PaddingValues(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(recommendations, key = { it.title }) { novel ->
+                items(recommendations, key = { it.matchedNovelUrl ?: it.title }) { novel ->
                     AiNovelCard(
                         novel = novel,
                         onClick = {
@@ -469,7 +469,7 @@ private fun AiNovelCard(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = novel.author ?: "AI Suggested",
+                    text = novel.author ?: novel.matchedApiName ?: "AI Suggested",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     maxLines = 1,

@@ -1323,7 +1323,7 @@ class PreferencesManager(context: Context) {
     fun getSelectedAiModel(): String =
         prefs.getString(KEY_SELECTED_AI_MODEL, null)
             ?.takeIf { it.isNotBlank() }
-            ?: "meta-llama/llama-3.1-8b-instruct:free"
+            ?: "openrouter/free" // OpenRouter's free router; individual free models get retired
 
     fun setSelectedAiModel(model: String) {
         prefs.edit().putString(KEY_SELECTED_AI_MODEL, model).apply()

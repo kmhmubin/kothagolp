@@ -9,6 +9,8 @@ import com.kmhmubin.kothagolp.data.local.entity.DiscoveredNovelEntity
 import com.kmhmubin.kothagolp.data.local.entity.NovelDetailsEntity
 import com.kmhmubin.kothagolp.data.repository.LibraryRepository
 import com.kmhmubin.kothagolp.domain.model.Novel
+import com.kmhmubin.kothagolp.recommendation.model.AiBrief
+import com.kmhmubin.kothagolp.recommendation.model.AiCandidate
 import com.kmhmubin.kothagolp.recommendation.model.NovelVector
 import com.kmhmubin.kothagolp.recommendation.model.Recommendation
 import com.kmhmubin.kothagolp.recommendation.model.RecommendationGroup
@@ -239,22 +241,52 @@ class RecommendationEngine(
     // ROWS
     // ================================================================
 
-    private fun topPicksGroup(ctx: Context, config: RecommendationConfig, used: Set<String>): RecommendationGroup? {
-        val hasTaste = ctx.profile.isNotEmpty()
-        val scored = ctx.candidates.filter { it.url !in used }.map { n ->
-            val taste = ctx.taste(n)
+    /** The main personal score: taste, closest favourite, related lists, quality, author. */
+    private fun forYouScore(ctx: Context, n: NovelVector): Float {
+        var score = if (ctx.profile.isNotEmpty()) {
             val (_, seedSim) = ctx.bestSeed(n)
             val author = n.authorNormalized?.let { ctx.authorAffinities[it] } ?: 0f
-            var score = if (hasTaste) {
-                0.45f * taste + 0.20f * seedSim + 0.15f * ctx.related(n) +
-                    0.12f * ctx.quality(n) + 0.08f * author - 0.3f * ctx.dislike(n)
-            } else {
-                ctx.quality(n) // brand-new user with no picks: best-rated first
-            }
-            if (n.authorNormalized in ctx.favoriteAuthors) score *= 1.15f
-            score *= userFilterManager.calculateBoostFactor(n, ctx.filterState)
-            n to score
+            0.45f * ctx.taste(n) + 0.20f * seedSim + 0.15f * ctx.related(n) +
+                0.12f * ctx.quality(n) + 0.08f * author - 0.3f * ctx.dislike(n)
+        } else {
+            ctx.quality(n) // brand-new user with no picks: best-rated first
         }
+        if (n.authorNormalized in ctx.favoriteAuthors) score *= 1.15f
+        return score * userFilterManager.calculateBoostFactor(n, ctx.filterState)
+    }
+
+    /**
+     * What the AI re-ranker sees: a compact taste summary plus the engine's best
+     * [maxCandidates] real novels. The AI only chooses among these, so every pick opens.
+     */
+    suspend fun aiBrief(
+        config: RecommendationConfig = RecommendationConfig(),
+        maxCandidates: Int = 40
+    ): AiBrief? = withContext(Dispatchers.IO) {
+        val ctx = buildContext(config) ?: return@withContext null
+        val picks = TasteModel.diversify(ctx.candidates.map { it to forYouScore(ctx, it) }, ctx::f, maxCandidates, lambda = 0.7f)
+        fun tagsOf(f: Features) = f.entries.filter { it.key.startsWith("t:") }
+            .sortedByDescending { it.value }.take(4).map { tagName(it.key.removePrefix("t:")) }
+        AiBrief(
+            liked = ctx.positiveSeeds.sortedByDescending { it.weight }.take(15).map { seed ->
+                tagsOf(seed.features).let { if (it.isEmpty()) seed.name else "${seed.name} (${it.joinToString()})" }
+            },
+            disliked = ctx.negativeSeeds.take(10).map { it.name },
+            topTags = favouriteTags(ctx).take(6).map { TagNormalizer.getDisplayName(it) },
+            candidates = picks.mapIndexed { i, (n, score) ->
+                AiCandidate(
+                    id = "n${i + 1}",
+                    recommendation = recommendation(ctx, n, RecommendationType.FOR_YOU, score, forYouReason(ctx, n)),
+                    tags = n.tags.map { TagNormalizer.getDisplayName(it) }.take(6),
+                    synopsis = n.synopsis?.replace(Regex("\\s+"), " ")?.take(240)
+                )
+            }
+        )
+    }
+
+    private fun topPicksGroup(ctx: Context, config: RecommendationConfig, used: Set<String>): RecommendationGroup? {
+        val hasTaste = ctx.profile.isNotEmpty()
+        val scored = ctx.candidates.filter { it.url !in used }.map { it to forYouScore(ctx, it) }
         if (scored.isEmpty()) return null
 
         val picks = TasteModel.diversify(scored, ctx::f, config.maxPerGroup).toMutableList()
