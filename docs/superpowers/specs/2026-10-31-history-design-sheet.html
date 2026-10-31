@@ -1,0 +1,96 @@
+<style>
+  :root{--bg:#121318;--sc:#1a1c22;--sch:#22252c;--schh:#2c2f37;--on:#e3e2e9;--onv:#c4c6d0;--out:#8e9099;--outv:#44464f;--pri:#aac7ff;--onpri:#0a305f;--secc:#3e4759;--err:#ffb4ab;--errc:#93000a;--onerrc:#ffdad6}
+  .phones{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+  .ph{display:flex;flex-direction:column;align-items:center;max-width:330px}
+  .phone{width:330px;height:700px;border-radius:44px;background:var(--bg);border:10px solid #2a2a30;overflow:hidden;position:relative;color:var(--on);font-family:"Google Sans Flex","Google Sans",Roboto,system-ui,sans-serif}
+  .bg{padding:40px 0;filter:blur(2px);opacity:.55}
+  .bg h1{font-size:36px;margin:8px 16px}
+  .grp{margin:0 12px;background:var(--sc);border-radius:24px;height:260px}
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sc);border-radius:28px 28px 0 0;padding:10px 16px 22px}
+  .handle{width:32px;height:4px;border-radius:2px;background:var(--out);margin:0 auto 14px}
+  .s{font-size:13px;color:var(--onv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .src{font-size:12px;color:var(--out);margin-top:2px}
+  /* old */
+  .shd{display:flex;gap:14px}.shd .cv{flex:0 0 64px;height:94px;border-radius:12px}
+  .stat{display:flex;gap:8px;margin-top:14px}.stat div{flex:1;background:var(--sch);border-radius:16px;padding:10px;text-align:center}.stat b{display:block;font-size:16px}.stat small{font-size:11px;color:var(--out)}
+  .bgrp{display:flex;gap:4px;margin-top:14px}.bgrp div{flex:1;text-align:center;padding:13px;font-weight:600;font-size:15px}
+  .bgrp div:first-child{background:var(--pri);color:var(--onpri);border-radius:22px 10px 10px 22px}
+  .bgrp div:last-child{background:var(--secc);color:var(--on);border-radius:10px 22px 22px 10px}
+  .list{display:flex;flex-direction:column;gap:2px;border-radius:20px;overflow:hidden;margin-top:12px}
+  .li{background:var(--sch);padding:14px 16px;font-size:15px}.li.err{color:var(--err)}
+  /* new compact */
+  .hd{display:flex;gap:12px;align-items:center}
+  .hd .cv{flex:0 0 46px;height:68px;border-radius:10px}
+  .hd .tx{flex:1;min-width:0}
+  .ttl{font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pg{display:flex;align-items:center;gap:8px;margin-top:6px}
+  .pg .tr{flex:1;height:4px;border-radius:2px;background:var(--outv);overflow:hidden}.pg .tr span{display:block;height:100%;width:88%;background:var(--pri)}
+  .pg small{font-size:11px;color:var(--out)}
+  .cta{display:flex;gap:4px;margin-top:14px}
+  .cta div{text-align:center;padding:12px;font-weight:600;font-size:15px}
+  .cta .p{flex:1.4;background:var(--pri);color:var(--onpri);border-radius:22px 10px 10px 22px}
+  .cta .q{flex:1;background:var(--secc);color:var(--on);border-radius:10px 22px 22px 10px}
+  .row3{display:flex;gap:8px;margin-top:10px}
+  .row3 div{flex:1;background:var(--sch);border-radius:16px;padding:10px 4px;text-align:center;font-size:12px;color:var(--onv)}
+  .row3 div b{display:block;font-size:18px;font-weight:400;color:var(--on);margin-bottom:2px}
+  .row3 .err{color:var(--err)}.row3 .err b{color:var(--err)}
+  .chipadd{flex:0 0 auto;border:1px solid var(--outv);border-radius:10px;padding:6px 10px;font-size:13px;color:var(--pri);font-weight:600}
+  .chipin{flex:0 0 auto;background:var(--secc);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--onv)}
+  .c2{background:linear-gradient(160deg,#6d4aa3,#22183a)}.c5{background:linear-gradient(160deg,#8c6a32,#24190a)}
+  .cap{color:#a1a1aa;font-size:13.5px;text-align:center;margin:6px 0 0}
+  .notes{max-width:820px;margin:28px auto 0}.notes li{margin:4px 0}
+  .meas{position:absolute;left:-4px;width:4px;background:#ff9f0a;border-radius:2px}
+</style>
+
+<h2>Press-and-hold sheet: compact, no progress bar</h2>
+<p class="subtitle">Same actions, about 40% shorter. Everything fits in one glance and one thumb reach, without the stat tiles or the long list.</p>
+
+<div class="phones">
+<div class="ph"><div class="phone"><div class="bg"><h1>History</h1><div class="grp"></div></div><div class="scrim"></div>
+<div class="sheet" style="position:absolute"><div class="meas" style="top:0;height:100%"></div><div class="handle"></div>
+  <div class="shd"><div class="cv c2"></div><div style="min-width:0">
+    <div style="font-size:19px;font-weight:600">Shadow Slave</div>
+    <div class="s">Ch. 2,410 · The Sword Saint</div>
+    <div class="src" style="font-size:13px">Last read 5 hours ago · NovelFire</div></div></div>
+  <div class="stat"><div><b>88%</b><small>read</small></div><div><b>2,410</b><small>of 2,735 ch.</small></div><div><b>In library</b><small>Reading</small></div></div>
+  <div class="bgrp"><div>▶ Continue</div><div>Novel page</div></div>
+  <div class="list"><div class="li">⧉  Copy title</div><div class="li">☑  Select several</div><div class="li err">🗑  Remove from history</div></div>
+</div></div>
+<h3>Before</h3><p class="cap">About 410dp tall: 4 layers, and the stats repeat what the row already shows.</p></div>
+
+<div class="ph"><div class="phone"><div class="bg"><h1>History</h1><div class="grp"></div></div><div class="scrim"></div>
+<div class="sheet"><div class="meas" style="top:0;height:100%"></div><div class="handle"></div>
+  <div class="hd"><div class="cv c2"></div><div class="tx">
+    <div class="ttl">Shadow Slave</div>
+    <div class="s">Ch. 2,410 of 2,735 · NovelFire</div>
+    <div class="src">88% read · 5h ago</div></div>
+    <span class="chipin">In library</span></div>
+  <div class="cta"><div class="p">▶ Continue</div><div class="q">Novel page</div></div>
+  <div class="row3"><div><b>⧉</b>Copy title</div><div><b>☑</b>Select</div><div class="err"><b>🗑</b>Remove</div></div>
+</div></div>
+<h3>After: in your library</h3><p class="cap">About 245dp tall: a header row, then the main action, then 3 small actions in one row.</p></div>
+
+<div class="ph"><div class="phone"><div class="bg"><h1>History</h1><div class="grp"></div></div><div class="scrim"></div>
+<div class="sheet"><div class="handle"></div>
+  <div class="hd"><div class="cv c5"></div><div class="tx">
+    <div class="ttl">Mirror King, Book Two</div>
+    <div class="s">Ch. 12 of 142 · Royal Road</div>
+    <div class="src">8% read · Tue</div></div>
+    <span class="chipadd">＋ Library</span></div>
+  <div class="cta"><div class="p">▶ Continue</div><div class="q">Novel page</div></div>
+  <div class="row3"><div><b>⧉</b>Copy title</div><div><b>☑</b>Select</div><div class="err"><b>🗑</b>Remove</div></div>
+</div></div>
+<h3>After: not in your library</h3><p class="cap">The "In library" label becomes a tappable "＋ Library" chip. Nothing else moves.</p></div>
+</div>
+
+<div class="notes">
+<h3>What changed</h3>
+<ul>
+  <li><b>Header:</b> a smaller cover. Title, then "Ch. 2,410 of 2,735 · NovelFire", then "88% read · 5h ago" as plain text (no progress bar). This replaces the three stat tiles and the separate "Last read…" line.</li>
+  <li><b>Library status sits in the header</b> as a small label ("In library") or an action chip ("＋ Library" adds it, with an Undo toast).</li>
+  <li><b>Main action unchanged:</b> the connected Continue | Novel page buttons. Continue is wider because it's the main action.</li>
+  <li><b>Secondary actions:</b> Copy title, Select and Remove become one row of small tonal buttons with icon and label. Remove stays red and is on the right, the furthest from your thumb's resting spot.</li>
+  <li><b>Same actions as before</b> (Continue, Novel page, Add to library, Copy title, Select several, Remove), and every touch target is still at least 48dp. Drag down or tap outside to close.</li>
+</ul>
+</div>
