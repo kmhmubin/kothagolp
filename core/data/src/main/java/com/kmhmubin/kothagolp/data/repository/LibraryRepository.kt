@@ -660,19 +660,11 @@ class LibraryRepository(
                 val provider = MainProvider.getProvider(providerName) ?: continue
                 val details = provider.load(novelUrl) ?: continue
 
+                // Keep tags, rating and related novels (For You needs them); skip the
+                // chapter list, which the details screen caches on first open anyway.
                 offlineDao.saveNovelDetails(
-                    NovelDetailsEntity(
-                        url = novelUrl,
-                        name = details.name,
-                        apiName = provider.name,
-                        author = details.author,
-                        synopsis = details.synopsis,
-                        posterUrl = details.posterUrl,
-                        status = details.status,
-                        relatedNovelsJson = null,
-                        chapters = null,
-                        tags = null
-                    )
+                    NovelDetailsEntity.fromNovelDetails(details.copy(url = novelUrl), provider.name)
+                        .copy(chapters = null)
                 )
                 return@withContext
             } catch (e: Exception) {
