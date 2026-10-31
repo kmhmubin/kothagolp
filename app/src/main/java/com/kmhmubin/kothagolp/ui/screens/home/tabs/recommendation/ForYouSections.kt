@@ -50,7 +50,8 @@ fun buildForYouSections(state: RecommendationUiState, allGenres: List<TagCategor
         ForYouSection.Row(key, title, subtitle, g.recommendations.map { it.toItem() }, tag)
 
     val aiItems = (state.aiRecommendations + state.aiTrendingRecommendations)
-        .filter { it.matchedNovelUrl != null }
+        .filter { it.matchedNovelUrl != null && it.matchedNovelUrl !in state.hiddenNovelUrls }
+        .filter { state.showCrossProvider || state.preferredProvider == null || it.matchedApiName == state.preferredProvider }
         .distinctBy { it.matchedNovelUrl }
         .map {
             val novel = Novel(it.title, it.matchedNovelUrl!!, it.matchedPosterUrl, apiName = it.matchedApiName.orEmpty())

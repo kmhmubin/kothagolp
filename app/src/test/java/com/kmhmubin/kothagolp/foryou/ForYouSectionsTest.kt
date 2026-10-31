@@ -109,4 +109,18 @@ class ForYouSectionsTest {
         assertEquals("u/L", m.source.url)
         assertEquals(listOf("u/z"), m.items.map { it.novel.url })
     }
+
+    private fun aiUrls(s: RecommendationUiState) =
+        (rows(s).first { it.key == "ai" } as ForYouSection.AiRow).items.map { it.url }
+
+    @Test fun aiHidesNotForMeNovels() {
+        val s = fullState.copy(aiRecommendations = listOf(ai("x"), ai("y")), hiddenNovelUrls = setOf("u/x"))
+        assertEquals(listOf("u/y"), aiUrls(s))
+    }
+
+    @Test fun aiHonoursUseAllSourcesOff() {
+        val s = fullState.copy(aiRecommendations = listOf(ai("x"), ai("y")), preferredProvider = "apiy")
+        assertEquals(listOf("u/x", "u/y"), aiUrls(s))
+        assertEquals(listOf("u/y"), aiUrls(s.copy(showCrossProvider = false)))
+    }
 }

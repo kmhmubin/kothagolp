@@ -102,7 +102,7 @@ fun RecommendationTab(
     var showHiddenSheet by remember { mutableStateOf(false) }
     var showGenrePrefsSheet by remember { mutableStateOf(false) }
     var selectedRecommendation by remember { mutableStateOf<Recommendation?>(null) }
-    var seeAll by remember { mutableStateOf<Pair<String, List<ForYouItem>>?>(null) }
+    var seeAll by remember { mutableStateOf<Pair<String, String>?>(null) } // title to section key
 
     LaunchedEffect("init") {
         viewModel.checkGeminiKey()
@@ -219,7 +219,7 @@ fun RecommendationTab(
                             onOpen = { open(it.url, it.apiName) },
                             onOpenRec = { open(it.novel.url, it.novel.apiName) },
                             onLongPress = { selectedRecommendation = it },
-                            onSeeAll = { title, items -> seeAll = title to items },
+                            onSeeAll = { title, key -> seeAll = title to key },
                             onSelectSource = { novel ->
                                 viewModel.selectSourceNovel(
                                     uiState.librarySourceNovels.find { it.novel.url == novel.url }
@@ -261,7 +261,13 @@ fun RecommendationTab(
         )
     }
 
-    seeAll?.let { (title, items) ->
+    seeAll?.let { (title, key) ->
+        // Live from the current sections, so a novel hidden from the sheet leaves it too.
+        val items = when (val s = sections.firstOrNull { it.key == key }) {
+            is ForYouSection.Row -> s.items
+            is ForYouSection.AiRow -> s.items
+            else -> emptyList()
+        }
         SeeAllSheet(
             title = title,
             items = items,
@@ -312,7 +318,7 @@ private fun LazyListScope.forYouSection(
     onOpen: (ForYouItem) -> Unit,
     onOpenRec: (Recommendation) -> Unit,
     onLongPress: (Recommendation) -> Unit,
-    onSeeAll: (String, List<ForYouItem>) -> Unit,
+    onSeeAll: (title: String, sectionKey: String) -> Unit,
     onSelectSource: (Novel) -> Unit,
     onDismissHint: () -> Unit,
     onAiSettings: () -> Unit,
@@ -347,7 +353,7 @@ private fun LazyListScope.forYouSection(
                     title = section.title,
                     subtitle = section.subtitle,
                     onSeeAll = section.seeAllTag?.let { tag -> { onGenre(tag) } }
-                        ?: { onSeeAll(section.title, section.items) }
+                        ?: { onSeeAll(section.title, section.key) }
                 )
             }
             item(key = section.key) { ForYouCoverRow(section.items, onOpen, longPressItem) }
@@ -358,7 +364,7 @@ private fun LazyListScope.forYouSection(
                 ForYouRowHeader(
                     title = ForYouCopy.PICKED_BY_AI,
                     subtitle = null,
-                    onSeeAll = if (section.items.isNotEmpty()) ({ onSeeAll(ForYouCopy.PICKED_BY_AI, section.items) }) else null,
+                    onSeeAll = if (section.items.isNotEmpty()) ({ onSeeAll(ForYouCopy.PICKED_BY_AI, section.key) }) else null,
                     leading = {
                         Icon(
                             Icons.Rounded.AutoAwesome, null,

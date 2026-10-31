@@ -52,7 +52,11 @@ class RecommendationEngine(
         val allowedOverlapRatio: Float = 0.2f,
         // Provider names that are disabled in settings — their novels won't appear
         val disabledProviders: Set<String> = emptySet()
-    )
+    ) {
+        /** Disabled sources never show; with "Use all my sources" off only [preferredProvider] does. */
+        fun allowsProvider(name: String) = name !in disabledProviders &&
+            (includeCrossProvider || preferredProvider == null || name == preferredProvider)
+    }
 
     /** A library (or hidden) novel that shapes the taste profile. */
     private data class Seed(val url: String, val name: String, val weight: Float, val features: Features)
@@ -69,7 +73,9 @@ class RecommendationEngine(
         val authorAffinities: Map<String, Float>,
         val favoriteAuthors: Set<String>,
         val filterState: UserFilterManager.FilterState,
-        val userProfile: UserTasteProfile
+        val userProfile: UserTasteProfile,
+        /** Cached details rows without chapters, by url. */
+        val details: Map<String, NovelDetailsEntity>
     ) {
         fun f(n: NovelVector): Features = features[n.url].orEmpty()
         fun quality(n: NovelVector) = TasteModel.quality(n.rating, n.peopleVoted)
@@ -155,22 +161,25 @@ class RecommendationEngine(
         val userProfile = userPreferenceManager.getUserProfile()
         val likedAuthors = authorPreferenceManager.getLikedAuthors(50)
 
+        // One chapterless read of every cached details row, reused for candidates, seeds and related lists.
+        val details = offlineDao.getAllNovelDetailsWithoutChapters().associateBy { it.url }
+
         // Same novel saved from another source has a different URL: match on title too.
-        val libraryTitles = library.map { normalizeTitleForDedup(it.novel.name) }.toSet()
-        val candidates = loadAllCandidates(
-            libraryUrls, filterState, config.disabledProviders, config.preferredProvider
-        ).filterTo(mutableListOf()) { normalizeTitleForDedup(it.name) !in libraryTitles }
+        // Blank = title had no Latin letters/digits; those can't be compared, so never match on them.
+        val libraryTitles = library.map { normalizeTitleForDedup(it.novel.name) }.filterTo(HashSet()) { it.isNotBlank() }
+        val candidates = loadAllCandidates(libraryUrls, filterState, config, details)
+            .filterTo(mutableListOf()) { normalizeTitleForDedup(it.name) !in libraryTitles }
 
         // Seeds: library entries weighted by status/progress/recency, plus "Not interested".
         val now = System.currentTimeMillis()
         val seedVectors = library.mapNotNull { item ->
-            val vector = loadNovelVector(item.novel.url) ?: return@mapNotNull null
+            val vector = loadNovelVector(item.novel.url, details) ?: return@mapNotNull null
             val chapters = runCatching { historyDao.getReadChapterCount(item.novel.url) }.getOrDefault(0)
             val status = if (item.isSpicy) "SPICY" else item.readingStatus.name
             val weight = TasteModel.seedWeight(status, chapters, item.lastReadPosition?.timestamp ?: item.addedAt, now)
             Triple(vector, item.novel.name, weight)
         } + filterState.hiddenNovelUrls.mapNotNull { url ->
-            loadNovelVector(url)?.let { Triple(it, it.name, -0.6f) }
+            loadNovelVector(url, details)?.let { Triple(it, it.name, -0.6f) }
         }
 
         // Sources' "related novels" lists for the novels the user liked.
@@ -178,7 +187,7 @@ class RecommendationEngine(
         val known = candidates.associateBy { it.url }.toMutableMap()
         for ((vector, _, weight) in seedVectors) {
             if (weight <= 0f) continue
-            val json = offlineDao.getNovelDetails(vector.url)?.relatedNovelsJson ?: continue
+            val json = details[vector.url]?.relatedNovelsJson ?: continue
             val list = runCatching { NovelDetailsEntity.parseRelatedNovels(json) }.getOrNull() ?: continue
             for (novel in list) {
                 if (novel.url in libraryUrls || normalizeTitleForDedup(novel.name) in libraryTitles) continue
@@ -191,7 +200,7 @@ class RecommendationEngine(
                         synopsisKeywords = emptySet(), titleKeywords = NovelVector.extractTitleKeywords(novel.name),
                         posterUrl = novel.posterUrl
                     )
-                    if (minimal.providerName in config.disabledProviders ||
+                    if (!config.allowsProvider(minimal.providerName) ||
                         userFilterManager.shouldFilter(minimal, filterState)) continue
                     known[novel.url] = minimal
                     candidates += minimal
@@ -233,7 +242,8 @@ class RecommendationEngine(
             authorAffinities = likedAuthors.associate { it.authorNormalized to it.affinityScore / 1000f },
             favoriteAuthors = likedAuthors.filter { it.isFavorite }.map { it.authorNormalized }.toSet(),
             filterState = filterState,
-            userProfile = userProfile
+            userProfile = userProfile,
+            details = details
         )
     }
 
@@ -464,20 +474,21 @@ class RecommendationEngine(
 
     private suspend fun loadAllCandidates(
         excludeUrls: Set<String>,
-        filterState: UserFilterManager.FilterState? = null,
-        disabledProviders: Set<String> = emptySet(),
-        preferredProvider: String? = null
+        filterState: UserFilterManager.FilterState,
+        config: RecommendationConfig,
+        details: Map<String, NovelDetailsEntity>
     ): List<NovelVector> {
+        val preferredProvider = config.preferredProvider
         // url → vector (for fast lookup)
         val byUrl = mutableMapOf<String, NovelVector>()
         // normalizedTitle → url of currently-kept entry (cross-source title dedup)
         val byNormalizedTitle = mutableMapOf<String, String>()
 
         fun tryAdd(vector: NovelVector) {
-            if (vector.providerName in disabledProviders) return
-            if (filterState != null && userFilterManager.shouldFilter(vector, filterState)) return
+            if (!config.allowsProvider(vector.providerName)) return
+            if (userFilterManager.shouldFilter(vector, filterState)) return
 
-            val normalizedTitle = normalizeTitleForDedup(vector.name)
+            val normalizedTitle = normalizeTitleForDedup(vector.name).ifBlank { vector.url } // non-Latin: no title dedup
             val existingUrl = byNormalizedTitle[normalizedTitle]
 
             if (existingUrl == null) {
@@ -504,7 +515,7 @@ class RecommendationEngine(
         }
 
         // Priority 1: NovelDetailsEntity (full details, richer data)
-        offlineDao.getAllNovelDetailsWithoutChapters().forEach { entity ->
+        details.values.forEach { entity ->
             if (entity.url !in excludeUrls) {
                 entityToVector(entity)?.let { tryAdd(it) }
             }
@@ -702,13 +713,12 @@ class RecommendationEngine(
     suspend fun getSimilarTo(
         novelUrl: String,
         limit: Int = 10,
-        @Suppress("UNUSED_PARAMETER") excludeLibrary: Boolean = true, // library is always excluded
-        disabledProviders: Set<String> = emptySet()
+        baseConfig: RecommendationConfig = RecommendationConfig()
     ): List<Recommendation> = withContext(Dispatchers.IO) {
-        val config = RecommendationConfig(maxPerGroup = limit, disabledProviders = disabledProviders)
+        val config = baseConfig.copy(maxPerGroup = limit)
         val ctx = buildContext(config) ?: return@withContext emptyList()
         val seed = ctx.positiveSeeds.find { it.url == novelUrl }
-            ?: loadNovelVector(novelUrl)?.let { v ->
+            ?: loadNovelVector(novelUrl, ctx.details)?.let { v ->
                 Seed(v.url, v.name, 0.8f, ctx.features[v.url] ?: TasteModel.normalize(TasteModel.rawFeatures(v)))
             }
             ?: return@withContext emptyList()
@@ -720,8 +730,8 @@ class RecommendationEngine(
     // HELPERS
     // ================================================================
 
-    private suspend fun loadNovelVector(url: String): NovelVector? {
-        offlineDao.getNovelDetails(url)?.let { return entityToVector(it) }
+    private suspend fun loadNovelVector(url: String, details: Map<String, NovelDetailsEntity>): NovelVector? {
+        details[url]?.let { return entityToVector(it) }
         recommendationDao.getDiscoveredNovel(url)?.let { return discoveredToVector(it) }
         return null
     }

@@ -36,6 +36,13 @@ import kotlinx.coroutines.async
 private const val TAG = "RecommendationViewModel"
 private const val CACHE_DURATION_MS = 30 * 60 * 1000L // 30 minutes
 
+/** Normalized titles: exact, or one contains the other and is at least 60% of its length (subtitle variants). */
+internal fun titlesMatch(a: String, b: String): Boolean {
+    if (a == b) return true
+    val (short, long) = if (a.length <= b.length) a to b else b to a
+    return short.isNotEmpty() && long.contains(short) && short.length >= 0.6 * long.length
+}
+
 class RecommendationViewModel : ViewModel() {
 
     private val recommendationEngine = RepositoryProvider.getRecommendationEngine()
@@ -81,6 +88,7 @@ class RecommendationViewModel : ViewModel() {
         viewModelScope.launch {
             userFilterManager.observeHiddenNovels().collect { novels ->
                 _hiddenNovels.value = novels
+                _uiState.update { it.copy(hiddenNovelUrls = novels.mapTo(HashSet()) { n -> n.novelUrl }) }
             }
         }
 
@@ -220,14 +228,9 @@ class RecommendationViewModel : ViewModel() {
         _uiState.update { it.copy(isLoadingSourceRecommendations = true) }
 
         try {
-            val disabledProviders = getDisabledProviders()
+            val config = currentConfig()
 
-            suspend fun similar() = recommendationEngine.getSimilarTo(
-                novelUrl = novelUrl,
-                limit = 15,
-                excludeLibrary = true,
-                disabledProviders = disabledProviders
-            )
+            suspend fun similar() = recommendationEngine.getSimilarTo(novelUrl, limit = 15, baseConfig = config)
             var recommendations = similar()
             // Restored/imported novels have no cached details to compare against: fetch once, retry.
             if (recommendations.isEmpty() &&
@@ -430,6 +433,8 @@ class RecommendationViewModel : ViewModel() {
 
     fun hideNovel(novelUrl: String, novelName: String) {
         viewModelScope.launch {
+            // Optimistic: AI rows are filtered by hiddenNovelUrls (ForYouSections), so they go at once.
+            _uiState.update { it.copy(hiddenNovelUrls = it.hiddenNovelUrls + novelUrl) }
             userFilterManager.hideNovel(novelUrl, novelName, HideReason.NOT_INTERESTED)
             removeNovelFromRecommendations(novelUrl)
         }
@@ -437,6 +442,7 @@ class RecommendationViewModel : ViewModel() {
 
     fun unhideNovel(novelUrl: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(hiddenNovelUrls = it.hiddenNovelUrls - novelUrl) }
             userFilterManager.unhideNovel(novelUrl)
             clearRecommendationCache()
             loadRecommendations(forceRefresh = true)
@@ -620,16 +626,9 @@ class RecommendationViewModel : ViewModel() {
             }
 
             try {
-                val disabledProviders = getDisabledProviders()
-                val preferredProvider = determinePreferredProvider()
-
-                val config = RecommendationEngine.RecommendationConfig(
-                    maxPerGroup = 12,
-                    minScore = 0.3f,
-                    includeCrossProvider = _uiState.value.showCrossProvider,
-                    preferredProvider = preferredProvider,
-                    disabledProviders = disabledProviders
-                )
+                val config = currentConfig()
+                val disabledProviders = config.disabledProviders
+                val preferredProvider = config.preferredProvider
 
                 val groups = recommendationEngine.generateRecommendations(config)
                 val poolSize = discoveryManager.getPoolSize()
@@ -794,7 +793,14 @@ class RecommendationViewModel : ViewModel() {
 
     private val openRouterService = OpenRouterService()
 
-    private fun aiConfig() = RecommendationEngine.RecommendationConfig(disabledProviders = getDisabledProviders())
+    /** The settings every row is built with, including "Use all my sources". */
+    private suspend fun currentConfig() = RecommendationEngine.RecommendationConfig(
+        maxPerGroup = 12,
+        minScore = 0.3f,
+        includeCrossProvider = _uiState.value.showCrossProvider,
+        preferredProvider = determinePreferredProvider(),
+        disabledProviders = getDisabledProviders()
+    )
 
     /**
      * "AI Picks": the engine hands the model its 40 best real candidates plus a taste
@@ -819,7 +825,7 @@ class RecommendationViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingAiRecs = true, aiRecsError = null, hasGeminiKey = true) }
             val result = runCatching {
-                val brief = recommendationEngine.aiBrief(aiConfig())
+                val brief = recommendationEngine.aiBrief(currentConfig())
                 if (brief == null || brief.liked.isEmpty() || brief.candidates.size < 8) return@runCatching null
                 val byId = brief.candidates.associateBy { it.id }
                 openRouterService.rerank(apiKey, brief, model).getOrThrow().mapNotNull { pick ->
@@ -881,11 +887,16 @@ class RecommendationViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingTrending = true, trendingError = null, hasGeminiKey = true) }
             val result = runCatching {
-                val brief = recommendationEngine.aiBrief(aiConfig()) ?: error(ForYouCopy.AI_NEED_BROWSE)
+                val config = currentConfig()
+                val brief = recommendationEngine.aiBrief(config) ?: error(ForYouCopy.AI_NEED_BROWSE)
                 val library = libraryRepository.getLibrary()
-                val known = library.map { it.novel.name } + brief.candidates.map { it.recommendation.novel.name }
+                val filters = userFilterManager.getFilterState()
+                val known = library.map { it.novel.name } + brief.candidates.map { it.recommendation.novel.name } +
+                    _hiddenNovels.value.map { it.novelName }
                 val suggestions = openRouterService.suggestTitles(apiKey, brief, known, model).getOrThrow()
-                verifyOnSources(suggestions, library.map { normalizeTitle(it.novel.name) }.toSet())
+                    .filter { s -> s.author?.let(NovelVector::normalizeAuthor) !in filters.blockedAuthors }
+                verifyOnSources(suggestions, library.map { normalizeTitle(it.novel.name) }.toSet(), config)
+                    .filter { it.matchedNovelUrl !in filters.hiddenNovelUrls }
             }
             _uiState.update {
                 it.copy(
@@ -902,17 +913,18 @@ class RecommendationViewModel : ViewModel() {
     /** Find each suggestion in the pool, else search the user's most-used sources. */
     private suspend fun verifyOnSources(
         suggestions: List<OpenRouterService.Suggestion>,
-        libraryTitles: Set<String>
+        libraryTitles: Set<String>,
+        config: RecommendationEngine.RecommendationConfig
     ): List<AiRecommendedNovel> = coroutineScope {
         val pool = RepositoryProvider.getDatabase().recommendationDao().getAllDiscoveredNovels()
+            .filter { config.allowsProvider(it.apiName) }
             .associateBy { normalizeTitle(it.name) }
-        val disabled = getDisabledProviders()
         val novelRepository = RepositoryProvider.getNovelRepository()
         val providers = libraryRepository.getLibrary()
             .groupingBy { it.novel.apiName }.eachCount().entries
             .sortedByDescending { it.value }
             .mapNotNull { novelRepository.getProvider(it.key) }
-            .filter { it.name !in disabled }
+            .filter { config.allowsProvider(it.name) }
             .take(3)
         val gate = Semaphore(4)
         suggestions.filter { normalizeTitle(it.title) !in libraryTitles }.map { s ->
@@ -938,9 +950,6 @@ class RecommendationViewModel : ViewModel() {
     private fun normalizeTitle(title: String) =
         title.lowercase().replace(Regex("[^a-z0-9]+"), " ").trim()
 
-    /** Exact, or one title contains the other (subtitle/translation variants), never on short fragments. */
-    private fun titlesMatch(a: String, b: String) =
-        a == b || (minOf(a.length, b.length) >= 8 && (a.contains(b) || b.contains(a)))
 
     // ================================================================
     // HELPERS
@@ -965,9 +974,12 @@ class RecommendationViewModel : ViewModel() {
                     .map { it.novel }
                 if (topTags.isEmpty() && seeds.isEmpty()) return@launch
                 val added = discoveryManager.discoverForTaste(topTags, seeds, config.disabledProviders)
-                if (added <= 0 && backfilled <= 0 && seeds.isEmpty()) return@launch
-                val groups = recommendationEngine.generateRecommendations(config)
-                if (groups.isNotEmpty()) {
+                if (added <= 0 && backfilled <= 0) return@launch
+                // Settings may have changed while this ran: build with the current ones, and drop
+                // the result if they changed again meanwhile so it never overwrites newer rows.
+                val latest = currentConfig()
+                val groups = recommendationEngine.generateRecommendations(latest)
+                if (groups.isNotEmpty() && latest == currentConfig()) {
                     _uiState.update {
                         it.copy(recommendationGroups = groups, poolSize = discoveryManager.getPoolSize())
                     }

@@ -32,6 +32,9 @@ class MetadataBackfillManager(
 
     private var backfillJob: Job? = null
 
+    /** Urls whose quiet backfill failed this process; not retried until the app restarts. */
+    private val failedQuietBackfill = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
     suspend fun startBackfill() {
         if (backfillJob?.isActive == true) return
 
@@ -64,7 +67,7 @@ class MetadataBackfillManager(
         val cached = library.map { it.url }.chunked(900)
             .flatMap { offlineDao.getExistingNovelDetailsUrls(it) }
             .toHashSet()
-        val missing = library.filter { it.url !in cached }
+        val missing = library.filter { it.url !in cached && it.url !in failedQuietBackfill }
             .sortedWith(compareBy<com.kmhmubin.kothagolp.data.local.entity.LibraryEntity> {
                 if (it.readingStatus == ReadingStatus.READING.name) 0 else 1
             }.thenByDescending { it.lastReadAt ?: it.addedAt })
@@ -80,7 +83,9 @@ class MetadataBackfillManager(
                 }
             }
         }.awaitAll()
-        offlineDao.getExistingNovelDetailsUrls(missing.map { it.url }).size
+        val nowCached = offlineDao.getExistingNovelDetailsUrls(missing.map { it.url }).toHashSet()
+        missing.forEach { if (it.url !in nowCached) failedQuietBackfill += it.url }
+        nowCached.size
     }
 
     private suspend fun performBackfill() = withContext(Dispatchers.IO) {

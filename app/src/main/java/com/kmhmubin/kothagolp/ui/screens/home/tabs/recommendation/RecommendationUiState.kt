@@ -35,6 +35,8 @@ data class RecommendationUiState(
     // UI state
     val preferredProvider: String? = null,
     val showCrossProvider: Boolean = true,
+    /** "Not for me" novels; AI rows (built outside the engine) are filtered by it. */
+    val hiddenNovelUrls: Set<String> = emptySet(),
 
     // Track disabled provider count for UI messaging
     val disabledProviderCount: Int = 0,
