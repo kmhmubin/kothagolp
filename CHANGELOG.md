@@ -1,5 +1,30 @@
 # Changelog
 
+## [3.15.0] — 2026-11-02
+
+### Added
+
+- **New For You screen** — Rebuilt with Material 3 Expressive and a calmer layout: a Top Picks carousel, "More like" with a switcher for any novel you've read, rows by authors you like, top novels in your favourite genre, "Something different", "Just added", and Browse by genre. Press and hold any novel to see why it's recommended, add it to your library, or mark it "Not for me"
+- **Smarter recommendations** — For You now learns from your whole library: finished novels count most, recent reading counts more, and dropped or "Not for me" novels push similar ones away. It also uses each site's "readers also read" lists and keeps rows varied instead of repeating the same kind of story
+- **AI picks you can actually open** — With an OpenRouter key, "Picked by AI" now chooses only from real novels on your sources and explains each pick. AI suggestions of popular novels are checked against your sources before they're shown
+- **New History screen** — One rounded card per day, short times ("2h ago", "Tue"), and progress at a glance. Tap to continue, swipe left to remove (with Undo), press and hold for Continue, Novel page, Copy title, Add to library, Select or Remove. Select several to remove them together, search your history, and clear it all from ⋮
+
+### Changed
+
+- **Headers** — For You and History now show the large title and its buttons on one line
+- **Material 3** — Updated to the newest Material 3 components and motion
+
+### Fixed
+
+- **App could crash on launch** with a large library (it ran out of memory loading every saved chapter list)
+- **LibRead** — Novels now show every chapter instead of only the first 40
+- **AI picks never loaded** — The default free models had been retired by OpenRouter; the app now uses OpenRouter's free model router and falls back to it automatically
+- **"Backfill metadata"** in Settings now keeps tags, ratings and related novels
+- **Related novels** were never saved for offline use; they are now
+- **Browsing a source could erase details** already fetched for the same novels; it no longer does
+- **Chapter page slider** on a novel's page didn't move; it works again
+- **"Use all my sources"** and **"Not for me"** now take effect immediately
+
 ## [3.14.2] — 2026-10-14
 
 ### Fixed
