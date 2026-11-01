@@ -23,7 +23,6 @@ import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -75,6 +74,7 @@ import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.Nov
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.RecommendationSettingsSheet
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.SeeAllSheet
 import com.kmhmubin.kothagolp.ui.screens.home.tabs.recommendation.components.TagFilterSheet
+import com.kmhmubin.kothagolp.ui.components.AlignedLargeTopBar
 import kotlinx.coroutines.launch
 
 private fun Recommendation.toCoverItem() =
@@ -96,7 +96,7 @@ fun RecommendationTab(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     var showFilterSheet by remember { mutableStateOf(false) }
     var showHiddenSheet by remember { mutableStateOf(false) }
@@ -170,13 +170,12 @@ fun RecommendationTab(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(ForYouCopy.SCREEN_TITLE, fontWeight = FontWeight.SemiBold) },
-                subtitle = {
-                    when {
-                        uiState.isSeeding || uiState.isLoading -> Text(ForYouCopy.LOADING_SUBTITLE)
-                        uiState.librarySourceNovels.isNotEmpty() -> Text(ForYouCopy.leadPickedFrom(uiState.librarySourceNovels.size))
-                    }
+            AlignedLargeTopBar(
+                title = { Text(ForYouCopy.SCREEN_TITLE) },
+                subtitle = when {
+                    uiState.isSeeding || uiState.isLoading -> { { Text(ForYouCopy.LOADING_SUBTITLE) } }
+                    uiState.librarySourceNovels.isNotEmpty() -> { { Text(ForYouCopy.leadPickedFrom(uiState.librarySourceNovels.size)) } }
+                    else -> null
                 },
                 actions = {
                     ForYouMenu(
@@ -192,7 +191,6 @@ fun RecommendationTab(
                         onAiPicks = onNavigateToSettings
                     )
                 },
-                windowInsets = WindowInsets(0.dp),
                 scrollBehavior = scrollBehavior
             )
         },

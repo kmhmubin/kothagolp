@@ -1,0 +1,275 @@
+<style>
+  :root{--bg:#121318;--sc:#1a1c22;--sch:#22252c;--schh:#2c2f37;--on:#e3e2e9;--onv:#c4c6d0;--out:#8e9099;--outv:#44464f;--pri:#aac7ff;--onpri:#0a305f;--pc:#284777;--onpc:#d6e3ff;--secc:#3e4759;--err:#ffb4ab;--errc:#93000a;--onerrc:#ffdad6}
+  .phones{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}
+  .ph{display:flex;flex-direction:column;align-items:center;max-width:330px}
+  .phone{width:330px;height:700px;border-radius:44px;background:var(--bg);border:10px solid #2a2a30;overflow:hidden;position:relative;color:var(--on);font-family:"Google Sans Flex","Google Sans",Roboto,system-ui,sans-serif}
+  .scr{height:100%;overflow-y:auto;padding:40px 0 96px}.scr::-webkit-scrollbar{display:none}
+  .bar{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 16px 4px}
+  .bar h1{font-size:36px;font-weight:600;letter-spacing:-.6px;margin:0;line-height:1.1}
+  .lead{font-size:14px;color:var(--onv);margin:4px 0 0}
+  .acts{display:flex;gap:8px}
+  .ib{width:44px;height:44px;border-radius:50%;background:var(--sch);display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--onv)}
+  .ib.on{background:var(--secc);color:var(--on)}
+  .gh{padding:20px 20px 8px;font-size:14px;font-weight:600;color:var(--onv)}
+  .grp{margin:0 12px;background:var(--sc);border-radius:24px;overflow:hidden}
+  .rb{display:flex;gap:12px;align-items:center;padding:10px 14px;background:var(--sc)}
+  .rb .cv{flex:0 0 44px;height:64px;border-radius:10px}
+  .tx{flex:1;min-width:0}
+  .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .t{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .time{flex:0 0 auto;font-size:12px;color:var(--out)}
+  .s{font-size:13px;color:var(--onv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .src{font-size:12px;color:var(--out);margin-top:2px}
+  .dv{height:1px;background:var(--outv);margin-left:70px;opacity:.6}
+  mark{background:none;color:var(--pri);font-weight:600}
+  /* swipe */
+  .sw{position:relative;background:var(--errc)}
+  .sw .rb{transform:translateX(-104px);border-radius:0 18px 18px 0}
+  .sw .lbl{position:absolute;right:18px;top:50%;transform:translateY(-50%);color:var(--onerrc);font-weight:600;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:2px}
+  /* select */
+  .chk{flex:0 0 24px;height:24px;border-radius:50%;border:2px solid var(--out)}
+  .chk.on{background:var(--pri);border-color:var(--pri);border-radius:8px;color:var(--onpri);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .rb.sel{background:var(--secc)}
+  .selbar{display:flex;align-items:center;gap:14px;padding:12px 16px 10px}
+  .selbar .x{width:40px;height:40px;border-radius:50%;background:var(--sch);display:flex;align-items:center;justify-content:center}
+  .selbar b{font-size:22px;font-weight:600;flex:1}
+  .selbar span.a{color:var(--pri);font-weight:600;font-size:14px}
+  .tbar{position:absolute;left:12px;right:12px;bottom:92px;background:var(--schh);border-radius:28px;padding:8px;display:flex;gap:6px}
+  .tbar div{flex:1;text-align:center;padding:12px 8px;border-radius:20px;font-weight:600;font-size:14px}
+  .tbar .rm{background:var(--errc);color:var(--onerrc)}
+  .tbar .sa{background:var(--secc);color:var(--on)}
+  /* chrome */
+  .tab{position:absolute;left:0;right:0;bottom:0;height:80px;background:var(--sc);display:flex;justify-content:space-around;align-items:center;font-size:12px;color:var(--onv)}
+  .tab div{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .tab .on span:first-child{background:var(--secc);border-radius:16px;padding:4px 20px;color:var(--on)}
+  .snack{position:absolute;left:12px;right:12px;bottom:92px;background:#e3e2e9;color:#2f3036;border-radius:12px;padding:14px 16px;font-size:14px;display:flex;justify-content:space-between;gap:10px}
+  .snack b{color:#3f5f90;white-space:nowrap}
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+  .blur{filter:blur(2px);opacity:.55}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sc);border-radius:28px 28px 0 0;padding:10px 16px 26px}
+  .handle{width:32px;height:4px;border-radius:2px;background:var(--out);margin:0 auto 16px}
+  .shd{display:flex;gap:14px}
+  .shd .cv{flex:0 0 64px;height:94px;border-radius:12px}
+  .stat{display:flex;gap:8px;margin-top:14px}
+  .stat div{flex:1;background:var(--sch);border-radius:16px;padding:10px;text-align:center}
+  .stat b{display:block;font-size:16px}.stat small{font-size:11px;color:var(--out)}
+  .bgrp{display:flex;gap:4px;margin-top:14px}.bgrp div{flex:1;text-align:center;padding:13px;font-weight:600;font-size:15px}
+  .bgrp div:first-child{background:var(--pri);color:var(--onpri);border-radius:22px 10px 10px 22px}
+  .bgrp div:last-child{background:var(--secc);color:var(--on);border-radius:10px 22px 22px 10px}
+  .list{display:flex;flex-direction:column;gap:2px;border-radius:20px;overflow:hidden;margin-top:12px}
+  .li{background:var(--sch);padding:14px 16px;font-size:15px;display:flex;gap:14px}
+  .li.err{color:var(--err)}
+  .menu{position:absolute;right:14px;top:96px;width:210px;display:flex;flex-direction:column;gap:4px}
+  .mg{background:var(--schh);border-radius:20px;padding:6px}
+  .mi{display:flex;gap:12px;padding:12px;border-radius:14px;font-size:15px}
+  .mi.err{color:var(--err)}
+  .dlg{position:absolute;left:24px;right:24px;top:200px;background:var(--schh);border-radius:28px;padding:24px;text-align:center}
+  .dlg .ic{width:48px;height:48px;border-radius:50%;background:var(--errc);color:var(--onerrc);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:20px}
+  .dlg h3{margin:0 0 10px;font-size:22px;font-weight:500}
+  .dlg p{margin:0;color:var(--onv);font-size:14px;line-height:1.45}
+  .dlg .db{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}
+  .dlg .db span{padding:10px 16px;border-radius:20px;font-weight:600;color:var(--pri)}
+  .dlg .db span.d{background:var(--errc);color:var(--onerrc)}
+  .search{display:flex;align-items:center;gap:12px;margin:8px 12px 0;background:var(--sch);border-radius:28px;padding:12px 16px;font-size:16px}
+  .search .q{flex:1}.search .c{color:var(--out)}
+  .caret{display:inline-block;width:2px;height:18px;background:var(--pri);vertical-align:middle;margin-left:1px}
+  .chips{display:flex;gap:8px;padding:12px 16px 0}
+  .chip{border:1px solid var(--outv);border-radius:10px;padding:6px 12px;font-size:13px;color:var(--onv)}
+  .chip.on{background:var(--secc);border-color:var(--secc);color:var(--on)}
+  .center{text-align:center;padding:50px 28px}
+  .shape{width:96px;height:96px;margin:0 auto 18px;background:var(--pc);border-radius:42% 58% 46% 54%/52% 44% 56% 48%;display:flex;align-items:center;justify-content:center;font-size:36px;color:var(--onpc)}
+  .shape.sun{clip-path:polygon(50% 0,61% 12%,77% 7%,81% 23%,96% 30%,89% 45%,100% 58%,86% 67%,88% 83%,72% 85%,63% 99%,50% 90%,37% 99%,28% 85%,12% 83%,14% 67%,0 58%,11% 45%,4% 30%,19% 23%,23% 7%,39% 12%);border-radius:0;background:var(--secc);color:var(--on)}
+  .pbtn{display:inline-block;margin-top:16px;background:var(--pri);color:var(--onpri);border-radius:24px;padding:12px 22px;font-weight:600}
+  .tbtn{display:inline-block;margin-top:16px;background:var(--secc);color:var(--on);border-radius:24px;padding:12px 22px;font-weight:600}
+  .sk{background:var(--sch);border-radius:8px}
+  .c1{background:linear-gradient(160deg,#4a5a3a,#16200e)}.c2{background:linear-gradient(160deg,#6d4aa3,#22183a)}.c3{background:linear-gradient(160deg,#2f6a83,#0f1e26)}.c4{background:linear-gradient(160deg,#9a4545,#2a1010)}.c5{background:linear-gradient(160deg,#8c6a32,#24190a)}.c6{background:linear-gradient(160deg,#4756a0,#121630)}
+  .cap{color:#a1a1aa;font-size:13.5px;text-align:center;margin:6px 0 0}
+  .flow{max-width:900px;margin:34px auto 0}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}td,th{padding:7px 10px;border-bottom:1px solid #2a2a30;text-align:left;vertical-align:top}th{color:#a1a1aa;font-weight:600}
+</style>
+
+<h2>History: grouped cards, and every action on the page</h2>
+<p class="subtitle">The style you chose (B), with every sub-action drawn as a screen. Each one can be undone or asks first, and none of them leaves the page.</p>
+
+<div class="phones">
+
+<!-- 0 MAIN -->
+<div class="ph"><div class="phone"><div class="scr">
+  <div class="bar"><div><h1>History</h1><div class="lead">6 novels you've opened</div></div><div class="acts"><div class="ib">⌕</div><div class="ib">⋮</div></div></div>
+  <div class="gh">Today</div>
+  <div class="grp">
+    <div class="rb"><div class="cv c1"></div><div class="tx"><div class="top"><div class="t">Invincible Snake Emperor</div><div class="time">2h ago</div></div><div class="s">Ch. 808 · Jealous?</div><div class="src">LibRead · 61%</div></div></div><div class="dv"></div>
+    <div class="rb"><div class="cv c2"></div><div class="tx"><div class="top"><div class="t">Shadow Slave</div><div class="time">5h ago</div></div><div class="s">Ch. 2,410 · The Sword Saint</div><div class="src">NovelFire · 88%</div></div></div><div class="dv"></div>
+    <div class="rb"><div class="cv c3"></div><div class="tx"><div class="top"><div class="t">Trash of the Count's Family</div><div class="time">9h ago</div></div><div class="s">Ch. 337 · What is your target</div><div class="src">LNW · 26%</div></div></div>
+  </div>
+  <div class="gh">Yesterday</div>
+  <div class="grp"><div class="rb"><div class="cv c4"></div><div class="tx"><div class="top"><div class="t">Serpent Emperor's Bride</div><div class="time">9:40 pm</div></div><div class="s">Ch. 54 · Moonlit Courtyard</div><div class="src">LibRead · 40%</div></div></div></div>
+  <div class="gh">This week</div>
+  <div class="grp">
+    <div class="rb"><div class="cv c5"></div><div class="tx"><div class="top"><div class="t">Mirror King, Book Two</div><div class="time">Tue</div></div><div class="s">Ch. 12 · License to Ball</div><div class="src">Royal Road · 8%</div></div></div><div class="dv"></div>
+    <div class="rb"><div class="cv c6"></div><div class="tx"><div class="top"><div class="t">Lord of the Mysteries</div><div class="time">Mon</div></div><div class="s">Ch. 3 · Melissa</div><div class="src">NovelFire · 1%</div></div></div>
+  </div>
+</div><div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>0 · History</h3><p class="cap">Tap a row to continue reading where you left off.</p></div>
+
+<!-- 1 SWIPE -->
+<div class="ph"><div class="phone"><div class="scr">
+  <div class="bar"><div><h1>History</h1><div class="lead">6 novels you've opened</div></div><div class="acts"><div class="ib">⌕</div><div class="ib">⋮</div></div></div>
+  <div class="gh">Today</div>
+  <div class="grp">
+    <div class="rb"><div class="cv c1"></div><div class="tx"><div class="top"><div class="t">Invincible Snake Emperor</div><div class="time">2h ago</div></div><div class="s">Ch. 808 · Jealous?</div><div class="src">LibRead · 61%</div></div></div><div class="dv"></div>
+    <div class="sw"><span class="lbl">🗑<span>Remove</span></span><div class="rb"><div class="cv c2"></div><div class="tx"><div class="top"><div class="t">Shadow Slave</div><div class="time">5h ago</div></div><div class="s">Ch. 2,410 · The Sword Saint</div><div class="src">NovelFire · 88%</div></div></div></div><div class="dv"></div>
+    <div class="rb"><div class="cv c3"></div><div class="tx"><div class="top"><div class="t">Trash of the Count's Family</div><div class="time">9h ago</div></div><div class="s">Ch. 337 · What is your target</div><div class="src">LNW · 26%</div></div></div>
+  </div>
+  <div class="gh">Yesterday</div>
+  <div class="grp"><div class="rb"><div class="cv c4"></div><div class="tx"><div class="top"><div class="t">Serpent Emperor's Bride</div><div class="time">9:40 pm</div></div><div class="s">Ch. 54 · Moonlit Courtyard</div><div class="src">LibRead · 40%</div></div></div></div>
+</div>
+<div class="snack">Removed "Mirror King, Book Two" from history <b>Undo</b></div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>1 · Swipe left to remove</h3><p class="cap">Past halfway, the row slides away and the card closes up. The toast offers Undo for about 5 seconds.</p></div>
+
+<!-- 2 LONG PRESS -->
+<div class="ph"><div class="phone"><div class="scr blur">
+  <div class="bar"><div><h1>History</h1></div></div>
+  <div class="gh">Today</div><div class="grp"><div class="rb"><div class="cv c1"></div><div class="tx"><div class="t">Invincible Snake Emperor</div></div></div></div>
+</div><div class="scrim"></div>
+<div class="sheet"><div class="handle"></div>
+  <div class="shd"><div class="cv c2"></div><div style="min-width:0">
+    <div style="font-size:19px;font-weight:600">Shadow Slave</div>
+    <div class="s">Ch. 2,410 · The Sword Saint</div>
+    <div class="src" style="font-size:13px">Last read 5 hours ago · NovelFire</div></div></div>
+  <div class="stat"><div><b>88%</b><small>read</small></div><div><b>2,410</b><small>of 2,735 ch.</small></div><div><b>In library</b><small>Reading</small></div></div>
+  <div class="bgrp"><div>▶ Continue</div><div>Novel page</div></div>
+  <div class="list">
+    <div class="li">⧉  Copy title</div>
+    <div class="li">☑  Select several</div>
+    <div class="li err">🗑  Remove from history</div>
+  </div>
+</div></div>
+<h3>2 · Press and hold a novel</h3><p class="cap">Quick facts, then Continue or the novel page, then less frequent actions. "Not in library" shows "＋ Add to library" in that spot.</p></div>
+
+<!-- 3 SELECT -->
+<div class="ph"><div class="phone"><div class="scr" style="padding-top:34px">
+  <div class="selbar"><div class="x">✕</div><b>2 selected</b></div>
+  <div class="gh" style="padding-top:10px">Today</div>
+  <div class="grp">
+    <div class="rb"><div class="chk"></div><div class="cv c1"></div><div class="tx"><div class="top"><div class="t">Invincible Snake Emperor</div><div class="time">2h ago</div></div><div class="src">LibRead · 61%</div></div></div><div class="dv" style="margin-left:106px"></div>
+    <div class="rb sel"><div class="chk on">✓</div><div class="cv c2"></div><div class="tx"><div class="top"><div class="t">Shadow Slave</div><div class="time">5h ago</div></div><div class="src">NovelFire · 88%</div></div></div><div class="dv" style="margin-left:106px"></div>
+    <div class="rb"><div class="chk"></div><div class="cv c3"></div><div class="tx"><div class="top"><div class="t">Trash of the Count's Family</div><div class="time">9h ago</div></div><div class="src">LNW · 26%</div></div></div>
+  </div>
+  <div class="gh">Yesterday</div>
+  <div class="grp"><div class="rb sel"><div class="chk on">✓</div><div class="cv c4"></div><div class="tx"><div class="top"><div class="t">Serpent Emperor's Bride</div><div class="time">9:40 pm</div></div><div class="src">LibRead · 40%</div></div></div></div>
+</div>
+<div class="tbar"><div class="sa">Select all</div><div class="rm">🗑 Remove 2</div></div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>3 · Select several</h3><p class="cap">Reached via long-press or ⋮ → Select. Tap rows to tick them; the circle morphs to a rounded square. A floating toolbar holds the actions. Back or ✕ leaves select mode.</p></div>
+
+<!-- 4 AFTER BULK REMOVE -->
+<div class="ph"><div class="phone"><div class="scr">
+  <div class="bar"><div><h1>History</h1><div class="lead">4 novels you've opened</div></div><div class="acts"><div class="ib">⌕</div><div class="ib">⋮</div></div></div>
+  <div class="gh">Today</div>
+  <div class="grp">
+    <div class="rb"><div class="cv c1"></div><div class="tx"><div class="top"><div class="t">Invincible Snake Emperor</div><div class="time">2h ago</div></div><div class="s">Ch. 808 · Jealous?</div><div class="src">LibRead · 61%</div></div></div><div class="dv"></div>
+    <div class="rb"><div class="cv c3"></div><div class="tx"><div class="top"><div class="t">Trash of the Count's Family</div><div class="time">9h ago</div></div><div class="s">Ch. 337 · What is your target</div><div class="src">LNW · 26%</div></div></div>
+  </div>
+  <div class="gh">This week</div>
+  <div class="grp">
+    <div class="rb"><div class="cv c5"></div><div class="tx"><div class="top"><div class="t">Mirror King, Book Two</div><div class="time">Tue</div></div><div class="s">Ch. 12 · License to Ball</div><div class="src">Royal Road · 8%</div></div></div>
+  </div>
+</div>
+<div class="snack">Removed 2 novels from history <b>Undo</b></div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>4 · After "Remove 2"</h3><p class="cap">No confirm dialog, because Undo covers it. A day whose card empties ("Yesterday") disappears entirely.</p></div>
+
+<!-- 5 MENU -->
+<div class="ph"><div class="phone"><div class="scr blur">
+  <div class="bar"><div><h1>History</h1><div class="lead">6 novels you've opened</div></div><div class="acts"><div class="ib">⌕</div><div class="ib on">⋮</div></div></div>
+  <div class="gh">Today</div><div class="grp"><div class="rb"><div class="cv c1"></div><div class="tx"><div class="t">Invincible Snake Emperor</div></div></div></div>
+</div><div class="scrim"></div>
+<div class="menu">
+  <div class="mg"><div class="mi">☑  Select</div></div>
+  <div class="mg"><div class="mi err">🗑  Clear history…</div></div>
+</div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>5 · ⋮ menu</h3><p class="cap">Two groups: an everyday action, and the destructive one kept apart in red. The "…" means it asks before doing anything.</p></div>
+
+<!-- 6 CLEAR -->
+<div class="ph"><div class="phone"><div class="scr blur">
+  <div class="bar"><div><h1>History</h1><div class="lead">6 novels you've opened</div></div></div>
+  <div class="gh">Today</div><div class="grp"><div class="rb"><div class="cv c1"></div><div class="tx"><div class="t">Invincible Snake Emperor</div></div></div></div>
+</div><div class="scrim"></div>
+<div class="dlg"><div class="ic">🗑</div><h3>Clear your history?</h3>
+  <p>This removes all 6 novels from History. Your library, downloads and reading progress stay as they are.</p>
+  <div class="db"><span>Cancel</span><span class="d">Clear history</span></div></div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>6 · Clear history</h3><p class="cap">The only action that asks first, because it can't be undone. It says what is kept, and Cancel is the safe default on the left.</p></div>
+
+<!-- 7 SEARCH RESULTS -->
+<div class="ph"><div class="phone"><div class="scr" style="padding-top:34px">
+  <div class="search"><span>←</span><span class="q">sha<span class="caret"></span></span><span class="c">✕</span></div>
+  <div class="gh">2 results</div>
+  <div class="grp">
+    <div class="rb"><div class="cv c2"></div><div class="tx"><div class="top"><div class="t"><mark>Sha</mark>dow Slave</div><div class="time">5h ago</div></div><div class="s">Ch. 2,410 · The Sword Saint</div><div class="src">NovelFire · 88%</div></div></div><div class="dv"></div>
+    <div class="rb"><div class="cv c6"></div><div class="tx"><div class="top"><div class="t">The <mark>Sha</mark>ttered Throne</div><div class="time">12 Oct</div></div><div class="s">Ch. 41 · Ashes</div><div class="src">Royal Road · 17%</div></div></div>
+  </div>
+</div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>7 · Search</h3><p class="cap">⌕ expands into a full-width search bar and the keyboard opens. It filters as you type, matches by title and highlights the match, results are one card sorted by most recent. ← or Back closes it.</p></div>
+
+<!-- 8 NO RESULTS -->
+<div class="ph"><div class="phone"><div class="scr" style="padding-top:34px">
+  <div class="search"><span>←</span><span class="q">overlord<span class="caret"></span></span><span class="c">✕</span></div>
+  <div class="center">
+    <div class="shape sun">⌕</div>
+    <div style="font-size:20px;font-weight:600">No novels match "overlord"</div>
+    <div class="s" style="white-space:normal;margin-top:6px">Only novels you've opened are in History.</div>
+    <div class="tbtn">Search all sources</div></div>
+</div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>8 · No match</h3><p class="cap">Says why there's no match, and offers a way forward: "Search all sources" opens Browse search with the same words.</p></div>
+
+<!-- 9 EMPTY -->
+<div class="ph"><div class="phone"><div class="scr">
+  <div class="bar"><div><h1>History</h1></div></div>
+  <div class="center" style="padding-top:110px">
+    <div class="shape">↺</div>
+    <div style="font-size:20px;font-weight:600">Nothing here yet</div>
+    <div class="s" style="white-space:normal;margin-top:6px">Novels you open show up here, so you can jump back in.</div>
+    <div class="pbtn">Find novels</div></div>
+</div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>9 · Empty</h3><p class="cap">No ⌕ or ⋮ when there's nothing to search or clear. "Find novels" opens Browse.</p></div>
+
+<!-- 10 LOADING -->
+<div class="ph"><div class="phone"><div class="scr">
+  <div class="bar"><div><h1>History</h1><div class="lead">&nbsp;</div></div></div>
+  <div class="gh"><span class="sk" style="display:inline-block;width:60px;height:12px"></span></div>
+  <div class="grp" style="padding:4px 0">
+    <div class="rb"><div class="sk" style="flex:0 0 44px;height:64px;border-radius:10px"></div><div class="tx"><div class="sk" style="height:14px;width:70%"></div><div class="sk" style="height:11px;width:50%;margin-top:8px"></div><div class="sk" style="height:10px;width:30%;margin-top:8px"></div></div></div>
+    <div class="rb"><div class="sk" style="flex:0 0 44px;height:64px;border-radius:10px"></div><div class="tx"><div class="sk" style="height:14px;width:60%"></div><div class="sk" style="height:11px;width:45%;margin-top:8px"></div><div class="sk" style="height:10px;width:25%;margin-top:8px"></div></div></div>
+    <div class="rb"><div class="sk" style="flex:0 0 44px;height:64px;border-radius:10px"></div><div class="tx"><div class="sk" style="height:14px;width:75%"></div><div class="sk" style="height:11px;width:40%;margin-top:8px"></div><div class="sk" style="height:10px;width:30%;margin-top:8px"></div></div></div>
+  </div>
+</div>
+<div class="tab"><div><span>▤</span>Library</div><div><span>◎</span>Browse</div><div><span>✦</span>For You</div><div class="on"><span>↺</span>History</div><div><span>⋯</span>More</div></div></div>
+<h3>10 · Loading</h3><p class="cap">Placeholder cards in the same shape as the real list (it loads from the phone, so this lasts a moment), so nothing jumps when the rows arrive.</p></div>
+
+</div>
+
+<div class="flow">
+<h3>Every action → how you reach it → how to take it back</h3>
+<table>
+<tr><th>Action</th><th>How you reach it</th><th>Safety</th></tr>
+<tr><td>Continue reading</td><td>Tap a row · long-press → Continue</td><td>—</td></tr>
+<tr><td>Open the novel's page</td><td>Long-press → Novel page</td><td>—</td></tr>
+<tr><td>Copy the title</td><td>Long-press → Copy title (toast "Title copied")</td><td>—</td></tr>
+<tr><td>Add to library</td><td>Long-press, when the novel isn't in your library</td><td>Toast "Added to your library" · Undo</td></tr>
+<tr><td>Remove one novel</td><td>Swipe left · long-press → Remove from history</td><td>Toast · Undo</td></tr>
+<tr><td>Remove several</td><td>Long-press → Select several, or ⋮ → Select · tick rows · Remove N</td><td>Toast · Undo</td></tr>
+<tr><td>Select all</td><td>In select mode, floating toolbar</td><td>—</td></tr>
+<tr><td>Clear all history</td><td>⋮ → Clear history…</td><td>Confirm dialog (can't be undone)</td></tr>
+<tr><td>Search</td><td>⌕ · Back or ← closes it</td><td>—</td></tr>
+<tr><td>No match → search sources</td><td>"Search all sources" button</td><td>—</td></tr>
+<tr><td>Empty → find novels</td><td>"Find novels" button</td><td>—</td></tr>
+</table>
+<p class="subtitle">The copy deck from v1 still applies, with these additions: "Copy title", "Title copied", "Select all", "Remove N", "Removed N novels from history", "Only novels you've opened are in History.", "Search all sources", "N results".</p>
+</div>

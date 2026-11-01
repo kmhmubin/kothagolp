@@ -19,8 +19,8 @@ data class HistoryItem(
     val novel: Novel,
     val chapterName: String,
     val chapterUrl: String,
-    val timestamp: Long
-
+    val timestamp: Long,
+    val customCoverUrl: String? = null
 )
 
 /**
@@ -46,7 +46,8 @@ class HistoryRepository(
                     ),
                     chapterName = entity.chapterName,
                     chapterUrl = entity.chapterUrl,
-                    timestamp = entity.timestamp
+                    timestamp = entity.timestamp,
+                    customCoverUrl = entity.customCoverUrl
                 )
             }
         }
@@ -79,7 +80,8 @@ class HistoryRepository(
                 ),
                 chapterName = entity.chapterName,
                 chapterUrl = entity.chapterUrl,
-                timestamp = entity.timestamp
+                timestamp = entity.timestamp,
+                customCoverUrl = entity.customCoverUrl
             )
         }
     }
@@ -158,6 +160,27 @@ class HistoryRepository(
 
     suspend fun removeFromHistory(novelUrl: String) = withContext(Dispatchers.IO) {
         historyDao.deleteByNovelUrl(novelUrl)
+    }
+
+    /** Undo of a remove: re-inserts rows with their original timestamps; read chapters are untouched. */
+    suspend fun restore(items: List<HistoryItem>) = withContext(Dispatchers.IO) {
+        items.forEach { item ->
+            // insert() is REPLACE on novelUrl: never overwrite a row the user re-opened since the remove.
+            val current = historyDao.getByNovelUrl(item.novel.url)
+            if (current != null && current.timestamp >= item.timestamp) return@forEach
+            historyDao.insert(
+                HistoryEntity(
+                    novelUrl = item.novel.url,
+                    novelName = item.novel.name,
+                    posterUrl = item.novel.posterUrl,
+                    chapterName = item.chapterName,
+                    chapterUrl = item.chapterUrl,
+                    apiName = item.novel.apiName,
+                    timestamp = item.timestamp,
+                    customCoverUrl = item.customCoverUrl
+                )
+            )
+        }
     }
 
     // ================================================================
