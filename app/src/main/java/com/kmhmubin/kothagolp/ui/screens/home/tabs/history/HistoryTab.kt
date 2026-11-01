@@ -100,15 +100,18 @@ private fun HistoryContent(
         }
         // Long for "Added to your library": it shows inside the open sheet, where the user is still looking.
         val duration = if (s is HistorySnack.AddedToLibrary) SnackbarDuration.Long else SnackbarDuration.Short
-        val result = snackbar.showSnackbar(message, action, duration = duration)
-        if (result == SnackbarResult.ActionPerformed) {
-            when (s) {
-                is HistorySnack.Removed -> viewModel.undoRemove(s.items)
-                is HistorySnack.AddedToLibrary -> viewModel.undoAddToLibrary(s.novel)
-                HistorySnack.TitleCopied -> Unit
+        try {
+            val result = snackbar.showSnackbar(message, action, duration = duration)
+            if (result == SnackbarResult.ActionPerformed) {
+                when (s) {
+                    is HistorySnack.Removed -> viewModel.undoRemove(s.items)
+                    is HistorySnack.AddedToLibrary -> viewModel.undoAddToLibrary(s.novel)
+                    HistorySnack.TitleCopied -> Unit
+                }
             }
+        } finally {
+            viewModel.snackbarShown(s) // leaving the screen cancels this effect; ack so it can't re-show
         }
-        viewModel.snackbarShown()
     }
 
     if (ui.showClearDialog) HistoryClearDialog(ui.totalCount, viewModel::confirmClear, viewModel::dismissClear)

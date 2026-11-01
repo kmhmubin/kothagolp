@@ -134,8 +134,9 @@ private fun HistoryRow(
     val colors = MaterialTheme.colorScheme
     val motion = MaterialTheme.motionScheme
     val haptics = LocalHapticFeedback.current
-    val top = if (first) CardRadius else 0.dp
-    val bottom = if (last) CardRadius else 0.dp
+    val cornerSpec = motion.defaultSpatialSpec<Dp>()
+    val top by animateDpAsState(if (first) CardRadius else 0.dp, cornerSpec, label = "top_corner")
+    val bottom by animateDpAsState(if (last) CardRadius else 0.dp, cornerSpec, label = "bottom_corner")
 
     // "Past halfway, the row slides away."
     // Not saveable: lazy items restore rememberSaveable state by key, so an Undo-restored row would

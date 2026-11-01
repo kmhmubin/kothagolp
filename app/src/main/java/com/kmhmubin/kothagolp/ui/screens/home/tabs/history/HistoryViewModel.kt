@@ -42,6 +42,10 @@ class HistoryViewModel : ViewModel() {
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
     private var allItems: List<HistoryItem> = emptyList()
+    private var historyLoaded = false
+
+    /** Urls with an add in flight; guards double taps until the library flow reports them. */
+    private val adding = mutableSetOf<String>()
 
     /** Keyed by novel url. */
     private var library: Map<String, LibraryInfo> = emptyMap()
@@ -51,6 +55,7 @@ class HistoryViewModel : ViewModel() {
         viewModelScope.launch {
             historyRepository.observeHistory().collect { items ->
                 allItems = items
+                historyLoaded = true
                 recompute()
             }
         }
@@ -59,6 +64,7 @@ class HistoryViewModel : ViewModel() {
                 library = items.associate {
                     it.novel.url to LibraryInfo(true, it.lastReadChapterIndex, it.totalChapterCount)
                 }
+                adding.removeAll(library.keys)
                 recompute()
             }
         }
@@ -79,7 +85,7 @@ class HistoryViewModel : ViewModel() {
             s.copy(
                 groups = groups,
                 totalCount = allItems.size,
-                isLoading = false,
+                isLoading = !historyLoaded,
                 selectedUrls = selected,
             )
         }
@@ -104,7 +110,7 @@ class HistoryViewModel : ViewModel() {
 
     fun addToLibrary(novel: Novel) {
         // Already in library: do nothing, so Undo can never remove a pre-existing entry.
-        if (library[novel.url]?.inLibrary == true) return
+        if (library[novel.url]?.inLibrary == true || !adding.add(novel.url)) return
         viewModelScope.launch {
             libraryRepository.addToLibrary(novel)
             _uiState.update { it.copy(snackbar = HistorySnack.AddedToLibrary(novel)) }
@@ -118,7 +124,7 @@ class HistoryViewModel : ViewModel() {
     /** The clipboard write itself is UI work; this only raises the confirmation. */
     fun titleCopied() = _uiState.update { it.copy(snackbar = HistorySnack.TitleCopied) }
 
-    fun snackbarShown() = _uiState.update { it.copy(snackbar = null) }
+    fun snackbarShown(s: HistorySnack) = _uiState.update { if (it.snackbar === s) it.copy(snackbar = null) else it }
 
     // ---- selection ----
 
