@@ -74,7 +74,7 @@ private fun HistoryContent(
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     @Suppress("DEPRECATION") // LocalClipboard needs a suspend ClipEntry; the sync manager is what the app uses elsewhere.
     val clipboard = LocalClipboardManager.current
 
