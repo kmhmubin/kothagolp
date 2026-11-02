@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.15.1] — 2026-11-02
+
+### Fixed
+
+- **Chikari** — The feed and search came back empty after the site changed its browse and search addresses; both load again. Novel pages and reading were unaffected
+- **Novel Archive** — Book covers load again (the site started refusing cover requests that didn't look like they came from a browser). Covers from every source are now requested the same way as the rest of the app's traffic
+
 ## [3.15.0] — 2026-11-02
 
 ### Added
