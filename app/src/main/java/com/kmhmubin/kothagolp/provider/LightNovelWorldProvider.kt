@@ -48,7 +48,9 @@ class LightNovelWorldProvider : MainProvider() {
         val genre = extraFilters["genre"]
         val offset = (page - 1) * browsePageSize
         val url = buildString {
-            append("$apiBase/novels?medium=novel&sort=$sort&limit=$browsePageSize&offset=$offset")
+            // The site dropped /api/novels as a list endpoint; novels are now listed
+            // through the shared catalogue, filtered to type=novel.
+            append("$apiBase/series?type=novel&sort=$sort&limit=$browsePageSize&offset=$offset")
             if (!status.isNullOrBlank()) append("&status=$status")
             if (!genre.isNullOrBlank()) append("&genre=$genre")
         }
@@ -77,10 +79,12 @@ class LightNovelWorldProvider : MainProvider() {
 
     override suspend fun search(query: String): List<Novel> {
         val encoded = java.net.URLEncoder.encode(query.trim(), "UTF-8")
-        val url = "$apiBase/novels?medium=novel&q=$encoded&limit=40"
+        val url = "$apiBase/novels/search?q=$encoded&limit=40"
         return try {
-            val json = JSONObject(get(url, jsonHeaders).text)
-            parseNovels(json.optJSONArray("items") ?: JSONArray())
+            // Returns a bare array (the old endpoint wrapped results in {"items": [...]}).
+            val text = get(url, jsonHeaders).text.trim()
+            val items = if (text.startsWith("[")) JSONArray(text) else JSONObject(text).optJSONArray("items") ?: JSONArray()
+            parseNovels(items)
         } catch (_: Throwable) { emptyList() }
     }
 
