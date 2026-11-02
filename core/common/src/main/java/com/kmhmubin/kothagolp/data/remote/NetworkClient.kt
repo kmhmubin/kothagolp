@@ -10,6 +10,7 @@ import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.FormBody
 import okhttp3.HttpUrl
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -36,6 +37,59 @@ object NetworkClient {
 
     private val cookieJar = MemoryCookieJar()
 
+    /**
+     * Browser-like headers plus any saved Cloudflare cookies/UA for the request's domain.
+     * Shared with the app's image loader: covers served from a source's own
+     * Cloudflare-protected host (e.g. Novel Archive's /api/novels/{id}/cover) are
+     * refused (403) when requested with OkHttp's default "okhttp/x" user agent.
+     */
+    fun browserHeadersInterceptor(forImages: Boolean = false) = Interceptor { chain ->
+        val original = chain.request()
+        val url = original.url.toString()
+        val domain = CloudflareManager.getDomain(url)
+        val requestBuilder = original.newBuilder()
+
+        // ── User-Agent ───────────────────────────────────────────────
+        // Priority: caller-provided > CF saved > hardcoded default.
+        if (original.header("User-Agent").isNullOrBlank()) {
+            val ua = runCatching { CloudflareManager.getUserAgent(domain) }.getOrNull()
+                ?: CloudflareManager.WEBVIEW_USER_AGENT
+            requestBuilder.header("User-Agent", ua)
+        }
+
+        // ── Cloudflare Cookie Injection ──────────────────────────────
+        runCatching {
+            val cfCookies = CloudflareManager.getCookiesForDomain(domain)
+            if (cfCookies.isNotBlank()) {
+                val existing = original.header("Cookie") ?: ""
+                requestBuilder.header("Cookie", mergeCookies(existing, cfCookies))
+            }
+        }.onFailure {
+            android.util.Log.e("NetworkClient", "CF cookie injection failed", it)
+        }
+
+        // ── Standard Browser Headers (non-overwriting) ───────────────
+        fun setIfAbsent(name: String, value: String) {
+            if (original.header(name) == null) requestBuilder.header(name, value)
+        }
+        if (forImages) {
+            // No Cache-Control: max-age=0 here — it would defeat the image loader's HTTP cache.
+            setIfAbsent("Accept", "image/avif,image/webp,image/*,*/*;q=0.8")
+        } else {
+            setIfAbsent("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+            setIfAbsent("Upgrade-Insecure-Requests", "1")
+            setIfAbsent("Cache-Control", "max-age=0")
+        }
+        setIfAbsent("Accept-Language", "en-US,en;q=0.9")
+        setIfAbsent("Connection", "keep-alive")
+        runCatching {
+            val uri = java.net.URI(url)
+            setIfAbsent("Referer", "${uri.scheme}://${uri.host}/")
+        }
+
+        chain.proceed(requestBuilder.build())
+    }
+
     private val httpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -44,48 +98,7 @@ object NetworkClient {
             .followRedirects(true)
             .followSslRedirects(true)
             .cookieJar(cookieJar)
-            .addInterceptor { chain ->
-                val original = chain.request()
-                val url = original.url.toString()
-                val domain = CloudflareManager.getDomain(url)
-                val requestBuilder = original.newBuilder()
-
-                // ── User-Agent ───────────────────────────────────────────────
-                // Priority: caller-provided > CF saved > hardcoded default.
-                if (original.header("User-Agent").isNullOrBlank()) {
-                    val ua = runCatching { CloudflareManager.getUserAgent(domain) }.getOrNull()
-                        ?: CloudflareManager.WEBVIEW_USER_AGENT
-                    requestBuilder.header("User-Agent", ua)
-                }
-
-                // ── Cloudflare Cookie Injection ──────────────────────────────
-                runCatching {
-                    val cfCookies = CloudflareManager.getCookiesForDomain(domain)
-                    if (cfCookies.isNotBlank()) {
-                        val existing = original.header("Cookie") ?: ""
-                        requestBuilder.header("Cookie", mergeCookies(existing, cfCookies))
-                    }
-                }.onFailure {
-                    android.util.Log.e("NetworkClient", "CF cookie injection failed", it)
-                }
-
-                // ── Standard Browser Headers (non-overwriting) ───────────────
-                fun setIfAbsent(name: String, value: String) {
-                    if (original.header(name) == null) requestBuilder.header(name, value)
-                }
-                setIfAbsent("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-                setIfAbsent("Accept-Language", "en-US,en;q=0.9")
-                setIfAbsent("Connection", "keep-alive")
-                setIfAbsent("Upgrade-Insecure-Requests", "1")
-                setIfAbsent("Cache-Control", "max-age=0")
-                runCatching {
-                    val uri = java.net.URI(url)
-                    setIfAbsent("Referer", "${uri.scheme}://${uri.host}/")
-                }
-
-                val response = chain.proceed(requestBuilder.build())
-                response
-            }
+            .addInterceptor(browserHeadersInterceptor())
             .build()
     }
 

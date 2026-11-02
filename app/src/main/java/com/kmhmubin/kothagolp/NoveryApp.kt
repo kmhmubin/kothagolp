@@ -3,6 +3,7 @@ package com.kmhmubin.kothagolp
 import android.app.Application
 import coil.Coil
 import coil.ImageLoader
+import com.kmhmubin.kothagolp.data.remote.NetworkClient
 import coil.memory.MemoryCache
 import com.kmhmubin.kothagolp.data.local.NovelDatabase
 import com.kmhmubin.kothagolp.data.local.PreferencesManager
@@ -53,6 +54,13 @@ class KothagolpApp : Application() {
             ImageLoader.Builder(this)
                 .allowHardware(true)
                 .crossfade(150)
+                // Same browser headers/Cloudflare cookies as source requests; some
+                // sources refuse covers fetched with OkHttp's default user agent.
+                .okHttpClient {
+                    okhttp3.OkHttpClient.Builder()
+                        .addInterceptor(NetworkClient.browserHeadersInterceptor(forImages = true))
+                        .build()
+                }
                 .memoryCache {
                     MemoryCache.Builder(this)
                         .maxSizePercent(0.20)
